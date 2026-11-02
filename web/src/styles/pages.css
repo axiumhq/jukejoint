@@ -52,42 +52,55 @@
   }
 }
 
-/* ───────── Início: hero ─────────
- * Duas colunas: proposta à esquerda, o produto funcionando à direita (painel ao vivo).
- * O fundo tem só um gradiente radial discreto de latão atrás do painel: luz vinda de onde há gente. */
+/* ───────── Início ─────────
+ * O hero é a noite: céu anil que desce até o preto de pátina, com a névoa de latão
+ * subindo de onde estão os prédios (luz vem de onde há gente). A cidade em si fica em city.css. */
 
 .hero {
   position: relative;
+  overflow: clip;
   border-bottom: 1px solid var(--line);
   background:
-    radial-gradient(60rem 28rem at 78% 30%, var(--accent-soft), transparent 70%),
-    var(--bg);
+    radial-gradient(64rem 26rem at 72% 100%, var(--sky-haze), transparent 72%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 58%, var(--bg) 100%);
   isolation: isolate;
+}
+
+/* Tema claro: papel de planta com quadrícula anil bem leve. */
+[data-theme='light'] .hero {
+  background:
+    linear-gradient(rgb(58 80 120 / 0.06) 1px, transparent 1px) 0 0 / 24px 24px,
+    linear-gradient(90deg, rgb(58 80 120 / 0.06) 1px, transparent 1px) 0 0 / 24px 24px,
+    radial-gradient(64rem 26rem at 72% 100%, var(--sky-haze), transparent 72%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 58%, var(--bg) 100%);
 }
 
 .hero-inner {
   display: grid;
-  gap: var(--sp-8);
-  padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(3rem, 6vw, 5.5rem);
+  gap: var(--sp-7);
+  padding-block: clamp(2rem, 5vw, 4rem) clamp(2rem, 4vw, 3.5rem);
 }
 
 .hero-copy {
+  position: relative;
+  z-index: 1;
   display: grid;
   gap: var(--sp-5);
   align-content: center;
-  max-width: 40rem;
+  max-width: 36rem;
 }
 
 .hero-title {
   font-size: var(--fs-hero);
-  font-weight: 500;
-  line-height: var(--lh-tight);
-  letter-spacing: -0.03em;
-  max-width: 11.5em;
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.005em;
+  max-width: 10ch;
+  padding-bottom: 0.04em;
 }
 
 .hero-lead {
-  max-width: 34rem;
+  max-width: 33rem;
   font-size: var(--fs-md);
   color: var(--text-muted);
 }
@@ -101,121 +114,105 @@
 
 @media (min-width: 64em) {
   .hero-inner {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     align-items: center;
-    gap: var(--sp-8);
-  }
-}
-
-/* Painel ao vivo */
-
-.live-panel {
-  position: relative;
-  display: grid;
-  margin-top: var(--sp-3);
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-pop);
-}
-
-/* Fio duplo déco: um segundo contorno fino 5px para dentro. */
-.live-panel::before {
-  content: '';
-  position: absolute;
-  inset: 5px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  pointer-events: none;
-}
-
-.live-panel > * {
-  position: relative;
-}
-
-.live-panel > .live-panel-crown {
-  position: absolute;
-}
-
-.live-panel-head {
-  display: grid;
-  gap: var(--sp-3);
-  padding: var(--sp-6) var(--sp-5) var(--sp-4);
-  border-bottom: 1px solid var(--line);
-}
-
-.live-panel-title {
-  font-size: var(--fs-lg);
-  font-weight: 500;
-}
-
-.live-panel .lobby-list {
-  padding-inline: 5px;
-}
-
-.live-panel-more {
-  justify-self: start;
-  margin: var(--sp-2) var(--sp-5) var(--sp-5);
-}
-
-/* ───────── Início: modos em destaque ───────── */
-
-.featured {
-  display: grid;
-  gap: var(--sp-6);
-}
-
-@media (min-width: 60em) {
-  .featured {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
     gap: var(--sp-7);
-    align-items: start;
   }
-  .featured .mode-rows > .mode-card:first-child {
-    padding-top: 0;
-  }
-}
-
-/* ───────── Início: como funciona ───────── */
-
-.steps {
-  list-style: none;
-  display: grid;
-  gap: var(--sp-6);
-}
-
-@media (min-width: 48em) {
-  .steps {
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-6);
+  .hero-copy {
+    padding-bottom: var(--sp-8);
   }
 }
 
-.step {
-  display: grid;
-  gap: var(--sp-3);
-  align-content: start;
-  justify-items: start;
-  padding-top: var(--sp-5);
+/* Enchendo agora: o equivalente em lista da cidade. */
+.filling-list {
   border-top: 1px solid var(--line-strong);
 }
 
-.step-num {
+@media (min-width: 60em) {
+  .filling-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--sp-7);
+  }
+  .filling-list > .lobby-row {
+    border-bottom: 1px solid var(--line);
+  }
+  .lobby-list.is-mini.filling-list > .lobby-row + .lobby-row {
+    border-top: 0;
+  }
+}
+
+/* Do site à partida: três paradas numa linha de bonde. A sequência é real, então o número fica. */
+.route {
+  list-style: none;
+  position: relative;
+  display: grid;
+  gap: var(--sp-6);
+  padding-left: var(--sp-7);
+}
+
+.route::before {
+  content: '';
+  position: absolute;
+  left: 1.125rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  border-left: 2px dotted var(--accent-line);
+}
+
+.route-stop {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  align-content: start;
+  justify-items: start;
+}
+
+.route-num {
+  position: absolute;
+  left: calc(var(--sp-7) * -1);
+  top: -0.125rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
   font-family: var(--font-display);
-  font-weight: 300;
-  font-size: 3.25rem;
-  line-height: 1;
-  color: var(--accent-text);
-  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 800;
+  font-size: 1.25rem;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--bg), 0 0 0 5px var(--accent-line);
 }
 
-.step h3 {
-  font-size: var(--fs-lg);
+.route-stop h3 {
+  font-size: var(--fs-xl);
 }
 
-.step p {
+.route-stop p {
   color: var(--text-muted);
-  max-width: 34ch;
+  max-width: 36ch;
+}
+
+@media (min-width: 48em) {
+  .route {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-7);
+    padding-left: 0;
+    padding-top: var(--sp-7);
+  }
+  .route::before {
+    left: 1.125rem;
+    right: 0;
+    top: 1.125rem;
+    bottom: auto;
+    border-left: 0;
+    border-top: 2px dotted var(--accent-line);
+  }
+  .route-num {
+    left: 0;
+    top: calc(var(--sp-7) * -1);
+  }
 }
 
 /* ───────── Lobbies ───────── */
@@ -859,60 +856,6 @@
   gap: var(--sp-2);
 }
 
-.releases {
-  display: grid;
-}
-
-.release {
-  display: grid;
-  gap: var(--sp-4);
-  padding-block: var(--sp-7);
-  border-top: 1px solid var(--line-strong);
-}
-
-@media (min-width: 60em) {
-  .release {
-    grid-template-columns: 12rem minmax(0, 46rem);
-    column-gap: var(--sp-8);
-  }
-  .release > :not(.release-head) {
-    grid-column: 2;
-  }
-  .release-head {
-    grid-row: 1 / span 5;
-    align-self: start;
-    position: sticky;
-    top: calc(var(--header-h) + var(--sp-5));
-  }
-}
-
-.release-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--sp-2) var(--sp-4);
-}
-
-@media (min-width: 60em) {
-  .release-head {
-    display: grid;
-    gap: var(--sp-2);
-  }
-}
-
-.release-version {
-  font-size: var(--fs-2xl);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.release-date {
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-}
-
 .release-counts {
   list-style: none;
   display: flex;
@@ -923,16 +866,6 @@
 .cat-n {
   font-variant-numeric: tabular-nums;
   opacity: 0.8;
-}
-
-.release-tldr {
-  font-size: var(--fs-md);
-  line-height: 1.55;
-  max-width: 44rem;
-}
-
-.release-tldr strong {
-  font-weight: 700;
 }
 
 .release-scopes {
@@ -976,4 +909,43 @@
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-1);
   }
+}
+
+/* ───────── Instalar: seção reservada e afiliação ───────── */
+
+.risk-pending {
+  padding: var(--sp-5);
+  border: 1px dashed var(--line-input);
+  border-radius: var(--r-sm);
+}
+
+.risk-pending h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.pending-tag {
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--r-xs);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.install-affiliation {
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+/* ───────── 404 ───────── */
+
+.not-found-art {
+  width: 12rem;
+  margin-bottom: var(--sp-3);
 }

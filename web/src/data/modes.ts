@@ -34,7 +34,7 @@ export const modes: Mode[] = [
   {
     slug: 'circulo-profano',
     name: 'Círculo Profano',
-    tagline: 'Todos contra todos dentro de um círculo que encolhe a cada minuto.',
+    tagline: 'Até doze num anel ritual que fecha a cada minuto. Do lado de fora, ninguém dura.',
     description: [
       'Até doze jogadores começam num anel ritual no centro do mapa. A cada minuto o círculo fecha um pouco e quem fica do lado de fora perde vida rápido.',
       'Não tem loja nem farm: cada abate dá um item aleatório do mesmo nível para todo mundo. Partidas curtas, decididas no posicionamento.',
@@ -98,7 +98,7 @@ export const modes: Mode[] = [
   {
     slug: 'neblina',
     name: 'Neblina',
-    tagline: 'Esconde-esconde com névoa densa e um caçador por rodada.',
+    tagline: 'Doze metros de visão, um caçador e três minutos para não ser pego.',
     description: [
       'A cidade é coberta por uma névoa que reduz a visão a poucos metros. Um jogador vira o caçador; os outros têm três minutos para sobreviver.',
       'Quem é pego vira caçador também. Sons de passos aparecem no mapa do caçador a cada 20 segundos.',
@@ -130,7 +130,7 @@ export const modes: Mode[] = [
   {
     slug: 'duelo-meia-noite',
     name: 'Duelo à Meia-Noite',
-    tagline: 'Um contra um, melhor de cinco, mesmo herói para os dois.',
+    tagline: 'x1, mesmo herói, melhor de cinco. Perdeu, volta para a fila.',
     description: [
       'Duelos rápidos para treinar mecânica. Os dois jogadores recebem o mesmo herói, sorteado a cada rodada, com itens fixos.',
       'Quem vencer três rodadas leva. Há fila de espera: perdedores voltam para o fim da fila do lobby.',
@@ -162,7 +162,7 @@ export const modes: Mode[] = [
   {
     slug: 'cerco-ao-cofre',
     name: 'Cerco ao Cofre',
-    tagline: 'Arrombe o cofre do banco ou defenda até o reforço chegar.',
+    tagline: 'Três trancas, dois minutos cada. Arrombe o cofre ou segure a porta.',
     description: [
       'Ataque e defesa em um banco fechado. Os atacantes precisam abrir três trancas em sequência; os defensores só precisam segurar até o tempo acabar.',
       'Cada tranca aberta libera uma nova entrada para os atacantes e reduz a vida máxima dos defensores.',
@@ -194,7 +194,7 @@ export const modes: Mode[] = [
   {
     slug: 'campo-de-treino',
     name: 'Campo de Treino',
-    tagline: 'Sandbox com bots, recarga instantânea e alvos configuráveis.',
+    tagline: 'Todos os itens liberados, bots no seu ritmo e nenhum placar olhando.',
     description: [
       'Um mapa aberto para testar heróis e combinações de itens sem pressão. Todos os itens liberados, cooldowns opcionais e bots com dificuldade ajustável.',
       'Funciona sozinho ou com amigos. É também o modo usado em "Jogar com bots".',

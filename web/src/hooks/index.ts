@@ -2,15 +2,26 @@ import { useEffect, useState } from 'react';
 
 const RM_QUERY = '(prefers-reduced-motion: reduce)';
 
-export function useReducedMotion() {
-  const [reduced, setReduced] = useState(() => window.matchMedia(RM_QUERY).matches);
+/** Estado de uma media query, atualizado quando ela muda. */
+export function useMediaQuery(query: string) {
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
   useEffect(() => {
-    const mq = window.matchMedia(RM_QUERY);
-    const on = () => setReduced(mq.matches);
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    on();
     mq.addEventListener('change', on);
     return () => mq.removeEventListener('change', on);
-  }, []);
-  return reduced;
+  }, [query]);
+  return match;
+}
+
+export function useReducedMotion() {
+  return useMediaQuery(RM_QUERY);
+}
+
+/** Ponteiro fino com hover (mouse) e movimento liberado: só aí vale tilt e brilho. */
+export function useTiltAllowed() {
+  return useMediaQuery('(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)');
 }
 
 /** Número que oscila em torno de uma base, simulando dado ao vivo. */

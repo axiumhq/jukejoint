@@ -1,10 +1,11 @@
 /*
  * Tokens de design. Único lugar com valores de cor, tipo, espaço e movimento.
  *
- * Direção (v2): produto moderno e limpo com um sotaque art déco contido.
- * Base em preto de pátina (bronze oxidado na sombra), latão como único acento,
- * verdete só para estado "ao vivo / amigos". O ornamento é uma linha: o recuo
- * escalonado dos arranha-céus dos anos 1920, usado em poucos lugares.
+ * Direção (v3, "Cidade Acesa"): a home é o corte de uma torre déco à noite e
+ * cada lobby é um andar. Base em preto de pátina, latão como único acento e
+ * como LUZ (janela acesa = jogador), verdete para amigos/ao vivo, e um terceiro
+ * tom próprio, o anil, só para o céu e a névoa. No tema claro a cidade vira
+ * planta de arquiteto: traço anil sobre papel de pedra.
  *
  * Regras de cor:
  *  - Latão (--accent) = ação principal e gente (vaga ocupada). Nada mais.
@@ -61,6 +62,34 @@
   --backdrop: rgb(5 8 7 / 0.72);
   --shadow-pop: 0 24px 48px -20px rgb(2 6 5 / 0.7), 0 2px 6px rgb(2 6 5 / 0.35);
   --glow-lit: 0 0 0 1px rgb(210 165 90 / 0.25);
+
+  /* Cidade Acesa: céu anil, fachada, janelas e luz emissiva */
+  --c-anil-950: #0a1120;
+  --c-anil-800: #16233b;
+  --c-anil-600: #2c3f63;
+  --sky-top: var(--c-anil-950);
+  --sky-mid: #101a2b;
+  --sky-haze: rgb(210 165 90 / 0.16);
+  --skyline-far: #121c2b;
+  --skyline-mid: #141f24;
+  --facade: #131918;
+  --facade-2: #172020;
+  --facade-line: #2b3633;
+  --facade-ledge: rgb(210 165 90 / 0.55);
+  --win-free: #1b2322;
+  --win-free-line: #64716c;
+  --win-lit: #f1c877;
+  --win-lit-deep: #d9a752;
+  --win-friend: #8fd8bb;
+  --win-glow: rgb(241 196 110 / 0.6);
+  --win-glow-friend: rgb(143 216 187 / 0.5);
+  --floor-active: rgb(241 200 119 / 0.09);
+  --grain-opacity: 0.07;
+  --glow-brass: 0 0 0 1px rgb(241 200 119 / 0.35), 0 8px 28px -6px rgb(241 196 110 / 0.45);
+  --paper: var(--c-ink-850);
+  --paper-ink: var(--c-bone);
+  --paper-rule: #3a4643;
+  --halftone: rgb(210 165 90 / 0.35);
 }
 
 [data-theme='light'] {
@@ -96,15 +125,44 @@
   --backdrop: rgb(18 24 22 / 0.45);
   --shadow-pop: 0 24px 48px -24px rgb(18 32 28 / 0.35), 0 2px 6px rgb(18 32 28 / 0.08);
   --glow-lit: 0 0 0 1px rgb(122 85 20 / 0.2);
+
+  /* Planta de arquiteto: traço anil, janelas acesas em latão escuro */
+  --sky-top: #dfe5ee;
+  --sky-mid: #e9edf0;
+  --sky-haze: rgb(176 128 52 / 0.1);
+  --skyline-far: #d3dbe6;
+  --skyline-mid: #dde3e6;
+  --facade: #f7f9f8;
+  --facade-2: #eef2f3;
+  --facade-line: #3a5078;
+  --facade-ledge: #3a5078;
+  --win-free: #e9edf2;
+  --win-free-line: #6d7b93;
+  --win-lit: #b8812a;
+  --win-lit-deep: #8f6118;
+  --win-friend: #1b6a54;
+  --win-glow: rgb(184 129 42 / 0.28);
+  --win-glow-friend: rgb(27 106 84 / 0.2);
+  --floor-active: rgb(58 80 120 / 0.08);
+  --grain-opacity: 0.05;
+  --glow-brass: 0 0 0 1px rgb(122 85 20 / 0.3), 0 8px 24px -8px rgb(176 128 52 / 0.45);
+  --paper: #f7f8f5;
+  --paper-ink: #151a18;
+  --paper-rule: #aab3ab;
+  --halftone: rgb(58 80 120 / 0.3);
 }
 
 :root {
   /* Tipografia
-   * Jost: revival da Futura (1927), geometria da era déco em desenho atual. Títulos e números grandes.
+   * Big Shoulders: grotesca condensada desenhada para a cidade de Chicago a partir da
+   *   sinalização industrial e déco dos anos 1920-30. Vertical como os prédios escalonados.
+   *   Títulos, números grandes e marca. Eixo de tamanho óptico (opsz) ligado.
    * Libre Franklin: herdeira da Franklin Gothic (1902). Texto corrido e interface.
-   * Ambas auto-hospedadas via @fontsource-variable (ver main.tsx). */
-  --font-display: 'Jost Variable', 'Futura', 'Century Gothic', system-ui, sans-serif;
+   * Newsreader: serifa feita para jornal (Production Type). Só na Gazeta (Novidades).
+   * Todas auto-hospedadas via @fontsource-variable (ver main.tsx). */
+  --font-display: 'Big Shoulders Variable', 'Arial Narrow', system-ui, sans-serif;
   --font-body: 'Libre Franklin Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-news: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
 
   --fs-xs: 0.8125rem;
@@ -112,15 +170,15 @@
   --fs-base: 1rem;
   --fs-md: 1.125rem;
   --fs-lg: 1.3125rem;
-  --fs-xl: clamp(1.5rem, 0.6vw + 1.3rem, 1.875rem);
-  --fs-2xl: clamp(2.125rem, 1.8vw + 1.5rem, 3rem);
-  --fs-hero: clamp(2.5rem, 3vw + 1.35rem, 4.125rem);
+  --fs-xl: clamp(1.75rem, 0.8vw + 1.45rem, 2.25rem);
+  --fs-2xl: clamp(2.5rem, 2.4vw + 1.7rem, 3.75rem);
+  --fs-hero: clamp(3.25rem, 4.6vw + 1.6rem, 6rem);
 
-  --lh-tight: 1.02;
-  --lh-snug: 1.18;
+  --lh-tight: 0.92;
+  --lh-snug: 1.08;
   --lh-body: 1.6;
 
-  --track-display: -0.025em;
+  --track-display: -0.01em;
 
   /* Espaço (base 4) */
   --sp-1: 0.25rem;
@@ -145,7 +203,9 @@
   --r-md: 6px;
 
   /* Camadas */
+  --z-plaque: 5;
   --z-header: 40;
+  --z-grain: 50;
   --z-toast: 60;
   --z-skip: 100;
 
@@ -154,6 +214,7 @@
   --dur-1: 140ms;
   --dur-2: 240ms;
   --dur-3: 520ms;
+  --ease-flicker: cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 
 @media (min-width: 40em) {

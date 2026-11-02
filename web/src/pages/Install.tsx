@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { CopyField } from '../components/Common';
 import { Setback } from '../components/Deco';
@@ -9,15 +9,27 @@ import { useDocumentTitle } from '../hooks';
 import { formatDate, t } from '../i18n';
 import { useSession } from '../state/session';
 
+/** Depois de um tempo esperando, o texto passa a ajudar em vez de só esperar. */
+const STATUS_TIMEOUT_MS = 20000;
+
 function AppStatus() {
   const { appConnected, setAppConnected } = useSession();
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (appConnected) return;
+    setTimedOut(false);
+    const id = window.setTimeout(() => setTimedOut(true), STATUS_TIMEOUT_MS);
+    return () => window.clearTimeout(id);
+  }, [appConnected]);
   return (
     <div className={`app-status${appConnected ? ' is-connected' : ''}`}>
       <div className="app-status-row" role="status" aria-live="polite">
         <span className="app-status-signal" aria-hidden="true" />
         <p className="app-status-title">{appConnected ? t.install.statusConnected(APP_RELEASE.version) : t.install.statusWaiting}</p>
       </div>
-      <p className="app-status-help">{appConnected ? t.install.statusConnectedHelp : t.install.statusWaitingHelp}</p>
+      <p className="app-status-help">
+        {appConnected ? t.install.statusConnectedHelp : timedOut ? t.install.statusTimeout : t.install.statusWaitingHelp}
+      </p>
       <div className="app-status-actions">
         {appConnected && (
           <Link to="/lobbies" className="btn btn-primary btn-sm">
@@ -201,10 +213,19 @@ export function Install() {
             </div>
           </section>
 
+          <section className="install-section risk-pending" aria-labelledby="risk-title">
+            <h2 id="risk-title">
+              {t.install.riskTitle} <span className="pending-tag">{t.install.riskPending}</span>
+            </h2>
+            <p>{t.install.riskPlaceholder}</p>
+          </section>
+
           <section className="install-section" aria-labelledby="un-title">
             <h2 id="un-title">{t.install.uninstallTitle}</h2>
             <p>{t.install.uninstallBody}</p>
           </section>
+
+          <p className="install-affiliation">{t.install.affiliation}</p>
         </div>
       </div>
     </div>

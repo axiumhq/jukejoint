@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { QuietSkyline } from '../components/Deco';
 import { Icon } from '../components/Icon';
 import { LiveStrip } from '../components/Common';
 import { LobbyRow } from '../components/LobbyRow';
@@ -58,6 +59,10 @@ export function Lobbies() {
   const notifyKey = `vazio:${f.mode}:${f.regions.join(',')}`;
   const notifyOn = notify.has(notifyKey);
 
+  const filteredEmpty = anyFilter && !simulateEmpty;
+  const clearAll = () =>
+    setParams(writeFilters({ q: '', mode: '', regions: [], slotsOnly: false, friendsOnly: false, sort: f.sort }, params), { replace: true });
+
   const toggleRegion = (r: Region) =>
     update({ regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r] });
 
@@ -102,13 +107,16 @@ export function Lobbies() {
         </button>
         <div className="sort">
           <label htmlFor="lobby-sort">{t.lobbies.sort}</label>
-          <select id="lobby-sort" value={f.sort} onChange={(e) => update({ sort: e.target.value as SortKey })}>
+          <select id="lobby-sort" value={f.sort} aria-describedby="sort-hint" onChange={(e) => update({ sort: e.target.value as SortKey })}>
             {SORT_KEYS.map((k) => (
               <option key={k} value={k}>
                 {t.lobbies.sortOptions[k]}
               </option>
             ))}
           </select>
+          <span id="sort-hint" className="sr-only">
+            {t.lobbies.sortHint}
+          </span>
         </div>
       </div>
 
@@ -164,7 +172,7 @@ export function Lobbies() {
           </div>
 
           {anyFilter && (
-            <button type="button" className="link-btn" onClick={() => setParams(writeFilters({ ...f, q: '', mode: '', regions: [], slotsOnly: false, friendsOnly: false }, params), { replace: true })}>
+            <button type="button" className="link-btn" onClick={clearAll}>
               {t.lobbies.clear}
             </button>
           )}
@@ -182,35 +190,30 @@ export function Lobbies() {
             </ul>
           ) : (
             <div className="empty">
-              <svg className="empty-art" viewBox="0 0 120 64" aria-hidden="true" focusable="false">
-                <path d="M4 64V30h14V18h10v12h8V8h20v56M60 64V24h18v-8h12v8h10v40M104 64V40h12v24" />
-                <rect x="44" y="20" width="4" height="6" className="lit" />
-              </svg>
-              <h2>{anyFilter && !simulateEmpty ? t.lobbies.emptyFilteredTitle : t.lobbies.emptyNoneTitle}</h2>
-              <p>{t.lobbies.emptyBody}</p>
+              <QuietSkyline className="empty-art" lit={!filteredEmpty} />
+              <h2>{filteredEmpty ? t.lobbies.emptyFilteredTitle : t.lobbies.emptyNoneTitle}</h2>
+              <p>{filteredEmpty ? t.lobbies.emptyFilteredBody : t.lobbies.emptyNoneBody}</p>
               <div className="empty-actions">
-                <button type="button" className="btn btn-primary" onClick={() => openHost(f.mode || undefined)}>
+                {filteredEmpty && (
+                  <button type="button" className="btn btn-primary" onClick={clearAll}>
+                    {t.lobbies.emptyFilteredClear}
+                  </button>
+                )}
+                <button type="button" className={`btn ${filteredEmpty ? 'btn-ghost' : 'btn-primary'}`} onClick={() => openHost(f.mode || undefined)}>
                   <Icon name="plus" size={18} />
                   {t.lobbies.emptyCreate}
                 </button>
-                <button type="button" className="btn btn-ghost" onClick={() => requestJoin({ kind: 'bots' })}>
-                  <Icon name="bot" size={18} />
-                  {t.lobbies.emptyBots}
-                </button>
+                {!filteredEmpty && (
+                  <button type="button" className="btn btn-ghost" onClick={() => requestJoin({ kind: 'bots' })}>
+                    <Icon name="bot" size={18} />
+                    {t.lobbies.emptyBots}
+                  </button>
+                )}
                 <button type="button" className="btn btn-ghost" aria-pressed={notifyOn} onClick={() => toggleNotify(notifyKey, t.lobbies.emptyNotifyToast)}>
                   <Icon name={notifyOn ? 'check' : 'bell'} size={18} />
                   {notifyOn ? t.lobbies.emptyNotifyOn : t.lobbies.emptyNotify}
                 </button>
               </div>
-              {anyFilter && !simulateEmpty && (
-                <button
-                  type="button"
-                  className="link-btn"
-                  onClick={() => setParams(writeFilters({ q: '', mode: '', regions: [], slotsOnly: false, friendsOnly: false, sort: f.sort }, params), { replace: true })}
-                >
-                  {t.lobbies.clear}
-                </button>
-              )}
             </div>
           )}
         </section>

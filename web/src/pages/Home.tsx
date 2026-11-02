@@ -1,5 +1,9 @@
+import type { CSSProperties } from 'react';
 import { Link } from 'react-router';
-import { LivePanel, ModeCard, SectionHead } from '../components/Common';
+import { CityScene } from '../components/City';
+import { SectionHead } from '../components/Common';
+import { LobbyRow } from '../components/LobbyRow';
+import { TarotCard } from '../components/TarotCard';
 import { modes } from '../data/modes';
 import { useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
@@ -12,7 +16,7 @@ export function Home() {
   const hot = filterLobbies(lobbies, { q: '', mode: '', regions: ['BR'], slotsOnly: true, friendsOnly: false, sort: 'cheios' }, false)
     .filter((l) => !l.locked && !l.mine && l.status === 'aberto')
     .slice(0, 4);
-  const [lead, ...rest] = modes.filter((m) => m.featured);
+  const featured = modes.filter((m) => m.featured);
 
   return (
     <>
@@ -32,28 +36,36 @@ export function Home() {
               </Link>
             </div>
           </div>
-          <LivePanel lobbies={hot} />
+          <CityScene lobbies={lobbies} />
         </div>
+      </section>
+
+      <section className="section container filling" aria-labelledby="filling-title">
+        <SectionHead id="filling-title" title={t.home.liveTitle} link={{ to: '/lobbies', label: t.home.hotLink }} />
+        <ul className="lobby-list is-mini filling-list">
+          {hot.map((l) => (
+            <LobbyRow key={l.id} lobby={l} mini />
+          ))}
+        </ul>
       </section>
 
       <section className="section container" aria-labelledby="modes-title">
         <SectionHead id="modes-title" title={t.home.modesTitle} link={{ to: '/modos', label: t.home.modesLink }} />
-        <div className="featured">
-          {lead && <ModeCard mode={lead} layout="feature" />}
-          <div className="mode-rows">
-            {rest.map((m) => (
-              <ModeCard key={m.slug} mode={m} layout="row" />
-            ))}
-          </div>
+        <div className="spread" style={{ '--n': featured.length } as CSSProperties}>
+          {featured.map((m, i) => {
+            const off = i - (featured.length - 1) / 2;
+            const fan = { '--rot': `${off * 3}deg`, '--drop': `${Math.abs(off) * 0.6}rem` } as CSSProperties;
+            return <TarotCard key={m.slug} mode={m} style={fan} />;
+          })}
         </div>
       </section>
 
       <section className="section container" aria-labelledby="how-title">
         <SectionHead id="how-title" title={t.home.howTitle} />
-        <ol className="steps">
+        <ol className="route">
           {t.home.steps.map((s, i) => (
-            <li key={s.title} className="step">
-              <span className="step-num" aria-hidden="true">
+            <li key={s.title} className="route-stop">
+              <span className="route-num num" aria-hidden="true">
                 {i + 1}
               </span>
               <h3>{s.title}</h3>

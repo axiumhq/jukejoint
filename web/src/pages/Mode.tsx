@@ -1,14 +1,15 @@
-import { useState } from 'react';
+import { useLayoutEffect, useState, type CSSProperties } from 'react';
 import { Link, useParams } from 'react-router';
-import { ModeCard } from '../components/Common';
 import { Setback } from '../components/Deco';
 import { Icon } from '../components/Icon';
 import { ModeArt } from '../components/ModeArt';
+import { modeTransitionName, TarotCard } from '../components/TarotCard';
 import { getMode, modes } from '../data/modes';
 import { releases } from '../data/patches';
 import { useDocumentTitle, useReducedMotion } from '../hooks';
 import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
 import { bestLobbyForMode, isJoinable } from '../lib/lobbies';
+import { markViewReady } from '../lib/viewTransition';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
 
@@ -19,6 +20,10 @@ export function ModePage() {
   const [paused, setPaused] = useState(false);
   const { lobbies, requestJoin, openHost } = useSession();
   useDocumentTitle(mode ? t.meta.mode(mode.name) : t.meta.notFound);
+  // Avisa a View Transition (se houver) que a página do modo já está no DOM.
+  useLayoutEffect(() => {
+    markViewReady();
+  }, [slug]);
 
   if (!mode) return <NotFound title={t.modes.notFoundTitle} body={t.modes.notFoundBody} />;
 
@@ -42,7 +47,7 @@ export function ModePage() {
       </nav>
 
       <section className="mode-hero" aria-labelledby="mode-title">
-        <div className="mode-hero-art">
+        <div className="mode-hero-art" style={{ viewTransitionName: modeTransitionName(mode.slug) } as CSSProperties}>
           <Setback className="frame-crown" />
           <ModeArt mode={mode} playing={playing} label={t.modes.artLabel(mode.name)} />
           {!reduced && (
@@ -183,9 +188,9 @@ export function ModePage() {
         <div className="section-head">
           <h2 id="others-title">{t.modes.others}</h2>
         </div>
-        <div className="mode-rows">
+        <div className="tarot-row">
           {others.map((m) => (
-            <ModeCard key={m.slug} mode={m} layout="row" />
+            <TarotCard key={m.slug} mode={m} size="sm" />
           ))}
         </div>
       </section>
@@ -201,9 +206,9 @@ export function ModesIndex() {
         <h1>{t.modes.title}</h1>
         <p className="page-lead">{t.modes.lead}</p>
       </header>
-      <div className="mode-grid">
+      <div className="tarot-grid">
         {modes.map((m) => (
-          <ModeCard key={m.slug} mode={m} headingLevel={2} />
+          <TarotCard key={m.slug} mode={m} headingLevel={2} />
         ))}
       </div>
     </div>

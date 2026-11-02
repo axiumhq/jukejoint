@@ -22,6 +22,7 @@
     background-color var(--dur-1) ease,
     border-color var(--dur-1) ease,
     color var(--dur-1) ease,
+    box-shadow var(--dur-2) ease,
     transform var(--dur-1) ease;
 }
 
@@ -36,6 +37,7 @@
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
+  box-shadow: var(--glow-brass);
 }
 
 .btn-primary:disabled {
@@ -405,9 +407,8 @@ select:focus-visible {
   fill: var(--accent);
 }
 
-/* Coroa centralizada sobre a borda superior de um painel (painel ao vivo, arte do modo, download). */
-.frame-crown,
-.live-panel-crown {
+/* Coroa centralizada sobre a borda superior de um painel (arte do modo, download). */
+.frame-crown {
   position: absolute;
   top: 0;
   left: 50%;
@@ -442,12 +443,12 @@ select:focus-visible {
 
 .wordmark-text {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.25rem;
-  letter-spacing: 0.16em;
+  font-weight: 800;
+  font-size: 1.375rem;
+  letter-spacing: 0.14em;
   line-height: 1;
   /* compensa o espaçamento após a última letra */
-  margin-right: -0.16em;
+  margin-right: -0.14em;
 }
 
 /* ───────── Cabeçalho ───────── */
@@ -744,10 +745,39 @@ body {
 }
 
 .footer-base {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-5);
   padding-block: var(--sp-4) var(--sp-6);
   border-top: 1px solid var(--line);
   color: var(--text-muted);
   font-size: var(--fs-xs);
+}
+
+.footer-signoff {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--accent-text);
+}
+
+.footer-soon {
+  color: var(--text-muted);
+}
+
+/* "Falta 1": urgência que vem do dado. */
+.almost-full {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--r-xs);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+  color: var(--accent-text);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 /* ───────── Ao vivo ───────── */
@@ -1022,31 +1052,6 @@ body {
   box-shadow: inset 0 0 0 1px var(--pip-free);
 }
 
-/* Momento de abertura da home: as janelas do painel ao vivo acendem em sequência. */
-@media (prefers-reduced-motion: no-preference) {
-  .live-panel .pip-taken,
-  .live-panel .pip-friend {
-    animation: pip-on var(--dur-3) var(--ease-out) both;
-    animation-delay: calc(180ms + var(--i, 0) * 45ms);
-  }
-  .live-panel .lobby-row:nth-child(2) .pip {
-    animation-delay: calc(300ms + var(--i, 0) * 45ms);
-  }
-  .live-panel .lobby-row:nth-child(3) .pip {
-    animation-delay: calc(420ms + var(--i, 0) * 45ms);
-  }
-  .live-panel .lobby-row:nth-child(4) .pip {
-    animation-delay: calc(540ms + var(--i, 0) * 45ms);
-  }
-}
-
-@keyframes pip-on {
-  from {
-    background: transparent;
-    box-shadow: inset 0 0 0 1px var(--pip-free);
-  }
-}
-
 .slots-count {
   font-size: var(--fs-sm);
   font-weight: 600;
@@ -1147,63 +1152,7 @@ body {
   color: var(--text-muted);
 }
 
-/* ───────── Card de modo ───────── */
-
-.mode-grid {
-  display: grid;
-  gap: var(--sp-6) var(--sp-5);
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-}
-
-.mode-card {
-  position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: var(--sp-4);
-}
-
-.mode-card-art {
-  overflow: hidden;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  transition: border-color var(--dur-2) ease;
-}
-
-.mode-card:hover .mode-card-art,
-.mode-card:focus-within .mode-card-art {
-  border-color: var(--accent-line);
-}
-
-.mode-card:focus-within {
-  outline: 2px solid var(--focus);
-  outline-offset: 4px;
-  border-radius: var(--r-md);
-}
-
-.mode-card-art .mode-art {
-  aspect-ratio: 16 / 9;
-  width: 100%;
-  height: auto;
-  transition: transform var(--dur-3) var(--ease-out);
-}
-
-.mode-card:hover .mode-art {
-  transform: scale(1.02);
-}
-
-.mode-card-body {
-  display: grid;
-  gap: var(--sp-2);
-  align-content: start;
-}
-
-.mode-card-title {
-  font-size: var(--fs-xl);
-  font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
+/* Link que cobre o cartão inteiro (carta de modo). */
 .stretched {
   text-decoration: none;
 }
@@ -1216,65 +1165,6 @@ body {
 
 .stretched:focus-visible {
   outline: none;
-}
-
-.mode-card-tagline {
-  font-size: var(--fs-sm);
-  color: var(--text-muted);
-  max-width: 44ch;
-}
-
-.mode-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-1) var(--sp-4);
-  margin-top: var(--sp-1);
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-}
-
-.mode-card-meta strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* Destaque: arte grande, título maior. */
-.mode-card.is-feature .mode-card-title {
-  font-size: var(--fs-2xl);
-  letter-spacing: var(--track-display);
-}
-
-.mode-card.is-feature .mode-card-tagline {
-  font-size: var(--fs-base);
-}
-
-/* Linha: miniatura ao lado do texto. */
-.mode-card.is-row {
-  grid-template-rows: none;
-  grid-template-columns: 7.5rem minmax(0, 1fr);
-  align-items: center;
-  gap: var(--sp-4);
-  padding-block: var(--sp-4);
-}
-
-.mode-card.is-row .mode-card-title {
-  font-size: var(--fs-lg);
-}
-
-@media (min-width: 40em) {
-  .mode-card.is-row {
-    grid-template-columns: 11rem minmax(0, 1fr);
-    gap: var(--sp-5);
-  }
-}
-
-.mode-rows {
-  display: grid;
-  align-content: start;
-}
-
-.mode-rows > .mode-card + .mode-card {
-  border-top: 1px solid var(--line);
 }
 
 /* ───────── Arte dos modos ───────── */
@@ -1724,17 +1614,28 @@ body {
   color: var(--text-muted);
 }
 
-.empty-art {
-  width: 7.5rem;
+/* Cidade quieta (estados vazios e 404): janelas apagadas, no máximo uma acesa. */
+.quiet-skyline {
+  width: 10rem;
   height: auto;
+  overflow: visible;
+}
+
+.qs-line {
   fill: none;
   stroke: var(--line-input);
   stroke-width: 1.25;
 }
 
-.empty-art .lit {
-  fill: var(--accent);
-  stroke: none;
+.qs-win {
+  fill: none;
+  stroke: var(--win-free-line);
+  stroke-width: 1;
+}
+
+.qs-lit {
+  fill: var(--win-lit);
+  filter: drop-shadow(0 0 3px var(--win-glow));
 }
 
 .empty-actions {

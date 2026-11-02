@@ -10,8 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@fontsource-variable/jost": "5.2.8",
+    "@fontsource-variable/big-shoulders": "5.3.0",
     "@fontsource-variable/libre-franklin": "5.2.8",
+    "@fontsource-variable/newsreader": "5.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "7.18.4"

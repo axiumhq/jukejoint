@@ -6,13 +6,22 @@ import { REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
+import { RitualCircle } from './RitualCircle';
 
 export function JoinDialog() {
-  const { joinTarget, closeJoin, confirmJoinWithApp } = useSession();
-  const name = joinTarget?.kind === 'lobby' ? joinTarget.lobby.name : t.join.botsTitle;
+  const { joinTarget, closeJoin, confirmJoinWithApp, lobbies } = useSession();
+  // O lobby continua ao vivo enquanto o diálogo está aberto: o círculo acende quem chega.
+  const live = joinTarget?.kind === 'lobby' ? (lobbies.find((l) => l.id === joinTarget.lobby.id) ?? joinTarget.lobby) : null;
   return (
     <Dialog open={joinTarget !== null} onClose={closeJoin} title={t.join.title}>
-      <p className="dialog-lead">{t.join.body(name)}</p>
+      {live ? (
+        <div className="join-ritual">
+          <RitualCircle total={live.slots} taken={live.players} friends={live.friends} />
+          <p className="dialog-lead">{t.join.body(live.name)}</p>
+        </div>
+      ) : (
+        <p className="dialog-lead">{t.join.botsBody}</p>
+      )}
       <div className="join-options">
         <section className="join-option">
           <h3>{t.join.haveApp}</h3>
@@ -102,7 +111,18 @@ export function HostDialog() {
           </div>
           <div className="field">
             <label htmlFor="host-name">{t.host.name}</label>
-            <input id="host-name" type="text" value={name} placeholder={placeholder} maxLength={40} onChange={(e) => setName(e.target.value)} />
+            <input
+              id="host-name"
+              type="text"
+              value={name}
+              placeholder={placeholder}
+              maxLength={40}
+              aria-describedby="host-name-hint"
+              onChange={(e) => setName(e.target.value)}
+            />
+            <p id="host-name-hint" className="hint">
+              {t.host.nameHint}
+            </p>
           </div>
           <div className="field-row">
             <fieldset className="field">
@@ -131,6 +151,10 @@ export function HostDialog() {
             <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)} />
             <span>{t.host.private}</span>
           </label>
+          <div className="host-ritual">
+            <RitualCircle total={Math.min(slots, mode.maxPlayers)} taken={1} youFirst className="is-small" />
+            <p className="hint">{t.host.circleCaption}</p>
+          </div>
           <div className="dialog-actions">
             <button type="button" className="btn btn-ghost" onClick={closeHost}>
               {t.host.cancel}

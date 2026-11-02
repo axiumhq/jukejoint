@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Icon } from '../components/Icon';
+import { ModeArt } from '../components/ModeArt';
 import { getMode, modes } from '../data/modes';
 import { PLATFORM_SCOPE, releases, type Change, type ChangeCategory, type Release } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
@@ -35,23 +36,43 @@ function highlight(text: string, q: string): ReactNode {
 
 const scopeName = (scope: string) => (scope === PLATFORM_SCOPE ? t.news.platform : (getMode(scope)?.name ?? scope));
 
-function ReleaseCard({ release, changes, q, filtered }: { release: Release; changes: Change[]; q: string; filtered: boolean }) {
+/** Modo mais citado numa versão (para a gravura da manchete). */
+function mainMode(release: Release) {
+  const counts = new Map<string, number>();
+  for (const c of release.changes) if (c.scope !== PLATFORM_SCOPE) counts.set(c.scope, (counts.get(c.scope) ?? 0) + 1);
+  const top = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
+  return top ? getMode(top[0]) : undefined;
+}
+
+interface StoryProps {
+  release: Release;
+  changes: Change[];
+  q: string;
+  filtered: boolean;
+  lead: boolean;
+}
+
+function Story({ release, changes, q, filtered, lead }: StoryProps) {
   const [expanded, setExpanded] = useState(false);
-  const showAll = expanded || filtered || changes.length <= VISIBLE + 1;
-  const visible = showAll ? changes : changes.slice(0, VISIBLE);
+  const limit = lead ? VISIBLE + 4 : VISIBLE;
+  const showAll = expanded || filtered || changes.length <= limit + 1;
+  const visible = showAll ? changes : changes.slice(0, limit);
   const counts = CATS.map((c) => [c, changes.filter((x) => x.category === c).length] as const).filter(([, n]) => n > 0);
   const scopes = [...new Set(release.changes.map((c) => c.scope))];
   const listId = `changes-${release.version}`;
+  const figureMode = lead ? mainMode(release) : undefined;
+  const H = lead ? 'h2' : 'h3';
 
   return (
-    <article className="release" aria-labelledby={`rel-${release.version}`}>
-      <header className="release-head">
-        <h2 id={`rel-${release.version}`} className="release-version">
-          {release.version}
-        </h2>
-        <time dateTime={release.date} className="release-date">
-          {formatDate(release.date)}
-        </time>
+    <article className={`story${lead ? ' is-lead' : ''}`} aria-labelledby={`rel-${release.version}`}>
+      <header className="story-head">
+        <p className="story-dateline">
+          <span className="story-version num">{t.news.editionVersion(release.version)}</span>
+          <time dateTime={release.date}>{formatDate(release.date)}</time>
+        </p>
+        <H id={`rel-${release.version}`} className="story-headline">
+          {release.headline}
+        </H>
         <ul className="release-counts" aria-label={t.news.categories}>
           {counts.map(([c, n]) => (
             <li key={c} className={`cat cat-${c}`}>
@@ -60,34 +81,44 @@ function ReleaseCard({ release, changes, q, filtered }: { release: Release; chan
           ))}
         </ul>
       </header>
-      <p className="release-tldr">
+      <p className="story-tldr">
         <strong>{t.news.tldr}</strong> {highlight(release.tldr, q)}
       </p>
-      <p className="release-scopes">
-        {t.news.affects}:{' '}
-        {scopes.map((s, i) => (
-          <span key={s}>
-            {s === PLATFORM_SCOPE ? scopeName(s) : <Link to={`/modos/${s}`}>{scopeName(s)}</Link>}
-            {i < scopes.length - 1 ? ', ' : ''}
-          </span>
-        ))}
-      </p>
-      <ul className="changes" id={listId}>
-        {visible.map((c) => (
-          <li key={c.text} className="change">
-            <span className={`cat cat-${c.category}`}>{t.categories[c.category]}</span>
-            <span className="change-text">
-              {highlight(c.text, q)}
-              <span className="change-scope">{scopeName(c.scope)}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      {!filtered && changes.length > VISIBLE + 1 && (
-        <button type="button" className="link-btn" aria-expanded={expanded} aria-controls={listId} onClick={() => setExpanded((v) => !v)}>
-          {expanded ? t.news.showLess : t.news.showMore(changes.length - VISIBLE)}
-        </button>
+      {figureMode && (
+        <figure className="story-figure">
+          <div className="halftone">
+            <ModeArt mode={figureMode} />
+          </div>
+          <figcaption>{t.news.figure(figureMode.name)}</figcaption>
+        </figure>
       )}
+      <div className="story-body">
+        <ul className="changes" id={listId}>
+          {visible.map((c) => (
+            <li key={c.text} className="change">
+              <span className={`cat cat-${c.category}`}>{t.categories[c.category]}</span>
+              <span className="change-text">
+                {highlight(c.text, q)}
+                <span className="change-scope">{scopeName(c.scope)}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+        {!filtered && changes.length > limit + 1 && (
+          <button type="button" className="link-btn" aria-expanded={expanded} aria-controls={listId} onClick={() => setExpanded((v) => !v)}>
+            {expanded ? t.news.showLess : t.news.showMore(changes.length - limit)}
+          </button>
+        )}
+        <p className="release-scopes">
+          {t.news.affects}:{' '}
+          {scopes.map((sc, i) => (
+            <span key={sc}>
+              {sc === PLATFORM_SCOPE ? scopeName(sc) : <Link to={`/modos/${sc}`}>{scopeName(sc)}</Link>}
+              {i < scopes.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+        </p>
+      </div>
     </article>
   );
 }
@@ -110,29 +141,40 @@ export function News() {
   const filtered = nq !== '' || scope !== '' || cats.length > 0;
   const shown = releases
     .map((r) => {
-      const tldrHit = nq !== '' && norm(r.tldr).includes(nq);
+      const tldrHit = nq !== '' && (norm(r.tldr).includes(nq) || norm(r.headline).includes(nq));
       const changes = [...r.changes]
         .sort((a, b) => CATS.indexOf(a.category) - CATS.indexOf(b.category))
         .filter(
-        (c) =>
-          (!scope || c.scope === scope) &&
-          (cats.length === 0 || cats.includes(c.category)) &&
-          (nq === '' || tldrHit || norm(c.text).includes(nq)),
-      );
+          (c) =>
+            (!scope || c.scope === scope) &&
+            (cats.length === 0 || cats.includes(c.category)) &&
+            (nq === '' || tldrHit || norm(c.text).includes(nq)),
+        );
       return { r, changes };
     })
     .filter(({ changes }) => changes.length > 0);
 
   const toggleCat = (c: ChangeCategory) => setCats((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
+  const latest = releases[0]!;
+  const [front, ...rest] = shown;
 
   return (
-    <div className="container page">
-      <header className="page-head">
-        <h1>{t.news.title}</h1>
-        <p className="page-lead">{t.news.lead}</p>
+    <div className="container page gazette">
+      <header className="masthead">
+        <ul className="masthead-strip">
+          <li>{t.news.edition(formatDate(latest.date))}</li>
+          <li className="num">{t.news.editionVersion(latest.version)}</li>
+          <li>{t.news.editionPrice}</li>
+        </ul>
+        <h1 className="masthead-title">
+          <span className="sr-only">{t.news.title}: </span>
+          {t.news.masthead}
+        </h1>
+        <p className="masthead-note">{t.news.mastheadNote}</p>
+        <p className="masthead-lead">{t.news.lead}</p>
       </header>
 
-      <div className="news-toolbar">
+      <div className="news-toolbar" role="search" aria-label={t.news.index}>
         <div className="search">
           <label htmlFor="news-search" className="sr-only">
             {t.news.search}
@@ -165,12 +207,22 @@ export function News() {
         {t.news.count(shown.length)}
       </p>
 
-      {shown.length > 0 ? (
-        <div className="releases">
-          {shown.map(({ r, changes }) => (
-            <ReleaseCard key={r.version} release={r} changes={changes} q={q.trim()} filtered={filtered} />
-          ))}
-        </div>
+      {front ? (
+        <>
+          <Story release={front.r} changes={front.changes} q={q.trim()} filtered={filtered} lead />
+          {rest.length > 0 && (
+            <section className="older" aria-labelledby="older-title">
+              <h2 id="older-title" className="older-title">
+                {t.news.older}
+              </h2>
+              <div className="older-grid">
+                {rest.map(({ r, changes }) => (
+                  <Story key={r.version} release={r} changes={changes} q={q.trim()} filtered={filtered} lead={false} />
+                ))}
+              </div>
+            </section>
+          )}
+        </>
       ) : (
         <div className="empty">
           <h2>{t.news.emptyTitle}</h2>

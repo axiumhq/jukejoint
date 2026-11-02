@@ -172,9 +172,7 @@ function Footer() {
               <Link to="/instalar#antivirus">{t.footer.antivirus}</Link>
             </li>
             <li>
-              <a href="#codigo-aberto" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-                {t.footer.source} <span className="fine">({t.install.sourceNote})</span>
-              </a>
+              <span className="footer-soon">{t.footer.source}</span>
             </li>
           </ul>
         </nav>
@@ -198,6 +196,7 @@ function Footer() {
         </div>
       </div>
       <div className="container footer-base">
+        <p className="footer-signoff">{t.footer.signoff}</p>
         <p>{t.footer.prototype}</p>
       </div>
     </footer>

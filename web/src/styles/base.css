@@ -21,9 +21,22 @@ body {
   font-size: var(--fs-base);
   line-height: var(--lh-body);
   font-feature-settings: 'kern', 'liga';
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
   caret-color: var(--accent);
+}
+
+/* Grão de filme: um PNG de 96px (9 KB) ladrilhado numa camada fixa que não recebe clique.
+ * Estático, sem blend mode: custa uma camada composta e nada mais. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  background: url('/grain.png') 0 0 / 96px 96px repeat;
+  opacity: var(--grain-opacity);
 }
 
 #root {
@@ -43,25 +56,29 @@ h3,
 h4 {
   margin: 0;
   font-family: var(--font-display);
-  font-weight: 500;
+  font-optical-sizing: auto;
+  font-weight: 700;
   line-height: var(--lh-snug);
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
   text-wrap: balance;
 }
 
 h1 {
   font-size: var(--fs-2xl);
-  line-height: 1.04;
+  font-weight: 800;
+  line-height: 0.98;
   letter-spacing: var(--track-display);
 }
 
 h2 {
   font-size: var(--fs-xl);
-  letter-spacing: -0.015em;
+  line-height: 1.02;
 }
 
 h3 {
   font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0.005em;
 }
 
 p {
@@ -211,6 +228,18 @@ table {
   }
 }
 
+/* Transição entre telas (View Transitions, mesmo documento). Só a carta de modo
+ * ganha nome próprio (ver cards.css); o resto da página faz um cross-fade curto. */
+::view-transition-group(*) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 220ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -218,5 +247,11 @@ table {
     animation: none !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

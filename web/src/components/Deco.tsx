@@ -23,3 +23,18 @@ export function TowerMark({ className }: { className?: string }) {
     </svg>
   );
 }
+
+/** Cidade quieta: silhueta com as janelas apagadas e uma só acesa. Estados vazios e 404. */
+export function QuietSkyline({ className, lit = true }: { className?: string; lit?: boolean }) {
+  return (
+    <svg className={className ? `quiet-skyline ${className}` : 'quiet-skyline'} viewBox="0 0 160 84" aria-hidden="true" focusable="false">
+      <path className="qs-line" d="M2 83V44h16V30h10v14h8V14h8V6h12v8h8v69M64 83V36h20v-8h12v8h12v47M108 83V52h14V40h10v12h14v31M0 83.5h160" />
+      {[
+        [40, 22], [48, 22], [40, 34], [52, 34], [40, 46], [48, 58], [70, 44], [78, 56], [90, 44], [96, 66], [114, 60], [128, 70], [8, 54], [24, 66],
+      ].map(([x, y]) => (
+        <rect key={`${x}-${y}`} className="qs-win" x={x} y={y} width="4" height="6" />
+      ))}
+      {lit && <rect className="qs-lit" x="48" y="46" width="4" height="6" />}
+    </svg>
+  );
+}
