@@ -13,8 +13,24 @@
   --tr-chamfer: 12px;
   --tr-mono-size: 0.75rem;
   --tr-shadow-text: 0 1px 14px rgb(4 6 9 / 0.75);
+  /* Faixa reservada para a camada técnica de baixo: nenhum painel parado entra nela. */
+  --tr-hud-safe: 5.5rem;
+  /* Fontes de momento (Gazeta e placa): só baixam quando a rolagem chega perto (data-fonts). */
+  --tr-news: Georgia, 'Times New Roman', serif;
+  --tr-stencil: var(--font-display);
   position: relative;
   isolation: isolate;
+}
+
+.tr[data-fonts='all'] {
+  --tr-news: var(--font-news);
+  --tr-stencil: var(--font-stencil);
+}
+
+@media (max-width: 59.99em) {
+  .tr {
+    --tr-hud-safe: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px) + 3.25rem);
+  }
 }
 
 [data-theme='light'] .tr {
@@ -152,6 +168,26 @@
   color: var(--live);
 }
 
+/* Abaixo de 1024 px a torre fica no meio da tela, sem espaço para o rótulo inteiro:
+ * vira uma coluna de diretório de saguão (andar e vagas), o modo fica na lista. */
+.tr-label-short {
+  display: none;
+}
+
+@media (max-width: 63.99em) {
+  .tr-label {
+    translate: 0 -50%;
+    padding: 0 0 0 0.45rem;
+    font-size: 0.625rem;
+  }
+  .tr-label-full {
+    display: none;
+  }
+  .tr-label-short {
+    display: inline;
+  }
+}
+
 /* â”€â”€â”€â”€â”€â”€â”€â”€â”€ CabeÃ§alho da home = camada tÃ©cnica de cima â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .site-header.is-hud {
@@ -260,8 +296,11 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   justify-content: space-between;
   align-items: flex-end;
   gap: var(--sp-4);
-  padding: 0 var(--gutter) 1.1rem;
+  padding: 2rem var(--gutter) 1.1rem;
   pointer-events: none;
+  /* Véu baixo: o HUD continua legível sobre o chão escuro do porão no amanhecer
+   * (texto escuro do tema claro) e sobre a porta acesa no escuro. */
+  background: linear-gradient(0deg, rgb(var(--tr-scrim) / 0.78), rgb(var(--tr-scrim) / 0));
   font-family: var(--font-mono);
   font-size: var(--tr-mono-size);
   font-stretch: 87.5%;
@@ -523,12 +562,6 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   }
   .tr-low .tr-floors-col {
     grid-column: 1;
-  }
-}
-
-@media (max-width: 63.99em) {
-  .tr-labels {
-    display: none;
   }
 }
 
@@ -813,7 +846,82 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   letter-spacing: 0.08em;
   line-height: 1;
   text-align: center;
-  color: hsl(var(--h) 50% 78%);
+  color: hsl(var(--h) 50% 82%);
+}
+
+/*
+ * Palco de rolagem (cofre e elevador). As marcas invisíveis dão a altura de rolagem
+ * (uma por parada); a lista fica presa (sticky) por cima delas, com os painéis
+ * empilhados na mesma célula. Só o ativo aparece: entra com um leve deslize e
+ * esmaece o anterior; com movimento reduzido a troca é instantânea (base.css).
+ * Desktop: palco centrado na altura da tela. Celular: palco embaixo, acima do HUD,
+ * deixando a metade de cima para a cena 3D.
+ */
+.tr-scrolly {
+  display: grid;
+}
+
+.tr-scrolly > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+.tr-marks {
+  pointer-events: none;
+}
+
+.tr-marks > span {
+  display: block;
+  height: var(--tr-seg, 74vh);
+}
+
+.tr-stops-scrolly {
+  --tr-seg: 78vh;
+}
+
+.tr-stage-list {
+  --stage-h: 16rem;
+  list-style: none;
+  position: sticky;
+  z-index: 1;
+  top: max(calc(var(--header-h) + var(--sp-4)), min(calc(52svh - var(--stage-h) / 2), calc(100svh - var(--tr-hud-safe) - var(--stage-h))));
+  align-self: start;
+  display: grid;
+}
+
+.tr-stage-list > li {
+  grid-area: 1 / 1;
+  align-self: start;
+  min-width: 0;
+  opacity: 0;
+  translate: 0 0.75rem;
+  pointer-events: none;
+  transition:
+    opacity 240ms var(--ease-out),
+    translate 420ms var(--ease-out);
+}
+
+.tr-stage-list > li.is-active,
+.tr-stage-list > li:focus-within {
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+
+/* O que sai some antes do que entra aparecer por inteiro (sem dois textos legíveis ao mesmo tempo). */
+.tr-stage-list > li.is-active {
+  transition-delay: 90ms;
+}
+
+/* Celular e tablet em pé: palco embaixo, rente à faixa do HUD; a cena 3D (que no
+ * retrato desloca a lente para cima) fica com a metade de cima. */
+@media (max-width: 47.99em), (orientation: portrait) and (max-width: 63.99em) {
+  .tr-stage-list {
+    top: max(calc(var(--header-h) + var(--sp-4)), calc(100svh - var(--tr-hud-safe) - var(--stage-h) - var(--sp-2)));
+  }
+  .tr-stage-list > li {
+    align-self: end;
+  }
 }
 
 /* Cena 3: o cofre dos modos. Cada carta tem a sua altura de rolagem. */
@@ -821,27 +929,10 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   padding-top: 20vh;
 }
 
-.tr-modes {
-  list-style: none;
-}
-
-.tr-mode {
-  min-height: 74vh;
-  display: grid;
-  align-items: center;
-}
-
 .tr-mode-panel {
   display: grid;
   gap: var(--sp-3);
   max-width: 28rem;
-  opacity: 0.55;
-  transition: opacity 260ms var(--ease-out);
-}
-
-.tr-mode.is-active .tr-mode-panel,
-.tr-mode:focus-within .tr-mode-panel {
-  opacity: 1;
 }
 
 .tr-mode-name {
@@ -886,28 +977,16 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   padding-top: 18vh;
 }
 
-.tr-stops {
-  list-style: none;
-}
-
 .tr-stop {
-  min-height: 78vh;
   display: grid;
-  align-content: center;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
+  align-content: start;
 }
 
 .tr-stop-panel {
   display: grid;
   gap: var(--sp-3);
   max-width: 28rem;
-  opacity: 0.55;
-  transition: opacity 260ms var(--ease-out);
-}
-
-.tr-stop.is-active .tr-stop-panel,
-.tr-stop:focus-within .tr-stop-panel {
-  opacity: 1;
 }
 
 .tr-stop-name {
@@ -1135,7 +1214,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 }
 
 .tr-plate-title {
-  font-family: var(--font-stencil);
+  font-family: var(--tr-stencil);
   font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem);
   font-weight: 800;
   line-height: 0.95;
@@ -1249,7 +1328,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   min-height: 100svh;
   display: grid;
   align-content: end;
-  padding-bottom: clamp(5rem, 14vh, 9rem);
+  padding-bottom: max(calc(var(--tr-hud-safe) + var(--sp-4)), clamp(5rem, 14vh, 9rem));
 }
 
 .tr-gazette {
@@ -1267,7 +1346,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 }
 
 .tr-gazette-mast {
-  font-family: var(--font-news);
+  font-family: var(--tr-news);
   font-size: 1.15rem;
   font-weight: 700;
   text-align: center;
@@ -1276,7 +1355,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 }
 
 .tr-gazette-lead h3 {
-  font-family: var(--font-news);
+  font-family: var(--tr-news);
   font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem);
   font-weight: 700;
   line-height: 1.05;
@@ -1300,7 +1379,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 
 .tr-gazette-tldr {
   margin-top: var(--sp-2);
-  font-family: var(--font-news);
+  font-family: var(--tr-news);
   font-size: 1.0625rem;
   line-height: 1.45;
 }
@@ -1316,7 +1395,7 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 .tr-gazette-more li {
   display: grid;
   gap: 0.1rem;
-  font-family: var(--font-news);
+  font-family: var(--tr-news);
   font-weight: 600;
   font-size: 1.0625rem;
   line-height: 1.25;
@@ -1425,15 +1504,44 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
   .tr-floors {
     padding-top: 46vh;
   }
-  .tr-mode,
-  .tr-stop {
-    align-items: end;
-    align-content: end;
-    padding-bottom: 14vh;
-  }
   .tr-mode-panel,
   .tr-stop-panel {
     max-width: none;
+    padding: var(--sp-4);
+    gap: var(--sp-2);
+  }
+  .tr-mode-name {
+    font-size: 2rem;
+  }
+  .tr-mode-line,
+  .tr-stop-panel p {
+    font-size: var(--fs-sm);
+  }
+  .tr-stop-name {
+    font-size: 2.5rem;
+  }
+  .tr-stop {
+    gap: var(--sp-2);
+  }
+  .tr-car {
+    max-width: none;
+    padding: var(--sp-4);
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--sp-4);
+    align-items: center;
+  }
+  .tr-car > :not(.btn) {
+    grid-column: 1;
+  }
+  .tr-car > .btn {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+  .tr-car-name {
+    font-size: 1.375rem;
+  }
+  .tr-car-meta {
+    margin-bottom: 0;
   }
   .tr-actions .btn {
     flex: 1 1 auto;

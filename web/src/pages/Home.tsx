@@ -37,6 +37,9 @@ export function Home() {
   const floors = useMemo(() => buildFloors(lobbies, FLOOR_CAP[tier]), [lobbies, tier]);
   const [scene, setScene] = useState(0);
   const [floorsSeen, setFloorsSeen] = useState(false);
+  // Newsreader (Gazeta) e Big Shoulders Stencil (placa) só baixam quando a rolagem chega
+  // ao cofre: a primeira carga da home fica nas três fontes de base.
+  const [lateFonts, setLateFonts] = useState(false);
   const els = useRef<(HTMLElement | null)[]>([]);
   const root = useRef<HTMLDivElement>(null);
 
@@ -54,6 +57,7 @@ export function Home() {
           const i = Number((e.target as HTMLElement).dataset.cena);
           setScene(i);
           if (i >= 1) setFloorsSeen(true);
+          if (i >= 2) setLateFonts(true);
         }
       },
       { rootMargin: '-50% 0px -50% 0px' },
@@ -86,7 +90,7 @@ export function Home() {
   );
 
   return (
-    <div ref={root} className={`tr tr-${tier}`} data-tier={tier} data-tier-reason={info.reason}>
+    <div ref={root} className={`tr tr-${tier}`} data-tier={tier} data-tier-reason={info.reason} data-fonts={lateFonts ? 'all' : undefined}>
       <TowerStage floors={floors} dawn={dawn} floorsSeen={floorsSeen} />
 
       <SceneSection index={0} id="torre" className="tr-hero" labelledBy="hero-title" register={register}>

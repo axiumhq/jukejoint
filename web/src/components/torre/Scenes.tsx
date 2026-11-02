@@ -19,9 +19,15 @@ import { TarotCard } from '../TarotCard';
 
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI'];
 
-/** Índice do bloco cujo centro passou do meio da tela (IntersectionObserver, sem ouvir scroll). */
-function useActiveChild(count: number) {
-  const refs = useRef<(HTMLElement | null)[]>([]);
+/**
+ * Palco de rolagem (cofre e elevador): os painéis ficam empilhados num palco fixo
+ * (sticky) e só o ativo aparece; a altura de rolagem vem de marcas invisíveis, uma por
+ * parada. A marca que cruza o meio da tela define o painel ativo (IntersectionObserver,
+ * sem ouvir scroll). Foco de teclado num painel inativo rola até a marca dele.
+ */
+function useScrolly(count: number) {
+  const marks = useRef<(HTMLElement | null)[]>([]);
+  const stage = useRef<HTMLOListElement | null>(null);
   const [active, setActive] = useState(0);
   useEffect(() => {
     const io = new IntersectionObserver(
@@ -32,19 +38,37 @@ function useActiveChild(count: number) {
       },
       { rootMargin: '-50% 0px -50% 0px' },
     );
-    refs.current.slice(0, count).forEach((el) => el && io.observe(el));
+    marks.current.slice(0, count).forEach((el) => el && io.observe(el));
     return () => io.disconnect();
   }, [count]);
-  const bind = (i: number) => (el: HTMLElement | null) => {
-    refs.current[i] = el;
+  // A altura do palco entra na conta do `top` (centrado no desktop, acima do HUD no celular).
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => el.style.setProperty('--stage-h', `${el.offsetHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const bindMark = (i: number) => (el: HTMLElement | null) => {
+    marks.current[i] = el;
   };
-  return [active, bind] as const;
+  const reveal = (i: number) => {
+    if (i !== active) marks.current[i]?.scrollIntoView({ block: 'center' });
+  };
+  const markers = (
+    <div className="tr-marks" aria-hidden="true">
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} ref={bindMark(i)} data-i={i} />
+      ))}
+    </div>
+  );
+  return { active, stage, reveal, markers };
 }
 
 /* ───────── Cena 3: o cofre dos modos ───────── */
 
 export function VaultScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boolean }) {
-  const [active, bind] = useActiveChild(modes.length);
+  const { active, stage, reveal, markers } = useScrolly(modes.length);
   if (flat) {
     return (
       <div className="tr-vault-flat">
@@ -55,12 +79,13 @@ export function VaultScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boolean 
     );
   }
   return (
-    <ol className="tr-modes">
+    <div className="tr-scrolly tr-modes-scrolly">
+    <ol className="tr-stage-list tr-modes" ref={stage}>
       {modes.map((m, i) => {
         const open = lobbies.filter((l) => l.modeSlug === m.slug && canEnter(l));
         const best = [...open].sort((a, b) => b.players - a.players)[0];
         return (
-          <li key={m.slug} ref={bind(i)} data-i={i} className={`tr-mode${active === i ? ' is-active' : ''}`} style={{ '--h': m.hue } as CSSProperties}>
+          <li key={m.slug} className={`tr-mode${active === i ? ' is-active' : ''}`} style={{ '--h': m.hue } as CSSProperties} onFocus={() => reveal(i)}>
             <div className="tr-panel tr-mode-panel">
               <h3 className="tr-mode-name">
                 <span className="tr-mode-num" aria-hidden="true">
@@ -91,6 +116,8 @@ export function VaultScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boolean 
         );
       })}
     </ol>
+    {markers}
+    </div>
   );
 }
 
@@ -121,7 +148,7 @@ function Dial({ stop, label }: { stop: number; label: string }) {
 
 export function ElevatorScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boolean }) {
   const stops = t.home.elevator.stops;
-  const [active, bind] = useActiveChild(stops.length);
+  const { active, stage, reveal, markers } = useScrolly(stops.length);
   const lobby = nearestToFull(lobbies);
   const { requestJoin } = useSession();
   const lastStop = useRef(active);
@@ -167,9 +194,10 @@ export function ElevatorScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boole
   }
 
   return (
-    <ol className="tr-stops">
+    <div className="tr-scrolly tr-stops-scrolly">
+    <ol className="tr-stage-list tr-stops" ref={stage}>
       {stops.map((s, i) => (
-        <li key={s.name} ref={bind(i)} data-i={i} className={`tr-stop${active === i ? ' is-active' : ''}`}>
+        <li key={s.name} className={`tr-stop${active === i ? ' is-active' : ''}`} onFocus={() => reveal(i)}>
           <div className="tr-panel tr-stop-panel">
             <h3 className="tr-stop-name">{s.name}</h3>
             <p>{s.line}</p>
@@ -183,6 +211,8 @@ export function ElevatorScene({ lobbies, flat }: { lobbies: Lobby[]; flat: boole
         </li>
       ))}
     </ol>
+    {markers}
+    </div>
   );
 }
 

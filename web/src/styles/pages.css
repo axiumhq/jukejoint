@@ -123,25 +123,6 @@
   }
 }
 
-/* Enchendo agora: o equivalente em lista da cidade. */
-.filling-list {
-  border-top: 1px solid var(--line-strong);
-}
-
-@media (min-width: 60em) {
-  .filling-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    column-gap: var(--sp-7);
-  }
-  .filling-list > .lobby-row {
-    border-bottom: 1px solid var(--line);
-  }
-  .lobby-list.is-mini.filling-list > .lobby-row + .lobby-row {
-    border-top: 0;
-  }
-}
-
 /* Do site à partida: três paradas numa linha de bonde. A sequência é real, então o número fica. */
 .route {
   list-style: none;
@@ -305,9 +286,6 @@
     background: none;
     border: 0;
     border-radius: 0;
-  }
-  .lobby-row:not(.is-mini) {
-    grid-template-columns: minmax(0, 1fr) 8.5rem minmax(0, 11rem) 9.5rem 8rem;
   }
 }
 

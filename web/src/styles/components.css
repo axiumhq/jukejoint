@@ -744,6 +744,18 @@ body {
   text-decoration: underline;
 }
 
+/* Toque: cada link do rodapé vira um alvo de 44 px (no mouse a lista continua compacta). */
+@media (pointer: coarse) {
+  .footer-col ul {
+    gap: 0;
+  }
+  .footer-col a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}
+
 .footer-base {
   display: flex;
   flex-wrap: wrap;
@@ -854,74 +866,7 @@ body {
 
 /* ───────── Lobby ───────── */
 
-.lobby-list {
-  list-style: none;
-  display: grid;
-}
-
-/* Lista em tabela: um contorno, linhas separadas por fio. Sem um cartão por linha. */
-.lobby-list.is-table {
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  overflow: hidden;
-}
-
-.lobby-list.is-table > .lobby-row + .lobby-row,
-.lobby-list.is-mini > .lobby-row + .lobby-row {
-  border-top: 1px solid var(--line);
-}
-
-.lobby-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'main status'
-    'slots slots'
-    'ping action';
-  gap: var(--sp-3) var(--sp-4);
-  align-items: center;
-  padding: var(--sp-4);
-  transition: background-color var(--dur-1) ease;
-}
-
-.lobby-row:hover {
-  background: var(--surface-2);
-}
-
-.lobby-row.is-mine {
-  background: var(--accent-soft);
-}
-
-.lobby-main {
-  grid-area: main;
-  min-width: 0;
-}
-
-.lobby-ping {
-  grid-area: ping;
-}
-
-.lobby-slots {
-  grid-area: slots;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--sp-2) var(--sp-3);
-}
-
-.lobby-status {
-  grid-area: status;
-  justify-self: end;
-  display: grid;
-  justify-items: end;
-}
-
-.lobby-action {
-  grid-area: action;
-  justify-self: end;
-}
-
+/* Quadro de andares da cidade (nível baixo da home): modo, cadeado e anfitrião. */
 .lobby-mode {
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -932,17 +877,6 @@ body {
 .lobby-mode:hover {
   color: var(--text);
   text-decoration: underline;
-}
-
-.lobby-name {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  font-size: var(--fs-md);
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  line-height: 1.2;
-  overflow-wrap: anywhere;
 }
 
 .lobby-lock {
@@ -986,39 +920,6 @@ body {
   .btn-join {
     width: auto;
   }
-}
-
-@media (min-width: 48em) {
-  .lobby-row {
-    grid-template-columns: minmax(0, 1fr) 9.5rem minmax(0, 13rem) 10.5rem 8rem;
-    grid-template-areas: 'main ping slots status action';
-    padding: var(--sp-4) var(--sp-5);
-  }
-  .lobby-status {
-    justify-self: start;
-    justify-items: start;
-  }
-}
-
-/* Linha enxuta (painel ao vivo da home): nome em cima, vagas e ping embaixo. */
-.lobby-row.is-mini {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'main action'
-    'slots ping';
-  gap: var(--sp-2) var(--sp-4);
-  padding: var(--sp-3) var(--sp-5);
-}
-
-.lobby-row.is-mini .lobby-ping {
-  justify-self: end;
-}
-
-.lobby-row.is-mini .btn-join {
-  min-width: 0;
-  width: auto;
-  min-height: 2.25rem;
-  padding: 0 var(--sp-4);
 }
 
 /* Vagas: cada vaga é uma janela; ocupada = acesa. */

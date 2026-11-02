@@ -78,11 +78,14 @@ export function TowerStage({ floors, dawn, floorsSeen }: StageProps) {
               else floorLabels.delete(f.lobby.id);
             }}
           >
-            {floorsSeen ? (
-              <Decode on="mount" text={t.home.floors.label(f.number, f.modeName, f.lobby.players, f.lobby.slots)} />
-            ) : (
-              t.home.floors.label(f.number, f.modeName, f.lobby.players, f.lobby.slots)
-            )}
+            <span className="tr-label-full">
+              {floorsSeen ? (
+                <Decode on="mount" text={t.home.floors.label(f.number, f.modeName, f.lobby.players, f.lobby.slots)} />
+              ) : (
+                t.home.floors.label(f.number, f.modeName, f.lobby.players, f.lobby.slots)
+              )}
+            </span>
+            <span className="tr-label-short">{t.home.floors.labelShort(f.number, f.lobby.players, f.lobby.slots)}</span>
           </span>
         ))}
       </div>

@@ -35,6 +35,13 @@ interface Pose {
   needle: number;
   doors: number;
   plateLight: number;
+  /**
+   * Deslocamento de lente (fração da meia tela, como uma câmera de báscula): põe o
+   * assunto ao lado ou acima do texto sem inclinar a câmera, então as verticais do
+   * prédio continuam retas. +x empurra a cena para a direita, +y para cima.
+   */
+  shiftX: number;
+  shiftY: number;
 }
 
 const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -58,6 +65,8 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
   out.needle = 0;
   out.doors = 0;
   out.plateLight = 0.5;
+  out.shiftX = 0;
+  out.shiftY = 0;
   let fovL = 38;
   let fovP = 52;
   switch (scene) {
@@ -76,15 +85,22 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
       out.vaultRot = stepped(Math.min(5, Math.max(0, local * 6 - 0.5)));
       fovP = 56;
       out.pos.copy(V(0, -44.0, 11)).lerp(V(0.9, -44.4, 9.6), wide);
-      out.look.copy(V(0, -43.9, -4)).lerp(V(-3.4, -44.7, -4), wide);
+      out.look.copy(V(0, -44.6, -4)).lerp(V(-3.4, -44.7, -4), wide);
+      // Celular: as cartas sobem para a metade de cima; o painel fica embaixo.
+      out.shiftY = 0.5 * (1 - wide);
       break;
     case 3:
       out.needle = stepped(Math.min(2, Math.max(0, local * 3 - 0.5)));
       out.doors = sstep(0.8, 0.94, local);
-      fovL = 40;
-      fovP = 60;
-      out.pos.copy(V(-5.2, -43.6, -4)).lerp(V(-7.2, -43.6, -4), wide);
-      out.look.copy(V(-18, -42.4, -4)).lerp(V(-18, -42.9, -1.8), wide);
+      // De frente para a porta, com o mostrador inteiro no quadro. Desktop: porta na
+      // metade direita, longe da coluna de texto. Celular: porta e mostrador em cima,
+      // o painel embaixo, sobre o chão escuro.
+      fovL = 44;
+      fovP = 70;
+      out.pos.copy(V(-4.6, -43.4, -4)).lerp(V(-4.8, -43.3, -4), wide);
+      out.look.copy(V(-18, -42.85, -4));
+      out.shiftX = 0.36 * wide;
+      out.shiftY = 0.36 * (1 - wide);
       break;
     case 4:
       out.plateLight = local;
@@ -102,7 +118,7 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
   return out;
 }
 
-const newPose = (): Pose => ({ pos: V(0, 0, 0), look: V(0, 0, 0), fov: 40, explode: 0, vaultRot: 0, needle: 0, doors: 0, plateLight: 0.5 });
+const newPose = (): Pose => ({ pos: V(0, 0, 0), look: V(0, 0, 0), fov: 40, explode: 0, vaultRot: 0, needle: 0, doors: 0, plateLight: 0.5, shiftX: 0, shiftY: 0 });
 
 function Stage({ quality, floors, dawn, skipIntro }: Props) {
   const gl = useThree((s) => s.gl);
@@ -155,7 +171,11 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     perfTime: 0,
     perfStart: 0,
     labelsHidden: false,
+    shift: new THREE.Vector2(),
   });
+  /** Largura de cada etiqueta (lida uma vez, não a cada quadro); zera quando a tela ou o texto muda. */
+  const labelW = useMemo(() => new Map<HTMLElement, number>(), []);
+  useEffect(() => labelW.clear(), [size.width, floors, labelW]);
   const poses = useMemo(() => ({ a: newPose(), b: newPose(), mix: newPose() }), []);
   const floorsRef = useRef(floors);
 
@@ -236,7 +256,7 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     m.pos.copy(poses.a.pos).lerp(poses.b.pos, t);
     m.look.copy(poses.a.look).lerp(poses.b.look, t);
     m.fov = poses.a.fov + (poses.b.fov - poses.a.fov) * t;
-    for (const k of ['explode', 'vaultRot', 'needle', 'doors', 'plateLight'] as const) m[k] = poses.a[k] + (poses.b[k] - poses.a[k]) * t;
+    for (const k of ['explode', 'vaultRot', 'needle', 'doors', 'plateLight', 'shiftX', 'shiftY'] as const) m[k] = poses.a[k] + (poses.b[k] - poses.a[k]) * t;
 
     // Respiração lenta e paralaxe do ponteiro só na rua (no porão a câmera fica firme).
     const above = m.pos.y > 0 ? 1 : 0;
@@ -263,6 +283,15 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     if (Math.abs(camera.fov - m.fov) > 0.01) {
       camera.fov += (m.fov - camera.fov) * k;
       camera.updateProjectionMatrix();
+    }
+    s.shift.x += (m.shiftX - s.shift.x) * k;
+    s.shift.y += (m.shiftY - s.shift.y) * k;
+    if (Math.abs(s.shift.x) + Math.abs(s.shift.y) > 1e-4) {
+      const w = size.width;
+      const h = size.height;
+      camera.setViewOffset(w, h, (-s.shift.x * w) / 2, (s.shift.y * h) / 2, w, h);
+    } else if (camera.view?.enabled) {
+      camera.clearViewOffset();
     }
     s.camVel = Math.abs(camera.position.y - prevY) / Math.max(dt, 1e-3);
 
@@ -293,18 +322,34 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
 
     // Etiquetas dos andares: projeta e move no DOM (aria-hidden; a lista é o equivalente).
     const show = m.explode > 0.04 && !underground;
+    // Abaixo de 1024 px a torre fica no meio: a etiqueta curta vai à direita de cada andar.
+    const narrow = size.width < 1024;
     if (show || !s.labelsHidden) {
+      // Faixa livre para as etiquetas: entre o cabeçalho e o HUD. No estreito a torre fica
+      // atrás do título e da lista, então as etiquetas só aparecem acima do título da cena.
+      let clipY = size.height - (size.width < 960 ? 150 : 64);
+      if (narrow && show) {
+        const head = document.getElementById('andares-title');
+        if (head) clipY = Math.min(clipY, head.getBoundingClientRect().top - 12);
+      }
       floorsRef.current.forEach((fl, i) => {
         const el = floorLabels.get(fl.lobby.id);
         if (!el) return;
-        if (!show || !world.floorAnchor(i, anchor)) {
+        if (!show || !world.floorAnchor(i, anchor, narrow ? 'right' : 'left')) {
           el.style.opacity = '0';
           return;
         }
         anchor.project(camera);
         const x = (anchor.x * 0.5 + 0.5) * size.width;
         const y = (-anchor.y * 0.5 + 0.5) * size.height;
-        const visible = anchor.z < 1 && x > 8 && y > 84 && y < size.height - 56;
+        let w = labelW.get(el);
+        if (w === undefined) {
+          w = el.offsetWidth;
+          labelW.set(el, w);
+        }
+        // A etiqueta inteira cabe na tela e fora das faixas do cabeçalho e do HUD.
+        const fits = narrow ? x + w < size.width - 4 : x - w > 4;
+        const visible = anchor.z < 1 && fits && y > 84 && y < clipY;
         el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
         el.style.opacity = visible ? String(Math.min(1, (m.explode - 0.04) * 1.6)) : '0';
       });

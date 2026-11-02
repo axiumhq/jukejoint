@@ -108,7 +108,8 @@ export interface World {
   setFloors(floors: TowerFloor[], now: number, opening: boolean): number;
   update(f: FrameState): void;
   setDawn(dawn: boolean, renderer: THREE.WebGLRenderer): void;
-  floorAnchor(i: number, out: THREE.Vector3): boolean;
+  /** Ponto da etiqueta do andar: à esquerda dos fios (desktop) ou rente à direita do andar (telas estreitas). */
+  floorAnchor(i: number, out: THREE.Vector3, side?: 'left' | 'right'): boolean;
   /** Deixa tudo visível para compilar os shaders de uma vez (rua e porão). */
   showAll(): void;
   floorCount(): number;
@@ -1051,10 +1052,14 @@ export function createWorld(quality: Quality, brand: string, modes: { motif: str
     setDawn(dawn, renderer) {
       setPalette(dawn, renderer);
     },
-    floorAnchor(i, out) {
+    floorAnchor(i, out, side = 'left') {
       const fl = floors[i];
       const fm = floorMats[i];
       if (!fl || !fm) return false;
+      if (side === 'right') {
+        out.set(floorW(fl.lobby.slots) / 2 + 0.25, FLOOR_H * 0.5, floorD(fl.lobby.slots) / 2).applyMatrix4(fm);
+        return true;
+      }
       out.set(-floorW(fl.lobby.slots) / 2 - 0.2, FLOOR_H * 0.5, floorD(fl.lobby.slots) / 2).applyMatrix4(fm);
       // À esquerda dos fios da constelação (uma faixa por modo).
       out.x = -floorW(12) / 2 - 1.6 - modes.length * 0.45;

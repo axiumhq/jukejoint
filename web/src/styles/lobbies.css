@@ -1804,8 +1804,3 @@ svg.mode-glyph,
 .ritual svg.mode-glyph {
   overflow: hidden;
 }
-
-/* Home v3 ("Enchendo agora") monta a linha numa lista antiga: mantém o fio entre linhas. */
-.lobby-list > .lb-row + .lb-row {
-  border-top: 1px solid var(--line);
-}

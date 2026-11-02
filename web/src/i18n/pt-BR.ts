@@ -111,7 +111,7 @@ export const ptBR = {
     hud: {
       clock: (city: string, time: string) => `${city}, ${time}`,
       clockLabel: 'Hora local',
-      players: (n: string) => `№ ${n} jogando agora`,
+      players: (n: string) => `Nº ${n} jogando agora`,
       lobbies: (n: number) => (n === 1 ? '1 lobby aberto' : `${n} lobbies abertos`),
       soundOn: 'Som: ligado',
       soundOff: 'Som: desligado',
@@ -124,6 +124,8 @@ export const ptBR = {
       floor: (n: number) => `Andar ${String(n).padStart(2, '0')}`,
       label: (n: number, mode: string, players: number, slots: number) =>
         `Andar ${String(n).padStart(2, '0')} / ${mode} / ${players} de ${slots}`,
+      /** Etiqueta curta da torre abaixo de 1024 px: número do andar e vagas. */
+      labelShort: (n: number, players: number, slots: number) => `${String(n).padStart(2, '0')} · ${players}/${slots}`,
       heat: {
         lotando: 'Lotando',
         esquentando: 'Esquentando',
