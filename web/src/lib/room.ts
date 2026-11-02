@@ -24,6 +24,8 @@ export interface RosterOptions {
   youReady: boolean;
   signedIn: boolean;
   now: number;
+  /** Nomes dos seus amigos nesta sala (lib/friends.ts `friendsIn`). */
+  friends?: string[];
 }
 
 /** Quem entrou há menos que isto ainda não marcou "pronto". */
@@ -40,14 +42,13 @@ export function roster(l: Lobby, o: RosterOptions): Seat[] {
   const used = new Set<string>([o.you]);
   const playing = l.status === 'em-partida';
   const joinedAt = new Map(l.joins.filter((j) => !j.you).map((j) => [j.name, j.at]));
-  let friendsLeft = o.signedIn && !l.locked ? l.friends : 0;
+  const friends = new Set(o.signedIn && !l.locked ? (o.friends ?? []) : []);
 
   const add = (name: string, host = false) => {
     used.add(name);
     const at = joinedAt.get(name);
     const settled = at === undefined || o.now - at > SETTLE_MS;
-    const friend = friendsLeft > 0 && !host;
-    if (friend) friendsLeft--;
+    const friend = friends.has(name);
     // Três em cada quatro já marcaram pronto; o anfitrião está sempre pronto.
     seats.push({ name, host, friend, ready: playing || host || (settled && hash(`${l.id}:${name}`) % 4 !== 0) });
   };
@@ -58,8 +59,8 @@ export function roster(l: Lobby, o: RosterOptions): Seat[] {
     if (o.youHere) seats.push({ name: o.you, you: true, ready: playing || o.youReady });
   }
 
-  // Os que entraram por último (da lista "entrou agora"), depois gente da cidade, sempre na mesma ordem.
-  const pool = [...l.joins.filter((j) => !j.you).map((j) => j.name).reverse()];
+  // Amigos primeiro, depois os que entraram por último (da lista "entrou agora"), depois gente da cidade.
+  const pool = [...friends, ...l.joins.filter((j) => !j.you).map((j) => j.name).reverse()];
   const start = hash(l.id) % passersby.length;
   for (let i = 0; i < passersby.length; i++) pool.push(passersby[(start + i) % passersby.length]!);
   for (const name of pool) {

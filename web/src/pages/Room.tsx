@@ -1,13 +1,15 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
+import { FriendsBlock } from '../components/Friends';
 import { Icon } from '../components/Icon';
 import { LobbyAction } from '../components/LobbyAction';
 import type { Lobby } from '../data/lobbies';
 import { getMode } from '../data/modes';
-import { useDocumentTitle } from '../hooks';
+import { useDocumentTitle, useFriends } from '../hooks';
 import { useNow } from '../hooks/useNow';
 import { t } from '../i18n';
 import { lobbyState, roundText } from '../lib/lobbies';
+import { friendsIn } from '../lib/friends';
 import { missingForQuorum, roster, type Seat } from '../lib/room';
 import { useSession } from '../state/session';
 
@@ -142,6 +144,7 @@ function Panel({ lobby, seats }: { lobby: Lobby; seats: Seat[] }) {
           )}
         </div>
       )}
+      {(here || lobby.mine) && !joining && !playing && lobby.players < lobby.slots && <FriendsBlock mode="invite" exclude={lobby.id} />}
     </aside>
   );
 }
@@ -150,11 +153,12 @@ export function Room() {
   const { id = '' } = useParams();
   const { lobbies, user, hereId, ready, inviteTo } = useSession();
   const now = useNow(5000);
+  const friends = useFriends();
   const lobby = lobbies.find((l) => l.id === id);
   useDocumentTitle(t.room.meta(lobby?.name ?? t.room.goneTitle));
   const seats = useMemo(
-    () => (lobby ? roster(lobby, { you: user?.name ?? t.lobbies.you, youHere: hereId === lobby.id, youReady: ready, signedIn: !!user, now }) : []),
-    [lobby, user, hereId, ready, now],
+    () => (lobby ? roster(lobby, { you: user?.name ?? t.lobbies.you, youHere: hereId === lobby.id, youReady: ready, signedIn: !!user, now, friends: friendsIn(friends, lobby.id) }) : []),
+    [lobby, user, hereId, ready, now, friends],
   );
 
   if (!lobby) {

@@ -402,7 +402,7 @@
     padding-top: var(--s-3);
   }
 
-  .rail-block:first-child {
+  .rail-block--modes {
     display: none;
   }
 }
@@ -421,4 +421,82 @@
     margin-left: 0;
     width: 100%;
   }
+}
+
+/* Amigos: o nome em verdete, onde está embaixo, o próximo passo à direita. */
+.fr-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name act'
+    'where act';
+  align-items: center;
+  column-gap: var(--s-2);
+  row-gap: 2px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.fr-name {
+  grid-area: name;
+  font-size: var(--fs-sm);
+  font-weight: 550;
+  color: var(--verdigris);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fr-where {
+  grid-area: where;
+  min-width: 0;
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fr-where a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--t) var(--ease);
+}
+
+.fr-where a:hover {
+  text-decoration-color: var(--ink-2);
+}
+
+.fr-act,
+.fr-state {
+  grid-area: act;
+}
+
+.fr-state {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+
+.fr-out {
+  display: grid;
+  gap: 12px;
+  justify-items: start;
+  padding: 14px 0 4px;
+}
+
+.fr-out p {
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+/* Dentro do painel da sala, o bloco de convite fica mais justo. */
+.panel .fr {
+  margin-top: var(--s-1);
+}
+
+.panel .fr .rail-head {
+  min-height: 44px;
 }

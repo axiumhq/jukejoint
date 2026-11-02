@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
-import { useLiveStats, useMediaQuery } from '../hooks';
+import { useFriends, useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
 import { useSession } from '../state/session';
 import { Icon } from './Icon';
@@ -26,6 +26,7 @@ export function Wordmark() {
 
 function AccountArea() {
   const { user, signIn, signOut } = useSession();
+  const friends = useFriends();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -66,7 +67,7 @@ function AccountArea() {
       {open && (
         <div className="account-menu">
           <p className="account-name">{user.name}</p>
-          <p className="account-meta">{t.account.friendsOnline(user.friendsOnline)}</p>
+          <p className="account-meta">{t.account.friendsOnline(friends.length)}</p>
           <p className="fine">{t.account.mockNote}</p>
           <button
             type="button"

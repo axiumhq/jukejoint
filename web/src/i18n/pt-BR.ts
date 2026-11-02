@@ -86,6 +86,26 @@ export const ptBR = {
     live: 'jogando',
     liveLabel: (n: string) => `${n} jogando agora`,
   },
+  /** Trilho de amigos: só quem está online, cada um com o próximo passo. */
+  friends: {
+    title: 'Amigos',
+    online: (n: number) => (n === 1 ? '1 online' : `${n} online`),
+    signedOut: 'Entre com a Steam para ver em que lobby seus amigos estão.',
+    signIn: 'Entrar com a Steam',
+    none: 'Nenhum amigo online agora.',
+    inLobby: (lobby: string) => `em ${lobby}`,
+    hosting: (lobby: string) => `abriu ${lobby}`,
+    idle: 'no menu do Deadlock',
+    withYou: 'com você',
+    join: 'Entrar',
+    knock: 'Bater',
+    invite: 'Convidar',
+    invited: 'Convidado',
+    invitedToast: (name: string) => `Convite enviado para ${name} pela Steam.`,
+    inviteTitle: 'Convidar amigos',
+    joinLabel: (name: string, lobby: string) => `Entrar em ${lobby}, onde ${name} está`,
+    inviteLabel: (name: string) => `Convidar ${name}`,
+  },
   /** A barra "Jogar agora": no cabeçalho (desktop) ou fixa embaixo (celular). Mostra onde você está. */
   dock: {
     label: 'Sua partida',

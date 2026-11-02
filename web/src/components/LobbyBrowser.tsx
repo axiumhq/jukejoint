@@ -10,6 +10,7 @@ import { EMPTY_FILTERS, filterCounts, filterLobbies, isSortKey, nearestAlternati
 import { liveStats, type LiveStats } from '../lib/stats';
 import { useSession } from '../state/session';
 import { Credits } from './Common';
+import { FriendsBlock } from './Friends';
 import { Icon } from './Icon';
 import { LobbyTable } from './LobbyTable';
 
@@ -61,7 +62,7 @@ function useActivityAnnouncer(lobbies: Lobby[]) {
 /** Coluna lateral, 1: os modos como filtro, com quantos jogam em cada um agora. */
 function RailModes({ current, stats, onPick }: { current: string; stats: LiveStats; onPick: (slug: string) => void }) {
   return (
-    <section className="rail-block" aria-labelledby="rail-modes">
+    <section className="rail-block rail-block--modes" aria-labelledby="rail-modes">
       <header className="rail-head">
         <h3 id="rail-modes">{t.rail.modes}</h3>
         <span>{t.rail.playing}</span>
@@ -86,7 +87,7 @@ function RailModes({ current, stats, onPick }: { current: string; stats: LiveSta
   );
 }
 
-const ARRIVALS = 7;
+const ARRIVALS = 5;
 
 /** Coluna lateral, 2: quem acabou de entrar em algum lobby (o sinal de que a cidade está viva). */
 function Arrivals({ lobbies, now, signedIn }: { lobbies: Lobby[]; now: number; signedIn: boolean }) {
@@ -278,6 +279,7 @@ export function LobbyBrowser() {
         </div>
 
         <aside className="rail" aria-label={t.rail.label}>
+          <FriendsBlock />
           <RailModes current={f.mode} stats={stats} onPick={(slug) => update({ mode: slug })} />
           <Arrivals lobbies={pool} now={now} signedIn={!!user} />
         </aside>

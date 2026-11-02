@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { friendsOnline } from '../lib/friends';
 import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
 
@@ -29,4 +30,10 @@ export function useDocumentTitle(title: string) {
 export function useLiveStats() {
   const { lobbies } = useSession();
   return useMemo(() => liveStats(lobbies), [lobbies]);
+}
+
+/** Amigos online (só para quem entrou com a Steam). Mesma fonte da tabela e da sala. */
+export function useFriends() {
+  const { lobbies, user } = useSession();
+  return useMemo(() => (user ? friendsOnline(lobbies) : []), [lobbies, user]);
 }

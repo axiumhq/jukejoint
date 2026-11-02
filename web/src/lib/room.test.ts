@@ -32,8 +32,10 @@ describe('roster', () => {
 
   it('amigos só aparecem para quem entrou com a Steam', () => {
     const withFriends = { ...l, friends: 2, locked: false };
-    expect(roster(withFriends, base).some((s) => s.friend)).toBe(false);
-    expect(roster(withFriends, { ...base, signedIn: true }).filter((s) => s.friend)).toHaveLength(2);
+    const friends = ['Tordo', 'Lume'];
+    expect(roster(withFriends, { ...base, friends }).some((s) => s.friend)).toBe(false);
+    const seats = roster(withFriends, { ...base, signedIn: true, friends });
+    expect(seats.filter((s) => s.friend).map((s) => s.name)).toEqual(friends);
   });
 });
 

@@ -30,7 +30,7 @@ export interface Lobby {
   ping: number;
   players: number;
   slots: number;
-  /** Quantos amigos (da conta simulada) estão no lobby. */
+  /** Quantos amigos (da conta simulada) estão no lobby, contando o anfitrião se ele for amigo. */
   friends: number;
   status: LobbyStatus;
   joinInProgress: boolean;
@@ -79,7 +79,7 @@ const seeds: Seed[] = [
   { id: 'l08', name: 'Círculo sem pressa', modeSlug: 'circulo-profano', host: 'mariposa_', hostIsFriend: false, region: 'BR', ping: 41, players: 4, slots: 12, friends: 0, status: 'aberto', joinInProgress: false, locked: false, minutesAgo: 1, recent: [['Sereno', 30]] },
   { id: 'l09', name: 'Caçada rápida', modeSlug: 'neblina', host: 'Sombra Fina', hostIsFriend: false, region: 'BR', ping: 19, players: 8, slots: 10, friends: 0, status: 'em-partida', joinInProgress: true, locked: false, minutesAgo: 7, round: { current: 3, total: 5, minutes: 6 } },
   { id: 'l10', name: 'Clã Vigília', modeSlug: 'cerco-ao-cofre', host: 'Tranca', hostIsFriend: false, region: 'BR', ping: 24, players: 7, slots: 10, friends: 0, status: 'aberto', joinInProgress: false, locked: true, minutesAgo: 20 },
-  { id: 'l11', name: 'Testando build de arma', modeSlug: 'campo-de-treino', host: 'Odete', hostIsFriend: true, region: 'BR', ping: 15, players: 2, slots: 6, friends: 1, status: 'aberto', joinInProgress: true, locked: false, minutesAgo: 25, recent: [['Odete', 25 * 60, true]] },
+  { id: 'l11', name: 'Testando build de arma', modeSlug: 'campo-de-treino', host: 'Garoa', hostIsFriend: true, region: 'BR', ping: 15, players: 2, slots: 6, friends: 1, status: 'aberto', joinInProgress: true, locked: false, minutesAgo: 25, recent: [['Garoa', 25 * 60, true]] },
   { id: 'l12', name: 'Chile + Argentina', modeSlug: 'circulo-profano', host: 'Tano', hostIsFriend: false, region: 'BR', ping: 58, players: 7, slots: 12, friends: 0, status: 'aberto', joinInProgress: false, locked: false, minutesAgo: 4, recent: [['Pehuén', 150]] },
   { id: 'l13', name: 'East coast escort', modeSlug: 'ultimo-bonde', host: 'Rook', hostIsFriend: false, region: 'NA', ping: 128, players: 9, slots: 12, friends: 0, status: 'aberto', joinInProgress: false, locked: false, minutesAgo: 5, recent: [['Ash', 190]] },
   { id: 'l14', name: 'Fog night', modeSlug: 'neblina', host: 'Wren', hostIsFriend: false, region: 'NA', ping: 141, players: 10, slots: 10, friends: 0, status: 'cheio', joinInProgress: false, locked: false, minutesAgo: 13, fullMinutes: 4 },
