@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Bridge harness</title>
+    <style>
+      body { font: 14px system-ui, sans-serif; margin: 16px; background: #111; color: #eee; }
+      iframe { display: none; }
+      li.ok { color: #7c7; } li.bad { color: #e66; }
+    </style>
+  </head>
+  <body>
+    <h1>Bridge harness</h1>
+    <p>Plays the game's renderer: reads the relay page's title and acks each part with #0/#1.</p>
+    <ol id="log"></ol>
+    <iframe id="state" src="/app/relay/bridge.html?port=4329"></iframe>
+    <script type="module" src="harness.js"></script>
+  </body>
+</html>

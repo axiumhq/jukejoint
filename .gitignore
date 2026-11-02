@@ -1,0 +1,15 @@
+# Ferramentas baixadas (Go portátil, CLI do Modlock)
+/tools/
+
+# Saídas de build e estado local
+build/
+node_modules/
+*.log
+*.exe
+.env
+
+# Pacotes gerados (kit do amigo)
+/dist/
+
+# Protótipo web
+/web/dist/
