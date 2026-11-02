@@ -62,7 +62,7 @@ Sem rolagem horizontal a 375 px (medido: `scrollWidth = innerWidth` em 375 e 390
 
 ### Cor (por tema; todos em `v8.css`, nomes iguais nos três temas)
 
-| Token | Papel | Carmim (padrão) | Pergaminho | Gelo |
+| Token | Papel | Carmim | Pergaminho | Gelo |
 |---|---|---|---|---|
 | `--bg` | fundo | `hsl(345 30% 4%)` | `hsl(20 10% 5%)` | `hsl(218 30% 4%)` |
 | `--bg-tint`, `--bg-tint-2` | brilho radial do fundo | carmim 20% | âmbar 10% | ciano 12% |
@@ -77,10 +77,10 @@ Sem rolagem horizontal a 375 px (medido: `scrollWidth = innerWidth` em 375 e 390
 | `--lineart` | line-art de maquinário (opacidade 5–7,5%) | carmim | latão | gelo |
 | `--k0 --k1 --k2 --kh --kl --ks --kc` | capa: fundo, meio, brilho, metal claro, metal escuro, fumaça, núcleo de luz | | | |
 
-Mais dois temas, nos mesmos 28 tokens, como candidatos a padrão:
+Mais dois temas, nos mesmos 28 tokens. **O padrão é o Deadlock** (escolha do usuário em 02/11/2026): é o tema que abre sem nada salvo e o primeiro da lista.
 
 - **Grafite** (`grafite`): neutro e calmo. Cinza-grafite com pouco croma, superfícies um passo mais claras (fundo 8%, cartão 12,5%), texto levemente quente e um acento argila suave `hsl(20 50% 64%)`. Pensado para quem chega e para sessões longas.
-- **Deadlock** (`deadlock`): verde-fumaça quase preto `hsl(170 16% 4.5%)`, texto pergaminho `hsl(42 45% 92%)`, acento âmbar `hsl(35 85% 56%)` e `--live` verde-alma `hsl(166 62% 52%)`. São as cores do clima do jogo, sem nenhum asset.
+- **Deadlock** (`deadlock`, padrão): verde-fumaça quase preto `hsl(170 16% 4.5%)`, texto pergaminho `hsl(42 45% 92%)`, acento âmbar `hsl(35 85% 56%)` e `--live` verde-alma `hsl(166 62% 52%)`. São as cores do clima do jogo, sem nenhum asset.
 
 **Um sistema de acento:** `--acc` para agir, `--acc-tx` para chamar atenção no texto e `--live` só para presença. Cada modo desloca a matiz da capa em −18° a +22° (`--m` em `MODES[k].shift`, aplicado com `oklch(from …)`), então os modos se distinguem sem sair da família do tema.
 
@@ -112,7 +112,7 @@ Mais dois temas, nos mesmos 28 tokens, como candidatos a padrão:
 
 | Da B · Gelo técnico (estrutura) | Do DMM e do clima do Deadlock (pele) | Novo no v8 |
 |---|---|---|
-| Barra superior com nav, busca Ctrl K, contagem ao vivo, pílula da sala e conta | Fundo quase preto quente, creme/pergaminho (tema Pergaminho) e o vermelho que o usuário usa (Carmim, padrão) | Sistema de 3 temas por tokens, com capas que mudam de cor |
+| Barra superior com nav, busca Ctrl K, contagem ao vivo, pílula da sala e conta | Fundo quase preto quente, creme/pergaminho (tema Pergaminho) e o vermelho que o usuário usa (Carmim) | Sistema de 5 temas por tokens (padrão: Deadlock), com capas que mudam de cor |
 | Trilho social fixo (grupo, convite, amigos com presença e Entrar) | Serifa condensada em títulos, com a palavra de acento em dois tons | Capas como emblemas de oficina oculta (anel ritual, trilho e catenária, bússola na neblina, roda de cofre, relógio com lâminas, estande de tiro) com fumaça, latão, grão e vinheta |
 | Ordem da home: recomendado com barra de dados, modos, lobbies com abas e filtros, chegando agora | Rótulos espaçados em caixa alta | Deslocamento de matiz por modo dentro do tema |
 | Sala: cabeçalho, grade de vagas, PRONTO fixo, trilho com regras, convite e atividade | Densidade de 12–13 px | Fluxo de PRONTO completo: contagem cancelável e 4 etapas do handoff |

@@ -358,11 +358,11 @@ function lineArt(){
    TEMAS
    ===================================================================== */
 const THEMES = [
-  {id:'carmim',     name:'Carmim',     note:'Vinho e carmim. Padrão.', sw:['hsl(345 30% 6%)','hsl(350 76% 49%)']},
+  {id:'deadlock',   name:'Deadlock',   note:'Verde-fumaça, pergaminho e âmbar. Padrão.', sw:['hsl(170 16% 7%)','hsl(35 85% 56%)']},
+  {id:'carmim',     name:'Carmim',     note:'Vinho e carmim.', sw:['hsl(345 30% 6%)','hsl(350 76% 49%)']},
   {id:'pergaminho', name:'Pergaminho', note:'Quase preto quente e creme.', sw:['hsl(20 10% 7%)','hsl(42 60% 84%)']},
   {id:'gelo',       name:'Gelo',       note:'Frio, herdeiro da pele B.', sw:['hsl(218 30% 6%)','hsl(190 92% 70%)']},
   {id:'grafite',    name:'Grafite',    note:'Neutro e calmo, para longas sessões.', sw:['hsl(225 6% 11%)','hsl(20 50% 64%)']},
-  {id:'deadlock',   name:'Deadlock',   note:'Verde-fumaça, pergaminho e âmbar.', sw:['hsl(170 16% 7%)','hsl(35 85% 56%)']},
 ];
 function setTheme(id){
   document.documentElement.dataset.theme=id; store.set('theme',id);
@@ -402,7 +402,7 @@ function toast(msg,icon='check'){
 function mountShell(page){
   document.body.insertAdjacentHTML('afterbegin',globalDefs());
   $('#tb').innerHTML=titlebar(page);
-  setTheme(document.documentElement.dataset.theme||'carmim');
+  setTheme(document.documentElement.dataset.theme||'deadlock');
   const html=document.documentElement;
   const close=()=>html.classList.remove('sheet-open');
   document.addEventListener('click',e=>{
