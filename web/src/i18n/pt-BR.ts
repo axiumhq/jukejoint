@@ -103,8 +103,15 @@ export const ptBR = {
     lead: 'Modos feitos pela comunidade, grátis, rodando no jogo que você já tem. Cada janela acesa é um jogador.',
     play: 'Jogar agora',
     seeLobbies: 'Ver lobbies',
-    loading: (p: number) => `Acendendo a cidade… ${p}%`,
+    loading: (p: number) => `Riscando o círculo… ${p}%`,
+    /** Fases da abertura "Obra Encantada" no HUD (v5). */
+    raising: 'Erguendo a torre…',
+    souls: 'Chegando gente…',
     loaded: 'Cidade acesa.',
+    news: {
+      raised: (n: number) => `Andar ${String(n).padStart(2, '0')} erguido agora`,
+      gone: 'Um andar se desfez',
+    },
     scenes: ['A torre', 'Os andares', 'O cofre', 'O elevador', 'A placa', 'A rua'],
     sceneOf: (i: number, total: number, name: string) => `§ ${i}/${total} ${name}`,
     sceneNav: 'Cena atual',

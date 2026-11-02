@@ -15,9 +15,16 @@ export interface TowerState {
   ready: boolean;
   /** Lobby em foco na lista (hover ou foco de teclado): o andar dele acende. */
   focusId: string | null;
+  /**
+   * Fase da abertura "Obra Encantada" (v5): carregando → erguendo os andares → brasas
+   * voando para as janelas → pronta. Muda poucas vezes (o HUD e o título assinam).
+   */
+  phase: 'load' | 'floors' | 'souls' | 'done';
+  /** Notícia da obra ao vivo para o HUD: andar conjurado (número) ou andar desfeito. O texto mora no HTML. */
+  news: { raised: number } | { gone: true } | null;
 }
 
-let state: TowerState = { tier: 'low', progress: 0, ready: false, focusId: null };
+let state: TowerState = { tier: 'low', progress: 0, ready: false, focusId: null, phase: 'load', news: null };
 const listeners = new Set<() => void>();
 
 export const towerBus = {
@@ -46,6 +53,8 @@ export const towerBus = {
  * a etiqueta dele direto no DOM, a cada quadro, sem passar pelo React.
  */
 export const floorLabels = new Map<string, HTMLElement>();
+/** Miras "+ 07" da vista explodida (mesma regra: aria-hidden, movidas direto no DOM). */
+export const floorMarks = new Map<string, HTMLElement>();
 
 export function useTower<T>(pick: (s: TowerState) => T): T {
   return useSyncExternalStore(towerBus.subscribe, () => pick(state), () => pick(state));

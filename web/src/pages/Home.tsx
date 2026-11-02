@@ -28,10 +28,12 @@ export function Home() {
   const { lobbies } = useSession();
   const [info] = useState(() => {
     const detected = detectTier();
-    towerBus.set({ tier: detected.tier, ready: false, progress: 0, focusId: null });
+    towerBus.set({ tier: detected.tier, ready: false, progress: 0, focusId: null, phase: 'load', news: null });
     return detected;
   });
   const tier = useTower((s) => s.tier);
+  // Abertura "Obra Encantada": o título fica em fio (desenhado, não aceso) e acende no clímax.
+  const phase = useTower((s) => s.phase);
   const dawn = useDocTheme() === 'light';
   const flat = tier === 'low';
   const floors = useMemo(() => buildFloors(lobbies, FLOOR_CAP[tier]), [lobbies, tier]);
@@ -83,14 +85,14 @@ export function Home() {
   useEffect(
     () => () => {
       delete document.documentElement.dataset.cena;
-      towerBus.set({ ready: false, progress: 0, focusId: null });
+      towerBus.set({ ready: false, progress: 0, focusId: null, phase: 'load', news: null });
       for (let i = 0; i < SCENES; i++) registerScene(i, null);
     },
     [],
   );
 
   return (
-    <div ref={root} className={`tr tr-${tier}`} data-tier={tier} data-tier-reason={info.reason} data-fonts={lateFonts ? 'all' : undefined}>
+    <div ref={root} className={`tr tr-${tier}`} data-tier={tier} data-tier-reason={info.reason} data-fonts={lateFonts ? 'all' : undefined} data-obra={flat ? 'done' : phase}>
       <TowerStage floors={floors} dawn={dawn} floorsSeen={floorsSeen} />
 
       <SceneSection index={0} id="torre" className="tr-hero" labelledBy="hero-title" register={register}>

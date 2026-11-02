@@ -3,8 +3,9 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { BRAND_NAME } from '../config/brand';
 import { modes } from '../data/modes';
+import { ramp } from '../lib/obra';
 import { play } from '../lib/sound';
-import { floorLabels, sceneCoord, towerBus } from '../lib/towerBus';
+import { floorLabels, floorMarks, sceneCoord, towerBus } from '../lib/towerBus';
 import type { TowerFloor } from '../lib/towerData';
 import { createPostMaterial } from './shaders';
 import { createWorld, type Quality, type World } from './world';
@@ -55,6 +56,8 @@ const stepped = (x: number) => Math.floor(x) + sstep(0.28, 0.72, x - Math.floor(
 
 const tmpA = V(0, 0, 0);
 const tmpB = V(0, 0, 0);
+const tmpEst = V(0, 0, 0);
+const tmpLook = V(0, 0, 0);
 
 /** Pose da câmera e dos parâmetros da cena em cada cena do roteiro (0 = torre … 5 = rua). */
 function pose(scene: number, local: number, wide: number, out: Pose): Pose {
@@ -71,15 +74,19 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
   let fovP = 52;
   switch (scene) {
     case 0:
-      out.pos.copy(P(V(0, 1.2, 40), V(0, 2.4, 37))).lerp(L(V(-3, 1.4, 41), V(-4.5, 3.4, 37)), wide);
-      out.look.copy(P(V(0.2, 8.5, 0), V(0.2, 10, 0))).lerp(L(V(-10.5, 12.2, 0), V(-10, 13.5, 0)), wide);
+      // v5, câmera heroica: contra-plongée baixa (a câmera quase no asfalto), a torre inteira
+      // ocupando ~65% da altura, à direita do título no desktop e no meio no celular.
+      fovP = 50;
+      out.pos.copy(P(V(0, 0.9, 62), V(0, 2.2, 57))).lerp(L(V(-5, 0.9, 66), V(-6, 2.6, 60)), wide);
+      out.look.copy(P(V(0.2, 15.5, 0), V(0.2, 16.5, 0))).lerp(L(V(-15, 16, 0), V(-14, 17, 0)), wide);
       break;
     case 1:
       // Torre separada à esquerda (com etiquetas), lista à direita; a câmera sobe com a lista.
       out.explode = 1;
       fovL = 40;
-      out.pos.copy(P(V(0, 14, 60), V(0, 24, 58))).lerp(L(V(-2, 15, 64), V(-1, 31, 62)), wide);
-      out.look.copy(P(V(0, 17, 0), V(0, 26, 0))).lerp(L(V(10.5, 17, 0), V(10.5, 32, 0)), wide);
+      // v5: a explosão é mais alta (atraso, giro, inclinação); a câmera recua para a torre caber inteira.
+      out.pos.copy(P(V(0, 14, 70), V(0, 26, 66))).lerp(L(V(-2, 15, 82), V(-1, 30, 78)), wide);
+      out.look.copy(P(V(0, 18, 0), V(0, 29, 0))).lerp(L(V(12.5, 20.5, 0), V(12.5, 32, 0)), wide);
       break;
     case 2:
       out.vaultRot = stepped(Math.min(5, Math.max(0, local * 6 - 0.5)));
@@ -156,10 +163,14 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     postScene.mat.uniforms.uRes!.value.set(size.width * dpr, size.height * dpr);
   }, [rt, size, viewport.dpr, postScene]);
 
+  // Movimento reduzido (com ?tier= forçado) ou remontagem: a torre aparece pronta, sem abertura.
+  const still = useMemo(() => !!skipIntro || window.matchMedia('(prefers-reduced-motion: reduce)').matches, [skipIntro]);
+
   const state = useRef({
     ready: false,
     compiled: false,
-    intro: skipIntro ? 0 : 1,
+    phase: 'load' as 'load' | 'floors' | 'souls' | 'done',
+    newsTimer: 0,
     lastScroll: window.scrollY,
     wind: 0,
     pointer: new THREE.Vector2(),
@@ -182,11 +193,15 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
   // Montagem: ambiente, estados iniciais (apagados), compilação antecipada dos shaders.
   useEffect(() => {
     let alive = true;
+    // Mundo novo (troca de nível ou recarga em dev): a abertura recomeça do zero.
+    state.current.ready = false;
+    state.current.compiled = false;
     gl.toneMappingExposure = 1.15;
     towerBus.progress(66);
     world.setDawn(dawn, gl);
     towerBus.progress(78);
-    world.setFloors(floorsRef.current, skipIntro ? -100 : 1e6, !skipIntro);
+    // Sem abertura: pronta. Com abertura: andares escondidos, o círculo acende com o carregamento.
+    world.setFloors(floorsRef.current, still ? 'instant' : 'hold');
     world.showAll();
     const done = () => {
       if (!alive) return;
@@ -208,13 +223,32 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     postScene.mat.uniforms.uDawn!.value = dawn ? 1 : 0;
   }, [dawn, world, gl, postScene]);
 
-  // Dado ao vivo: alguém entrou ou saiu → só a janela muda (e toca o "plim", se o som estiver ligado).
+  // Dado ao vivo: alguém entrou → uma brasa voa da cidade e acende a janela ("plim", se o som
+  // estiver ligado). Lobby novo → andar conjurado; lobby que fechou → andar desfeito.
   useEffect(() => {
     floorsRef.current = floors;
     if (!state.current.ready) return;
-    const lit = world.setFloors(floors, performance.now() / 1000, false);
-    if (lit > 0) play('plim');
+    const change = world.setFloors(floors, 'live');
+    if (change.lit > 0) play('plim');
+    const news = change.added.length ? { raised: change.added[change.added.length - 1]! } : change.removed ? ({ gone: true } as const) : null;
+    if (news) {
+      towerBus.set({ news });
+      window.clearTimeout(state.current.newsTimer);
+      state.current.newsTimer = window.setTimeout(() => towerBus.set({ news: null }), 4200);
+    }
   }, [floors, world]);
+
+  // Qualquer gesto pula a abertura: o resto do roteiro corre em ~300 ms (nada trava a página).
+  useEffect(() => {
+    const skip = () => world.skip();
+    const opts = { passive: true } as const;
+    const evs = ['wheel', 'touchstart', 'keydown', 'pointerdown'] as const;
+    evs.forEach((e) => window.addEventListener(e, skip, opts));
+    return () => {
+      evs.forEach((e) => window.removeEventListener(e, skip));
+      window.clearTimeout(state.current.newsTimer);
+    };
+  }, [world]);
 
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
@@ -230,7 +264,8 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
   // Só em desenvolvimento: inspecionar a cena pelo console (window.__torre).
   useEffect(() => {
     if (!import.meta.env.DEV) return;
-    (window as unknown as { __torre?: unknown }).__torre = { camera, world, gl, poses };
+    // __torre.replay() reinicia a abertura; window.__torreObraT = 1.4 congela nela (capturas).
+    (window as unknown as { __torre?: unknown }).__torre = { camera, world, gl, poses, replay: () => world.startOpening(true), floors: () => floorsRef.current };
   }, [camera, world, gl, poses]);
 
   useFrame((_, rawDt) => {
@@ -238,12 +273,22 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     const dt = Math.min(rawDt, 0.1);
     const now = performance.now() / 1000;
 
-    // Pronto: compila → primeiro quadro → acende as janelas na ordem de chegada.
+    // Pronto: compila → primeiro quadro → começa a "Obra Encantada" (ou, sem abertura, já está pronta).
     if (s.compiled && !s.ready) {
       s.ready = true;
-      if (!skipIntro) world.setFloors(floorsRef.current, now, true);
+      if (!still) {
+        world.setFloors(floorsRef.current, 'hold');
+        world.startOpening();
+      }
       towerBus.set({ ready: true, progress: 100 });
-      s.perfStart = now + 1.5;
+      s.perfStart = now + 5;
+    }
+    // Fase da abertura para o HUD e o título (muda poucas vezes; nada de setState por quadro).
+    const ob = world.obra();
+    const phase = !s.ready ? 'load' : !ob || ob.done ? 'done' : ob.t < Math.max(...ob.plan.fall, 0) + 0.46 ? 'floors' : ob.t < ob.plan.climax ? 'souls' : 'done';
+    if (phase !== s.phase) {
+      s.phase = phase;
+      towerBus.set({ phase });
     }
 
     const aspect = size.width / Math.max(1, size.height);
@@ -265,17 +310,26 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     m.pos.y += (-s.pointerS.y * 0.45) * above;
     m.look.y += Math.sin(now * 0.09) * 0.2 * above;
 
+    // Abertura: a câmera começa alta, olhando o círculo na praça, e desce para a contra-plongée
+    // do hero conforme a torre se ergue (só enquanto a cena 1 está no quadro).
+    const hero = c.a === 0 ? 1 - c.t : 0;
+    if (!still) {
+      const ot = ob ? ob.t : 0;
+      const end = ob ? ob.plan.climax : 4;
+      const est = (1 - ramp(0.7, end * 0.9, ot)) * hero;
+      if (est > 0) {
+        m.pos.lerp(tmpEst.copy(m.pos).add(V(1.5, 7.5, 9)), est);
+        m.look.lerp(tmpLook.set(m.look.x * 0.5, 2.2, 0), est);
+      }
+    }
     if (s.first) {
       s.first = false;
       camera.position.copy(m.pos);
-      if (!skipIntro) camera.position.add(V(0.6, -0.4, 7));
       s.look.copy(m.look);
     }
-    // Abertura: a câmera chega devagar enquanto as janelas acendem; depois, perseguição normal.
-    s.intro = Math.max(0, s.intro - dt * 0.45);
     // (dev) window.__torreSettle = true: câmera sem amortecimento, para capturas de tela.
     const settle = import.meta.env.DEV && (window as unknown as { __torreSettle?: boolean }).__torreSettle;
-    const k = settle ? 1 : 1 - Math.exp(-dt * (3.2 - s.intro * 2.4));
+    const k = settle ? 1 : 1 - Math.exp(-dt * 3.2);
     const prevY = camera.position.y;
     camera.position.lerp(m.pos, k);
     s.look.lerp(m.look, k);
@@ -318,6 +372,12 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
       focus,
       underground,
       camera,
+      hero,
+      progress: towerBus.get().progress / 100,
+      pointer: s.pointerS,
+      aspect,
+      heightPx: size.height * viewport.dpr,
+      seek: import.meta.env.DEV ? (window as unknown as { __torreObraT?: number }).__torreObraT : undefined,
     });
 
     // Etiquetas dos andares: projeta e move no DOM (aria-hidden; a lista é o equivalente).
@@ -352,6 +412,20 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
         const visible = anchor.z < 1 && fits && y > 84 && y < clipY;
         el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
         el.style.opacity = visible ? String(Math.min(1, (m.explode - 0.04) * 1.6)) : '0';
+      });
+      // Miras "+ 07" no remate direito de cada andar (só no desktop; no estreito a etiqueta curta já tem o número).
+      floorsRef.current.forEach((fl, i) => {
+        const el = floorMarks.get(fl.lobby.id);
+        if (!el) return;
+        if (!show || narrow || !world.floorMark(i, anchor)) {
+          el.style.opacity = '0';
+          return;
+        }
+        anchor.project(camera);
+        const x = (anchor.x * 0.5 + 0.5) * size.width;
+        const y = (-anchor.y * 0.5 + 0.5) * size.height;
+        el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+        el.style.opacity = anchor.z < 1 && y > 84 && y < clipY ? String(Math.min(1, (m.explode - 0.3) * 2)) : '0';
       });
       s.labelsHidden = !show;
     }

@@ -173,6 +173,68 @@ O tema claro não vira planta na home 3D: vira **amanhecer**. Céu anil que clar
 
 Geometria e texturas são geradas no código (0 KB baixados). Fontes da home: Big Shoulders (58 KB), Libre Franklin (29 KB), Martian Mono (38 KB), mais Newsreader (58 KB, manchetes da Gazeta na rua) e Big Shoulders Stencil (37 KB, placa), todas `font-display: swap`.
 
+## Home v5, leva 1: "A Obra Encantada"
+
+Plano: `docs/design/diagnostico-assinatura.md` (itens 1, 3, 4 e 10, mais o pedaço do item 5 que serve à abertura). Contrato do kit: `docs/design/contrato-kit-torre.md`. A torre não aparece mais pronta: ela é **conjurada** na frente da pessoa, com o dado ao vivo.
+
+### A abertura (nível alto, ~3,7 s depois que o 3D aparece)
+
+| t (s) | O que acontece | De onde vem |
+| --- | --- | --- |
+| carregando | No esboço SVG, o **círculo ritual** da praça acende anel por anel com o progresso **real** (fontes → módulo 3D → cena → ambiente → shaders) e os fios âmbar sobem dele desenhando o esqueleto. HUD: "Riscando o círculo… 42%" | `TowerSketch.tsx` |
+| 0,0 | O 3D assume do mesmo ponto: o círculo (azul-safira, shader num plano) inflama; a câmera começa alta, olhando a praça | `occult.ts` |
+| 0,30 a 1,25 | **Fios âmbar** sobem do círculo e desenham o esqueleto 3D (cada segmento cresce do começo, ponta mais quente) | `createThreadMaterial` |
+| 0,35 a 0,85 | O saguão sobe do chão, com um leve passo a mais (mola) | `world.ts` |
+| 0,90 + 0,08 × n | **Andares caem do céu** na ordem de **criação** dos lobbies (`minutesAgo`), girando de 15° a 0°, com tranco de pouso e poeira de brasa. No alto, cada andar se condensa da fumaça na primeira metade da queda (dissolução por ruído com borda em brasa) | `lib/obra.ts`, `floorBuild()` |
+| pouso + 0,10 | Ornamentos se aparafusam: pilastras giram 90° e encaixam, frisos e faixas abrem com mola (com o kit: módulos de fachada, cornijas e gárgulas) | `layout()` |
+| ~2,3 a 3,1 | Os fios se soltam ponto a ponto; a coroa desce; a **agulha sobe de dentro** dela (com o kit, da lanterna aberta) | |
+| ~3,5 | O farol pega em **chama azul fria**, com faíscas frias | `createFlame` |
+| 1,8 a ~3,6 | **Uma brasa por jogador real** sai de um telhado da cidade e voa até a janela dele, na ordem real de entrada; a janela acende quando ela chega (amigos em verdete) | `planObra().embers` |
+| clímax | A última janela acende → o título deixa de ser fio e **acende** como as janelas (pega, falha, firma). HUD: "Erguendo a torre…" → "Chegando gente…" → "Cidade acesa." | `data-obra` na raiz |
+
+- **Qualquer gesto** (roda, toque, tecla, clique) pula: o relógio da obra acelera para o resto caber em 300 ms. Nada trava a rolagem nem o teclado.
+- **Depois da abertura a obra continua viva:** lobby novo → andar conjurado (cai do céu se for o topo, entra como gaveta no meio da pilha; os de cima sobem um nível) e o HUD diz "Andar 07 erguido agora"; lobby que fecha → o andar se desfaz em fumaça e brasa (no médio, desaba sobre si) e os de cima descem. Alguém entrou → uma brasa voa da cidade até a janela e o círculo pulsa.
+- **Médio:** sem fumaça e sem dissolução (os andares caem e assentam), até 400 brasas, sem cauda. **Baixo:** sem 3D; o esqueleto da cidade SVG se desenha em fio (`stroke-dashoffset`) e só depois ganha massa e janelas. **Movimento reduzido:** a torre aparece pronta, sem abertura (mesmo com `?tier=` forçado).
+
+### Luz ilustrativa e duas temperaturas
+
+- `three/illus.ts` costura nos materiais da torre (por `onBeforeCompile`, sem trocar de material): rampa quente e fria (sombra cai para o azul-safira, nunca para o preto), contorno de luz (lua fria por trás, sódio quente por baixo) e **fio de aresta** nas caixas, calculado em metros pela escala da instância (parece chanfro, custa zero geometria).
+- Duas temperaturas com significado: **âmbar é gente** (janelas, brasas, fios da obra, sódio), **azul-safira é o sobrenatural** (céu alto, lua, círculo, farol, vidro da lanterna e olhos das gárgulas do kit). O verdete continua sendo amigo.
+
+### Vista explodida de verdade (cena 2)
+
+Cada andar se solta com atraso próprio (escada), gira no eixo vertical, inclina até ±4° e se afasta em Z conforme o modo; a **luz do interior vaza pelo vão** (faces de cima e de baixo acendem com a separação); cada andar ganha mira **"+ 07"** no remate direito (HTML, `aria-hidden`); os fios da constelação **se desenham** quando a cena entra. A lista ficou numa coluna de 30 rem à direita (linha em duas camadas), e a câmera recuou para a torre explodida caber inteira.
+
+### Câmera heroica
+
+Contra-plongée com a câmera quase no asfalto: a torre inteira ocupa ~65% da altura, à direita do título (no celular, no meio). Um primeiro plano fora de foco em espaço de tela (grade de ferro com lanças e poste com lanterna, contorno quente do sódio, paralaxe de perto com o mouse; no celular só a grade). O poste que cruzava a fachada saiu da frente.
+
+### Kit do Blender (`public/models/torre-kit.glb`)
+
+- `three/kit.ts`: melhoria progressiva. Se o arquivo existir e começar com a assinatura `glTF`, o `GLTFLoader` vem num **chunk próprio** (13,5 KB gzip, só baixa com o kit) e as peças trocam fachada, remates, cornija de recuo, gárgulas, pedestal (com pilastras e sol nos encaixes do modelador), coroa e agulha. Corpos, janelas, frisos e letreiros continuam do código (são o dado ao vivo). Peça ausente no arquivo = fica a procedural.
+- Materiais pelo nome do Blender (`obsidian`, `brass`…); `glass` vira luz: âmbar no saguão, azul na lanterna e nas gárgulas.
+- Sem o arquivo: no build, `__TORRE_KIT__` (vite.config.ts) é falso e nada é pedido; no dev, um arquivo ausente volta como `index.html` e é recusado pela assinatura, sem erro no console.
+- **Para comparar:** `?kit=0` força a torre procedural. Em dev, `window.__torre.world.usingKit()` diz qual está valendo.
+
+### Ferramentas de revisão (dev)
+
+- `window.__torreObraT = 1.4` congela a abertura nesse instante (capturas de tela); `delete window.__torreObraT` solta.
+- `window.__torre.replay()` reinicia a abertura; `window.__torre.floors()` devolve os andares atuais (para testar andar novo e andar desfeito com `__torre.world.setFloors(lista, 'live')`).
+
+### Desempenho (build de produção, v5 leva 1)
+
+| Parte | v4 | v5 leva 1 |
+| --- | --- | --- |
+| JS da primeira pintura (gzip) | `index` 96,1 + `i18n` 22,0 + `jsx-runtime` 6,0 = **124,1 KB** | `index` 110,0 + `jsx-runtime` 13,7 = **123,7 KB** (o Rollup juntou o `i18n` nos dois; o total não subiu) |
+| CSS (gzip) | 26,5 KB | 27,0 KB |
+| Chunk 3D `TowerScene` (gzip) | 256,8 KB | **269,2 KB** (orçamento 280) |
+| `GLTFLoader` (gzip, só com o kit) | não existia | 13,5 KB |
+| Kit `torre-kit.glb` | não existia | 242 KB |
+| Chamadas de desenho no hero (alto) | n/d | 64 sem o kit, 92 com o kit (≈95 mil triângulos) |
+| Chamadas de desenho no hero (médio) | n/d | 56 sem o kit, 86 com o kit (≈67 mil triângulos) |
+
+Brasas: um `Points` só (uma chamada), animado no shader pelo relógio da obra. Círculo, fios, chama e primeiro plano: uma chamada cada.
+
 ## Direção visual (v3): Cidade Acesa
 
 *A home v3 agora é o nível baixo da v4; o resto desta seção continua valendo para as outras telas.*

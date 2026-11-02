@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { MELT_GLSL } from './illus';
 
 /**
  * Shaders próprios da Torre. Nada de biblioteca de pós-processamento: um passe de
@@ -17,6 +18,7 @@ const WINDOW_VERT = /* glsl */ `
 #include <fog_pars_vertex>
 attribute vec3 aState;
 attribute vec4 aInfo;
+attribute float aMelt;
 uniform vec2 uWin;
 uniform float uTime;
 uniform float uReflect;
@@ -26,13 +28,17 @@ varying vec2 vUv;
 varying vec3 vState;
 varying vec4 vInfo;
 varying float vWorldY;
+varying vec3 vWorld;
+varying float vMelt;
 void main() {
   vUv = uv;
+  vMelt = aMelt;
   vState = aState;
   vInfo = aInfo;
   mat4 m = modelMatrix * instanceMatrix;
   vec4 world = m * vec4(position, 1.0);
   vWorldY = world.y;
+  vWorld = world.xyz;
   vec3 view = world.xyz - cameraPosition;
   vec3 loc = inverse(mat3(m)) * view;
   vD = vec3(loc.x / uWin.x, loc.y / uWin.y, loc.z / (uWin.x * 1.15));
@@ -60,6 +66,10 @@ varying vec2 vUv;
 varying vec3 vState;
 varying vec4 vInfo;
 varying float vWorldY;
+varying vec3 vWorld;
+varying float vMelt;
+uniform vec3 uBurn;
+${MELT_GLSL}
 
 float h1(float n) { return fract(sin(n) * 43758.5453123); }
 
@@ -155,6 +165,9 @@ void main() {
   vec3 frameCol = (flags & 4) != 0 ? uMine : uFrame * (1.0 + focus * 3.0);
   col = mix(col, frameCol, bars);
 
+  // Andar se desfazendo (ou sendo conjurado): o reflexo usa a altura espelhada.
+  col += uBurn * trMelt(vec3(vWorld.x, abs(vWorld.y), vWorld.z), vMelt) * 1.4;
+
   float alpha = 1.0;
   if (uReflect > 0.5) {
     col *= 0.8;
@@ -185,6 +198,7 @@ export function createWindowMaterial(reflect: boolean, winW: number, winH: numbe
         uSky: { value: new THREE.Color(0.28, 0.36, 0.52) },
         uFrame: { value: new THREE.Color(0.06, 0.05, 0.035) },
         uMine: { value: new THREE.Color(0.5, 1.6, 1.25) },
+        uBurn: { value: new THREE.Color(4.2, 1.7, 0.42) },
       },
     ]),
     vertexShader: WINDOW_VERT,

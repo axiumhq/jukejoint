@@ -82,10 +82,10 @@ function Crown({ topY, topW, tall }: { topY: number; topW: number; tall: boolean
   const y3 = y2 - spireH;
   return (
     <g className="crown">
-      <rect className="facade" x={-s1 / 2} y={y1} width={s1} height={10} />
-      <rect className="ledge" x={-s1 / 2 - 3} y={y1 - 1.5} width={s1 + 6} height={2} />
-      <rect className="facade" x={-s2 / 2} y={y2} width={s2} height={10} />
-      <path className="facade" d={`M${-s2 / 2 + 6} ${y2} L-7 ${y3 + 10} L0 ${y3} L7 ${y3 + 10} L${s2 / 2 - 6} ${y2} Z`} />
+      <rect pathLength={1} className="facade" x={-s1 / 2} y={y1} width={s1} height={10} />
+      <rect pathLength={1} className="ledge" x={-s1 / 2 - 3} y={y1 - 1.5} width={s1 + 6} height={2} />
+      <rect pathLength={1} className="facade" x={-s2 / 2} y={y2} width={s2} height={10} />
+      <path pathLength={1} className="facade" d={`M${-s2 / 2 + 6} ${y2} L-7 ${y3 + 10} L0 ${y3} L7 ${y3 + 10} L${s2 / 2 - 6} ${y2} Z`} />
       <path className="crown-rays" d={`M0 ${y2} V${y3 + 14} M-9 ${y2} L-3 ${y3 + 18} M9 ${y2} L3 ${y3 + 18}`} />
       <line className="mast" x1={0} y1={y3} x2={0} y2={y3 - (tall ? 22 : 12)} />
       <circle className="beacon" cx={0} cy={y3 - (tall ? 22 : 12)} r={2.2} />
@@ -120,15 +120,15 @@ function Building({ geo, x, groundY, scale, tall, activeId, booting, bootOffset,
     >
       <g aria-hidden="true">
         {/* Saguão e embasamento */}
-        <rect className="facade" x={-baseW / 2 - 8} y={-GROUND_H} width={baseW + 16} height={GROUND_H} />
-        <rect className="ledge" x={-baseW / 2 - 11} y={-GROUND_H - 1.5} width={baseW + 22} height={2.5} />
-        <path className="door" d={`M-11 0 V-16 L-6 -21 H6 L11 -16 V0 Z`} />
+        <rect pathLength={1} className="facade" x={-baseW / 2 - 8} y={-GROUND_H} width={baseW + 16} height={GROUND_H} />
+        <rect pathLength={1} className="ledge" x={-baseW / 2 - 11} y={-GROUND_H - 1.5} width={baseW + 22} height={2.5} />
+        <path pathLength={1} className="door" d={`M-11 0 V-16 L-6 -21 H6 L11 -16 V0 Z`} />
         <text className="region-sign" x={-baseW / 2 + 2} y={-9}>
           {regionName}
         </text>
         {plinth > 0 && (
           <g>
-            <rect className="facade facade-2" x={-baseW / 2} y={-GROUND_H - plinth} width={baseW} height={plinth} />
+            <rect pathLength={1} className="facade facade-2" x={-baseW / 2} y={-GROUND_H - plinth} width={baseW} height={plinth} />
             {Array.from({ length: Math.floor(baseW / 17) }, (_, i) => (
               <line key={i} className="pilaster" x1={-baseW / 2 + 9 + i * 17} y1={-GROUND_H - plinth + 6} x2={-baseW / 2 + 9 + i * 17} y2={-GROUND_H - 4} />
             ))}
@@ -140,8 +140,8 @@ function Building({ geo, x, groundY, scale, tall, activeId, booting, bootOffset,
           const below = floors[i + 1];
           return (
             <g key={f.lobby.id}>
-              <rect className="facade" x={-f.w / 2} y={f.y} width={f.w} height={FLOOR_H} />
-              {(!below || below.w !== f.w) && <rect className="ledge" x={-f.w / 2 - 3} y={f.y + FLOOR_H - 1} width={f.w + 6} height={2} />}
+              <rect pathLength={1} className="facade" x={-f.w / 2} y={f.y} width={f.w} height={FLOOR_H} />
+              {(!below || below.w !== f.w) && <rect pathLength={1} className="ledge" x={-f.w / 2 - 3} y={f.y + FLOOR_H - 1} width={f.w + 6} height={2} />}
             </g>
           );
         })}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ComponentType } from 'react';
 import { t } from '../../i18n';
-import { floorLabels, towerBus, useTower } from '../../lib/towerBus';
+import { floorLabels, floorMarks, towerBus, useTower } from '../../lib/towerBus';
 import type { TowerFloor } from '../../lib/towerData';
 import { Decode } from '../Decode';
 import { TowerSketch } from './TowerSketch';
@@ -48,9 +48,13 @@ export function TowerStage({ floors, dawn, floorsSeen }: StageProps) {
     const ric = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 120));
     const cic = window.cancelIdleCallback ?? window.clearTimeout;
     const id = ric(start, { timeout: 1200 });
+    // Rede lenta: o círculo e os fios seguem como cena de espera, mas o título não fica
+    // apagado para sempre (a abertura 3D, quando chegar, roda com ele já aceso).
+    const safety = window.setTimeout(() => alive && !towerBus.get().ready && towerBus.set({ phase: 'done' }), 9000);
     return () => {
       alive = false;
       cic(id);
+      window.clearTimeout(safety);
     };
   }, [tier]);
 
@@ -88,27 +92,43 @@ export function TowerStage({ floors, dawn, floorsSeen }: StageProps) {
             <span className="tr-label-short">{t.home.floors.labelShort(f.number, f.lobby.players, f.lobby.slots)}</span>
           </span>
         ))}
+        {floors.map((f) => (
+          <span
+            key={`m-${f.lobby.id}`}
+            className="tr-mark"
+            ref={(el) => {
+              if (el) floorMarks.set(f.lobby.id, el);
+              else floorMarks.delete(f.lobby.id);
+            }}
+          >
+            {String(f.number).padStart(2, '0')}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
-/** Linha "Acendendo a cidade… 42%" do HUD enquanto a cena carrega. */
+/** Linha do HUD durante a abertura: "Riscando o círculo… 42%" → "Erguendo a torre…" → "Cidade acesa.", e as notícias da obra ao vivo. */
 export function LoadStatus() {
   const tier = useTower((s) => s.tier);
   const progress = useTower((s) => s.progress);
   const ready = useTower((s) => s.ready);
+  const phase = useTower((s) => s.phase);
+  const news = useTower((s) => s.news);
   const [gone, setGone] = useState(false);
+  const done = ready && phase === 'done';
   useEffect(() => {
-    if (!ready) return;
+    if (!done) return;
     const id = window.setTimeout(() => setGone(true), 1600);
     return () => window.clearTimeout(id);
-  }, [ready]);
-  if (tier === 'low' || gone) return null;
+  }, [done]);
+  if (tier === 'low' || (gone && !news)) return null;
+  const text = news ? ('raised' in news ? t.home.news.raised(news.raised) : t.home.news.gone) : (!ready ? t.home.loading(Math.round(progress)) : phase === 'floors' ? t.home.raising : phase === 'souls' ? t.home.souls : t.home.loaded);
   return (
-    // Só cenário: o leitor de tela não precisa ouvir cada passo do carregamento.
-    <p className={`tr-load${ready ? ' is-done' : ''}`} aria-hidden="true">
-      <span className="num">{ready ? t.home.loaded : t.home.loading(Math.round(progress))}</span>
+    // Só cenário: o leitor de tela não precisa ouvir cada passo do carregamento (a lista é a verdade).
+    <p className={`tr-load${done && !news ? ' is-done' : ''}`} aria-hidden="true">
+      <span className="num">{text}</span>
     </p>
   );
 }
