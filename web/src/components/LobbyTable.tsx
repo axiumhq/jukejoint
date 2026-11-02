@@ -110,17 +110,15 @@ interface LobbyTableProps {
   /** O recomendado (`useFeaturedLobby`): sobe para a primeira linha, depois das suas. Nunca aparece duas vezes. */
   featured?: Lobby;
   now: number;
-  /** Quadro de partidas da home: linhas um pouco mais altas, nome maior. */
-  variant?: 'table' | 'board';
   label?: string;
   limit?: number;
 }
 
 /**
- * A tabela de lobbies, a mesma em /lobbies, na página do modo e na home.
+ * A tabela de lobbies, a mesma na home e na página do modo.
  * Colunas: lobby, modo, servidor e ping, vagas, ação. Um botão por linha; só o recomendado é cheio.
  */
-export function LobbyTable({ lobbies, featured, now, variant = 'table', label = t.lobbies.tableLabel, limit }: LobbyTableProps) {
+export function LobbyTable({ lobbies, featured, now, label = t.lobbies.tableLabel, limit }: LobbyTableProps) {
   const { lobbyCtx, user } = useSession();
   const isHere = (l: Lobby) => !!l.mine || l.id === lobbyCtx.hereId || l.id === lobbyCtx.joiningId;
   const pick = featured && lobbies.some((l) => l.id === featured.id) ? featured : undefined;
@@ -129,38 +127,40 @@ export function LobbyTable({ lobbies, featured, now, variant = 'table', label = 
   const ordered = [...here, ...(pick && !isHere(pick) ? [pick] : []), ...rest].slice(0, limit);
 
   return (
-    <table className={`lt${variant === 'board' ? ' lt--board' : ''}`} role="table" aria-label={label}>
-      <colgroup>
-        <col className="c-lobby" />
-        <col className="c-mode" />
-        <col className="c-server" />
-        <col className="c-slots" />
-        <col className="c-act" />
-      </colgroup>
-      <thead>
-        <tr role="row">
-          <th scope="col" role="columnheader">
-            {t.lobbies.cols.lobby}
-          </th>
-          <th scope="col" role="columnheader">
-            {t.lobbies.cols.mode}
-          </th>
-          <th scope="col" role="columnheader">
-            {t.lobbies.cols.server}
-          </th>
-          <th scope="col" role="columnheader">
-            {t.lobbies.cols.slots}
-          </th>
-          <th scope="col" role="columnheader">
-            <span className="sr-only">{t.lobbies.cols.action}</span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {ordered.map((l) => (
-          <Row key={l.id} lobby={l} ctx={lobbyCtx} featured={l.id === pick?.id} signedIn={!!user} now={now} />
-        ))}
-      </tbody>
-    </table>
+    <div className="lt-box">
+      <table className="lt" role="table" aria-label={label}>
+        <colgroup>
+          <col className="c-lobby" />
+          <col className="c-mode" />
+          <col className="c-server" />
+          <col className="c-slots" />
+          <col className="c-act" />
+        </colgroup>
+        <thead>
+          <tr role="row">
+            <th scope="col" role="columnheader">
+              {t.lobbies.cols.lobby}
+            </th>
+            <th scope="col" role="columnheader">
+              {t.lobbies.cols.mode}
+            </th>
+            <th scope="col" role="columnheader">
+              {t.lobbies.cols.server}
+            </th>
+            <th scope="col" role="columnheader">
+              {t.lobbies.cols.slots}
+            </th>
+            <th scope="col" role="columnheader">
+              <span className="sr-only">{t.lobbies.cols.action}</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {ordered.map((l) => (
+            <Row key={l.id} lobby={l} ctx={lobbyCtx} featured={l.id === pick?.id} signedIn={!!user} now={now} />
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

@@ -13,7 +13,7 @@ export function NotFound({ title = t.notFound.title, body = t.notFound.body }: {
           <Link to="/" className="btn btn-primary">
             {t.notFound.back}
           </Link>
-          <Link to="/lobbies" className="link-line">
+          <Link to="/#lobbies" className="link-line">
             {t.notFound.lobbies}
           </Link>
         </div>

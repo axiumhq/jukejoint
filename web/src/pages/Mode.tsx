@@ -90,7 +90,7 @@ export function ModePage() {
         <section className="section-tight" aria-labelledby="mode-lobbies-title">
           <header className="section-head">
             <h2 id="mode-lobbies-title">{t.lobbies.modeListTitle}</h2>
-            <Link to={`/lobbies?modo=${mode.slug}`} className="link-line">
+            <Link to={`/?modo=${mode.slug}#lobbies`} className="link-line">
               {t.lobbies.modeListAll}
             </Link>
           </header>

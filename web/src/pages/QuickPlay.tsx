@@ -8,7 +8,7 @@ import { useSession } from '../state/session';
 
 /**
  * /jogar: o "Jogar agora". Escolhe com `pickBestLobby()` (o mesmo pool da lista, nada de fila
- * paralela), pede para entrar e leva para /lobbies, onde o mesmo lobby é a primeira linha (Recomendado).
+ * paralela), pede para entrar e leva para a lista da home, onde o mesmo lobby é a primeira linha (Recomendado).
  * Sem candidato, abre o criar lobby no modo mais jogado. `?modo=` restringe a um modo.
  * A home pode linkar direto para cá (`<Link to="/jogar">`).
  */
@@ -24,7 +24,7 @@ export function QuickPlay() {
     if (done.current) return;
     done.current = true;
     const best = pickBestLobby(lobbies, { mode, ctx: lobbyCtx });
-    navigate(mode ? `/lobbies?modo=${encodeURIComponent(mode)}` : '/lobbies', { replace: true });
+    navigate({ pathname: '/', search: mode ? `?modo=${encodeURIComponent(mode)}` : '', hash: '#lobbies' }, { replace: true });
     if (best) {
       requestJoin({ kind: 'lobby', lobby: best });
     } else {

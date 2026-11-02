@@ -31,7 +31,7 @@ function AppStatus() {
       </p>
       <div className="app-status-actions">
         {appConnected && (
-          <Link to="/lobbies" className="btn btn-line btn-sm">
+          <Link to="/#lobbies" className="btn btn-line btn-sm">
             {t.install.goLobbies}
           </Link>
         )}

@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
-import { t } from '../i18n';
+import { useLiveStats } from '../hooks';
+import { formatNumber, t } from '../i18n';
 import { useSession } from '../state/session';
 import { Icon } from './Icon';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 
 const NAV: { to: string; label: string; end?: boolean }[] = [
-  { to: '/', label: t.nav.home, end: true },
-  { to: '/lobbies', label: t.nav.lobbies },
+  { to: '/', label: t.nav.lobbies, end: true },
   { to: '/modos', label: t.nav.modes },
   { to: '/novidades', label: t.nav.news },
   { to: '/instalar', label: t.nav.install },
@@ -84,11 +84,21 @@ function AccountArea() {
   );
 }
 
-/**
- * O único cabeçalho do site. Na home ele mora dentro da faixa de cinema de cima
- * (variante `overlay`, transparente); nas outras páginas é a mesma barra com fundo e um fio embaixo.
- */
-export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
+/** Quantos estão jogando agora, sempre à vista (a mesma conta da lista: `useLiveStats`). */
+function LivePill() {
+  const { players } = useLiveStats();
+  const n = formatNumber(players);
+  return (
+    <Link to="/#lobbies" className="live-pill" aria-label={t.header.liveLabel(n)}>
+      <i className="live-dot" aria-hidden="true" />
+      <span className="num">{n}</span>
+      <span className="live-pill-label">{t.header.live}</span>
+    </Link>
+  );
+}
+
+/** O único cabeçalho do site: fixo no topo, como a barra de um app. */
+export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
@@ -100,7 +110,7 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
   }, [open]);
 
   return (
-    <header className={`site-header${overlay ? ' is-overlay' : ''}${open ? ' is-open' : ''}`}>
+    <header className={`site-header${open ? ' is-open' : ''}`}>
       <div className="wrap site-header-in">
         <Link to="/" className="mark-link" aria-label={t.a11y.home}>
           <Wordmark />
@@ -119,13 +129,16 @@ export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
             <AccountArea />
           </div>
         </nav>
-        <div className="site-account">
-          <AccountArea />
+        <div className="site-right">
+          <LivePill />
+          <div className="site-account">
+            <AccountArea />
+          </div>
+          <button type="button" className="menu-btn" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
+            {t.a11y.menu}
+            <i aria-hidden="true" />
+          </button>
         </div>
-        <button type="button" className="menu-btn" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
-          {t.a11y.menu}
-          <i aria-hidden="true" />
-        </button>
       </div>
     </header>
   );
@@ -142,7 +155,7 @@ export function SiteFooter() {
         </div>
         <nav aria-label={t.a11y.footerNav}>
           <ul>
-            {NAV.slice(1).map((item) => (
+            {NAV.map((item) => (
               <li key={item.to}>
                 <Link to={item.to}>{item.label}</Link>
               </li>
@@ -162,7 +175,6 @@ export function Layout() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
   const first = useRef(true);
-  const isHome = pathname === '/';
 
   useEffect(() => {
     if (first.current) {
@@ -185,7 +197,7 @@ export function Layout() {
       <a href="#main" className="skip-link">
         {t.a11y.skip}
       </a>
-      <SiteHeader overlay={isHome} />
+      <SiteHeader />
       <main id="main" ref={main} tabIndex={-1}>
         <Outlet />
       </main>

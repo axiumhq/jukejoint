@@ -55,15 +55,7 @@
   --slow: cubic-bezier(0.65, 0, 0.15, 1); /* só a abertura do herói */
   --t: 220ms;
 
-  /* Faixas de cinema: a imagem fica em ~2,39:1, sem passar de 17% da altura por faixa */
-  --bar: clamp(56px, calc((100dvh - 100vw / 2.39) / 2), 17vh);
   --header-h: 72px;
-}
-
-@media (orientation: portrait) {
-  :root {
-    --bar: 56px;
-  }
 }
 
 @media (max-width: 760px) {

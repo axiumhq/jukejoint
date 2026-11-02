@@ -1,12 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { Layout } from './components/Shell';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
 
 // A home pinta primeiro; as outras telas viram chunks próprios (menos JS na primeira visita).
-const Lobbies = lazy(() => import('./pages/Lobbies').then((m) => ({ default: m.Lobbies })));
 const ModesIndex = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModesIndex })));
 const ModePage = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModePage })));
 const Install = lazy(() => import('./pages/Install').then((m) => ({ default: m.Install })));
@@ -27,6 +26,12 @@ function RouteWait() {
   );
 }
 
+/** /lobbies virou a home: links antigos (convites, filtros) caem na lista, com os mesmos filtros. */
+function ToBrowser() {
+  const { search } = useLocation();
+  return <Navigate to={{ pathname: '/', search, hash: '#lobbies' }} replace />;
+}
+
 export function App() {
   return (
     <BrowserRouter>
@@ -34,7 +39,7 @@ export function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
-            <Route path="lobbies" element={<Suspense fallback={<RouteWait />}><Lobbies /></Suspense>} />
+            <Route path="lobbies" element={<ToBrowser />} />
             <Route path="jogar" element={<Suspense fallback={<RouteWait />}><QuickPlay /></Suspense>} />
             <Route path="modos" element={<Suspense fallback={<RouteWait />}><ModesIndex /></Suspense>} />
             <Route path="modos/:slug" element={<Suspense fallback={<RouteWait />}><ModePage /></Suspense>} />

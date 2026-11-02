@@ -1,15 +1,13 @@
 /*
- * Tabela de lobbies v6: a mesma na home (variante board), em /lobbies e na página do modo.
+ * Tabela de lobbies v6: a mesma na home e na página do modo.
  * Linhas de 60 px, colunas fixas (lobby, modo, servidor e ping, vagas, ação), um botão por linha.
  * O recomendado é a primeira linha, com fundo levantado e o único botão cheio.
+ * As quebras são pela largura da própria tabela (container query), não da janela:
+ * na home ela divide a linha com a coluna lateral.
  */
 
-.lobbies-page {
-  padding-top: var(--s-5);
-}
-
-.lb-head {
-  padding-bottom: var(--s-4);
+.lt-box {
+  container: lt / inline-size;
 }
 
 .lt {
@@ -215,22 +213,8 @@
   color: var(--ink-2);
 }
 
-/* Quadro de partidas da home: um pouco mais alto, nome maior. */
-.lt--board .lt-row > * {
-  height: 76px;
-}
-
-.lt--board .lt-name {
-  font-size: 1.1875rem;
-  letter-spacing: -0.01em;
-}
-
-.lt--board .lt-note {
-  font-size: var(--fs-sm);
-}
-
-/* Tablet: o ping vai para a coluna do modo; as janelinhas saem (fica o número). */
-@media (max-width: 1100px) {
+/* Tabela estreita: as janelinhas saem (fica o número). */
+@container lt (max-width: 860px) {
   .lt .c-slots {
     width: 72px;
   }
@@ -257,7 +241,7 @@
 }
 
 /* Celular: cada linha vira uma grade de duas linhas. */
-@media (max-width: 760px) {
+@container lt (max-width: 680px) {
   .lt,
   .lt tbody {
     display: block;
@@ -285,8 +269,7 @@
     border-bottom: 1px solid var(--rule);
   }
 
-  .lt-row > *,
-  .lt--board .lt-row > * {
+  .lt-row > * {
     height: auto;
     padding: 0 !important;
     border: 0;
@@ -336,23 +319,5 @@
   .btn-act {
     --h: 40px;
     font-size: var(--fs-xs);
-  }
-
-  .lt--board .lt-name {
-    font-size: 1.0625rem;
-  }
-
-  .lt--board .lt-note {
-    font-size: var(--fs-xs);
-  }
-
-  .lb-head {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .f-count {
-    margin-left: 0;
-    width: 100%;
   }
 }

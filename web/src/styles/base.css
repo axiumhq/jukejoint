@@ -350,7 +350,8 @@ input[type='radio'] {
 /* ───────── Cabeçalho único ───────── */
 
 .site-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 20;
   border-bottom: 1px solid var(--rule);
   background: var(--bg);
@@ -362,18 +363,6 @@ input[type='radio'] {
   align-items: center;
   gap: var(--s-3);
   height: var(--header-h);
-}
-
-/* Na home: transparente, dentro da faixa de cinema de cima. */
-.site-header.is-overlay {
-  position: absolute;
-  inset: 0 0 auto;
-  border-bottom: 0;
-  background: none;
-}
-
-.site-header.is-overlay .site-header-in {
-  height: var(--bar);
 }
 
 .mark-link {
@@ -437,8 +426,40 @@ input[type='radio'] {
   display: none;
 }
 
-.site-account {
+.site-right {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+/* Ao vivo: o ponto de verdete e quantos jogam agora. */
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  transition: color var(--t) var(--ease);
+}
+
+.live-pill .num {
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+.live-pill:hover {
+  color: var(--ink-2);
+}
+
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--verdigris);
+  box-shadow: 0 0 0 3px rgb(108 194 168 / 0.16);
 }
 
 .steam {
@@ -704,7 +725,8 @@ input[type='radio'] {
   border-top: 1px solid var(--rule-strong);
 }
 
-.empty h2 {
+.empty h2,
+.empty h3 {
   font-size: var(--fs-h3);
 }
 

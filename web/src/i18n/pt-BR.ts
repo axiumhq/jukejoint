@@ -70,23 +70,21 @@ export const ptBR = {
     titleLines: ['O Deadlock que', 'a comunidade inventou.'],
     lead: 'Modos feitos por jogadores, grátis, dentro do Deadlock que você já tem.',
     play: 'Jogar agora',
-    seeLobbies: 'Ver lobbies',
-    board: {
-      title: 'Lobbies abertos agora',
-      all: (n: number) => (n === 1 ? 'Ver o lobby' : `Ver todos os ${n} lobbies`),
-      empty: 'Nenhum lobby com vaga agora. Abra o primeiro na lista.',
-    },
-    modes: {
-      title: 'Modos em cartaz',
-      all: 'Ver os modos',
-    },
-    trust: {
-      title: 'O que entra no seu PC',
-      what: `Um app de ${MB} MB para Windows que abre o Deadlock já dentro do lobby. Ele não mexe em nada fora da pasta de addons do jogo.`,
-      hash: 'Cada versão publica a impressão digital SHA-256 do instalador. Confira antes de abrir:',
-      av: 'Antivírus costuma desconfiar de programa novo e pouco baixado. Se ele bloquear, o passo a passo para liberar está na página de instalação.',
-      link: 'Ver o que o app instala',
-    },
+    firstTime: `Primeira vez? Instalar o app (${MB} MB)`,
+  },
+  /** Coluna ao lado da lista de lobbies. */
+  rail: {
+    label: 'Modos e atividade',
+    modes: 'Modos',
+    playing: 'jogando',
+    arrivals: 'Chegando agora',
+    arrivalsEmpty: 'Ninguém entrou nos últimos minutos.',
+    joined: 'entrou em',
+    ago: (s: number) => (s < 10 ? 'agora' : s < 60 ? `${s} s` : `${Math.floor(s / 60)} min`),
+  },
+  header: {
+    live: 'jogando',
+    liveLabel: (n: string) => `${n} jogando agora`,
   },
   /* ════════════ LOBBIES ════════════ */
   lobbies: {
