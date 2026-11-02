@@ -4,6 +4,7 @@ import { BRAND_NAME } from '../config/brand';
 import { useTheme } from '../hooks';
 import { t } from '../i18n';
 import { useSession } from '../state/session';
+import { TowerMark } from './Deco';
 import { Icon, type IconName } from './Icon';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 
@@ -18,10 +19,7 @@ const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 export function Wordmark() {
   return (
     <span className="wordmark">
-      <svg className="wordmark-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-        <path d="M16 3 L22 9 L22 13 L26 17 L26 29 L6 29 L6 17 L10 13 L10 9 Z" />
-        <rect x="14" y="17" width="4" height="8" rx="1" className="wordmark-door" />
-      </svg>
+      <TowerMark className="wordmark-mark" />
       <span className="wordmark-text">{BRAND_NAME}</span>
     </span>
   );

@@ -9,10 +9,11 @@ import { PingBars, SlotPips, StatusBadge } from './LobbyBits';
 
 interface LobbyRowProps {
   lobby: Lobby;
-  compact?: boolean;
+  /** Versão enxuta para o painel ao vivo da home: sem anfitrião nem status. */
+  mini?: boolean;
 }
 
-export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
+export function LobbyRow({ lobby, mini = false }: LobbyRowProps) {
   const { requestJoin, joiningId, notify, toggleNotify } = useSession();
   const mode = getMode(lobby.modeSlug);
   const titleId = `lobby-${lobby.id}`;
@@ -23,7 +24,7 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
   let action;
   if (joining) {
     action = (
-      <button type="button" className="btn btn-primary btn-join" disabled aria-live="polite">
+      <button type="button" className="btn btn-outline btn-join" disabled aria-live="polite">
         {t.lobbies.joining}
       </button>
     );
@@ -31,7 +32,7 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
     action = (
       <button
         type="button"
-        className="btn btn-primary btn-join"
+        className="btn btn-outline btn-join"
         aria-label={t.lobbies.joinLabel(lobby.name)}
         onClick={() => requestJoin({ kind: 'lobby', lobby })}
       >
@@ -43,7 +44,7 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
     action = (
       <button
         type="button"
-        className="btn btn-ghost btn-join"
+        className="btn btn-quiet btn-join"
         aria-pressed={notifyOn}
         aria-describedby={titleId}
         onClick={() => toggleNotify(lobby.id, t.lobbies.notifyToast(lobby.name))}
@@ -55,7 +56,7 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
   }
 
   return (
-    <li className={`lobby-row${compact ? ' is-compact' : ''}${lobby.mine ? ' is-mine' : ''}`}>
+    <li className={`lobby-row${mini ? ' is-mini' : ''}${lobby.mine ? ' is-mine' : ''}`}>
       <div className="lobby-main">
         {mode && (
           <Link to={`/modos/${mode.slug}`} className="lobby-mode">
@@ -66,15 +67,17 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
           {lobby.name}
           {lobby.locked && <Icon name="lock" size={15} className="lobby-lock" label={t.lobbies.locked} />}
         </h3>
-        <p className="lobby-host">
-          <span className="sr-only">{t.lobbies.host}: </span>
-          <span className="avatar" aria-hidden="true">
-            {lobby.host.slice(0, 1).toUpperCase()}
-          </span>
-          {lobby.host}
-          {lobby.mine && <span className="tag tag-quiet">{t.lobbies.you}</span>}
-          {lobby.hostIsFriend && <span className="tag tag-friend">{t.lobbies.friendTag}</span>}
-        </p>
+        {!mini && (
+          <p className="lobby-host">
+            <span className="sr-only">{t.lobbies.host}: </span>
+            <span className="avatar" aria-hidden="true">
+              {lobby.host.slice(0, 1).toUpperCase()}
+            </span>
+            {lobby.host}
+            {lobby.mine && <span className="tag tag-quiet">{t.lobbies.you}</span>}
+            {lobby.hostIsFriend && <span className="tag tag-friend">{t.lobbies.friendTag}</span>}
+          </p>
+        )}
       </div>
       <div className="lobby-ping">
         <PingBars lobby={lobby} />
@@ -83,10 +86,12 @@ export function LobbyRow({ lobby, compact = false }: LobbyRowProps) {
         <SlotPips lobby={lobby} />
         {lobby.friends > 0 && <span className="friends-in">{t.lobbies.friendsIn(lobby.friends)}</span>}
       </div>
-      <div className="lobby-status">
-        <StatusBadge lobby={lobby} />
-        {lobby.status === 'em-partida' && lobby.joinInProgress && <span className="status-note">{t.lobbies.joinInProgress}</span>}
-      </div>
+      {!mini && (
+        <div className="lobby-status">
+          <StatusBadge lobby={lobby} />
+          {lobby.status === 'em-partida' && lobby.joinInProgress && <span className="status-note">{t.lobbies.joinInProgress}</span>}
+        </div>
+      )}
       <div className="lobby-action">{action}</div>
     </li>
   );

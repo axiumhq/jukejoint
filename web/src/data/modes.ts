@@ -41,7 +41,7 @@ export const modes: Mode[] = [
     ],
     rules: [
       'Todos contra todos, sem times.',
-      'O círculo encolhe a cada 60 segundos. Fora dele, você perde 8% da vida por segundo.',
+      'O círculo encolhe a cada 60 segundos; o último fechamento leva 90. Fora dele, você perde 8% da vida por segundo.',
       'Cada abate concede um item aleatório. Itens não podem ser vendidos.',
       'Vence quem tiver mais abates quando o círculo fechar, ou o último vivo.',
     ],

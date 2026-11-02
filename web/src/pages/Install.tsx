@@ -1,6 +1,7 @@
 import { useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { CopyField } from '../components/Common';
+import { Setback } from '../components/Deco';
 import { Icon } from '../components/Icon';
 import { APP_RELEASE } from '../config/brand';
 import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
@@ -95,6 +96,7 @@ export function Install() {
       <div className="install-layout">
         <aside className="install-side" aria-label={t.install.title}>
           <div className="panel download-panel">
+            <Setback className="frame-crown" />
             <dl className="download-meta">
               <div>
                 <dt>{t.install.version}</dt>
@@ -116,6 +118,7 @@ export function Install() {
               <span className="btn-file">{t.install.download(APP_RELEASE.fileName)}</span>
             </button>
             <p className="fine">{t.install.requirements}</p>
+            <p className="fine mobile-note">{t.install.mobileNote}</p>
 
             <div className="hash" id="hash">
               <h2 className="h-small">{t.install.hashTitle}</h2>

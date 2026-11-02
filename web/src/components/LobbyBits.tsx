@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Lobby } from '../data/lobbies';
 import { t } from '../i18n';
 import { pingQuality } from '../lib/lobbies';
@@ -12,10 +13,10 @@ export function SlotPips({ lobby }: { lobby: Lobby }) {
     <span className="slots" role="img" aria-label={t.lobbies.slots(lobby.players, lobby.slots, lobby.friends)}>
       <span className="pips" aria-hidden="true">
         {pips.map((kind, i) => (
-          <span key={i} className={`pip pip-${kind}`} />
+          <span key={i} className={`pip pip-${kind}`} style={{ '--i': i } as CSSProperties} />
         ))}
       </span>
-      <span className="slots-count" aria-hidden="true">
+      <span className="slots-count num" aria-hidden="true">
         {lobby.players}/{lobby.slots}
       </span>
     </span>
@@ -34,7 +35,7 @@ export function PingBars({ lobby }: { lobby: Lobby }) {
         <span className={q >= 2 ? 'on' : ''} />
         <span className={q >= 3 ? 'on' : ''} />
       </span>
-      <span className="ms" aria-hidden="true">
+      <span className="ms num" aria-hidden="true">
         {t.lobbies.ping(lobby.ping)}
       </span>
     </span>

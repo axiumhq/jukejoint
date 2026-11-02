@@ -1,128 +1,126 @@
 /*
  * Tokens de design. Único lugar com valores de cor, tipo, espaço e movimento.
- * Direção: cidade ocultista dos anos 1920 à noite. Índigo profundo como céu,
- * luz de lampião a sódio (âmbar) como único acento forte, verdete para "ao vivo".
- * Luz acesa = gente: janelas acesas, vagas ocupadas e botões de ação usam o âmbar.
+ *
+ * Direção (v2): produto moderno e limpo com um sotaque art déco contido.
+ * Base em preto de pátina (bronze oxidado na sombra), latão como único acento,
+ * verdete só para estado "ao vivo / amigos". O ornamento é uma linha: o recuo
+ * escalonado dos arranha-céus dos anos 1920, usado em poucos lugares.
+ *
+ * Regras de cor:
+ *  - Latão (--accent) = ação principal e gente (vaga ocupada). Nada mais.
+ *  - Verdete (--live) = ao vivo, amigos, conectado.
+ *  - Texto secundário nunca é cinza neutro: é tingido da mesma família da base.
  */
 
 :root,
-[data-theme='dark'],
-.force-night {
+[data-theme='dark'] {
   color-scheme: dark;
 
-  /* Paleta base */
-  --c-night-950: #100d20;
-  --c-night-900: #15122a;
-  --c-night-800: #1c1836;
-  --c-night-700: #262043;
-  --c-night-600: #3a3360;
-  --c-night-500: #574e85;
-  --c-ivory: #efe6d2;
-  --c-mist: #b8afcb;
-  --c-sodium: #f2b140;
-  --c-sodium-deep: #c98a1f;
-  --c-verdigris: #7cc7ae;
-  --c-coral: #ec907f;
-  --c-lilac: #aab3f2;
+  /* Paleta base: noite de pátina */
+  --c-ink-950: #0b0f0e;
+  --c-ink-900: #0f1413;
+  --c-ink-850: #141a19;
+  --c-ink-800: #1a2120;
+  --c-ink-700: #222b29;
+  --c-ink-600: #34403d;
+  --c-bone: #ebe5d6;
+  --c-sage: #a4aca6;
+  --c-brass: #d2a55a;
+  --c-brass-bright: #e0b86f;
+  --c-patina: #7cc0a7;
+  --c-rust: #e59684;
+  --c-slate: #a3b6dc;
 
   /* Semântica */
-  --bg: var(--c-night-900);
-  --bg-deep: var(--c-night-950);
-  --surface: var(--c-night-800);
-  --surface-2: var(--c-night-700);
-  --line: #2f2950;
-  --line-strong: var(--c-night-600);
-  --text: var(--c-ivory);
-  --text-muted: var(--c-mist);
-  --accent: var(--c-sodium);
-  --accent-hover: #f7c460;
-  --accent-ink: #1d1404;
-  --accent-text: var(--c-sodium);
-  --accent-soft: rgb(242 177 64 / 0.14);
-  --live: var(--c-verdigris);
-  --live-soft: rgb(124 199 174 / 0.14);
-  --danger: var(--c-coral);
-  --danger-soft: rgb(236 144 127 / 0.14);
-  --info: var(--c-lilac);
-  --info-soft: rgb(170 179 242 / 0.14);
-  --focus: var(--c-sodium);
-  --header-bg: rgb(21 18 42 / 0.86);
-  --backdrop: rgb(8 6 18 / 0.72);
-  --shadow-pop: 0 18px 40px -12px rgb(0 0 0 / 0.55);
-
-  /* Cidade (hero) */
-  --sky-top: var(--c-night-950);
-  --sky-haze: #2a1f3c;
-  --sky-far: #2a2448;
-  --sky-mid: #1f1a39;
-  --sky-near: var(--c-night-900);
-  --window-lit: var(--c-sodium);
-  --window-off: #2b2550;
+  --bg: var(--c-ink-900);
+  --bg-deep: var(--c-ink-950);
+  --surface: var(--c-ink-850);
+  --surface-2: var(--c-ink-800);
+  --surface-hover: var(--c-ink-700);
+  --line: #222b29;
+  --line-strong: var(--c-ink-600);
+  --text: var(--c-bone);
+  --text-muted: var(--c-sage);
+  --accent: var(--c-brass);
+  --accent-hover: var(--c-brass-bright);
+  --accent-ink: #17120a;
+  --accent-text: #dcb26a;
+  --accent-soft: rgb(210 165 90 / 0.12);
+  --accent-line: rgb(210 165 90 / 0.5);
+  --live: var(--c-patina);
+  --live-soft: rgb(124 192 167 / 0.13);
+  --danger: var(--c-rust);
+  --danger-soft: rgb(229 150 132 / 0.13);
+  --info: var(--c-slate);
+  --info-soft: rgb(163 182 220 / 0.13);
+  --focus: var(--c-brass-bright);
+  --line-input: #5f6c68;
+  --pip-taken: var(--c-brass);
+  --pip-free: #5f6c68;
+  --header-bg: rgb(15 20 19 / 0.82);
+  --backdrop: rgb(5 8 7 / 0.72);
+  --shadow-pop: 0 24px 48px -20px rgb(2 6 5 / 0.7), 0 2px 6px rgb(2 6 5 / 0.35);
+  --glow-lit: 0 0 0 1px rgb(210 165 90 / 0.25);
 }
 
 [data-theme='light'] {
   color-scheme: light;
-  --bg: #f4f1f8;
-  --bg-deep: #ebe6f2;
-  --surface: #ffffff;
-  --surface-2: #ece7f3;
-  --line: #ddd5e8;
-  --line-strong: #c3b8d6;
-  --text: #1c1733;
-  --text-muted: #4f4766;
-  --accent: #eaa634;
-  --accent-hover: #f2b752;
-  --accent-ink: #1d1404;
-  --accent-text: #8a5300;
-  --accent-soft: rgb(234 166 52 / 0.18);
-  --live: #1f6e58;
-  --live-soft: rgb(31 110 88 / 0.12);
-  --danger: #a8402f;
-  --danger-soft: rgb(168 64 47 / 0.1);
-  --info: #3c46a8;
-  --info-soft: rgb(60 70 168 / 0.1);
-  --focus: #8a5300;
-  --header-bg: rgb(244 241 248 / 0.9);
-  --backdrop: rgb(28 23 51 / 0.5);
-  --shadow-pop: 0 18px 40px -16px rgb(28 23 51 / 0.35);
-}
 
-/* O hero continua sendo noite no tema claro. */
-[data-theme='light'] .force-night {
-  color-scheme: dark;
-  --bg: var(--c-night-900);
-  --surface: var(--c-night-800);
-  --surface-2: var(--c-night-700);
-  --line: #2f2950;
-  --line-strong: var(--c-night-600);
-  --text: var(--c-ivory);
-  --text-muted: var(--c-mist);
-  --accent: var(--c-sodium);
-  --accent-hover: #f7c460;
-  --accent-text: var(--c-sodium);
-  --accent-soft: rgb(242 177 64 / 0.14);
-  --live: var(--c-verdigris);
-  --focus: var(--c-sodium);
+  /* Paleta base: pedra à luz do dia, tingida de verde-pátina (não é creme) */
+  --bg: #eef0ec;
+  --bg-deep: #e4e8e3;
+  --surface: #f9faf7;
+  --surface-2: #e8ece7;
+  --surface-hover: #dfe4de;
+  --line: #d5dbd4;
+  --line-strong: #aab3ab;
+  --text: #121816;
+  --text-muted: #4a5451;
+  --accent: #c99a4e;
+  --accent-hover: #d6aa60;
+  --accent-ink: #17120a;
+  --accent-text: #7a5514;
+  --accent-soft: rgb(176 128 52 / 0.12);
+  --accent-line: rgb(122 85 20 / 0.45);
+  --live: #1b6a54;
+  --live-soft: rgb(27 106 84 / 0.1);
+  --danger: #a13e2c;
+  --danger-soft: rgb(161 62 44 / 0.09);
+  --info: #33508c;
+  --info-soft: rgb(51 80 140 / 0.09);
+  --focus: #7a5514;
+  --line-input: #7d8781;
+  --pip-taken: #a5772c;
+  --pip-free: #7d8781;
+  --header-bg: rgb(238 240 236 / 0.86);
+  --backdrop: rgb(18 24 22 / 0.45);
+  --shadow-pop: 0 24px 48px -24px rgb(18 32 28 / 0.35), 0 2px 6px rgb(18 32 28 / 0.08);
+  --glow-lit: 0 0 0 1px rgb(122 85 20 / 0.2);
 }
 
 :root {
-  /* Tipografia */
-  --font-display: 'Big Shoulders Display', 'Arial Narrow', 'Roboto Condensed', sans-serif;
-  --font-body: 'Libre Franklin', 'Segoe UI', system-ui, sans-serif;
+  /* Tipografia
+   * Jost: revival da Futura (1927), geometria da era déco em desenho atual. Títulos e números grandes.
+   * Libre Franklin: herdeira da Franklin Gothic (1902). Texto corrido e interface.
+   * Ambas auto-hospedadas via @fontsource-variable (ver main.tsx). */
+  --font-display: 'Jost Variable', 'Futura', 'Century Gothic', system-ui, sans-serif;
+  --font-body: 'Libre Franklin Variable', 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
 
   --fs-xs: 0.8125rem;
   --fs-sm: 0.875rem;
   --fs-base: 1rem;
   --fs-md: 1.125rem;
-  --fs-lg: 1.375rem;
-  --fs-xl: 1.75rem;
-  --fs-2xl: clamp(2.25rem, 2.4vw + 1.5rem, 3.25rem);
-  --fs-hero: clamp(2.875rem, 5vw + 1.25rem, 5.5rem);
+  --fs-lg: 1.3125rem;
+  --fs-xl: clamp(1.5rem, 0.6vw + 1.3rem, 1.875rem);
+  --fs-2xl: clamp(2.125rem, 1.8vw + 1.5rem, 3rem);
+  --fs-hero: clamp(2.5rem, 3vw + 1.35rem, 4.125rem);
 
-  --lh-tight: 0.95;
-  --lh-snug: 1.2;
+  --lh-tight: 1.02;
+  --lh-snug: 1.18;
   --lh-body: 1.6;
+
+  --track-display: -0.025em;
 
   /* Espaço (base 4) */
   --sp-1: 0.25rem;
@@ -140,17 +138,22 @@
   --header-h: 4rem;
   --mobile-nav-h: 4.25rem;
 
-  /* Raios: controles pequenos, painéis médios, nada de pílula fora de chips */
-  --r-xs: 3px;
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-pill: 999px;
+  /* Raios: um sistema só, quase reto (déco é aresta, não bolha).
+   * Controles e painéis 4px, pips 1px, nada de pílula. */
+  --r-xs: 2px;
+  --r-sm: 4px;
+  --r-md: 6px;
+
+  /* Camadas */
+  --z-header: 40;
+  --z-toast: 60;
+  --z-skip: 100;
 
   /* Movimento */
-  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --dur-1: 120ms;
-  --dur-2: 220ms;
-  --dur-3: 480ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-1: 140ms;
+  --dur-2: 240ms;
+  --dur-3: 520ms;
 }
 
 @media (min-width: 40em) {

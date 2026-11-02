@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { ModeCard } from '../components/Common';
+import { Setback } from '../components/Deco';
 import { Icon } from '../components/Icon';
 import { ModeArt } from '../components/ModeArt';
 import { getMode, modes } from '../data/modes';
@@ -17,7 +18,7 @@ export function ModePage() {
   const reduced = useReducedMotion();
   const [paused, setPaused] = useState(false);
   const { lobbies, requestJoin, openHost } = useSession();
-  useDocumentTitle(mode ? `${mode.name} — ${t.brand}` : t.meta.notFound);
+  useDocumentTitle(mode ? t.meta.mode(mode.name) : t.meta.notFound);
 
   if (!mode) return <NotFound title={t.modes.notFoundTitle} body={t.modes.notFoundBody} />;
 
@@ -42,6 +43,7 @@ export function ModePage() {
 
       <section className="mode-hero" aria-labelledby="mode-title">
         <div className="mode-hero-art">
+          <Setback className="frame-crown" />
           <ModeArt mode={mode} playing={playing} label={t.modes.artLabel(mode.name)} />
           {!reduced && (
             <button
@@ -66,18 +68,16 @@ export function ModePage() {
               <dt>{t.modes.facts.players}</dt>
               <dd>
                 <span className="live-dot" aria-hidden="true" />
-                {formatNumber(mode.playersNow)}
+                <span className="num">{formatNumber(mode.playersNow)}</span>
               </dd>
             </div>
             <div>
               <dt>{t.modes.facts.lobbies}</dt>
-              <dd>{open.length}</dd>
+              <dd className="num">{open.length}</dd>
             </div>
             <div>
               <dt>{t.modes.facts.format}</dt>
-              <dd>
-                {mode.format}, {mode.minPlayers}–{mode.maxPlayers}
-              </dd>
+              <dd>{t.modes.formatValue(mode.format, mode.minPlayers, mode.maxPlayers)}</dd>
             </div>
             <div>
               <dt>{t.modes.facts.duration}</dt>
@@ -143,8 +143,8 @@ export function ModePage() {
                       <th scope="row">
                         {e.player} <span className="lb-region">{t.regions[e.region]}</span>
                       </th>
-                      <td>{formatNumber(e.wins)}</td>
-                      <td>{formatNumber(e.rating)}</td>
+                      <td className="num">{formatNumber(e.wins)}</td>
+                      <td className="num">{formatNumber(e.rating)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,9 +183,9 @@ export function ModePage() {
         <div className="section-head">
           <h2 id="others-title">{t.modes.others}</h2>
         </div>
-        <div className="mode-grid mode-grid-3">
+        <div className="mode-rows">
           {others.map((m) => (
-            <ModeCard key={m.slug} mode={m} />
+            <ModeCard key={m.slug} mode={m} layout="row" />
           ))}
         </div>
       </section>

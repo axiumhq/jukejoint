@@ -175,7 +175,7 @@ export function Lobbies() {
             {t.lobbies.results(results.length)}
           </p>
           {results.length > 0 ? (
-            <ul className="lobby-list">
+            <ul className="lobby-list is-table">
               {results.map((l) => (
                 <LobbyRow key={l.id} lobby={l} />
               ))}

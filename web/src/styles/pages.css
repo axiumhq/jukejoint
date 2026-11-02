@@ -6,7 +6,7 @@
 
 @media (min-width: 48em) {
   .page {
-    padding-top: var(--sp-7);
+    padding-top: var(--sp-8);
   }
 }
 
@@ -21,12 +21,13 @@
 .page-head {
   display: grid;
   gap: var(--sp-3);
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--sp-7);
 }
 
 .page-head-split {
   grid-template-columns: minmax(0, 1fr);
   align-items: end;
+  justify-items: start;
 }
 
 @media (min-width: 40em) {
@@ -51,41 +52,42 @@
   }
 }
 
-/* ───────── Início: hero ───────── */
+/* ───────── Início: hero ─────────
+ * Duas colunas: proposta à esquerda, o produto funcionando à direita (painel ao vivo).
+ * O fundo tem só um gradiente radial discreto de latão atrás do painel: luz vinda de onde há gente. */
 
 .hero {
   position: relative;
+  border-bottom: 1px solid var(--line);
   background:
-    linear-gradient(to bottom, var(--sky-top) 0%, var(--bg) 45%, var(--sky-haze) 82%, var(--bg) 100%);
-  color: var(--text);
-  overflow: hidden;
+    radial-gradient(60rem 28rem at 78% 30%, var(--accent-soft), transparent 70%),
+    var(--bg);
   isolation: isolate;
 }
 
 .hero-inner {
-  position: relative;
-  z-index: 1;
   display: grid;
-  gap: var(--sp-6);
-  padding-top: clamp(2.5rem, 7vw, 6.5rem);
+  gap: var(--sp-8);
+  padding-block: clamp(2.5rem, 6vw, 5.5rem) clamp(3rem, 6vw, 5.5rem);
 }
 
 .hero-copy {
   display: grid;
   gap: var(--sp-5);
-  max-width: 46rem;
+  align-content: center;
+  max-width: 40rem;
 }
 
 .hero-title {
   font-size: var(--fs-hero);
-  font-weight: 800;
+  font-weight: 500;
   line-height: var(--lh-tight);
-  letter-spacing: -0.005em;
-  max-width: 15ch;
+  letter-spacing: -0.03em;
+  max-width: 11.5em;
 }
 
 .hero-lead {
-  max-width: 36rem;
+  max-width: 34rem;
   font-size: var(--fs-md);
   color: var(--text-muted);
 }
@@ -94,64 +96,83 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--sp-3);
-}
-
-.hero .live-strip {
   padding-top: var(--sp-2);
-}
-
-.skyline {
-  width: 100%;
-  height: auto;
-}
-
-.hero-skyline {
-  position: relative;
-  z-index: 0;
-  height: clamp(11rem, 30vw, 24rem);
-  margin-top: clamp(-3.5rem, -3vw, -0.5rem);
-}
-
-.skyline .sky-far {
-  fill: var(--sky-far);
-}
-
-.skyline .sky-mid path {
-  fill: var(--sky-mid);
-}
-
-.skyline .sky-near path {
-  fill: var(--sky-near);
-}
-
-.skyline .w {
-  fill: var(--window-off);
-  transition: fill 0.6s ease;
-}
-
-.skyline .sky-near .w {
-  fill: color-mix(in srgb, var(--window-off) 55%, var(--sky-near));
-}
-
-.skyline .w.on {
-  fill: var(--window-lit);
-}
-
-.skyline .w.on.dim {
-  fill: var(--c-sodium-deep);
-  opacity: 0.75;
 }
 
 @media (min-width: 64em) {
   .hero-inner {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--sp-8);
   }
-  .hero .live-strip {
-    flex-direction: column;
-    gap: var(--sp-4);
-    padding: 0 0 var(--sp-2) var(--sp-5);
-    border-left: 1px solid var(--line-strong);
+}
+
+/* Painel ao vivo */
+
+.live-panel {
+  position: relative;
+  display: grid;
+  margin-top: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-pop);
+}
+
+/* Fio duplo déco: um segundo contorno fino 5px para dentro. */
+.live-panel::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  pointer-events: none;
+}
+
+.live-panel > * {
+  position: relative;
+}
+
+.live-panel > .live-panel-crown {
+  position: absolute;
+}
+
+.live-panel-head {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-5) var(--sp-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.live-panel-title {
+  font-size: var(--fs-lg);
+  font-weight: 500;
+}
+
+.live-panel .lobby-list {
+  padding-inline: 5px;
+}
+
+.live-panel-more {
+  justify-self: start;
+  margin: var(--sp-2) var(--sp-5) var(--sp-5);
+}
+
+/* ───────── Início: modos em destaque ───────── */
+
+.featured {
+  display: grid;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 60em) {
+  .featured {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: var(--sp-7);
+    align-items: start;
+  }
+  .featured .mode-rows > .mode-card:first-child {
+    padding-top: 0;
   }
 }
 
@@ -166,7 +187,7 @@
 @media (min-width: 48em) {
   .steps {
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--sp-5);
+    gap: var(--sp-6);
   }
 }
 
@@ -174,17 +195,22 @@
   display: grid;
   gap: var(--sp-3);
   align-content: start;
-  padding-top: var(--sp-4);
+  justify-items: start;
+  padding-top: var(--sp-5);
   border-top: 1px solid var(--line-strong);
 }
 
 .step-num {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 3rem;
+  font-weight: 300;
+  font-size: 3.25rem;
   line-height: 1;
   color: var(--accent-text);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.step h3 {
+  font-size: var(--fs-lg);
 }
 
 .step p {
@@ -195,7 +221,14 @@
 /* ───────── Lobbies ───────── */
 
 .page .live-strip {
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-6);
+}
+
+/* No celular a lista vem primeiro; os números ao vivo já estão no topo da home. */
+@media (max-width: 40em) {
+  .page .live-strip {
+    display: none;
+  }
 }
 
 .toolbar {
@@ -262,16 +295,22 @@
     display: none;
   }
   .lobbies-layout {
-    grid-template-columns: 15.5rem minmax(0, 1fr);
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+    gap: var(--sp-7);
     align-items: start;
   }
+  /* No desktop os filtros são uma coluna aberta, sem caixa. */
   .filters {
     display: grid;
     position: sticky;
-    top: calc(var(--header-h) + var(--sp-4));
+    top: calc(var(--header-h) + var(--sp-5));
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
   }
-  .lobby-row {
-    grid-template-columns: minmax(0, 1fr) 9.5rem minmax(0, 11rem) 10.5rem 7.5rem;
+  .lobby-row:not(.is-mini) {
+    grid-template-columns: minmax(0, 1fr) 8.5rem minmax(0, 11rem) 9.5rem 8rem;
   }
 }
 
@@ -284,60 +323,67 @@
   gap: var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--text-muted);
-  margin-bottom: var(--sp-5);
+  margin-bottom: var(--sp-6);
 }
 
 .breadcrumb li + li::before {
   content: '/';
   margin-right: var(--sp-2);
-  color: var(--line-strong);
+  color: var(--line-input);
 }
 
 .breadcrumb a {
   color: var(--text-muted);
 }
 
+.breadcrumb a:hover {
+  color: var(--text);
+}
+
 .mode-hero {
   display: grid;
-  gap: var(--sp-6);
+  gap: var(--sp-7);
   align-items: center;
 }
 
 @media (min-width: 60em) {
   .mode-hero {
     grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: var(--sp-7);
+    gap: var(--sp-8);
   }
 }
 
 .mode-hero-art {
   position: relative;
-  border: 1px solid var(--line);
+  margin-top: var(--sp-3);
+  padding: 5px;
+  border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
-  overflow: hidden;
 }
 
 .mode-hero-art .mode-art {
   aspect-ratio: 16 / 9;
   height: auto;
+  border-radius: var(--r-sm);
 }
 
 .art-toggle {
   position: absolute;
-  right: var(--sp-3);
-  bottom: var(--sp-3);
+  right: var(--sp-4);
+  bottom: var(--sp-4);
   display: grid;
   place-items: center;
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--c-ivory) 35%, transparent);
-  background: color-mix(in srgb, var(--c-night-950) 70%, transparent);
-  color: var(--c-ivory);
+  border-radius: var(--r-sm);
+  border: 1px solid rgb(235 229 214 / 0.3);
+  background: rgb(11 15 14 / 0.7);
+  color: #ebe5d6;
+  transition: background-color var(--dur-1) ease;
 }
 
 .art-toggle:hover {
-  background: color-mix(in srgb, var(--c-night-950) 90%, transparent);
+  background: rgb(11 15 14 / 0.9);
 }
 
 .mode-hero-copy {
@@ -345,9 +391,17 @@
   gap: var(--sp-4);
 }
 
+/* No celular, a ação vem antes da ficha técnica para não ficar escondida atrás da barra inferior. */
+@media (max-width: 59.99em) {
+  .mode-hero-copy > .facts {
+    order: 1;
+  }
+}
+
 .mode-hero-copy h1 {
-  font-size: clamp(2.75rem, 4vw + 1.25rem, 4.5rem);
+  font-size: clamp(2.5rem, 3vw + 1.4rem, 4rem);
   line-height: var(--lh-tight);
+  letter-spacing: -0.03em;
 }
 
 .mode-author {
@@ -357,12 +411,13 @@
 
 .mode-author strong {
   color: var(--text);
+  font-weight: 600;
 }
 
 .facts {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-4);
+  gap: var(--sp-4) var(--sp-5);
   padding-block: var(--sp-4);
   border-block: 1px solid var(--line);
 }
@@ -377,30 +432,33 @@
   align-items: center;
   gap: var(--sp-2);
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 500;
   font-size: var(--fs-lg);
   line-height: 1.2;
-  font-variant-numeric: tabular-nums;
 }
 
 .mode-columns {
   display: grid;
-  gap: var(--sp-6);
+  gap: var(--sp-7);
   padding-top: var(--sp-8);
 }
 
 @media (min-width: 60em) {
   .mode-columns {
     grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    gap: var(--sp-7);
+    gap: var(--sp-8);
   }
 }
 
 .mode-col-main,
 .mode-col-side {
   display: grid;
-  gap: var(--sp-6);
+  gap: var(--sp-7);
   align-content: start;
+}
+
+.mode-col-side {
+  gap: var(--sp-5);
 }
 
 .prose {
@@ -426,13 +484,14 @@
   padding-left: var(--sp-5);
 }
 
+/* Marcador: losango de latão, o único ornamento de lista. */
 .rules li::before {
   content: '';
   position: absolute;
   left: 0.2rem;
-  top: 0.6em;
-  width: 7px;
-  height: 7px;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
   background: var(--accent);
   transform: rotate(45deg);
 }
@@ -440,7 +499,6 @@
 .leaderboard {
   width: 100%;
   font-size: var(--fs-sm);
-  font-variant-numeric: tabular-nums;
 }
 
 .leaderboard th,
@@ -448,6 +506,10 @@
   padding: var(--sp-2) var(--sp-2);
   text-align: right;
   border-bottom: 1px solid var(--line);
+}
+
+.leaderboard tbody tr:last-child > * {
+  border-bottom: 0;
 }
 
 .leaderboard thead th {
@@ -474,9 +536,10 @@
 
 .lb-pos {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 400;
   font-size: var(--fs-md);
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .leaderboard tbody tr:first-child .lb-pos {
@@ -509,28 +572,24 @@
   color: var(--text-muted);
 }
 
-.mode-grid-3 {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-}
-
 /* ───────── Instalar ───────── */
 
 .install-layout {
   display: grid;
-  gap: var(--sp-6);
+  gap: var(--sp-7);
 }
 
 @media (min-width: 60em) {
   .install-layout {
     grid-template-columns: minmax(0, 1fr) 23rem;
-    gap: var(--sp-7);
+    gap: var(--sp-8);
     align-items: start;
   }
   .install-side {
     grid-column: 2;
     grid-row: 1;
     position: sticky;
-    top: calc(var(--header-h) + var(--sp-4));
+    top: calc(var(--header-h) + var(--sp-6));
   }
   .install-main {
     grid-column: 1;
@@ -546,6 +605,26 @@
 .download-panel {
   display: grid;
   gap: var(--sp-4);
+  margin-top: var(--sp-3);
+  border-color: var(--line-strong);
+  padding-top: var(--sp-6);
+}
+
+.download-panel::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  pointer-events: none;
+}
+
+.download-panel > * {
+  position: relative;
+}
+
+.download-panel > .frame-crown {
+  position: absolute;
 }
 
 .download-meta {
@@ -563,6 +642,7 @@
 .download-meta dd {
   font-weight: 600;
   font-size: var(--fs-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .btn-file {
@@ -574,6 +654,17 @@
   white-space: normal;
   text-align: left;
   padding-block: var(--sp-3);
+}
+
+.mobile-note {
+  display: none;
+}
+
+@media (max-width: 47.99em) {
+  .mobile-note {
+    display: block;
+    color: var(--text);
+  }
 }
 
 .hash {
@@ -597,7 +688,7 @@
   display: grid;
   gap: var(--sp-2);
   padding: var(--sp-5);
-  border: 1px dashed var(--accent);
+  border: 1px dashed var(--accent-line);
   border-radius: var(--r-md);
   background: var(--accent-soft);
 }
@@ -616,8 +707,8 @@
 
 .app-status-signal {
   position: relative;
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   border: 2px solid var(--accent);
   flex: none;
@@ -643,7 +734,7 @@
 
 .app-status-title {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 500;
   font-size: var(--fs-lg);
   line-height: 1.15;
 }
@@ -663,7 +754,7 @@
 
 .install-main {
   display: grid;
-  gap: var(--sp-7);
+  gap: var(--sp-8);
   min-width: 0;
 }
 
@@ -690,9 +781,15 @@
 
 .install-section.av {
   padding: var(--sp-5);
-  border: 1px solid var(--line-strong);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface);
+}
+
+@media (min-width: 48em) {
+  .install-section.av {
+    padding: var(--sp-6);
+  }
 }
 
 .av-steps {
@@ -713,16 +810,16 @@
   content: counter(step);
   position: absolute;
   left: 0;
-  top: 0;
+  top: -0.05rem;
   display: grid;
   place-items: center;
   width: 1.75rem;
   height: 1.75rem;
-  border-radius: 50%;
-  border: 1px solid var(--accent);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--accent-line);
   color: var(--accent-text);
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 500;
   font-size: var(--fs-sm);
 }
 
@@ -749,7 +846,7 @@
   flex-wrap: wrap;
   align-items: end;
   gap: var(--sp-3) var(--sp-4);
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-5);
 }
 
 .field-inline {
@@ -769,14 +866,14 @@
 .release {
   display: grid;
   gap: var(--sp-4);
-  padding-block: var(--sp-6);
+  padding-block: var(--sp-7);
   border-top: 1px solid var(--line-strong);
 }
 
 @media (min-width: 60em) {
   .release {
     grid-template-columns: 12rem minmax(0, 46rem);
-    column-gap: var(--sp-7);
+    column-gap: var(--sp-8);
   }
   .release > :not(.release-head) {
     grid-column: 2;
@@ -785,7 +882,7 @@
     grid-row: 1 / span 5;
     align-self: start;
     position: sticky;
-    top: calc(var(--header-h) + var(--sp-4));
+    top: calc(var(--header-h) + var(--sp-5));
   }
 }
 
@@ -805,9 +902,10 @@
 
 .release-version {
   font-size: var(--fs-2xl);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .release-date {
@@ -834,7 +932,7 @@
 }
 
 .release-tldr strong {
-  color: var(--accent-text);
+  font-weight: 700;
 }
 
 .release-scopes {
@@ -878,8 +976,4 @@
     grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-1);
   }
-}
-
-.hero .btn-ghost {
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
 }

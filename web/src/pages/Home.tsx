@@ -1,7 +1,5 @@
 import { Link } from 'react-router';
-import { LiveStrip, ModeCard, SectionHead } from '../components/Common';
-import { LobbyRow } from '../components/LobbyRow';
-import { Skyline } from '../components/Skyline';
+import { LivePanel, ModeCard, SectionHead } from '../components/Common';
 import { modes } from '../data/modes';
 import { useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
@@ -14,11 +12,11 @@ export function Home() {
   const hot = filterLobbies(lobbies, { q: '', mode: '', regions: ['BR'], slotsOnly: true, friendsOnly: false, sort: 'cheios' }, false)
     .filter((l) => !l.locked && !l.mine && l.status === 'aberto')
     .slice(0, 4);
-  const featured = modes.filter((m) => m.featured);
+  const [lead, ...rest] = modes.filter((m) => m.featured);
 
   return (
     <>
-      <section className="hero force-night" aria-labelledby="hero-title">
+      <section className="hero" aria-labelledby="hero-title">
         <div className="container hero-inner">
           <div className="hero-copy">
             <h1 id="hero-title" className="hero-title">
@@ -30,30 +28,23 @@ export function Home() {
                 {t.home.play}
               </Link>
               <Link to="/instalar" className="btn btn-ghost btn-lg">
-                {t.home.howInstall}
+                {t.home.stepsInstallLink}
               </Link>
             </div>
           </div>
-          <LiveStrip />
+          <LivePanel lobbies={hot} />
         </div>
-        <Skyline className="hero-skyline" />
-      </section>
-
-      <section className="section container" aria-labelledby="hot-title">
-        <SectionHead id="hot-title" title={t.home.hotTitle} link={{ to: '/lobbies', label: t.home.hotLink(lobbies.length) }} />
-        <ul className="lobby-list">
-          {hot.map((l) => (
-            <LobbyRow key={l.id} lobby={l} compact />
-          ))}
-        </ul>
       </section>
 
       <section className="section container" aria-labelledby="modes-title">
         <SectionHead id="modes-title" title={t.home.modesTitle} link={{ to: '/modos', label: t.home.modesLink }} />
-        <div className="mode-grid">
-          {featured.map((m) => (
-            <ModeCard key={m.slug} mode={m} />
-          ))}
+        <div className="featured">
+          {lead && <ModeCard mode={lead} layout="feature" />}
+          <div className="mode-rows">
+            {rest.map((m) => (
+              <ModeCard key={m.slug} mode={m} layout="row" />
+            ))}
+          </div>
         </div>
       </section>
 
