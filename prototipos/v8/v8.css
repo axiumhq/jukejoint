@@ -98,6 +98,68 @@
   --ks: hsl(200 60% 72%);
   --kc: hsl(190 100% 97%);
 }
+/* Grafite: neutro, pouco croma e superfícies um passo mais claras; descansa a vista. */
+[data-theme="grafite"]{
+  --bg:        hsl(225 6% 8%);
+  --bg-tint:   hsl(220 20% 50% / .05);
+  --bg-tint-2: hsl(25 30% 50% / .04);
+  --s1:        hsl(225 5% 10%);
+  --s2:        hsl(225 5% 12.5%);
+  --s3:        hsl(225 5% 16%);
+  --s4:        hsl(225 5% 20%);
+  --line:      hsl(225 5% 17%);
+  --line-2:    hsl(225 5% 23%);
+  --tx:        hsl(40 12% 91%);
+  --tx-2:      hsl(220 6% 71%);
+  --tx-3:      hsl(220 5% 58%);
+  --acc:       hsl(20 50% 64%);
+  --acc-hi:    hsl(20 55% 70%);
+  --acc-ink:   hsl(20 30% 10%);
+  --acc-tx:    hsl(22 60% 73%);
+  --acc-soft:  hsl(20 50% 64% / .12);
+  --acc-line:  hsl(20 50% 64% / .38);
+  --live:      hsl(150 35% 58%);
+  --warn:      hsl(38 75% 64%);
+  --lineart:   hsl(30 10% 70%);
+  --k0: hsl(225 8% 5%);
+  --k1: hsl(220 10% 16%);
+  --k2: hsl(20 40% 46%);
+  --kh: hsl(30 40% 86%);
+  --kl: hsl(220 8% 22%);
+  --ks: hsl(25 25% 62%);
+  --kc: hsl(35 60% 95%);
+}
+/* Deadlock: verde-fumaça quase preto, pergaminho no texto, âmbar na ação, verde-alma no "ao vivo". */
+[data-theme="deadlock"]{
+  --bg:        hsl(170 16% 4.5%);
+  --bg-tint:   hsl(36 70% 40% / .10);
+  --bg-tint-2: hsl(172 40% 30% / .10);
+  --s1:        hsl(170 12% 6.5%);
+  --s2:        hsl(170 10% 9%);
+  --s3:        hsl(170 9% 12.5%);
+  --s4:        hsl(170 9% 16%);
+  --line:      hsl(170 10% 14%);
+  --line-2:    hsl(168 10% 20%);
+  --tx:        hsl(42 45% 92%);
+  --tx-2:      hsl(40 15% 72%);
+  --tx-3:      hsl(150 6% 56%);
+  --acc:       hsl(35 85% 56%);
+  --acc-hi:    hsl(36 90% 62%);
+  --acc-ink:   hsl(30 40% 7%);
+  --acc-tx:    hsl(38 90% 66%);
+  --acc-soft:  hsl(35 85% 56% / .13);
+  --acc-line:  hsl(35 85% 56% / .42);
+  --live:      hsl(166 62% 52%);
+  --warn:      hsl(10 80% 62%);
+  --lineart:   hsl(40 40% 68%);
+  --k0: hsl(170 25% 3.5%);
+  --k1: hsl(172 35% 13%);
+  --k2: hsl(34 80% 48%);
+  --kh: hsl(42 85% 86%);
+  --kl: hsl(172 25% 19%);
+  --ks: hsl(166 35% 58%);
+  --kc: hsl(44 100% 95%);
+}
 
 /* ---------- tokens que não mudam com o tema ---------- */
 :root{

@@ -77,6 +77,11 @@ Sem rolagem horizontal a 375 px (medido: `scrollWidth = innerWidth` em 375 e 390
 | `--lineart` | line-art de maquinário (opacidade 5–7,5%) | carmim | latão | gelo |
 | `--k0 --k1 --k2 --kh --kl --ks --kc` | capa: fundo, meio, brilho, metal claro, metal escuro, fumaça, núcleo de luz | | | |
 
+Mais dois temas, nos mesmos 28 tokens, como candidatos a padrão:
+
+- **Grafite** (`grafite`): neutro e calmo. Cinza-grafite com pouco croma, superfícies um passo mais claras (fundo 8%, cartão 12,5%), texto levemente quente e um acento argila suave `hsl(20 50% 64%)`. Pensado para quem chega e para sessões longas.
+- **Deadlock** (`deadlock`): verde-fumaça quase preto `hsl(170 16% 4.5%)`, texto pergaminho `hsl(42 45% 92%)`, acento âmbar `hsl(35 85% 56%)` e `--live` verde-alma `hsl(166 62% 52%)`. São as cores do clima do jogo, sem nenhum asset.
+
 **Um sistema de acento:** `--acc` para agir, `--acc-tx` para chamar atenção no texto e `--live` só para presença. Cada modo desloca a matiz da capa em −18° a +22° (`--m` em `MODES[k].shift`, aplicado com `oklch(from …)`), então os modos se distinguem sem sair da família do tema.
 
 ### Tipo
