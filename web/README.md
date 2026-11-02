@@ -24,7 +24,7 @@ npm run preview    # serve o build em http://localhost:4173
 
 | Rota | Tela |
 | --- | --- |
-| `/` | Herói com a arte-chave entre faixas de cinema, lobbies abertos agora (5 linhas), modos em cartaz (linha tipográfica), o que entra no seu PC, rodapé. Cerca de 3,4 telas a 1440×900 |
+| `/` | Home v8: aviso dispensável, recomendado (barra de dados, Ver sala / Jogar agora), modos ao vivo (6 capas que filtram), lobbies abertos (abas, chips, cartões ou compacto) e chegando agora (com Pausar). Trilho social fixo à direita |
 | `/lobbies` | Tabela precisa (linhas de 60 px, 9 visíveis a 1440×900), filtros numa linha (modo, região, só com vaga, só amigos). O recomendado é a primeira linha |
 | `/jogar` | "Jogar agora": escolhe com `pickBestLobby()` (o mesmo pool da lista), pede para entrar e leva a `/lobbies`. `?modo=slug` restringe a um modo |
 | `/modos` | Os seis modos em linhas tipográficas: nome, uma frase, formato, jogadores e lobbies agora, e o diagrama pequeno do modo |
@@ -32,23 +32,17 @@ npm run preview    # serve o build em http://localhost:4173
 | `/instalar` | Instalação com foco em confiança: download, hash SHA-256, status do app, antivírus, o que é instalado e onde, o que o app faz e não faz |
 | `/novidades` | Lista editorial de versões: data com ano, manchete, resumo, contagem por tipo e as mudanças recolhidas |
 
-Os filtros de `/lobbies` (`?modo=…&regiao=BR,NA&vagas=1&amigos=1`) e de `/novidades` (`?modo=…`) ficam na URL. Para revisar o estado vazio: `/lobbies?vazio=1`.
+Os filtros da home (`?modo=…&regiao=BR,NA&vagas=1&amigos=1&favoritos=1&iniciantes=1&partida=1&ping=30`; `/lobbies` redireciona para cá) e de `/novidades` (`?modo=…`) ficam na URL. Para revisar o estado vazio: `/?vazio=1`.
 
-## Regras do v6
+## Regras do v8 (docs/design/v8-estrutura.md)
 
-1. **Um efeito só:** a arte-chave no herói. Nada de chuva, partículas, holofotes em código, cartas que inclinam ou carimbos.
-2. **Nada de 3D em tempo real.** `three`, `@react-three/fiber` e `@types/three` saíram do projeto.
-3. **Um sistema de tipo:** Bodoni Moda nos títulos, Mona Sans no texto e na interface, Fragment Mono só em números (contagens, ping, vagas, versões; e no hash e caminhos de instalação, que são código).
-4. **Um cabeçalho e um rodapé** (`SiteHeader` e `SiteFooter` em `components/Shell.tsx`). Na home, o mesmo cabeçalho mora dentro da faixa de cinema de cima (variante `overlay`).
-5. **Uma cor de destaque:** a luz de sódio, só em ação e em gente. O verdete só quer dizer amigo ou ao vivo.
-6. **Uma fonte de verdade para as contagens:** `liveStats()` em `src/lib/stats.ts` (hook `useLiveStats()`). Jogando agora é a soma dos jogadores nos lobbies; lobbies abertos é a lista inteira (o mesmo número que `/lobbies` mostra sem filtro); com vaga é `isJoinable`. Por modo, as mesmas regras, e a soma dos modos é o total. Cabeçalho, lista, modos e home sempre batem.
-
-## O herói e o loop de vídeo
-
-- **Imagem parada (sempre presente):** `public/media/heroi-1280|1920.{avif,webp,jpg}` em paisagem e `heroi-m-600|900.{avif,webp,jpg}` em retrato (celular, tablet em pé), num `<picture>` com `srcset`. No desktop o navegador baixa o AVIF de 1920 (154 KB); no celular, o AVIF de 900 (106 KB). As fontes originais estão em `prototipos/direcoes/img/`.
-- **Abertura:** as faixas de cinema começam fechadas e abrem (1,4 s) enquanto a imagem surge do preto; o título, o apoio e os créditos entram em seguida. Depois, um ken burns lento (48 s, ida e volta). Com `prefers-reduced-motion`: o quadro final, parado, sem transição.
-- **Loop de vídeo (quando o render chegar):** coloque em `public/media/` os arquivos `heroi.webm`, `heroi.mp4`, `heroi-poster.jpg` e, para retrato, `heroi-mobile.webm` e `heroi-mobile.mp4`. O `vite.config.ts` verifica quais existem quando o servidor ou o build começa (`__HERO_VIDEO__`), então o site nunca pede um arquivo que não existe (sem 404 no console). **Colocou os arquivos? Reinicie o `npm run dev` ou rode o build de novo.**
-- **Quando o vídeo toca** (`components/HeroMedia.tsx`): só se o arquivo existe para a orientação atual, sem movimento reduzido e sem economia de dados (`navigator.connection.saveData` ou `prefers-reduced-data`). O `<video muted loop playsinline autoplay>` fica por cima da imagem e só aparece (fade de 0,9 s) quando dispara o evento `playing`; se falhar, a imagem continua. Pausa fora da tela (IntersectionObserver) e com a aba oculta. Sem vídeo de retrato, o celular fica com a imagem parada.
+1. **Esqueleto da pele B, pele do Deadlock:** barra superior + coluna principal + trilho social fixo (`components/Shell.tsx`). Abaixo de 960 px o trilho vira folha de baixo; no celular, a barra "Jogar agora" fica fixa embaixo.
+2. **Cinco temas por tokens** (`styles/tokens.css`, `lib/theme.ts`, `state/theme.tsx`): Deadlock (padrão), Carmim, Pergaminho, Gelo e Grafite. O script inline de `index.html` aplica o salvo (`localStorage['lobby.theme']`) antes de pintar; `?theme=<id>` força um tema para captura.
+3. **Capas dos modos em SVG** (`lib/cover.ts`, `components/ModeCover.tsx`) pintadas só com `--k*`/`--m*`: trocar o tema repinta. Estáticas; só o zoom de 5% no hover. Avatares gerados do nome (`lib/avatar.ts`) não mudam com o tema.
+4. **Um sistema de tipo:** Roboto Serif condensada só em títulos grandes, logotipo, títulos de seção em dois tons e rótulos `.cap`; Geist na interface (12–13,5 px); Geist Mono nos números.
+5. **Um sistema de acento:** `--acc` para agir, `--acc-tx` para chamar atenção no texto, `--live` só para presença.
+6. **Uma fonte de verdade para as contagens:** `liveStats()` em `src/lib/stats.ts` (hook `useLiveStats()`). Barra superior, modos e lobbies sempre batem; amigos vêm de `friendsOnline()`.
+7. **O trilho por tela:** `<Rail title="…">…</Rail>` (`components/Rail.tsx`) põe o conteúdo no trilho fixo; sem `<Rail>`, a casca mostra o social padrão.
 
 ## Lobbies
 
@@ -68,66 +62,42 @@ Saíram da v4/v5: a vista "ingresso", o painel "Em cartaz agora", selos e frisos
 
 ```
 web/
-  index.html               <title> inicial e meta tags (fontes vêm do bundle)
-  vite.config.ts           build; detecção dos arquivos de vídeo do herói (__HERO_VIDEO__)
-  public/media/            arte-chave do herói (AVIF, WebP, JPG) e, quando houver, o loop de vídeo
+  index.html               <title> inicial, meta tags e o script de tema antes de pintar
   src/
-    config/brand.ts        BRAND_NAME (nome provisório) e dados do instalador
+    config/brand.ts        BRAND_NAME (nome provisório, ainda não decidido) e dados do instalador
     i18n/pt-BR.ts          todas as strings de interface; i18n/index.ts: idioma ativo e formatação
-    styles/tokens.css      cor, tipo, espaço, forma e movimento
-    styles/base.css        reset, tipo, botões, formulários, cabeçalho e rodapé, filtros, diálogo, avisos
-    styles/home.css        herói (faixas, abertura, ken burns), modos em linha, confiança
-    styles/lobbies.css     a tabela de lobbies (desktop, tablet, celular)
-    styles/pages.css       modos, modo, instalar, novidades, 404
-    data/*.ts              dados fictícios (modos, lobbies, notas de versão, instalação)
-    lib/lobbies.ts         regras de lobby (lobbyState, heat, activity, filtros, pickBestLobby) + testes
-    lib/stats.ts           contagens ao vivo, a única fonte de verdade
-    state/session.tsx      estado simulado (login, app, entrar, sair, porta, criar, avisos, gente entrando)
-    hooks/                 useLiveStats, useFeaturedLobby, useNow, media queries
-    components/            Shell (cabeçalho, rodapé, layout), HeroMedia, LobbyTable, LobbyAction,
-                           SessionDialogs, Dialog, Common (créditos, campo de cópia), ModeArt, Icon
+    styles/tokens.css      os cinco temas + tokens fixos (+ aliases v6 para as telas da fase 2)
+    styles/base.css        reset, tipo, botões, chips, etiquetas, avatares, capas, line-art
+    styles/shell.css       barra superior, busca, menus, trilho/folha, aviso, toasts
+    styles/home.css        recomendado, modos ao vivo, chegando agora, barra móvel
+    styles/lobbies.css     abas, chips, cartões e lista compacta
+    styles/legacy.css      v6 que a fase 2 ainda usa (páginas internas, diálogos); some com ela
+    styles/pages.css, room.css   telas da fase 2
+    lib/                   lobbies, room, friends, stats, theme, avatar, cover, search, lobbyCard (+ testes)
+    state/                 session.tsx (sessão simulada), theme.tsx (tema e menu)
+    hooks/                 useLiveStats, useFriends, useIncomingInvite, useFavorites, usePref, useLobbyFilters…
+    components/            Shell, Rail, Search, ThemeMenu, Friends (trilho social), Recommended,
+                           LobbyBrowser, LobbyCard, LobbyAction, Arrivals, Avatar, ModeCover, LineArt,
+                           Common (Chip, Tag, LiveDot, SectionTitle, CopyField), Icon; compat: LobbyTable, ModeArt
     pages/                 uma tela por arquivo
 ```
 
-Os kits 3D da v4/v5 (`torre-kit.glb`, `cidade-kit.glb`) foram para `art/models/`, fora do build.
-
 ## Onde trocar as coisas
 
-- **Nome da plataforma:** `src/config/brand.ts` (`BRAND_NAME`) e o `<title>` inicial de `index.html`. A marca provisória é uma janela acesa (retângulo de sódio) ao lado do nome, em `Wordmark` (`components/Shell.tsx`) e `public/favicon.svg`.
+- **Nome da plataforma:** `src/config/brand.ts` (`BRAND_NAME`) e o `<title>` inicial de `index.html`. A marca provisória (anel aberto) é `BrandMark` em `components/Icon.tsx`.
 - **Cores, tipo, espaços:** `src/styles/tokens.css`.
 - **Textos:** `src/i18n/pt-BR.ts`. Para inglês, crie `en.ts` com o tipo `Messages` e troque o objeto em `src/i18n/index.ts`. Conteúdo (modos, notas) fica em `src/data`.
 - **Frase de cada modo** (home e índice): campo `line` em `src/data/modes.ts`.
 
-## Tipos e tokens
+## Tipos
 
-| Papel | Família | Pacote (auto-hospedado) |
+| Papel | Família | Pacote (auto-hospedado, versão fixa) |
 | --- | --- | --- |
-| Títulos | Bodoni Moda (eixo de tamanho óptico, peso 500) | `@fontsource-variable/bodoni-moda@5.3.0` (`opsz.css`) |
-| Texto e interface | Mona Sans (variável, só eixo de peso) | `@fontsource-variable/mona-sans@5.3.0` (`wght.css`) |
-| Números | Fragment Mono 400 | `@fontsource/fragment-mono@5.3.0` (`latin-400.css`) |
+| Títulos, logotipo, rótulos `.cap` | Roboto Serif (eixos de largura e tamanho óptico) | `@fontsource-variable/roboto-serif@5.3.0` (`standard.css`) |
+| Interface | Geist | `@fontsource-variable/geist@5.3.0` |
+| Números | Geist Mono | `@fontsource-variable/geist-mono@5.3.0` |
 
-Na home baixam três arquivos latinos: Bodoni 46 KB, Mona Sans 40 KB, Fragment Mono 25 KB.
-
-| Token | Valor | Uso |
-| --- | --- | --- |
-| `--bg` | `#0a0d12` | azul-noite: fundo e faixas de cinema |
-| `--raise` / `--raise-2` | `#11151c` / `#171c24` | linha recomendada, hover, diálogo |
-| `--ink` / `--ink-2` / `--ink-3` | `#ece7dc` / `#aaadb2` / `#858a92` | tinta clara quente em três tons |
-| `--sodium` | `#f2a33a` | o único destaque: ação e gente |
-| `--verdigris` | `#6cc2a8` | só amigo e ao vivo |
-
-Contraste medido (WCAG): tinta 15,8:1, tinta 2 8,6:1, tinta 3 5,6:1 sobre o fundo (4,9:1 sobre `--raise-2`); texto do botão sobre o sódio 8,9:1; verdete 9,2:1. Tudo acima de AA.
-
-## Desempenho (build de produção, v6)
-
-| Parte | v5 leva 2 | v6 |
-| --- | --- | --- |
-| JS da primeira pintura (gzip) | `index` 110 + `jsx-runtime` 14 + chunk 3D 281 | `index` 74 + `hooks` 30 (React, roteador, sessão) |
-| CSS (gzip) | (vários arquivos) | 9,3 KB |
-| Home a frio, transferido | ~1,30 MB | **376 KB** no desktop, **328 KB** no celular (DPR 3) |
-| Fontes na home | 3 famílias, ~220 KB | 3 arquivos, 111 KB |
-
-Medido com Chrome headless no `vite preview` (que serve gzip). LCP: a imagem do herói em ~0,2 s no desktop.
+Contraste no tema Deadlock (WCAG): `--tx-3` 5,8:1 sobre `--s2` e 5,2:1 sobre `--s3`; texto do botão sobre o acento 8,5:1.
 
 ## O que é simulado
 

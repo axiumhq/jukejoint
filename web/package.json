@@ -11,9 +11,9 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@fontsource-variable/bodoni-moda": "5.3.0",
-    "@fontsource-variable/mona-sans": "5.3.0",
-    "@fontsource/fragment-mono": "5.3.0",
+    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/geist-mono": "5.3.0",
+    "@fontsource-variable/roboto-serif": "5.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-router": "7.18.4"

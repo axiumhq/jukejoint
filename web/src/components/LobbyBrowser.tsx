@@ -1,46 +1,24 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'react-router';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Lobby } from '../data/lobbies';
-import { modes, type Region } from '../data/modes';
-import { useLiveStats } from '../hooks';
-import { useFeaturedLobby } from '../hooks/useFeatured';
-import { useNow } from '../hooks/useNow';
-import { formatNumber, t } from '../i18n';
-import { EMPTY_FILTERS, filterCounts, filterLobbies, isSortKey, nearestAlternatives, REGIONS, type LobbyFilters } from '../lib/lobbies';
-import { liveStats, type LiveStats } from '../lib/stats';
+import { getMode, type Region } from '../data/modes';
+import { useFavorites, useFriends, useLiveStats, usePref } from '../hooks';
+import { useLobbyFilters, type BrowseTab } from '../hooks/useFilters';
+import { t } from '../i18n';
+import { filterLobbies, hasFriends, LOW_PING_MS, nearestAlternatives, REGIONS } from '../lib/lobbies';
+import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
-import { Credits } from './Common';
-import { FriendsBlock } from './Friends';
+import { Chip, SectionTitle } from './Common';
 import { Icon } from './Icon';
-import { LobbyTable } from './LobbyTable';
+import { CreateCard, LobbyCard, orderLobbies } from './LobbyCard';
 
-function readFilters(p: URLSearchParams): LobbyFilters {
-  const sort = p.get('ordem');
-  const regions = (p.get('regiao') ?? '').split(',').filter((r): r is Region => (REGIONS as string[]).includes(r));
-  return {
-    q: p.get('q') ?? '',
-    mode: p.get('modo') ?? '',
-    regions,
-    slotsOnly: p.get('vagas') === '1',
-    friendsOnly: p.get('amigos') === '1',
-    sort: isSortKey(sort) ? sort : 'ativos',
-  };
-}
+/**
+ * "Lobbies abertos": abas (Todos / Amigos / Favoritos), chips de filtro na URL, cartões ↔ compacto,
+ * "Mostrar os outros N", os estados vazios e o anúncio resumido para leitor de tela.
+ */
 
-function writeFilters(f: LobbyFilters, keep: URLSearchParams) {
-  const p = new URLSearchParams();
-  if (f.q) p.set('q', f.q);
-  if (f.mode) p.set('modo', f.mode);
-  if (f.regions.length) p.set('regiao', f.regions.join(','));
-  if (f.slotsOnly) p.set('vagas', '1');
-  if (f.friendsOnly) p.set('amigos', '1');
-  if (f.sort !== 'ativos') p.set('ordem', f.sort);
-  const empty = keep.get('vazio');
-  if (empty) p.set('vazio', empty);
-  return p;
-}
+const PAGE = 9;
 
-/** Anúncio resumido para leitor de tela: no máximo um a cada 15 s, nunca por linha. */
+/** Anúncio resumido para leitor de tela: no máximo um a cada 15 s, nunca por cartão. */
 function useActivityAnnouncer(lobbies: Lobby[]) {
   const [message, setMessage] = useState('');
   const last = useRef({ at: Date.now(), said: 0 });
@@ -59,231 +37,241 @@ function useActivityAnnouncer(lobbies: Lobby[]) {
   return message;
 }
 
-/** Coluna lateral, 1: os modos como filtro, com quantos jogam em cada um agora. */
-function RailModes({ current, stats, onPick }: { current: string; stats: LiveStats; onPick: (slug: string) => void }) {
-  return (
-    <section className="rail-block rail-block--modes" aria-labelledby="rail-modes">
-      <header className="rail-head">
-        <h3 id="rail-modes">{t.rail.modes}</h3>
-        <span>{t.rail.playing}</span>
-      </header>
-      <ul className="rail-modes">
-        <li>
-          <button type="button" aria-pressed={current === ''} onClick={() => onPick('')}>
-            <span>{t.lobbies.allModes}</span>
-            <span className="num">{formatNumber(stats.players)}</span>
-          </button>
-        </li>
-        {modes.map((m) => (
-          <li key={m.slug}>
-            <button type="button" aria-pressed={current === m.slug} onClick={() => onPick(current === m.slug ? '' : m.slug)}>
-              <span>{m.name}</span>
-              <span className="num">{formatNumber(stats.byMode[m.slug]?.players ?? 0)}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+/** Faixa de ping por região, para o chip ("BR/SA 12–58 ms"). */
+function pingRange(list: Lobby[], r: Region) {
+  const ps = list.filter((l) => l.region === r).map((l) => l.ping);
+  return ps.length ? t.browse.pingRange(Math.min(...ps), Math.max(...ps)) : null;
 }
 
-const ARRIVALS = 5;
+const TABS: { id: BrowseTab; label: string }[] = [
+  { id: 'all', label: t.browse.all },
+  { id: 'friends', label: t.browse.friends },
+  { id: 'fav', label: t.browse.favorites },
+];
 
-/** Coluna lateral, 2: quem acabou de entrar em algum lobby (o sinal de que a cidade está viva). */
-function Arrivals({ lobbies, now, signedIn }: { lobbies: Lobby[]; now: number; signedIn: boolean }) {
-  const items = useMemo(
-    () =>
-      lobbies
-        .flatMap((l) =>
-          l.locked
-            ? []
-            : l.joins
-                .filter((j) => !j.you)
-                .map((j) => ({
-                  ...j,
-                  lobby: l.name,
-                  key: `${l.id}-${j.at}-${j.name}`,
-                })),
-        )
-        .sort((a, b) => b.at - a.at)
-        .slice(0, ARRIVALS),
-    [lobbies],
-  );
-
-  return (
-    <section className="rail-block" aria-labelledby="rail-arrivals">
-      <header className="rail-head">
-        <h3 id="rail-arrivals">
-          <i className="live-dot" aria-hidden="true" />
-          {t.rail.arrivals}
-        </h3>
-      </header>
-      {items.length > 0 ? (
-        <ol className="arrivals">
-          {items.map((j) => (
-            <li key={j.key}>
-              <span className={`ar-who${signedIn && j.friend ? ' is-friend' : ''}`}>{j.name}</span>
-              <span className="ar-when num">{t.rail.ago(Math.max(0, Math.round((now - j.at) / 1000)))}</span>
-              <span className="ar-what">
-                {t.rail.joined} <span>{j.lobby}</span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="rail-empty">{t.rail.arrivalsEmpty}</p>
-      )}
-    </section>
-  );
-}
-
-/**
- * O navegador de lobbies: o coração do site (é a home). Filtros na URL, a tabela única,
- * os estados vazios e, ao lado, os modos como filtro e quem está chegando.
- */
-export function LobbyBrowser() {
+export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; now: number }) {
   const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx } = useSession();
-  const [params, setParams] = useSearchParams();
-  const now = useNow(5000);
-  const f = readFilters(params);
+  const friends = useFriends();
+  const { f, tab, params, update, setTab, clearAll } = useLobbyFilters();
+  const { favs, toggle } = useFavorites();
+  const [view, setView] = usePref<'grid' | 'list'>('view', 'grid');
+  const [shown, setShown] = useState(PAGE);
+  const signedIn = !!user;
   /** ?vazio=1 simula a cidade sem nenhum lobby (para revisar o estado vazio). */
-  const simulateEmpty = params.get('vazio') === '1';
-  const pool = simulateEmpty ? [] : lobbies;
+  const pool = params.get('vazio') === '1' ? [] : lobbies;
   const live = useLiveStats();
-  const stats = simulateEmpty ? liveStats([]) : live;
+  const stats = pool === lobbies ? live : liveStats(pool);
   const announcement = useActivityAnnouncer(pool);
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const update = (patch: Partial<LobbyFilters>) =>
-    setParams(writeFilters({ ...f, ...patch }, params), {
-      replace: true,
-      preventScrollReset: true,
-    });
-  const results = useMemo(() => filterLobbies(pool, f, !!user, lobbyCtx, now), [pool, params, user, lobbyCtx, now]);
-  const counts = useMemo(() => filterCounts(pool, f, !!user), [pool, params, user]);
-  const featured = useFeaturedLobby(pool, f.mode || undefined, now);
+  // Filtro novo, página nova.
+  const key = params.toString();
+  useEffect(() => setShown(PAGE), [key]);
 
-  const anyFilter = !!f.mode || f.regions.length > 0 || f.slotsOnly || f.friendsOnly || f.q !== '';
-  const suggestions = results.length === 0 && anyFilter ? nearestAlternatives(pool, f, !!user) : [];
-  const clearAll = () =>
-    setParams(writeFilters({ ...EMPTY_FILTERS, sort: f.sort }, params), {
-      replace: true,
-      preventScrollReset: true,
-    });
-  const toggleRegion = (r: Region) =>
-    update({
-      regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r],
-    });
+  const filtered = useMemo(() => filterLobbies(pool, f, signedIn, lobbyCtx, now), [pool, f, signedIn, lobbyCtx, now]);
+  // Amigos sem login: não há lista para filtrar, então a aba mostra o convite para entrar.
+  const results = tab === 'fav' ? filtered.filter((l) => favs.has(l.id)) : tab === 'friends' && !signedIn ? [] : filtered;
+  const ordered = orderLobbies(results, lobbyCtx, featured);
+  const visible = ordered.slice(0, shown);
+  const rest = ordered.length - visible.length;
+
+  const anyChip = !!f.mode || f.regions.length > 0 || f.slotsOnly || f.beginners || f.playing || f.lowPing || f.q !== '';
+  const narrowed = anyChip || tab !== 'all';
+  const modeName = getMode(f.mode)?.name;
+  const counts = {
+    all: pool.length,
+    friends: signedIn ? pool.filter((l) => hasFriends(l) && !l.locked).length : null,
+    fav: pool.filter((l) => favs.has(l.id)).length,
+  };
+  const env = { ctx: lobbyCtx, signedIn, me: user?.name ?? t.lobbies.you, friends, now };
+  const create = () => openHost(f.mode || undefined);
+  const toggleRegion = (r: Region) => update({ regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r] });
+
+  const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : null;
+    if (n === null) return;
+    e.preventDefault();
+    const next = (n + TABS.length) % TABS.length;
+    setTab(TABS[next]!.id);
+    tabRefs.current[next]?.focus();
+  };
+
+  let empty: ReactNode = null;
+  if (results.length === 0) {
+    if (pool.length === 0) {
+      empty = (
+        <div className="lb-empty">
+          <Icon name="lobbies" />
+          <b>{t.lobbies.emptyNoneTitle}</b>
+          <p>{t.lobbies.emptyNoneBody}</p>
+          <div>
+            <button type="button" className="btn btn-p" onClick={() => openHost()}>
+              <Icon name="plus" />
+              {t.lobbies.create}
+            </button>
+            <button type="button" className="btn btn-s" onClick={() => requestJoin({ kind: 'bots' })}>
+              {t.lobbies.emptyBots}
+            </button>
+          </div>
+        </div>
+      );
+    } else if (tab === 'friends' && !signedIn) {
+      empty = (
+        <div className="lb-empty">
+          <Icon name="users" />
+          <b>{t.browse.friendsOutTitle}</b>
+          <p>{t.browse.friendsOutBody}</p>
+          <div>
+            <button type="button" className="btn btn-p" onClick={signIn}>
+              <Icon name="user" />
+              {t.account.signIn}
+            </button>
+          </div>
+        </div>
+      );
+    } else if (tab === 'fav' && counts.fav === 0) {
+      empty = (
+        <div className="lb-empty">
+          <Icon name="star" />
+          <b>{t.browse.favEmptyTitle}</b>
+          <p>{t.browse.favEmptyBody}</p>
+          <div>
+            <button type="button" className="btn btn-s" onClick={() => setTab('all')}>
+              {t.browse.all}
+            </button>
+          </div>
+        </div>
+      );
+    } else if (tab === 'friends' && !anyChip) {
+      empty = (
+        <div className="lb-empty">
+          <Icon name="users" />
+          <b>{t.browse.friendsEmptyTitle}</b>
+          <p>{t.browse.friendsEmptyBody}</p>
+          <div>
+            <button type="button" className="btn btn-p" onClick={create}>
+              <Icon name="plus" />
+              {t.lobbies.create}
+            </button>
+          </div>
+        </div>
+      );
+    } else {
+      const suggestions = nearestAlternatives(pool, f, signedIn);
+      empty = (
+        <div className="lb-empty">
+          <Icon name="search" />
+          <b>{t.lobbies.emptyFilteredTitle}</b>
+          <p>{t.browse.filteredBody}</p>
+          <div>
+            {suggestions.map((s) => (
+              <button key={s.label} type="button" className="btn btn-s" onClick={() => update(s.patch)}>
+                {s.label}
+              </button>
+            ))}
+            <button type="button" className="btn btn-s" onClick={clearAll}>
+              {t.lobbies.clear}
+            </button>
+            <button type="button" className="btn btn-p" onClick={create}>
+              <Icon name="plus" />
+              {t.lobbies.create}
+            </button>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  const activeTab = TABS.findIndex((x) => x.id === tab);
 
   return (
-    <section id="lobbies" className="browser" aria-labelledby="lobbies-title">
-      <div className="wrap browser-in">
-        <header className="lb-head">
-          <div className="lb-title">
-            <h2 id="lobbies-title">{t.lobbies.title}</h2>
-            <Credits counts={stats} className="credits--inline" />
-          </div>
-          <button type="button" className="btn btn-line" onClick={() => openHost(f.mode || undefined)}>
-            <Icon name="plus" size={14} />
-            {t.lobbies.create}
-          </button>
-        </header>
+    <section className="sec" id="lobbies" aria-labelledby="lobbies-title">
+      <SectionTitle
+        id="lobbies-title"
+        words={t.home.lobbiesTitle}
+        meta={narrowed ? t.home.lobbiesFiltered(results.length, stats.lobbies, modeName) : t.home.lobbiesMeta(stats.lobbies, stats.withRoom)}
+      >
+        <button type="button" className="btn btn-s" onClick={create} aria-label={t.lobbies.create}>
+          <Icon name="plus" />
+          <span className="t">{t.lobbies.create}</span>
+        </button>
+      </SectionTitle>
 
-        <div className="browser-main">
-
-          <div className="filters" role="group" aria-label={t.lobbies.filtersLabel}>
-            {/* Em tela larga o filtro de modo é a coluna lateral; aqui fica para telas estreitas. */}
-            <label className="f-select f-mode">
-              <span className="sr-only">{t.lobbies.mode}</span>
-              <select value={f.mode} onChange={(e) => update({ mode: e.target.value })}>
-                <option value="">{t.lobbies.modeOption(t.lobbies.allModes, counts.all)}</option>
-                {modes.map((m) => (
-                  <option key={m.slug} value={m.slug}>
-                    {t.lobbies.modeOption(m.name, counts.modes[m.slug] ?? 0)}
-                  </option>
-                ))}
-              </select>
-              <Icon name="chevronDown" size={14} />
-            </label>
-            <div className="f-seg" role="group" aria-label={t.lobbies.region}>
-              {REGIONS.map((r) => (
-                <button key={r} type="button" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
-                  {t.regions[r]}
-                </button>
-              ))}
-            </div>
-            <label className="f-check">
-              <input type="checkbox" checked={f.slotsOnly} onChange={(e) => update({ slotsOnly: e.target.checked })} />
-              <span>{t.lobbies.slotsOnly}</span>
-            </label>
-            <span className="f-check-wrap">
-              <label className="f-check">
-                <input type="checkbox" checked={f.friendsOnly && !!user} disabled={!user} onChange={(e) => update({ friendsOnly: e.target.checked })} />
-                <span>{t.lobbies.friendsOnly}</span>
-              </label>
-              {!user && (
-                <button type="button" className="link-quiet" onClick={signIn}>
-                  ({t.lobbies.friendsSignIn})
-                </button>
-              )}
-            </span>
-            <p className="f-count" aria-live="polite">
-              <span>
-                <span className="num">{results.length}</span> {t.lobbies.resultsUnit(results.length)}
-              </span>
-              {anyFilter && (
-                <button type="button" className="link-quiet" onClick={clearAll}>
-                  {t.lobbies.clear}
-                </button>
-              )}
-            </p>
-          </div>
-
-          {results.length > 0 ? (
-            <LobbyTable lobbies={results} featured={featured} now={now} />
-          ) : anyFilter ? (
-            <div className="empty">
-              <h3>{t.lobbies.emptyFilteredTitle}</h3>
-              <p>{t.lobbies.emptyFilteredBody}</p>
-              <div className="empty-actions">
-                {suggestions.map((s) => (
-                  <button key={s.label} type="button" className="btn btn-line" onClick={() => update(s.patch)}>
-                    {s.label}
-                  </button>
-                ))}
-                <button type="button" className="btn btn-quiet" onClick={clearAll}>
-                  {t.lobbies.clear}
-                </button>
-                <button type="button" className="btn btn-quiet" onClick={() => openHost(f.mode || undefined)}>
-                  {t.lobbies.emptyCreate}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="empty">
-              <h3>{t.lobbies.emptyNoneTitle}</h3>
-              <p>{t.lobbies.emptyNoneBody}</p>
-              <div className="empty-actions">
-                <button type="button" className="btn btn-primary" onClick={() => openHost()}>
-                  {t.lobbies.create}
-                </button>
-                <button type="button" className="btn btn-line" onClick={() => requestJoin({ kind: 'bots' })}>
-                  {t.lobbies.emptyBots}
-                </button>
-              </div>
-            </div>
-          )}
-
-          <p className="sr-only" role="status" aria-live="polite" aria-label={t.lobbies.activityRegion}>
-            {announcement}
-          </p>
+      <div className="ctl">
+        <div className="lb-tabs" role="tablist" aria-label={t.browse.tabs}>
+          {TABS.map((x, i) => (
+            <button
+              key={x.id}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`lb-tab-${x.id}`}
+              aria-selected={tab === x.id}
+              aria-controls="lobby-grid"
+              tabIndex={tab === x.id ? 0 : -1}
+              onClick={() => setTab(x.id)}
+              onKeyDown={(e) => onTabKey(e, i)}
+            >
+              {x.label}
+              {counts[x.id] != null && <span className="c num">{counts[x.id]}</span>}
+            </button>
+          ))}
         </div>
-
-        <aside className="rail" aria-label={t.rail.label}>
-          <FriendsBlock />
-          <RailModes current={f.mode} stats={stats} onPick={(slug) => update({ mode: slug })} />
-          <Arrivals lobbies={pool} now={now} signedIn={!!user} />
-        </aside>
+        <div className="fchips" role="group" aria-label={t.browse.chips}>
+          {REGIONS.map((r) => (
+            <Chip key={r} pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)} count={pingRange(pool, r)}>
+              {t.regions[r]}
+            </Chip>
+          ))}
+          <Chip pressed={f.slotsOnly} onClick={() => update({ slotsOnly: !f.slotsOnly })}>
+            {t.browse.slots}
+          </Chip>
+          <Chip pressed={f.beginners} onClick={() => update({ beginners: !f.beginners })}>
+            {t.browse.beginners}
+          </Chip>
+          <Chip pressed={f.playing} onClick={() => update({ playing: !f.playing })}>
+            {t.browse.playing}
+          </Chip>
+          <Chip pressed={f.lowPing} onClick={() => update({ lowPing: !f.lowPing })}>
+            {t.browse.lowPing(LOW_PING_MS)}
+          </Chip>
+          {modeName && (
+            <Chip pressed onClick={() => update({ mode: '' })} label={t.browse.removeMode(modeName)}>
+              {modeName}
+              <Icon name="x" />
+            </Chip>
+          )}
+        </div>
+        <div className="end">
+          <div className="vt" role="group" aria-label={t.browse.view}>
+            <button type="button" aria-pressed={view === 'grid'} aria-label={t.browse.grid} title={t.browse.grid} onClick={() => setView('grid')}>
+              <Icon name="grid" />
+            </button>
+            <button type="button" aria-pressed={view === 'list'} aria-label={t.browse.list} title={t.browse.list} onClick={() => setView('list')}>
+              <Icon name="rows" />
+            </button>
+          </div>
+        </div>
       </div>
+
+      <div id="lobby-grid" className={view === 'list' ? 'lgrid list' : 'lgrid'} role="tabpanel" aria-labelledby={`lb-tab-${TABS[activeTab]!.id}`}>
+        {empty ?? visible.map((l) => <LobbyCard key={l.id} lobby={l} env={env} featured={l.id === featured?.id} fav={favs.has(l.id)} onFav={toggle} />)}
+        {!empty && rest <= 0 && <CreateCard onCreate={create} />}
+      </div>
+      {rest > 0 && (
+        <div className="more-row">
+          <button type="button" className="btn btn-s" onClick={() => setShown(ordered.length)}>
+            {t.browse.more(rest)}
+            <Icon name="chev" />
+          </button>
+        </div>
+      )}
+
+      <p className="sr-only" role="status" aria-live="polite" aria-label={t.lobbies.activityRegion}>
+        {announcement}
+      </p>
     </section>
   );
 }

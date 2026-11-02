@@ -1,28 +1,71 @@
-import { useState } from 'react';
-import { formatNumber, t } from '../i18n';
-import type { Counts } from '../lib/stats';
+import { useState, type ReactNode } from 'react';
+import { t } from '../i18n';
 import { Icon } from './Icon';
 
-/**
- * As três contagens ao vivo como créditos de filme: número em Fragment Mono, papel em Mona Sans.
- * Os valores vêm sempre de `useLiveStats()`, a mesma fonte do cabeçalho, da lista e dos modos.
- */
-export function Credits({ counts, className }: { counts: Counts; className?: string }) {
+/** Primitivos pequenos do v8: chip, etiqueta, ponto ao vivo e título de seção em dois tons. */
+
+interface ChipProps {
+  children: ReactNode;
+  /** Ligado ou não (vira `aria-pressed`). */
+  pressed: boolean;
+  onClick: () => void;
+  /** Texto pequeno em mono ao lado (contagem, faixa de ping). */
+  count?: ReactNode;
+  label?: string;
+  className?: string;
+}
+
+export function Chip({ children, pressed, onClick, count, label, className }: ChipProps) {
   return (
-    <dl className={className ? `credits ${className}` : 'credits'} aria-label={t.stats.label}>
-      <div>
-        <dt>{t.stats.players}</dt>
-        <dd className="num">{formatNumber(counts.players)}</dd>
-      </div>
-      <div>
-        <dt>{t.stats.lobbies(counts.lobbies)}</dt>
-        <dd className="num">{formatNumber(counts.lobbies)}</dd>
-      </div>
-      <div>
-        <dt>{t.stats.withRoom}</dt>
-        <dd className="num">{formatNumber(counts.withRoom)}</dd>
-      </div>
-    </dl>
+    <button type="button" className={className ? `chip ${className}` : 'chip'} aria-pressed={pressed} aria-label={label} onClick={onClick}>
+      {children}
+      {count != null && <span className="c">{count}</span>}
+    </button>
+  );
+}
+
+export type TagTone = 'acc' | 'soft' | 'plain' | 'warn' | 'lock' | 'line';
+
+/** Etiqueta curta sobre capa ou cartão. `warn` ganha o ponto de "em partida"; `lock`, o cadeado. */
+export function Tag({ tone = 'plain', children, className }: { tone?: TagTone; children: ReactNode; className?: string }) {
+  const cls = ['tag', (tone === 'acc' || tone === 'soft' || tone === 'line') && tone, className].filter(Boolean).join(' ');
+  return (
+    <span className={cls}>
+      {tone === 'warn' && <span className="dot" aria-hidden="true" />}
+      {tone === 'lock' && <Icon name="lock" />}
+      {children}
+    </span>
+  );
+}
+
+export function LiveDot({ small = false }: { small?: boolean }) {
+  return <span className={small ? 'dot-live sm' : 'dot-live'} aria-hidden="true" />;
+}
+
+interface SectionTitleProps {
+  id: string;
+  /** [palavra comum, palavra de acento]: "Modos *ao vivo*". */
+  words: readonly [string, string];
+  /** Rótulo de dado ao lado do título ("6 modos · 143 jogando"). */
+  meta?: ReactNode;
+  /** Selo logo depois do título (ex.: o chip "ao vivo"). */
+  badge?: ReactNode;
+  /** Ações à direita (link, botão). */
+  children?: ReactNode;
+}
+
+/** Cabeçalho de seção: título em serifa condensada com a segunda palavra no acento. */
+export function SectionTitle({ id, words, meta, badge, children }: SectionTitleProps) {
+  return (
+    <div className="sec-h">
+      <h2 className="display two" id={id}>
+        {words[0]} <em>{words[1]}</em>
+      </h2>
+      {badge}
+      {meta != null && <span className="lbl">{meta}</span>}
+      <span className="sp" />
+      {children}
+    </div>
   );
 }
 

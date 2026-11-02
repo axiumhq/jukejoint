@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { friendsOnline } from '../lib/friends';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { friendsOnline, incomingInvite } from '../lib/friends';
+import { lobbyState } from '../lib/lobbies';
+import { readPref, writePref } from '../lib/store';
 import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
 
@@ -36,4 +38,42 @@ export function useLiveStats() {
 export function useFriends() {
   const { lobbies, user } = useSession();
   return useMemo(() => (user ? friendsOnline(lobbies) : []), [lobbies, user]);
+}
+
+/** O convite recebido que o trilho mostra (lib/friends.ts `incomingInvite`), já sem os recusados. */
+export function useIncomingInvite() {
+  const { lobbies, user, lobbyCtx, declinedInvites } = useSession();
+  const friends = useFriends();
+  return useMemo(
+    () => (user ? incomingInvite(friends, lobbies, (l) => l.id !== lobbyCtx.hereId && lobbyState(l, lobbyCtx).canJoin, declinedInvites) : null),
+    [user, friends, lobbies, lobbyCtx, declinedInvites],
+  );
+}
+
+/** Lobbies favoritos, salvos neste navegador (`lobby.favs`). */
+export function useFavorites() {
+  const [favs, setFavs] = useState<ReadonlySet<string>>(() => new Set(readPref<string[]>('favs', [])));
+  const toggle = useCallback((id: string) => {
+    setFavs((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      writePref('favs', [...next]);
+      return next;
+    });
+  }, []);
+  return { favs, toggle };
+}
+
+/** Uma preferência local com estado (visão da lista, aviso dispensado). */
+export function usePref<T>(key: string, fallback: T) {
+  const [value, setValue] = useState<T>(() => readPref(key, fallback));
+  const set = useCallback(
+    (v: T) => {
+      setValue(v);
+      writePref(key, v);
+    },
+    [key],
+  );
+  return [value, set] as const;
 }

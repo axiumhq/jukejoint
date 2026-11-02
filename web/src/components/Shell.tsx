@@ -1,30 +1,102 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
 import { useFriends, useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
+import { friendsIn } from '../lib/friends';
+import { roster } from '../lib/room';
 import { useSession } from '../state/session';
-import { Icon } from './Icon';
+import { AvatarStack, Presence } from './Avatar';
+import { LiveDot } from './Common';
+import { SocialRail } from './Friends';
+import { BrandMark, Icon } from './Icon';
+import { LineArt } from './LineArt';
+import { CoverDefs } from './ModeCover';
+import { RailProvider, useRail, useSheetFocus } from './Rail';
+import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
+import { ThemeMenu } from './ThemeMenu';
+
+/*
+ * Casca v8 (estrutura da pele B): barra superior, coluna principal e trilho social fixo.
+ * Breakpoints em styles/shell.css: 1240 (trilho 288), 960 (trilho vira folha), 760 (celular).
+ */
 
 const NAV: { to: string; label: string; end?: boolean }[] = [
-  { to: '/', label: t.nav.lobbies, end: true },
-  { to: '/modos', label: t.nav.modes },
-  { to: '/novidades', label: t.nav.news },
-  { to: '/instalar', label: t.nav.install },
+  { to: '/', label: t.header.nav.play, end: true },
+  { to: '/modos', label: t.header.nav.modes },
+  { to: '/novidades', label: t.header.nav.today },
+  { to: '/instalar', label: t.header.nav.install },
 ];
 
-/** A marca provisória: uma janela acesa e o nome (BRAND_NAME, ainda não decidido). */
+/** A marca provisória: anel aberto + o nome (BRAND_NAME, ainda não decidido). */
 export function Wordmark() {
   return (
-    <span className="mark">
-      <i aria-hidden="true" />
-      {BRAND_NAME}
-    </span>
+    <>
+      <BrandMark />
+      <b>{BRAND_NAME}</b>
+    </>
   );
 }
 
-function AccountArea() {
+/**
+ * A pílula "Na sala": substitui a contagem ao vivo quando você está numa sala.
+ * Estados do antigo PlayDock: entrando (etapa i/n), na sala (vagas) e em partida. Leva para a sala.
+ */
+function RoomPill() {
+  const { lobbies, hereId, joiningId, joiningStep, user } = useSession();
+  const friends = useFriends();
+  const id = joiningId ?? hereId;
+  const lobby = id ? lobbies.find((l) => l.id === id) : undefined;
+  const faces = useMemo(() => {
+    if (!lobby) return [];
+    const me = user?.name ?? t.lobbies.you;
+    return roster(lobby, { you: me, youHere: hereId === lobby.id, youReady: false, signedIn: !!user, now: 0, friends: friendsIn(friends, lobby.id) })
+      .filter((s) => s.name && !s.you)
+      .slice(0, 3)
+      .map((s) => s.name!);
+  }, [lobby, hereId, user, friends]);
+  if (!lobby) return null;
+
+  const joining = joiningId === lobby.id;
+  const steps = t.lobbies.joinSteps.length;
+  const state = joining
+    ? t.header.roomPill.joining(lobby.name)
+    : lobby.status === 'em-partida'
+      ? t.header.roomPill.playing(lobby.name)
+      : t.header.roomPill.here(lobby.name);
+  const meta = joining ? t.dock.step(joiningStep + 1, steps) : `${lobby.players}/${lobby.slots}`;
+
+  return (
+    <Link
+      to={`/sala/${encodeURIComponent(lobby.id)}`}
+      className={joining ? 'room-pill is-joining' : 'room-pill'}
+      aria-label={joining ? `${state}, ${t.lobbies.joinSteps[joiningStep] ?? ''}` : t.header.roomPill.label(state, lobby.players, lobby.slots)}
+    >
+      <AvatarStack names={faces} size={22} max={3} />
+      <span className="rp-name" aria-hidden="true">
+        {state}
+      </span>
+      <span className="num" aria-hidden="true">
+        {meta}
+      </span>
+    </Link>
+  );
+}
+
+function LiveCount() {
+  const { players } = useLiveStats();
+  const n = formatNumber(players);
+  return (
+    <Link to="/#lobbies" className="live-count" aria-label={t.header.liveLabel(n)}>
+      <LiveDot />
+      <b className="num">{n}</b>
+      <span className="w">{t.header.live}</span>
+    </Link>
+  );
+}
+
+function Account() {
   const { user, signIn, signOut } = useSession();
   const friends = useFriends();
   const [open, setOpen] = useState(false);
@@ -52,31 +124,47 @@ function AccountArea() {
 
   if (!user) {
     return (
-      <button type="button" className="steam" onClick={signIn}>
-        {t.account.signIn}
+      <button type="button" className="btn btn-p btn-steam" onClick={signIn} aria-label={t.account.signIn}>
+        <Icon name="user" />
+        <span className="t">{t.account.signIn}</span>
+        <span className="t-short" aria-hidden="true">
+          {t.friends.join}
+        </span>
       </button>
     );
   }
 
   return (
-    <div className="account" ref={wrap}>
-      <button ref={btn} type="button" className="steam" aria-expanded={open} aria-label={t.account.menu(user.name)} onClick={() => setOpen((v) => !v)}>
-        {user.name}
-        <Icon name="chevronDown" size={14} />
+    <div className="acct-wrap" ref={wrap}>
+      <button
+        ref={btn}
+        type="button"
+        className="acct"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={t.account.menu(user.name)}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <Presence name={user.name} size={30} status="menu" />
+        <span className="acct-name">{user.name}</span>
+        <Icon name="chev" />
       </button>
       {open && (
-        <div className="account-menu">
-          <p className="account-name">{user.name}</p>
-          <p className="account-meta">{t.account.friendsOnline(friends.length)}</p>
-          <p className="fine">{t.account.mockNote}</p>
+        <div className="pop acct-menu">
+          <div>
+            <b>{user.name}</b>
+            <p>{t.account.friendsOnline(friends.length)}</p>
+          </div>
+          <p>{t.account.mockNote}</p>
           <button
             type="button"
-            className="btn btn-line btn-sm"
+            className="btn btn-s btn-sm"
             onClick={() => {
               setOpen(false);
               signOut();
             }}
           >
+            <Icon name="exit" />
             {t.account.signOut}
           </button>
         </div>
@@ -85,145 +173,87 @@ function AccountArea() {
   );
 }
 
-/** Quantos estão jogando agora, sempre à vista (a mesma conta da lista: `useLiveStats`). */
-function LivePill() {
-  const { players } = useLiveStats();
-  const n = formatNumber(players);
-  return (
-    <Link to="/#lobbies" className="live-pill" aria-label={t.header.liveLabel(n)}>
-      <i className="live-dot" aria-hidden="true" />
-      <span className="num">{n}</span>
-      <span className="live-pill-label">{t.header.live}</span>
-    </Link>
-  );
-}
-
-/**
- * A barra "Jogar agora": sempre à vista, diz onde você está. Livre: "Jogar agora".
- * Entrando: a etapa. Numa sala: o nome e as vagas, e leva de volta para ela.
- * No desktop mora no cabeçalho; no celular, fixa embaixo (ao alcance do polegar).
- */
-export function PlayDock({ placement }: { placement: 'header' | 'bottom' }) {
-  const { lobbies, hereId, joiningId, joiningStep } = useSession();
+/** A barra superior: marca, navegação, busca (Ctrl K), ao vivo ou pílula da sala, tema e conta. */
+export function TopBar({ inert }: { inert?: boolean }) {
+  const { hereId, joiningId } = useSession();
+  const [searchOpen, setSearchOpen] = useState(false);
   const { pathname } = useLocation();
-  const id = joiningId ?? hereId;
-  const lobby = id ? lobbies.find((l) => l.id === id) : undefined;
-  const cls = `dock dock--${placement}`;
-
-  if (!lobby) {
-    return (
-      <div className={cls}>
-        <Link to="/jogar" className="btn btn-primary btn-sm dock-play">
-          {t.dock.play}
-          <Icon name="arrowRight" size={14} />
-        </Link>
-      </div>
-    );
-  }
-
-  const to = `/sala/${encodeURIComponent(lobby.id)}`;
-  const onRoom = pathname === to;
-  const joining = joiningId === lobby.id;
-  const steps = t.lobbies.joinSteps.length;
-  const label = joining ? t.dock.joining(lobby.name) : lobby.status === 'em-partida' ? t.dock.playing(lobby.name) : t.dock.here(lobby.name);
-  const meta = joining ? t.dock.step(joiningStep + 1, steps) : `${lobby.players}/${lobby.slots}`;
+  useEffect(() => setSearchOpen(false), [pathname]);
+  const inRoom = !!(joiningId ?? hereId);
 
   return (
-    <div className={`${cls} is-busy`} aria-live="polite">
-      <Link to={to} className="dock-state" aria-current={onRoom ? 'page' : undefined}>
-        <i className={joining ? 'dock-win is-joining' : 'dock-win'} aria-hidden="true" />
-        <span className="dock-label">{label}</span>
-        <span className="num dock-meta">{meta}</span>
+    <header className="tb" inert={inert}>
+      <Link to="/" className="brand" aria-label={t.a11y.home}>
+        <Wordmark />
       </Link>
-      {placement === 'bottom' && !onRoom && (
-        <Link to={to} className="btn btn-line btn-sm">
-          {t.dock.open}
-        </Link>
-      )}
-    </div>
-  );
-}
-
-/** O único cabeçalho do site: fixo no topo, como a barra de um app. */
-export function SiteHeader({ dock }: { dock: boolean }) {
-  const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
-  useEffect(() => setOpen(false), [pathname]);
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [open]);
-
-  return (
-    <header className={`site-header${open ? ' is-open' : ''}`}>
-      <div className="wrap site-header-in">
-        <Link to="/" className="mark-link" aria-label={t.a11y.home}>
-          <Wordmark />
-        </Link>
-        <nav id="site-nav" className="site-nav" aria-label={t.a11y.mainNav}>
-          <ul>
-            {NAV.map((item) => (
-              <li key={item.to}>
-                <NavLink to={item.to} end={item.end} className="nav-link">
-                  {item.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-          <div className="site-nav-account">
-            <AccountArea />
-          </div>
-        </nav>
-        <div className="site-right">
-          <LivePill />
-          {dock && <PlayDock placement="header" />}
-          <div className="site-account">
-            <AccountArea />
-          </div>
-          <button type="button" className="menu-btn" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
-            {t.a11y.menu}
-            <i aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+      <nav className="nav" aria-label={t.a11y.mainNav}>
+        {NAV.map((n) => (
+          <NavLink key={n.to} to={n.to} end={n.end}>
+            {n.label}
+          </NavLink>
+        ))}
+      </nav>
+      <span className="tb-sp" />
+      <Search open={searchOpen} onOpenChange={setSearchOpen} />
+      {inRoom ? <RoomPill /> : <LiveCount />}
+      <button
+        type="button"
+        className="icon-btn only-phone"
+        data-search-toggle
+        aria-label={t.search.open}
+        aria-expanded={searchOpen}
+        onClick={() => setSearchOpen((v) => !v)}
+      >
+        <Icon name="search" />
+      </button>
+      <ThemeMenu />
+      <Account />
     </header>
   );
 }
 
-/** O único rodapé do site. */
-export function SiteFooter() {
+/** O trilho fixo: conteúdo da tela (via `<Rail>`) ou o social padrão. Folha de baixo abaixo de 960 px. */
+function RailAside({ sheet }: { sheet: boolean }) {
+  const { setTarget, slots, title, sheetOpen, closeSheet } = useRail();
+  const closeBtn = useRef<HTMLButtonElement>(null);
+  useSheetFocus(closeBtn);
+  const open = sheet && sheetOpen;
+  const titleId = 'rail-sheet-title';
+  const ref = useCallback((el: HTMLDivElement | null) => setTarget(el), [setTarget]);
+
   return (
-    <footer className="site-footer">
-      <div className="wrap site-footer-in">
-        <div className="site-footer-brand">
-          <Wordmark />
-          <p>{t.footer.about}</p>
+    <>
+      <aside
+        className={open ? 'rail is-open' : 'rail'}
+        aria-label={sheet ? undefined : t.social.label}
+        aria-labelledby={sheet ? titleId : undefined}
+        role={open ? 'dialog' : undefined}
+        aria-modal={open ? true : undefined}
+        inert={sheet && !open}
+      >
+        <div className="sheet-h">
+          <b id={titleId}>{title ?? t.social.sheet}</b>
+          <button ref={closeBtn} type="button" className="icon-btn" aria-label={t.social.close} onClick={closeSheet}>
+            <Icon name="x" />
+          </button>
         </div>
-        <nav aria-label={t.a11y.footerNav}>
-          <ul>
-            {NAV.map((item) => (
-              <li key={item.to}>
-                <Link to={item.to}>{item.label}</Link>
-              </li>
-            ))}
-            <li>
-              <Link to="/instalar#hash">{t.footer.hash}</Link>
-            </li>
-          </ul>
-        </nav>
-        <p className="fine">{t.footer.prototype}</p>
-      </div>
-    </footer>
+        <div ref={ref} className="rail-in" />
+        {slots === 0 && <SocialRail />}
+      </aside>
+      <div className={open ? 'scrim is-on' : 'scrim'} onClick={closeSheet} aria-hidden="true" />
+    </>
   );
 }
 
-export function Layout() {
+function Frame() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
-  const narrow = useMediaQuery('(max-width: 900px)');
   const first = useRef(true);
+  const sheet = useMediaQuery('(max-width: 960px)');
+  const { sheetOpen, closeSheet } = useRail();
+  const modal = sheet && sheetOpen;
+
+  useEffect(() => closeSheet(), [pathname, closeSheet]);
 
   useEffect(() => {
     if (first.current) {
@@ -246,15 +276,30 @@ export function Layout() {
       <a href="#main" className="skip-link">
         {t.a11y.skip}
       </a>
-      <SiteHeader dock={!narrow} />
-      <main id="main" ref={main} tabIndex={-1}>
-        <Outlet />
-      </main>
-      <SiteFooter />
-      {narrow && <PlayDock placement="bottom" />}
+      <CoverDefs />
+      <TopBar inert={modal} />
+      <div className="app">
+        <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
+          <LineArt />
+          <LineArt className="b" />
+          <Outlet />
+          <p className="fineprint">
+            {t.footer.about} {t.footer.prototype}
+          </p>
+        </main>
+        <RailAside sheet={sheet} />
+      </div>
       <JoinDialog />
       <HostDialog />
       <Toasts />
     </>
+  );
+}
+
+export function Layout() {
+  return (
+    <RailProvider>
+      <Frame />
+    </RailProvider>
   );
 }

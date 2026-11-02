@@ -1,97 +1,318 @@
-import { useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
-import { useFriends } from '../hooks';
+import { useFriends, useIncomingInvite } from '../hooks';
 import { t } from '../i18n';
-import type { FriendPresence } from '../lib/friends';
+import { OFFLINE_FRIENDS, type FriendPresence } from '../lib/friends';
 import { lobbyState } from '../lib/lobbies';
 import { useSession } from '../state/session';
+import { useTheme } from '../state/theme';
+import { Presence } from './Avatar';
+import { Icon } from './Icon';
+import { useRail } from './Rail';
 
 /**
- * O trilho de amigos (pesquisa de referências, padrão 3): só quem está online, cada um com
- * onde está e o próximo passo. Na lista: "Entrar" no lobby do amigo (ou bater na porta).
- * Na sala (`invite`): convidar quem ainda não está com você.
+ * O trilho social da home (e o padrão de qualquer tela que não traga o seu):
+ * seu grupo, o convite recebido, amigos online com o próximo passo e os offline, recolhidos.
+ * Sem login: um convite compacto para entrar com a Steam. As contagens saem de `friendsOnline()`.
  */
 
 function where(f: FriendPresence, lobby: Lobby | undefined, hereId: string | null) {
   if (!lobby) return t.friends.idle;
   if (lobby.id === hereId) return t.friends.withYou;
-  return f.host ? t.friends.hosting(lobby.name) : t.friends.inLobby(lobby.name);
+  const to = `/sala/${encodeURIComponent(lobby.id)}`;
+  return (
+    <>
+      {f.host ? t.social.verbHost : t.social.verbIn} <Link to={to}>{lobby.name}</Link>
+    </>
+  );
 }
 
-function JoinStep({ friend, lobby }: { friend: FriendPresence; lobby: Lobby | undefined }) {
-  const { lobbyCtx, requestJoin, openKnock } = useSession();
-  if (!lobby) return null;
-  const st = lobbyState(lobby, lobbyCtx);
-  if (st.action === 'join') {
+/** O próximo passo com um amigo: entrar onde ele está (estado real do lobby) ou chamar. */
+function FriendStep({ friend, called, onCall }: { friend: FriendPresence; called: boolean; onCall: () => void }) {
+  const { lobbies, lobbyCtx, requestJoin, openKnock } = useSession();
+  const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
+  if (!lobby) {
     return (
-      <button type="button" className="btn btn-line btn-sm fr-act" aria-label={t.friends.joinLabel(friend.name, lobby.name)} onClick={() => requestJoin({ kind: 'lobby', lobby })}>
-        {t.friends.join}
+      <button type="button" className="btn btn-g btn-sm" disabled={called} aria-label={called ? undefined : `${t.social.call} ${friend.name}`} onClick={onCall}>
+        {called ? t.social.called : t.social.call}
       </button>
     );
   }
+  const st = lobbyState(lobby, lobbyCtx);
+  if (st.you) return null;
+  if (st.action === 'join') {
+    return (
+      <button
+        type="button"
+        className="btn btn-s btn-sm"
+        aria-label={t.friends.joinLabel(friend.name, lobby.name)}
+        onClick={() => requestJoin({ kind: 'lobby', lobby })}
+      >
+        {st.kind === 'playing-open' ? t.lobbyState.joinMid : t.friends.join}
+      </button>
+    );
+  }
+  if (st.action === 'joining') return <span className="fr-state">{t.lobbyState.joining}</span>;
   if (st.action === 'knock') {
     return (
-      <button type="button" className="btn btn-quiet btn-sm fr-act" onClick={() => openKnock(lobby)}>
+      <button type="button" className="btn btn-g btn-sm" aria-label={t.lobbies.knockLabel(lobby.name)} onClick={() => openKnock(lobby)}>
         {t.friends.knock}
       </button>
     );
   }
-  return st.label && !st.you ? <span className="fr-state">{st.label}</span> : null;
+  return st.label ? <span className="fr-state">{st.label}</span> : null;
 }
 
-export function FriendsBlock({ mode = 'join', exclude }: { mode?: 'join' | 'invite'; exclude?: string }) {
-  const { user, signIn, lobbies, hereId, pushToast } = useSession();
-  const friends = useFriends();
-  const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
-  const list = mode === 'invite' ? friends.filter((f) => f.lobbyId !== exclude) : friends;
-  const headId = mode === 'invite' ? 'fr-invite' : 'fr-title';
-
+export function FriendRow({ friend, children }: { friend: FriendPresence; children?: ReactNode }) {
+  const { lobbies, hereId } = useSession();
+  const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
   return (
-    <section className="rail-block fr" aria-labelledby={headId}>
-      <header className="rail-head">
-        <h3 id={headId}>{mode === 'invite' ? t.friends.inviteTitle : t.friends.title}</h3>
-        {user && <span>{t.friends.online(friends.length)}</span>}
-      </header>
-      {!user ? (
-        <div className="fr-out">
-          <p>{t.friends.signedOut}</p>
-          <button type="button" className="btn btn-line btn-sm" onClick={signIn}>
-            {t.friends.signIn}
+    <li className="fr">
+      <Presence name={friend.name} size={32} status={lobby ? 'lobby' : 'menu'} />
+      <div className="fr-t">
+        <b>{friend.name}</b>
+        <small>{where(friend, lobby, hereId)}</small>
+      </div>
+      {children}
+    </li>
+  );
+}
+
+function SignInPrompt() {
+  const { signIn } = useSession();
+  return (
+    <div className="card rail-signin">
+      <b>{t.social.signInTitle}</b>
+      <p>{t.social.signInBody}</p>
+      <button type="button" className="btn btn-p" onClick={signIn}>
+        <Icon name="user" />
+        {t.account.signIn}
+      </button>
+      <small>{t.social.signInNote}</small>
+    </div>
+  );
+}
+
+function Party() {
+  const { user, lobbies, hereId, pushToast } = useSession();
+  const { closeSheet } = useRail();
+  const { openMenu } = useTheme();
+  const here = hereId ? lobbies.find((l) => l.id === hereId) : undefined;
+  const hint = () => pushToast(t.social.partyHint);
+  return (
+    <section className="rail-sec" aria-labelledby="rail-party">
+      <div className="rail-h">
+        <h3 className="cap" id="rail-party">
+          {t.social.party} · <b>1/5</b>
+        </h3>
+        <button
+          type="button"
+          className="link"
+          onClick={() => {
+            closeSheet();
+            openMenu();
+          }}
+        >
+          {t.social.settings}
+        </button>
+      </div>
+      <div className="card party">
+        <Presence name={user!.name} size={40} status={here ? 'lobby' : 'menu'} />
+        <div>
+          <b>{user!.name}</b>
+          <small>{here ? t.social.inRoom(here.name) : t.social.alone}</small>
+        </div>
+      </div>
+      <div className="party-slots">
+        {[0, 1, 2, 3].map((i) => (
+          <button key={i} type="button" className="slot-e" aria-label={t.social.callToParty} onClick={hint}>
+            <Icon name="plus" />
+          </button>
+        ))}
+        <button type="button" className="btn btn-g btn-sm" onClick={hint}>
+          {t.social.call}
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function Invite() {
+  const { requestJoin, declineInvite, pushToast } = useSession();
+  const invite = useIncomingInvite();
+  if (!invite) return null;
+  const { from, lobby } = invite;
+  return (
+    <section className="rail-sec" aria-labelledby="rail-invite">
+      <div className="rail-h">
+        <h3 className="cap" id="rail-invite">
+          {t.social.invite} · <b>{t.social.now}</b>
+        </h3>
+      </div>
+      <div className="card invite">
+        <div className="invite-top">
+          <Presence name={from} size={34} status="lobby" />
+          <div>
+            <b>{from}</b> {t.social.invitedYou}
+            <small>
+              {lobby.name} · <span className="num">{`${lobby.players}/${lobby.slots}`}</span>
+            </small>
+          </div>
+        </div>
+        <div className="invite-act">
+          <button
+            type="button"
+            className="btn btn-p btn-sm"
+            aria-label={`${t.social.accept}: ${lobby.name}`}
+            onClick={() => requestJoin({ kind: 'lobby', lobby })}
+          >
+            {t.social.accept}
+          </button>
+          <button
+            type="button"
+            className="btn btn-s btn-sm"
+            onClick={() => {
+              declineInvite(lobby.id);
+              pushToast(t.social.declinedToast(from));
+            }}
+          >
+            {t.social.decline}
           </button>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function Online() {
+  const friends = useFriends();
+  const { pushToast } = useSession();
+  const [called, setCalled] = useState<ReadonlySet<string>>(() => new Set());
+  const [showOff, setShowOff] = useState(false);
+  const offId = useId();
+  const inLobbies = friends.filter((f) => f.lobbyId).length;
+  return (
+    <section className="rail-sec" aria-labelledby="rail-online">
+      <div className="rail-h">
+        <h3 className="cap" id="rail-online">
+          {t.social.online} · <b>{friends.length}</b>
+        </h3>
+        <span className="lbl">{t.social.inLobbies(inLobbies)}</span>
+      </div>
+      {friends.length === 0 ? (
+        <p className="rail-empty">{t.friends.none}</p>
+      ) : (
+        <ul>
+          {friends.map((f) => (
+            <FriendRow key={f.name} friend={f}>
+              <FriendStep
+                friend={f}
+                called={called.has(f.name)}
+                onCall={() => {
+                  setCalled((s) => new Set(s).add(f.name));
+                  pushToast(t.social.calledToast(f.name));
+                }}
+              />
+            </FriendRow>
+          ))}
+        </ul>
+      )}
+      <button type="button" className="offline" aria-expanded={showOff} aria-controls={offId} onClick={() => setShowOff((v) => !v)}>
+        <span>
+          {t.social.offline} · <span className="num">{OFFLINE_FRIENDS.length}</span>
+        </span>
+        <Icon name="chev" />
+      </button>
+      <ul id={offId} className="offline-list" hidden={!showOff}>
+        {OFFLINE_FRIENDS.map((n) => (
+          <li key={n} className="fr is-off">
+            <Presence name={n} size={28} status="offline" />
+            <div className="fr-t">
+              <b>{n}</b>
+              <small>{t.social.offlineState}</small>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+export function SocialRail() {
+  const { user } = useSession();
+  const { closeSheet } = useRail();
+  const { openMenu } = useTheme();
+  if (!user) {
+    return (
+      <section className="rail-sec" aria-labelledby="rail-friends-out">
+        <div className="rail-h">
+          <h3 className="cap" id="rail-friends-out">
+            {t.friends.title}
+          </h3>
+          <button
+            type="button"
+            className="link"
+            onClick={() => {
+              closeSheet();
+              openMenu();
+            }}
+          >
+            {t.social.settings}
+          </button>
+        </div>
+        <SignInPrompt />
+      </section>
+    );
+  }
+  return (
+    <>
+      <Party />
+      <Invite />
+      <Online />
+    </>
+  );
+}
+
+/**
+ * Compatibilidade: a sala (fase 2) usa `FriendsBlock`. `invite` lista quem ainda não está
+ * com você, com Convidar; `join` é o bloco de amigos online do trilho.
+ */
+export function FriendsBlock({ mode = 'join', exclude }: { mode?: 'join' | 'invite'; exclude?: string }) {
+  const { user, pushToast } = useSession();
+  const friends = useFriends();
+  const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
+  if (mode === 'join') return user ? <Online /> : <SignInPrompt />;
+  const list = friends.filter((f) => f.lobbyId !== exclude);
+  return (
+    <section className="rail-sec" aria-labelledby="fr-invite">
+      <div className="rail-h">
+        <h3 className="cap" id="fr-invite">
+          {t.friends.inviteTitle}
+        </h3>
+      </div>
+      {!user ? (
+        <SignInPrompt />
       ) : list.length === 0 ? (
         <p className="rail-empty">{t.friends.none}</p>
       ) : (
-        <ul className="fr-list">
-          {list.map((f) => {
-            const lobby = f.lobbyId ? lobbies.find((l) => l.id === f.lobbyId) : undefined;
-            const done = invited.has(f.name);
-            return (
-              <li key={f.name} className="fr-item">
-                <span className="fr-name">{f.name}</span>
-                <span className="fr-where">
-                  {lobby && lobby.id !== hereId ? <Link to={`/sala/${encodeURIComponent(lobby.id)}`}>{where(f, lobby, hereId)}</Link> : where(f, lobby, hereId)}
-                </span>
-                {mode === 'invite' ? (
-                  <button
-                    type="button"
-                    className="btn btn-quiet btn-sm fr-act"
-                    disabled={done}
-                    aria-label={t.friends.inviteLabel(f.name)}
-                    onClick={() => {
-                      setInvited((s) => new Set(s).add(f.name));
-                      pushToast(t.friends.invitedToast(f.name));
-                    }}
-                  >
-                    {done ? t.friends.invited : t.friends.invite}
-                  </button>
-                ) : (
-                  <JoinStep friend={f} lobby={lobby} />
-                )}
-              </li>
-            );
-          })}
+        <ul>
+          {list.map((f) => (
+            <FriendRow key={f.name} friend={f}>
+              <button
+                type="button"
+                className="btn btn-g btn-sm"
+                disabled={invited.has(f.name)}
+                aria-label={t.friends.inviteLabel(f.name)}
+                onClick={() => {
+                  setInvited((s) => new Set(s).add(f.name));
+                  pushToast(t.friends.invitedToast(f.name));
+                }}
+              >
+                {invited.has(f.name) ? t.friends.invited : t.friends.invite}
+              </button>
+            </FriendRow>
+          ))}
         </ul>
       )}
     </section>

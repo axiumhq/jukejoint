@@ -73,6 +73,9 @@ interface SessionValue {
   closeHost: () => void;
   notify: Set<string>;
   toggleNotify: (key: string, label: string) => void;
+  /** Convites recebidos que você recusou (id do lobby); o trilho não mostra de novo. */
+  declinedInvites: ReadonlySet<string>;
+  declineInvite: (lobbyId: string) => void;
   toasts: Toast[];
   pushToast: (message: string) => void;
   dismissToast: (id: number) => void;
@@ -133,6 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [notify, setNotify] = useState<Set<string>>(() => new Set());
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [ready, setReady] = useState(false);
+  const [declinedInvites, setDeclined] = useState<ReadonlySet<string>>(() => new Set());
   const navigate = useNavigate();
   const toastId = useRef(0);
   const hereRef = useRef(hereId);
@@ -189,7 +193,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setLobbies((list) =>
           list.map((x) =>
             x.id === cur
-              ? { ...x, players: Math.max(0, x.players - 1), status: x.status === 'cheio' ? 'aberto' : x.status, joins: x.joins.filter((j) => !j.you), fullSince: undefined }
+              ? {
+                  ...x,
+                  players: Math.max(0, x.players - 1),
+                  status: x.status === 'cheio' ? 'aberto' : x.status,
+                  joins: x.joins.filter((j) => !j.you),
+                  fullSince: undefined,
+                }
               : x,
           ),
         );
@@ -383,6 +393,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [notify, pushToast],
   );
 
+  const declineInvite = useCallback((lobbyId: string) => setDeclined((s) => new Set(s).add(lobbyId)), []);
+
   const value = useMemo<SessionValue>(
     () => ({
       user,
@@ -417,11 +429,44 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       closeHost: () => setHostDialog({ open: false }),
       notify,
       toggleNotify,
+      declinedInvites,
+      declineInvite,
       toasts,
       pushToast,
       dismissToast,
     }),
-    [user, signIn, signOut, appConnected, lobbies, hereId, lobbyCtx, createLobby, closeLobby, leaveLobby, inviteTo, ready, toggleReady, startMatch, joiningId, joiningStep, requestJoin, joinTarget, confirmJoin, knockTarget, sendKnock, knocks, hostDialog, notify, toggleNotify, toasts, pushToast, dismissToast],
+    [
+      user,
+      signIn,
+      signOut,
+      appConnected,
+      lobbies,
+      hereId,
+      lobbyCtx,
+      createLobby,
+      closeLobby,
+      leaveLobby,
+      inviteTo,
+      ready,
+      toggleReady,
+      startMatch,
+      joiningId,
+      joiningStep,
+      requestJoin,
+      joinTarget,
+      confirmJoin,
+      knockTarget,
+      sendKnock,
+      knocks,
+      hostDialog,
+      notify,
+      toggleNotify,
+      declinedInvites,
+      declineInvite,
+      toasts,
+      pushToast,
+      dismissToast,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

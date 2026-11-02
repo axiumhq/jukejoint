@@ -1,502 +1,696 @@
-/*
- * Home v6.1: a home é o navegador de lobbies.
- * Em cima, uma faixa de cinema baixa: a arte-chave pré-renderizada (o único efeito do site)
- * ocupa a direita, o título fica no escuro da esquerda. Abertura: a imagem surge do preto
- * (1,4 s) e depois faz um ken burns lento. Com movimento reduzido: o quadro final, parado.
- * Logo abaixo, sem rolar, a lista ao vivo com a coluna lateral.
- */
+/* Home v8: recomendado com barra de dados, modos ao vivo, chegando agora e a barra móvel. */
+
+/* ───────── 1 · Recomendado ───────── */
 
 .hero {
-  --band: clamp(320px, 38vh, 460px);
   position: relative;
-  height: var(--band);
+  height: 356px;
+  border-radius: var(--r-xl);
   overflow: hidden;
-  isolation: isolate;
-  background: var(--bg);
+  background: var(--k0);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
 }
 
-/* A arte é uma janela à direita, sempre inteira na altura (16:9), que se dissolve no escuro. */
-.hero-plate {
-  position: absolute;
-  inset: 0 0 0 auto;
-  width: max(62%, calc(var(--band) * 16 / 9));
-  overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 34%), linear-gradient(0deg, transparent 0%, #000 22%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(90deg, transparent 0%, #000 34%), linear-gradient(0deg, transparent 0%, #000 22%);
-  mask-composite: intersect;
-}
-
-.hero-cam {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transform: scale(1.06);
-  transition:
-    opacity 1.4s var(--slow),
-    transform 2.6s var(--slow);
-}
-
-.hero.is-ready .hero-cam {
-  opacity: 1;
-  transform: scale(1.02);
-}
-
-.hero-cam picture,
-.hero-still,
-.hero-video {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.hero-still,
-.hero-video {
-  object-fit: cover;
-  object-position: 62% 40%;
-}
-
-.hero-video {
-  opacity: 0;
-  transition: opacity 900ms var(--ease);
-}
-
-.hero-cam.has-video .hero-video {
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .hero.is-ready .hero-cam picture,
-  .hero.is-ready .hero-video {
-    animation: burns 48s 2.6s ease-in-out infinite alternate both;
-  }
-}
-
-@keyframes burns {
-  from {
-    transform: scale(1) translate3d(0, 0, 0);
-  }
-  to {
-    transform: scale(1.05) translate3d(-1%, -0.6%, 0);
-  }
-}
-
-/* O escuro onde o título mora (a máscara já dissolve as bordas; isto só garante o contraste). */
-.hero-scrim {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgb(10 13 18 / 0.7) 0%, rgb(10 13 18 / 0) 40%);
-}
-
-.hero-shot {
+.hero::before {
+  content: '';
   position: absolute;
   inset: 0;
   z-index: 3;
-  display: flex;
-  align-items: center;
+  border-radius: inherit;
   pointer-events: none;
+  box-shadow: 0 0 0 1px hsl(from var(--kh) h s l / 0.08) inset;
 }
 
-.hero-copy {
-  max-width: min(50vw, 680px);
-  pointer-events: auto;
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, hsl(from var(--k0) h s l / 0.95) 0, hsl(from var(--k0) h s l / 0.7) 30%, transparent 60%),
+    linear-gradient(0deg, hsl(from var(--k0) h s l / 0.75), transparent 46%);
+}
+
+.hero-body {
+  position: absolute;
+  z-index: 2;
+  left: 32px;
+  top: 28px;
+  right: 36%;
+}
+
+.hero-cap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hero-cap .acc {
+  color: var(--acc-tx);
+}
+
+.hero-cap i {
+  width: 4px;
+  height: 4px;
+  transform: rotate(45deg);
+  background: var(--acc-tx);
+  opacity: 0.7;
 }
 
 .hero h1 {
-  font-size: clamp(2.25rem, 3.5vw, 3.6rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  text-wrap: initial;
+  margin: 20px 0 16px;
+  font-size: 72px;
+  line-height: 0.9;
+  text-wrap: balance;
 }
 
-.hero-line {
-  display: block;
-  white-space: nowrap;
+.hero h1 a:hover {
+  color: var(--acc-tx);
 }
 
-.hero-lead {
-  margin: var(--s-2) 0 var(--s-3);
-  max-width: 36ch;
-  font-size: var(--fs-lead);
-  line-height: 1.5;
-  color: var(--ink-2);
-  text-wrap: pretty;
-}
-
-.hero-ctas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--s-2) var(--s-4);
-}
-
-.hero-copy > * {
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 1s var(--ease),
-    transform 1s var(--ease);
-}
-
-.hero.is-ready .hero-copy > * {
-  opacity: 1;
-  transform: none;
-}
-
-.hero.is-ready .hero-copy > :nth-child(1) {
-  transition-delay: 0.35s;
-}
-
-.hero.is-ready .hero-copy > :nth-child(2) {
-  transition-delay: 0.5s;
-}
-
-.hero.is-ready .hero-copy > :nth-child(3) {
-  transition-delay: 0.62s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero-cam,
-  .hero-copy > * {
-    transition: none !important;
-  }
-}
-
-/* Retrato (celular, tablet em pé): arte vertical inteira na largura, texto embaixo no chão escuro. */
-/* Retrato (celular, tablet em pé): a arte vira um cartaz no topo e o texto desce para o fluxo,
-   sem passar por cima da torre. */
-@media (orientation: portrait) {
-  .hero {
-    height: auto;
-  }
-
-  .hero-plate {
-    position: relative;
-    inset: auto;
-    width: auto;
-    height: min(66vw, 420px);
-    -webkit-mask-image: linear-gradient(0deg, transparent 0%, #000 34%);
-    mask-image: linear-gradient(0deg, transparent 0%, #000 34%);
-  }
-
-  .hero-still,
-  .hero-video {
-    object-position: 50% 12%;
-  }
-
-  .hero-scrim {
-    display: none;
-  }
-
-  .hero-shot {
-    position: relative;
-    inset: auto;
-    margin-top: calc(var(--s-5) * -1);
-    padding-bottom: var(--s-2);
-  }
-
-  .hero-copy {
-    max-width: 640px;
-  }
-
-  .hero-line {
-    white-space: normal;
-  }
-}
-
-@media (max-width: 560px) {
-  .hero h1 {
-    font-size: clamp(1.875rem, 8.4vw, 2.5rem);
-  }
-
-  .hero-lead {
-    margin: var(--s-1) 0 var(--s-2);
-    font-size: 1rem;
-  }
-
-  .hero-ctas .btn {
-    flex: 1 1 100%;
-    justify-content: space-between;
-  }
-
-  /* O app é para Windows: no celular a instalação não é o próximo passo, a lista é. */
-  .hero-ctas .link-line {
-    display: none;
-  }
-
-  .browser {
-    padding-top: var(--s-2);
-  }
-}
-
-/* ───────── O navegador de lobbies ───────── */
-
-.browser {
-  padding-top: var(--s-3);
-  padding-bottom: var(--s-7);
-  scroll-margin-top: var(--header-h);
-}
-
-.browser-in {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 272px;
-  gap: 0 var(--s-5);
-  align-items: start;
-}
-
-.lb-head {
-  grid-column: 1 / -1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s-3);
-  padding-bottom: var(--s-3);
-}
-
-.lb-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--s-1) var(--s-4);
-}
-
-.lb-title h2 {
-  font-size: clamp(1.75rem, 2.2vw, 2.125rem);
-}
-
-.lb-title .credits--inline {
-  margin-top: 0;
-}
-
-/* Em tela larga o modo se escolhe na coluna lateral. */
-.f-mode {
-  display: none;
-}
-
-/* Coluna lateral: o cabeçalho de cada bloco tem a altura e o fio da linha de filtros,
-   para a tabela e ela formarem um painel só. */
-.rail {
-  position: sticky;
-  top: calc(var(--header-h) + var(--s-3));
-  display: grid;
-  gap: var(--s-4);
-}
-
-.rail-head {
+.hero-sub {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 61px;
-  border-top: 1px solid var(--rule-strong);
-  border-bottom: 1px solid var(--rule);
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--tx-2);
+  font-size: 13.5px;
 }
 
-.rail-head h3 {
+.hero-sub .hs-m {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  color: var(--tx);
+  font-weight: 600;
 }
 
-.rail-head span {
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
+.hero-sub .sep {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tx-3);
 }
 
-.rail-modes button {
+/* barra de dados: Anfitrião · Vagas · Dentro · Servidor · ações */
+.hbar {
+  position: absolute;
+  z-index: 4;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  height: 76px;
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr;
+  align-items: center;
+  margin: 0;
+  border-radius: var(--r-lg);
+  background: hsl(from var(--s1) h s l / 0.74);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    0 0 0 1px var(--line-2) inset,
+    0 1px 0 hsl(from var(--kh) h s l / 0.06) inset;
+}
+
+.hg {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--s-2);
-  min-height: 40px;
-  padding: 0 10px;
-  margin: 0 -10px;
-  width: calc(100% + 20px);
+  gap: 11px;
+  padding: 0 17px;
+  height: 44px;
+  border-right: 1px solid var(--line-2);
+  min-width: 0;
+}
+
+.hg > .ico {
+  width: 18px;
+  height: 18px;
+  color: var(--tx-3);
+}
+
+.hg dt {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.hg-v {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hg-big {
+  font: 600 17px/1 var(--f-mono);
+  letter-spacing: -0.02em;
+}
+
+.hg-big small {
+  font-size: 12px;
+  color: var(--tx-3);
+  font-weight: 500;
+}
+
+.ticks {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.ticks i {
+  width: 5px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--tx-2);
+}
+
+.ticks i.e {
+  background: var(--s4);
+}
+
+/* a próxima vaga pisca três vezes e para (só estado, sem loop) */
+.ticks i.e.next {
+  background: transparent;
+  box-shadow: 0 0 0 1.2px var(--acc-tx) inset;
+  animation: slot 1.4s var(--e-out) 3;
+}
+
+@keyframes slot {
+  50% {
+    background: var(--acc-soft);
+  }
+}
+
+.falta {
+  font: 600 10.5px var(--f-mono);
+  color: var(--acc-tx);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sub-mut {
+  font-weight: 450;
+  color: var(--tx-3);
+  font-size: 12.5px;
+}
+
+.hg-act {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px;
   border: 0;
-  border-radius: var(--radius);
-  background: none;
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
-  text-align: left;
-  transition:
-    color var(--t) var(--ease),
-    background-color var(--t) var(--ease);
+  height: auto;
 }
 
-.rail-modes button:hover {
-  color: var(--ink);
-  background: var(--raise);
+.hg-act .btn {
+  --h: 42px;
+  padding: 0 16px;
+  font-size: 13.5px;
 }
 
-.rail-modes button[aria-pressed='true'] {
-  color: var(--ink);
-  background: var(--raise-2);
-  box-shadow: inset 2px 0 0 var(--sodium);
+.hg-act .btn-s {
+  background: hsl(from var(--s3) h s l / 0.8);
 }
 
-.rail-modes .num {
-  font-size: var(--fs-xs);
-  color: var(--ink);
-}
-
-.arrivals li {
+.hero-none {
+  position: absolute;
+  z-index: 2;
+  left: 32px;
+  bottom: 32px;
+  right: 40%;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 2px var(--s-2);
-  padding: 10px 0;
-  border-bottom: 1px solid var(--rule);
+  gap: 12px;
+  justify-items: start;
 }
 
-.ar-who {
-  font-size: var(--fs-sm);
-  font-weight: 550;
-  color: var(--ink);
+.hero-none p {
+  color: var(--tx-2);
+  font-size: 13.5px;
+}
+
+/* ───────── Social no celular: cartão que abre a folha ───────── */
+
+.mfriends {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-xl);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  text-align: left;
+}
+
+.mfriends .t {
+  flex: 1;
+  min-width: 0;
+}
+
+.mfriends .t b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mfriends .t span {
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.mfriends > .ico {
+  color: var(--tx-3);
+}
+
+/* ───────── 2 · Modos ao vivo ───────── */
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mcard {
+  position: relative;
+  height: 150px;
+  border-radius: var(--r-lg);
   overflow: hidden;
+  text-align: left;
+  background: var(--k0);
+  box-shadow: 0 0 0 1px var(--line);
+  transition:
+    box-shadow var(--t-mid) var(--e-out),
+    transform var(--t-mid) var(--e-out);
+}
+
+.mcard:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 0 1px var(--line-2),
+    0 16px 30px -18px hsl(0 0% 0% / 0.6);
+}
+
+.mcard[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 1.5px var(--acc-tx),
+    0 16px 36px -16px hsl(0 0% 0% / 0.6);
+}
+
+.mcard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, hsl(from var(--k0) h s l / 0.94), hsl(from var(--k0) h s l / 0.2) 60%, transparent);
+}
+
+.mcard-b {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  right: 12px;
+  bottom: 11px;
+}
+
+.mcard-n {
+  font-size: 20px;
+  margin-bottom: 7px;
+}
+
+.mcard-c {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--tx-2);
+  font-size: 11.5px;
+}
+
+.mcard-c .num {
+  color: var(--tx);
+}
+
+.mcard-top {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+}
+
+/* ───────── 4 · Chegando agora ───────── */
+
+.feed {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fe {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  min-width: 0;
+}
+
+.fe.is-new {
+  animation: arrive var(--t-slow) var(--e-out);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.fe-t {
+  min-width: 0;
+  flex: 1;
+}
+
+.fe-n {
+  font-size: 13px;
+  font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ar-who.is-friend {
-  color: var(--verdigris);
+.fe-l {
+  font-size: 12px;
+  color: var(--tx-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ar-when {
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
+.fe-l a {
+  color: var(--tx-2);
 }
 
-.ar-what {
+.fe-l a:hover {
+  color: var(--acc-tx);
+}
+
+.fe > .num {
+  color: var(--tx-3);
+  font-size: 10.5px;
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+.chip.live {
+  color: var(--live);
+  height: 24px;
+  pointer-events: none;
+}
+
+.feed-empty {
   grid-column: 1 / -1;
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
+  color: var(--tx-3);
+  padding: 14px 0;
+}
+
+/* ───────── Barra móvel "Jogar agora" ───────── */
+
+.mbar {
+  display: none;
+  position: fixed;
+  z-index: 45;
+  left: 10px;
+  right: 10px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  height: 66px;
+  border-radius: 16px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 0 11px;
+  background: hsl(from var(--s2) h s l / 0.82);
+  backdrop-filter: blur(22px) saturate(150%);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  box-shadow:
+    0 0 0 1px var(--line-2) inset,
+    0 20px 40px -10px hsl(0 0% 0% / 0.8);
+}
+
+.mbar-cv {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   overflow: hidden;
+  position: relative;
+  flex: none;
+}
+
+.mbar-t {
+  flex: 1;
+  min-width: 0;
+}
+
+.mbar-t b {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 600;
   white-space: nowrap;
+  overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ar-what span {
-  color: var(--ink-2);
+.mbar-t span {
+  font-size: 11px;
+  color: var(--tx-3);
 }
 
-.rail-empty {
-  padding: var(--s-2) 0;
-  font-size: var(--fs-sm);
-  color: var(--ink-3);
+.mbar-t em {
+  font-style: normal;
+  color: var(--acc-tx);
+  font-weight: 600;
 }
 
-/* Até 1180 px: a coluna lateral desce para baixo da lista e o modo volta para os filtros. */
-@media (max-width: 1180px) {
-  .browser-in {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.mbar .btn {
+  --h: 44px;
+  padding: 0 16px;
+  font-size: 13.5px;
+}
 
-  .f-mode {
-    display: inline-flex;
-  }
+/* ───────── Pontos de quebra ───────── */
 
-  /* Os modos já estão no seletor dos filtros; fica só quem está chegando. */
-  .rail {
-    position: static;
-    max-width: 560px;
-    padding-top: var(--s-3);
-  }
-
-  .rail-block--modes {
+@media (max-width: 1500px) {
+  .hbar .ticks {
     display: none;
+  }
+}
+
+@media (max-width: 1240px) {
+  .hero h1 {
+    font-size: 60px;
+  }
+
+  .hg {
+    padding: 0 16px;
+  }
+
+  .hg-ping,
+  .hg > .ico,
+  .hero-sub .hs-x {
+    display: none;
+  }
+
+  .hbar {
+    grid-template-columns: auto auto auto 1fr;
+  }
+
+  .modes {
+    grid-template-columns: repeat(6, minmax(140px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 2px;
+    margin: -2px;
+  }
+
+  .feed {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .hg-act .btn-s {
+    display: none;
+  }
+
+  .hero-body {
+    right: 30%;
+  }
+}
+
+@media (max-width: 960px) {
+  .mfriends {
+    display: flex;
   }
 }
 
 @media (max-width: 760px) {
-  /* O cabeçalho já mostra quantos jogam; aqui fica só o título e o botão, numa linha. */
-  .lb-head {
-    align-items: center;
+  .hero {
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
   }
 
-  .lb-title .credits {
+  .hero > .cover {
+    position: relative;
+    inset: auto;
+    height: 206px;
+    flex: none;
+  }
+
+  .hero-shade {
+    background: linear-gradient(0deg, var(--k0) 0, hsl(from var(--k0) h s l / 0.82) 40%, transparent 66%);
+  }
+
+  .hero-body {
+    position: relative;
+    left: auto;
+    right: auto;
+    top: auto;
+    margin: -40px 16px 0;
+  }
+
+  .hero-cap .hide-s {
     display: none;
   }
 
-  .f-count {
-    margin-left: 0;
-    width: 100%;
+  .hero h1 {
+    font-size: 44px;
+    margin: 12px 0 10px;
+  }
+
+  .hero-sub .hs-x {
+    display: none;
+  }
+
+  .hbar {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: 14px 10px 10px;
+    height: auto;
+    grid-template-columns: 1fr 1fr;
+    padding: 4px 0;
+  }
+
+  .hg,
+  .hg-ping {
+    display: flex;
+    height: auto;
+    padding: 10px 14px;
+    border-right: 0;
+  }
+
+  .hg > .ico,
+  .hg .ticks {
+    display: none;
+  }
+
+  .hg:nth-child(odd) {
+    border-right: 1px solid var(--line-2);
+  }
+
+  .hg:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  .hg-act {
+    display: none;
+  }
+
+  .hero-none {
+    position: relative;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin: -24px 16px 20px;
+  }
+
+  .modes {
+    display: flex;
+    gap: 8px;
+    margin: 0 -16px;
+    padding: 0 16px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .mcard {
+    flex: 0 0 140px;
+    height: 136px;
+    scroll-snap-align: start;
+  }
+
+  .sec-h .lbl,
+  .sec-h .btn .t {
+    display: none;
+  }
+
+  .feed {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .mbar {
+    display: flex;
   }
 }
 
-/* Amigos: o nome em verdete, onde está embaixo, o próximo passo à direita. */
-.fr-list li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'name act'
-    'where act';
-  align-items: center;
-  column-gap: var(--s-2);
-  row-gap: 2px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--rule);
+/* a lista de dados vira as células da grade da barra */
+.hbar-dl {
+  display: contents;
 }
 
-.fr-name {
-  grid-area: name;
-  font-size: var(--fs-sm);
-  font-weight: 550;
-  color: var(--verdigris);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.hero-none h1 {
+  font-size: 44px;
+}
+.mcard-n {
+  display: block;
 }
 
-.fr-where {
-  grid-area: where;
-  min-width: 0;
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+/* o título do recomendado quebra em duas linhas equilibradas; nome longo desce um degrau */
+.hero h1 {
+  max-width: 5.4em;
 }
 
-.fr-where a {
-  color: var(--ink-2);
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 3px;
-  transition: text-decoration-color var(--t) var(--ease);
+.hero h1.is-long {
+  max-width: 9em;
+  font-size: 52px;
 }
 
-.fr-where a:hover {
-  text-decoration-color: var(--ink-2);
+@media (max-width: 1240px) {
+  .hero h1.is-long {
+    font-size: 44px;
+  }
 }
 
-.fr-act,
-.fr-state {
-  grid-area: act;
-}
+@media (max-width: 760px) {
+  .hero h1.is-long {
+    font-size: 36px;
+  }
 
-.fr-state {
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
-}
+  .hg > div {
+    min-width: 0;
+  }
 
-.fr-out {
-  display: grid;
-  gap: 12px;
-  justify-items: start;
-  padding: 14px 0 4px;
-}
-
-.fr-out p {
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
-  text-wrap: pretty;
-}
-
-/* Dentro do painel da sala, o bloco de convite fica mais justo. */
-.panel .fr {
-  margin-top: var(--s-1);
-}
-
-.panel .fr .rail-head {
-  min-height: 44px;
+  .hg-v {
+    flex-wrap: wrap;
+    white-space: normal;
+    row-gap: 4px;
+  }
 }

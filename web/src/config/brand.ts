@@ -1,9 +1,9 @@
 /**
- * Nome provisório da plataforma. O nome ainda não foi decidido:
+ * Nome provisório da plataforma. O nome ainda NÃO foi decidido ("Lobby" é o do protótipo v8):
  * troque aqui e o site inteiro acompanha (wordmark, títulos, textos).
  * O <title> inicial em index.html também usa o nome; troque lá se quiser.
  */
-export const BRAND_NAME = 'PROJETO';
+export const BRAND_NAME = 'Lobby';
 
 /** Dados do app de desktop (mock). */
 export const APP_RELEASE = {

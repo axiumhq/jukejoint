@@ -8,26 +8,31 @@ interface LobbyActionProps {
   lobby: Lobby;
   /** id do elemento com o nome do lobby, para descrever os botões. */
   describedBy?: string;
-  /** O lobby recomendado ganha o único botão cheio da tabela. */
+  /** O lobby recomendado ganha o único botão cheio da lista. */
   primary?: boolean;
   /** Estado já calculado (evita recalcular quando a linha já tem). */
   state?: LobbyState;
+  /** Cartão v8: botão pequeno, com ícone, e o "Entrar" que vira acento no hover do cartão. */
+  compact?: boolean;
 }
 
 /**
  * A ação de um lobby, saída direto da tabela de estados (lib/lobbies.ts `lobbyState`):
  * Entrar, Entrar no meio, Convidar (seu, com Fechar ao lado), Sair, Bater na porta,
- * Pedido enviado, Avisar quando vagar ou quando acabar. Um botão por linha; a largura é fixa no CSS.
+ * Pedido enviado, Avisar quando vagar ou quando acabar. Um botão por cartão.
  */
-export function LobbyAction({ lobby, describedBy, primary = false, state: given }: LobbyActionProps) {
+export function LobbyAction({ lobby, describedBy, primary = false, state: given, compact = false }: LobbyActionProps) {
   const { requestJoin, joiningStep, toggleNotify, lobbyCtx, leaveLobby, closeLobby, inviteTo, openKnock } = useSession();
   const st = given ?? lobbyState(lobby, lobbyCtx);
-  const join = primary ? 'btn btn-primary' : 'btn btn-line';
+  const sm = compact ? ' btn-sm' : '';
+  const join = primary ? `btn btn-p${sm}` : `btn btn-s${sm}${compact ? ' go' : ''}`;
+  const quiet = `btn btn-s${sm}`;
+  const ico = (name: Parameters<typeof Icon>[0]['name']) => (compact ? <Icon name={name} /> : null);
 
   switch (st.action) {
     case 'joining':
       return (
-        <button type="button" className={`${join} btn-act is-busy`} disabled aria-live="polite">
+        <button type="button" className={`${join} btn-act is-busy`} aria-disabled="true" aria-live="polite">
           {t.lobbies.joinSteps[joiningStep] ?? t.lobbies.joinSteps[0]}
         </button>
       );
@@ -39,35 +44,40 @@ export function LobbyAction({ lobby, describedBy, primary = false, state: given 
           aria-label={st.kind === 'playing-open' ? `${st.verb}: ${lobby.name}` : t.lobbies.joinLabel(lobby.name)}
           onClick={() => requestJoin({ kind: 'lobby', lobby })}
         >
+          {st.kind === 'playing-open' && ico('enterMid')}
           {st.verb}
         </button>
       );
     case 'invite':
       return (
-        <span className="btn-pair">
-          <button type="button" className="btn btn-line btn-act" aria-label={t.lobbies.inviteLabel(lobby.name)} onClick={() => inviteTo(lobby)}>
+        <span className="btn-pair lc-act">
+          <button type="button" className={`${quiet} btn-act`} aria-label={t.lobbies.inviteLabel(lobby.name)} onClick={() => inviteTo(lobby)}>
+            {ico('link')}
             {st.verb}
           </button>
-          <button type="button" className="btn btn-quiet btn-square" aria-label={t.lobbies.closeLabel(lobby.name)} onClick={() => closeLobby(lobby.id)}>
-            <Icon name="close" size={14} />
+          <button type="button" className={`btn btn-g${sm} btn-square`} aria-label={t.lobbies.closeLabel(lobby.name)} onClick={() => closeLobby(lobby.id)}>
+            <Icon name="x" size={14} />
           </button>
         </span>
       );
     case 'leave':
       return (
-        <button type="button" className="btn btn-quiet btn-act" aria-label={t.lobbies.leaveLabel(lobby.name)} onClick={leaveLobby}>
+        <button type="button" className={`${quiet} btn-act`} aria-label={t.lobbies.leaveLabel(lobby.name)} onClick={leaveLobby}>
+          {ico('exit')}
           {st.verb}
         </button>
       );
     case 'knock':
       return (
-        <button type="button" className="btn btn-line btn-act" aria-label={t.lobbies.knockLabel(lobby.name)} onClick={() => openKnock(lobby)}>
+        <button type="button" className={`${quiet} btn-act`} aria-label={t.lobbies.knockLabel(lobby.name)} onClick={() => openKnock(lobby)}>
+          {ico('knock')}
           {st.verb}
         </button>
       );
     case 'knock-pending':
       return (
-        <button type="button" className="btn btn-quiet btn-act" aria-disabled="true" aria-describedby={describedBy}>
+        <button type="button" className={`${quiet} btn-act`} aria-disabled="true" aria-describedby={describedBy}>
+          {ico('check')}
           {st.verb}
         </button>
       );
@@ -77,12 +87,12 @@ export function LobbyAction({ lobby, describedBy, primary = false, state: given 
       return (
         <button
           type="button"
-          className="btn btn-quiet btn-act"
+          className={`${quiet} btn-act`}
           aria-pressed={st.notifyOn}
           aria-label={`${st.notifyOn ? st.verb : st.action === 'notify-end' ? t.lobbyState.notifyEnd : t.lobbyState.notifySlot}: ${lobby.name}`}
           onClick={() => toggleNotify(notifyKey(lobby), toast)}
         >
-          {st.notifyOn && <Icon name="check" size={14} />}
+          {st.notifyOn ? <Icon name="check" size={compact ? undefined : 14} /> : ico('bell')}
           {st.verb}
         </button>
       );

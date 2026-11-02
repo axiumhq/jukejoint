@@ -59,3 +59,46 @@ export function friendsOnline(lobbies: Lobby[]): FriendPresence[] {
 export function friendsIn(friends: FriendPresence[], lobbyId: string) {
   return friends.filter((f) => f.lobbyId === lobbyId).map((f) => f.name);
 }
+
+/**
+ * Amigos offline (v8: "Offline · 23", recolhido). Só nomes, sem presença: no produto,
+ * vêm da lista de amigos da Steam. Nenhum deles aparece online em lobby nenhum.
+ */
+export const OFFLINE_FRIENDS = [
+  'Abrolho',
+  'Bruma',
+  'Cachimbo',
+  'Dobradiça',
+  'Estopa',
+  'Farol',
+  'Gengibre',
+  'Hera',
+  'Ipê',
+  'Jacarandá',
+  'Lacre',
+  'Mandacaru',
+  'Novelo',
+  'Orvalho',
+  'Pedregulho',
+  'Quintal',
+  'Rapadura',
+  'Sabugo',
+  'Taramela',
+  'Umbu',
+  'Varanda',
+  'Xaxim',
+  'Zabumba',
+];
+
+/**
+ * O convite recebido do trilho: um amigo que abriu um lobby em que ainda dá para entrar
+ * (e em que você não está). `null` quando não há nenhum, ou quando o convite foi recusado.
+ */
+export function incomingInvite(friends: FriendPresence[], lobbies: Lobby[], canJoin: (l: Lobby) => boolean, dismissed: ReadonlySet<string> = new Set()) {
+  for (const f of friends) {
+    if (!f.host || !f.lobbyId || dismissed.has(f.lobbyId)) continue;
+    const lobby = lobbies.find((l) => l.id === f.lobbyId);
+    if (lobby && canJoin(lobby)) return { from: f.name, lobby };
+  }
+  return null;
+}

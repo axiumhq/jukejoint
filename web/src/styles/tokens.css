@@ -1,43 +1,232 @@
 /*
- * Tokens v6 "Minimal + cinema" (docs/design/brief-v6.md).
- * Uma noite: azul-noite, tinta clara quente e uma luz de sódio. O verdete só quer dizer
- * "amigo" ou "ao vivo". Um sistema de tipo: Bodoni Moda (títulos), Mona Sans (texto e
- * interface), Fragment Mono (só números). Cantos de 2 px em tudo que é interativo.
+ * Tokens v8 "Fumaça e latão" (docs/design/v8-estrutura.md §4 e §5).
+ * O tema é o atributo data-theme no <html>; o script inline de index.html aplica o salvo antes
+ * de pintar. Os cinco blocos têm os mesmos 28 tokens. Tudo lê daqui: superfícies, acento, fios,
+ * line-art, presença e as capas dos modos (--k*). Os avatares não mudam com o tema.
+ * Um sistema de acento: --acc para agir, --acc-tx para chamar atenção no texto, --live só presença.
+ */
+
+/* Deadlock (padrão): verde-fumaça quase preto, pergaminho no texto, âmbar na ação, verde-alma no "ao vivo". */
+:root,
+[data-theme='deadlock'] {
+  color-scheme: dark;
+  --bg: hsl(170 16% 4.5%);
+  --bg-tint: hsl(36 70% 40% / 0.1);
+  --bg-tint-2: hsl(172 40% 30% / 0.1);
+  --s1: hsl(170 12% 6.5%); /* trilhos, barras */
+  --s2: hsl(170 10% 9%); /* cartões */
+  --s3: hsl(170 9% 12.5%); /* hover, campos */
+  --s4: hsl(170 9% 16%); /* pressionado */
+  --line: hsl(170 10% 14%);
+  --line-2: hsl(168 10% 20%);
+  --tx: hsl(42 45% 92%);
+  --tx-2: hsl(40 15% 72%);
+  --tx-3: hsl(150 6% 56%);
+  --acc: hsl(35 85% 56%); /* preenchimentos: ação primária, item ativo */
+  --acc-hi: hsl(36 90% 62%);
+  --acc-ink: hsl(30 40% 7%);
+  --acc-tx: hsl(38 90% 66%); /* acento como texto sobre escuro */
+  --acc-soft: hsl(35 85% 56% / 0.13);
+  --acc-line: hsl(35 85% 56% / 0.42);
+  --live: hsl(166 62% 52%); /* presença online e "ao vivo"; nunca ação */
+  --warn: hsl(10 80% 62%);
+  --lineart: hsl(40 40% 68%);
+  /* capa: fundo, meio, brilho, metal claro, metal escuro, fumaça, núcleo */
+  --k0: hsl(170 25% 3.5%);
+  --k1: hsl(172 35% 13%);
+  --k2: hsl(34 80% 48%);
+  --kh: hsl(42 85% 86%);
+  --kl: hsl(172 25% 19%);
+  --ks: hsl(166 35% 58%);
+  --kc: hsl(44 100% 95%);
+}
+
+[data-theme='carmim'] {
+  --bg: hsl(345 30% 4%);
+  --bg-tint: hsl(350 80% 32% / 0.2);
+  --bg-tint-2: hsl(345 70% 24% / 0.14);
+  --s1: hsl(345 22% 6.2%);
+  --s2: hsl(345 18% 8.6%);
+  --s3: hsl(345 16% 12%);
+  --s4: hsl(345 15% 16%);
+  --line: hsl(345 20% 14%);
+  --line-2: hsl(345 18% 20%);
+  --tx: hsl(350 35% 96%);
+  --tx-2: hsl(345 14% 72%);
+  --tx-3: hsl(345 10% 54%);
+  --acc: hsl(350 76% 49%);
+  --acc-hi: hsl(350 80% 55%);
+  --acc-ink: hsl(350 60% 98%);
+  --acc-tx: hsl(350 95% 69%);
+  --acc-soft: hsl(350 76% 49% / 0.14);
+  --acc-line: hsl(350 76% 55% / 0.45);
+  --live: hsl(146 50% 56%);
+  --warn: hsl(36 92% 62%);
+  --lineart: hsl(350 70% 58%);
+  --k0: hsl(345 45% 3.5%);
+  --k1: hsl(348 62% 15%);
+  --k2: hsl(350 78% 46%);
+  --kh: hsl(14 85% 86%);
+  --kl: hsl(348 50% 20%);
+  --ks: hsl(352 70% 62%);
+  --kc: hsl(20 100% 95%);
+}
+
+[data-theme='pergaminho'] {
+  --bg: hsl(20 10% 5%);
+  --bg-tint: hsl(36 55% 40% / 0.1);
+  --bg-tint-2: hsl(24 40% 30% / 0.08);
+  --s1: hsl(20 9% 6.6%);
+  --s2: hsl(20 8% 9%);
+  --s3: hsl(20 8% 12.5%);
+  --s4: hsl(20 8% 16%);
+  --line: hsl(24 9% 14%);
+  --line-2: hsl(26 10% 20%);
+  --tx: hsl(38 65% 96%);
+  --tx-2: hsl(36 18% 72%);
+  --tx-3: hsl(32 10% 54%);
+  --acc: hsl(42 60% 84%);
+  --acc-hi: hsl(42 70% 89%);
+  --acc-ink: hsl(20 12% 7%);
+  --acc-tx: hsl(41.6 60% 66%);
+  --acc-soft: hsl(42 60% 84% / 0.1);
+  --acc-line: hsl(42 60% 84% / 0.38);
+  --live: hsl(96 38% 60%);
+  --warn: hsl(28 90% 62%);
+  --lineart: hsl(40 45% 70%);
+  --k0: hsl(24 25% 3.5%);
+  --k1: hsl(30 38% 12%);
+  --k2: hsl(36 62% 46%);
+  --kh: hsl(44 90% 88%);
+  --kl: hsl(28 40% 18%);
+  --ks: hsl(38 50% 66%);
+  --kc: hsl(45 100% 96%);
+}
+
+[data-theme='gelo'] {
+  --bg: hsl(218 30% 4%);
+  --bg-tint: hsl(200 90% 40% / 0.12);
+  --bg-tint-2: hsl(230 70% 40% / 0.1);
+  --s1: hsl(218 22% 6.2%);
+  --s2: hsl(218 18% 8.6%);
+  --s3: hsl(218 16% 12%);
+  --s4: hsl(218 15% 16%);
+  --line: hsl(218 18% 14%);
+  --line-2: hsl(218 16% 20%);
+  --tx: hsl(205 40% 96%);
+  --tx-2: hsl(212 14% 72%);
+  --tx-3: hsl(214 10% 54%);
+  --acc: hsl(190 92% 70%);
+  --acc-hi: hsl(190 95% 78%);
+  --acc-ink: hsl(215 45% 7%);
+  --acc-tx: hsl(190 92% 72%);
+  --acc-soft: hsl(190 92% 70% / 0.11);
+  --acc-line: hsl(190 92% 70% / 0.4);
+  --live: hsl(160 62% 58%);
+  --warn: hsl(38 92% 64%);
+  --lineart: hsl(195 70% 70%);
+  --k0: hsl(220 45% 3.5%);
+  --k1: hsl(214 60% 13%);
+  --k2: hsl(198 85% 48%);
+  --kh: hsl(190 100% 92%);
+  --kl: hsl(216 45% 20%);
+  --ks: hsl(200 60% 72%);
+  --kc: hsl(190 100% 97%);
+}
+
+/* Grafite: neutro, pouco croma e superfícies um passo mais claras; descansa a vista. */
+[data-theme='grafite'] {
+  --bg: hsl(225 6% 8%);
+  --bg-tint: hsl(220 20% 50% / 0.05);
+  --bg-tint-2: hsl(25 30% 50% / 0.04);
+  --s1: hsl(225 5% 10%);
+  --s2: hsl(225 5% 12.5%);
+  --s3: hsl(225 5% 16%);
+  --s4: hsl(225 5% 20%);
+  --line: hsl(225 5% 17%);
+  --line-2: hsl(225 5% 23%);
+  --tx: hsl(40 12% 91%);
+  --tx-2: hsl(220 6% 71%);
+  --tx-3: hsl(220 5% 58%);
+  --acc: hsl(20 50% 64%);
+  --acc-hi: hsl(20 55% 70%);
+  --acc-ink: hsl(20 30% 10%);
+  --acc-tx: hsl(22 60% 73%);
+  --acc-soft: hsl(20 50% 64% / 0.12);
+  --acc-line: hsl(20 50% 64% / 0.38);
+  --live: hsl(150 35% 58%);
+  --warn: hsl(38 75% 64%);
+  --lineart: hsl(30 10% 70%);
+  --k0: hsl(225 8% 5%);
+  --k1: hsl(220 10% 16%);
+  --k2: hsl(20 40% 46%);
+  --kh: hsl(30 40% 86%);
+  --kl: hsl(220 8% 22%);
+  --ks: hsl(25 25% 62%);
+  --kc: hsl(35 60% 95%);
+}
+
+/* Tokens que não mudam com o tema. */
+:root {
+  --f-ui: 'Geist Variable', 'Geist', system-ui, sans-serif;
+  --f-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
+  --f-display: 'Roboto Serif Variable', 'Roboto Serif', Georgia, serif;
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 10px;
+  --r-xl: 12px;
+  --tb: 58px; /* barra superior */
+  --rail: 320px; /* trilho social */
+  --gut: 32px; /* margem do conteúdo */
+  --e-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --t-fast: 150ms;
+  --t-mid: 200ms;
+  --t-slow: 240ms;
+}
+
+@media (max-width: 1240px) {
+  :root {
+    --rail: 288px;
+    --gut: 24px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --tb: 56px;
+    --gut: 16px;
+  }
+}
+
+/*
+ * Compatibilidade v6: as telas da fase 2 (sala, modos, instalar, hoje) ainda leem os nomes antigos.
+ * Apontam para os tokens v8, então já trocam de tema. Saem quando essas telas forem refeitas.
  */
 :root {
-  color-scheme: dark;
-
-  /* Cor */
-  --bg: #0a0d12; /* azul-noite: fundo e faixas de cinema */
-  --raise: #11151c; /* linha em foco, painel, diálogo */
-  --raise-2: #171c24; /* hover sobre o raise */
-  --rule: rgb(236 231 220 / 0.1);
-  --rule-strong: rgb(236 231 220 / 0.22);
-  --ink: #ece7dc; /* tinta clara quente */
-  --ink-2: #aaadb2;
-  --ink-3: #858a92;
-  --sodium: #f2a33a; /* o único destaque: ação e gente */
-  --sodium-hi: #ffb85e;
-  --sodium-ink: #1a1107;
-  --verdigris: #6cc2a8; /* só amigo e ao vivo */
-
-  /* Tipo */
-  --display: 'Bodoni Moda Variable', 'Bodoni 72', Didot, Georgia, serif;
-  --sans: 'Mona Sans Variable', 'Segoe UI', system-ui, sans-serif;
-  --mono: 'Fragment Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
-
-  /* Escala (razão ~1,5 entre os saltos de título) */
+  --raise: var(--s2);
+  --raise-2: var(--s3);
+  --rule: var(--line);
+  --rule-strong: var(--line-2);
+  --ink: var(--tx);
+  --ink-2: var(--tx-2);
+  --ink-3: var(--tx-3);
+  --sodium: var(--acc);
+  --sodium-hi: var(--acc-hi);
+  --sodium-ink: var(--acc-ink);
+  --verdigris: var(--live);
+  --display: var(--f-display);
+  --sans: var(--f-ui);
+  --mono: var(--f-mono);
   --fs-hero: clamp(2.75rem, 4.7vw, 4.9rem);
-  --fs-h1: clamp(2.5rem, 4.2vw, 3.75rem);
-  --fs-h2: clamp(1.875rem, 2.8vw, 2.625rem);
-  --fs-h3: clamp(1.375rem, 1.8vw, 1.625rem);
-  --fs-lead: clamp(1.0625rem, 1.25vw, 1.1875rem);
-  --fs-body: 1rem;
-  --fs-sm: 0.875rem;
-  --fs-xs: 0.8125rem;
-
-  /* Espaço (grade de 8) */
-  --m: clamp(20px, 4vw, 64px); /* margem lateral */
+  --fs-h1: clamp(2.25rem, 3.6vw, 3.375rem);
+  --fs-h2: clamp(1.5rem, 2.2vw, 1.875rem);
+  --fs-h3: 1.25rem;
+  --fs-lead: 0.9375rem;
+  --fs-body: 0.8125rem;
+  --fs-sm: 0.8125rem;
+  --fs-xs: 0.75rem;
+  --m: var(--gut);
   --max: 1440px;
   --s-1: 8px;
   --s-2: 16px;
@@ -47,19 +236,9 @@
   --s-6: 64px;
   --s-7: 96px;
   --s-8: 144px;
-  --section: clamp(96px, 11vw, 176px);
-
-  /* Forma e movimento */
-  --radius: 2px;
-  --ease: cubic-bezier(0.16, 1, 0.3, 1); /* a curva do site */
-  --slow: cubic-bezier(0.65, 0, 0.15, 1); /* só a abertura do herói */
-  --t: 220ms;
-
-  --header-h: 72px;
-}
-
-@media (max-width: 760px) {
-  :root {
-    --header-h: 60px;
-  }
+  --section: 96px;
+  --radius: var(--r-sm);
+  --ease: var(--e-out);
+  --t: var(--t-mid);
+  --header-h: var(--tb);
 }

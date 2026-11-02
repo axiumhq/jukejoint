@@ -21,10 +21,27 @@ export interface LobbyFilters {
   regions: Region[];
   slotsOnly: boolean;
   friendsOnly: boolean;
+  /** v8: chips da home (Iniciantes ok, Em partida, Ping < 30). */
+  beginners: boolean;
+  playing: boolean;
+  lowPing: boolean;
   sort: SortKey;
 }
 
-export const EMPTY_FILTERS: LobbyFilters = { q: '', mode: '', regions: [], slotsOnly: false, friendsOnly: false, sort: 'ativos' };
+export const EMPTY_FILTERS: LobbyFilters = {
+  q: '',
+  mode: '',
+  regions: [],
+  slotsOnly: false,
+  friendsOnly: false,
+  beginners: false,
+  playing: false,
+  lowPing: false,
+  sort: 'ativos',
+};
+
+/** O chip "Ping < 30". */
+export const LOW_PING_MS = 30;
 
 const MIN = 60_000;
 /** Janela do "entrou agora". */
@@ -33,8 +50,7 @@ export const FRESH_MS = 8_000;
 export const freeSlots = (l: Lobby) => Math.max(0, l.slots - l.players);
 
 /** Tem lugar e a partida aceita gente agora (aberto, ou em partida que deixa entrar no meio). */
-export const hasRoom = (l: Lobby) =>
-  freeSlots(l) > 0 && (l.status === 'aberto' || (l.status === 'em-partida' && l.joinInProgress));
+export const hasRoom = (l: Lobby) => freeSlots(l) > 0 && (l.status === 'aberto' || (l.status === 'em-partida' && l.joinInProgress));
 
 /**
  * Dá para ENTRAR DIRETO: tem lugar e não é só com convite.
@@ -62,17 +78,7 @@ export interface LobbyContext {
   notify?: ReadonlySet<string>;
 }
 
-export type LobbyKind =
-  | 'open'
-  | 'joining'
-  | 'mine'
-  | 'joined'
-  | 'private'
-  | 'knocking'
-  | 'invited'
-  | 'full'
-  | 'playing-open'
-  | 'playing-closed';
+export type LobbyKind = 'open' | 'joining' | 'mine' | 'joined' | 'private' | 'knocking' | 'invited' | 'full' | 'playing-open' | 'playing-closed';
 
 export type LobbyActionKind = 'join' | 'joining' | 'invite' | 'leave' | 'knock' | 'knock-pending' | 'notify-slot' | 'notify-end';
 
@@ -296,6 +302,9 @@ function matches(l: Lobby, f: LobbyFilters, signedIn: boolean) {
   if (f.regions.length > 0 && !f.regions.includes(l.region)) return false;
   if (f.slotsOnly && !hasRoom(l)) return false;
   if (f.friendsOnly && signedIn && !hasFriends(l)) return false;
+  if (f.beginners && !l.beginners) return false;
+  if (f.playing && l.status !== 'em-partida') return false;
+  if (f.lowPing && l.ping >= LOW_PING_MS) return false;
   if (q && !`${l.name} ${l.host}`.toLocaleLowerCase('pt-BR').includes(q)) return false;
   return true;
 }
@@ -306,8 +315,7 @@ export function filterLobbies(list: Lobby[], f: LobbyFilters, signedIn: boolean,
   const by: Record<SortKey, (a: Lobby, b: Lobby) => number> = {
     // Jogadores ativos: dá para entrar primeiro, depois quem tem mais gente, depois ping.
     ativos: (a, b) => stateRank(a, ctx) - stateRank(b, ctx) || b.players - a.players || a.ping - b.ping,
-    recomendados: (a, b) =>
-      stateRank(a, ctx) - stateRank(b, ctx) || (isJoinable(b) ? score(b, now) : b.players) - (isJoinable(a) ? score(a, now) : a.players),
+    recomendados: (a, b) => stateRank(a, ctx) - stateRank(b, ctx) || (isJoinable(b) ? score(b, now) : b.players) - (isJoinable(a) ? score(a, now) : a.players),
     ping: (a, b) => a.ping - b.ping,
     vagas: (a, b) => freeSlots(b) - freeSlots(a),
     cheios: (a, b) => b.players / b.slots - a.players / a.slots,
@@ -364,6 +372,9 @@ export function nearestAlternatives(list: Lobby[], f: LobbyFilters, signedIn: bo
     [{ mode: '' }, S.anyMode],
     [{ slotsOnly: false }, S.anySlots],
     [{ friendsOnly: false }, S.anyFriends],
+    [{ beginners: false }, S.anyBeginners],
+    [{ playing: false }, S.anyPlaying],
+    [{ lowPing: false }, S.anyPing],
     [{ q: '' }, S.anyQuery],
   ];
   for (const [patch, label] of relax) {
