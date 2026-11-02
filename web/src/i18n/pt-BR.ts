@@ -99,7 +99,7 @@ export const ptBR = {
   },
   /** Home v4, "A Torre". Título em 2 linhas, apoio com até 20 palavras (brief v4, regra 4). */
   home: {
-    titleLines: ['Tem gente jogando agora.', 'Sobe, que tem vaga.'],
+    titleLines: ['O Deadlock que', 'a comunidade inventou.'],
     lead: 'Modos feitos pela comunidade, grátis, rodando no jogo que você já tem. Cada janela acesa é um jogador.',
     play: 'Jogar agora',
     seeLobbies: 'Ver lobbies',
