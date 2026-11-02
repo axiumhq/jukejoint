@@ -1,0 +1,1424 @@
+/*
+ * Home v4, "A Torre". A cena (3D ou SVG) fica num palco fixo atrás; o texto é HTML por cima.
+ *
+ * Uma superfície só para texto sobre a cena: o painel de asfalto, com canto chanfrado e
+ * fio duplo de latão em cima (nada de vidro fosco). A luz vem da cena; o painel não brilha.
+ * Camada técnica em Martian Mono, caixa normal, nos cantos.
+ */
+
+.tr {
+  --tr-panel: rgb(11 14 18 / 0.86);
+  --tr-panel-solid: #0e1216;
+  --tr-scrim: 7 9 12;
+  --tr-chamfer: 12px;
+  --tr-mono-size: 0.75rem;
+  --tr-shadow-text: 0 1px 14px rgb(4 6 9 / 0.75);
+  position: relative;
+  isolation: isolate;
+}
+
+[data-theme='light'] .tr {
+  --tr-panel: rgb(242 243 239 / 0.9);
+  --tr-panel-solid: #f2f3ef;
+  --tr-scrim: 226 222 214;
+  --tr-shadow-text: 0 1px 14px rgb(236 232 224 / 0.85);
+}
+
+/* ───────── Palco ───────── */
+
+.tr-stage {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.tr-sky {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #03060c 0%, #0a1222 48%, #161a21 78%, #0a0d11 100%);
+}
+
+[data-theme='light'] .tr-sky {
+  background: linear-gradient(180deg, #33476b 0%, #8593ad 48%, #d7bc9d 80%, #4a4b4f 100%);
+}
+
+.tr-gl {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 900ms var(--ease-out);
+}
+
+.tr-stage.is-ready .tr-gl {
+  opacity: 1;
+}
+
+.tr-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.tr-sketch {
+  position: absolute;
+  right: 9vw;
+  bottom: 0;
+  width: 38vw;
+  height: 86vh;
+  transition: opacity 700ms var(--ease-out);
+}
+
+.tr-stage.is-ready .tr-sketch {
+  opacity: 0;
+}
+
+.tr-sketch-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.tr-sketch-lines rect,
+.tr-sketch-lines path {
+  fill: none;
+  stroke: var(--accent-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tr-draw 1.1s var(--ease-out) forwards;
+}
+
+.tr-sketch-lines .is-lit-door {
+  fill: rgb(241 196 110 / 0.5);
+}
+
+@keyframes tr-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.tr-sketch-win {
+  fill: transparent;
+  stroke: rgb(210 165 90 / 0.18);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill 380ms var(--ease-flicker);
+}
+
+.tr-sketch-win.is-lit {
+  fill: var(--win-lit);
+  stroke: none;
+}
+
+.tr-sketch-win.is-friend {
+  fill: var(--win-friend);
+  stroke: none;
+}
+
+.tr-sketch-beacon {
+  fill: rgb(210 165 90 / 0.3);
+}
+
+.tr-sketch-beacon.is-lit {
+  fill: var(--win-lit);
+}
+
+/* Etiquetas dos andares (cena 2): a cena 3D move cada uma direto no DOM. */
+.tr-labels {
+  position: absolute;
+  inset: 0;
+}
+
+.tr-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  translate: -100% -50%;
+  padding-right: 0.6rem;
+  opacity: 0;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-stretch: 87.5%;
+  letter-spacing: 0.01em;
+  color: var(--accent-text);
+  text-shadow: var(--tr-shadow-text);
+  will-change: transform, opacity;
+}
+
+.tr-label.is-mine {
+  color: var(--live);
+}
+
+/* ───────── Cabeçalho da home = camada técnica de cima ───────── */
+
+.site-header.is-hud {
+  position: fixed;
+  inset: 0 0 auto 0;
+  background: linear-gradient(180deg, rgb(4 6 9 / 0.62), rgb(4 6 9 / 0));
+  backdrop-filter: none;
+  border-bottom: 0;
+}
+
+[data-theme='light'] .site-header.is-hud {
+  background: linear-gradient(180deg, rgb(236 234 228 / 0.75), rgb(236 234 228 / 0));
+}
+
+.site-header.is-hud .nav-link {
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  font-stretch: 87.5%;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+
+.hud-clock,
+.hud-sound {
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  font-stretch: 87.5%;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-clock {
+  margin-right: auto;
+  white-space: nowrap;
+}
+
+.hud-sound {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 0.5rem;
+  border: 0;
+  background: none;
+  white-space: nowrap;
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.hud-sound:hover,
+.hud-sound[aria-pressed='true'] {
+  color: var(--text);
+}
+
+.hud-sound-bars {
+  width: 16px;
+  height: 12px;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+.hud-sound-bars line {
+  transition: all var(--dur-2) var(--ease-out);
+}
+
+@media (min-width: 60em) {
+  .site-header.is-hud .brand-link {
+    margin-right: var(--sp-4);
+  }
+  .site-header.is-hud .hud-clock {
+    margin-right: var(--sp-5);
+  }
+}
+
+@media (max-width: 30em) {
+  .hud-sound span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .hud-clock {
+    font-size: 0.6875rem;
+  }
+}
+
+/* ───────── Camada técnica de baixo ───────── */
+
+.hud-bottom {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--sp-4);
+  padding: 0 var(--gutter) 1.1rem;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  font-stretch: 87.5%;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-shadow: var(--tr-shadow-text);
+}
+
+.hud-live {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.hud-live p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.hud-live .live-dot {
+  width: 6px;
+  height: 6px;
+}
+
+.tr-load {
+  color: var(--accent-text);
+  transition: opacity 600ms var(--ease-out) 900ms;
+}
+
+.tr-load.is-done {
+  opacity: 0;
+}
+
+.hud-scene {
+  display: grid;
+  justify-items: end;
+  gap: 0.4rem;
+  text-align: right;
+}
+
+.hud-track {
+  position: relative;
+  display: block;
+  width: 7rem;
+  height: 1px;
+  background: var(--line-strong);
+  overflow: hidden;
+}
+
+.hud-track-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+/* Posição da rolagem sem JS: animação ligada à rolagem do documento, onde existir. */
+@supports (animation-timeline: scroll()) {
+  .hud-track-fill {
+    animation: tr-track linear both;
+    animation-timeline: scroll(root block);
+  }
+}
+
+@keyframes tr-track {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (max-width: 59.99em) {
+  .hud-bottom {
+    bottom: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom));
+    padding-bottom: 0.55rem;
+    padding-top: 1.6rem;
+    font-size: 0.6875rem;
+    background: linear-gradient(0deg, rgb(var(--tr-scrim) / 0.9), rgb(var(--tr-scrim) / 0));
+  }
+  .hud-live p:last-child {
+    display: none;
+  }
+}
+
+/* ───────── Cenas ───────── */
+
+.tr-scene {
+  position: relative;
+  z-index: 1;
+  padding-inline: var(--gutter);
+}
+
+.tr-scene > *,
+.tr-floors-inner {
+  max-width: var(--container);
+  margin-inline: auto;
+}
+
+.tr-head {
+  display: grid;
+  gap: var(--sp-3);
+  max-width: 34rem;
+  margin-bottom: var(--sp-7);
+  text-shadow: var(--tr-shadow-text);
+}
+
+.tr-head h2 {
+  font-size: clamp(2.25rem, 1.4rem + 3vw, 3.75rem);
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.tr-head p {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  max-width: 38ch;
+}
+
+.tr-panel {
+  position: relative;
+  padding: var(--sp-5);
+  background:
+    linear-gradient(var(--accent-line), var(--accent-line)) 0 4px / 100% 1px no-repeat,
+    var(--tr-panel);
+  border-top: 1px solid var(--accent-line);
+  clip-path: polygon(var(--tr-chamfer) 0, 100% 0, 100% calc(100% - var(--tr-chamfer)), calc(100% - var(--tr-chamfer)) 100%, 0 100%, 0 var(--tr-chamfer));
+}
+
+.tr-link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  text-underline-offset: 0.3em;
+  transition: text-decoration-color var(--dur-1) var(--ease-out);
+}
+
+.tr-link:hover {
+  text-decoration-color: currentColor;
+}
+
+.tr-inline-link {
+  color: var(--text);
+  font-weight: 600;
+  text-decoration-color: var(--accent-line);
+}
+
+/* Cena 1: a torre (hero). Título e ação embaixo à esquerda, a torre à direita. */
+.tr-hero {
+  min-height: 100svh;
+  display: grid;
+  align-content: end;
+  padding-top: calc(var(--header-h) + var(--sp-6));
+  padding-bottom: clamp(5.5rem, 13vh, 8.5rem);
+}
+
+.tr-hero::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 62%;
+  z-index: -1;
+  background: linear-gradient(0deg, rgb(var(--tr-scrim) / 0.82) 0%, rgb(var(--tr-scrim) / 0.45) 45%, rgb(var(--tr-scrim) / 0) 100%);
+  pointer-events: none;
+}
+
+.tr-hero-copy {
+  display: grid;
+  gap: var(--sp-5);
+  justify-items: start;
+  width: 100%;
+  text-shadow: var(--tr-shadow-text);
+}
+
+.tr-title {
+  font-size: min(clamp(2.6rem, 1.2rem + 4.6vw, 6rem), 9.4vw);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.012em;
+  font-optical-sizing: auto;
+  text-wrap: balance;
+  padding-bottom: 0.04em;
+}
+
+.tr-title-line {
+  display: block;
+  white-space: nowrap;
+}
+
+.tr-lead {
+  max-width: 34rem;
+  font-size: var(--fs-md);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.tr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding-top: var(--sp-1);
+  text-shadow: none;
+}
+
+.tr-cta {
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.tr-cta:active {
+  transform: scale(0.98);
+}
+
+.tr-cta-2 {
+  background: rgb(var(--tr-scrim) / 0.55);
+}
+
+/* Cena 2: os andares. A torre explodida à esquerda, a lista à direita. */
+.tr-floors {
+  padding-top: 34vh;
+  padding-bottom: 26vh;
+}
+
+.tr-floors-inner {
+  display: grid;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 64em) {
+  .tr-floors-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 46rem);
+    align-items: start;
+  }
+  .tr-floors .tr-head {
+    position: sticky;
+    top: calc(var(--header-h) + var(--sp-6));
+  }
+  .tr-low .tr-floors-inner {
+    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  }
+}
+
+.tr-floorlist {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.tr-featured {
+  padding: var(--sp-5);
+  background:
+    linear-gradient(var(--accent), var(--accent)) 0 0 / 100% 2px no-repeat,
+    var(--tr-panel);
+  clip-path: polygon(var(--tr-chamfer) 0, 100% 0, 100% calc(100% - var(--tr-chamfer)), calc(100% - var(--tr-chamfer)) 100%, 0 100%, 0 var(--tr-chamfer));
+}
+
+.tr-featured-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.tr-featured-name {
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2.1rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tr-featured-why {
+  margin-top: 0.35rem;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.tr-featured .tr-seal {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.tr-rows {
+  list-style: none;
+  background: var(--tr-panel);
+  border-top: 1px solid var(--accent-line);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--tr-chamfer)), calc(100% - var(--tr-chamfer)) 100%, 0 100%);
+}
+
+.tr-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'seal main act'
+    'seal live slots';
+  column-gap: var(--sp-4);
+  row-gap: 0.2rem;
+  align-items: center;
+  padding: 0.7rem var(--sp-4) 0.7rem var(--sp-4);
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+
+.tr-row + .tr-row {
+  box-shadow: inset 0 1px 0 var(--line);
+}
+
+/* Friso do modo: 3 px na cor do modo, só na borda de cima (não é a cor da janela). */
+.tr-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.7rem;
+  bottom: 0.7rem;
+  width: 3px;
+  background: hsl(var(--h) 45% 55%);
+  opacity: 0.85;
+}
+
+.tr-row:hover,
+.tr-row:focus-within {
+  background: var(--floor-active);
+}
+
+.tr-row .tr-seal {
+  grid-area: seal;
+  align-self: start;
+}
+
+.tr-row-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.tr-row-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  font-size: 1.1875rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.tr-friends {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  font-stretch: 87.5%;
+  color: var(--live);
+}
+
+.tr-row-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.9rem;
+  margin-top: 0.15rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-stretch: 87.5%;
+  color: var(--text-muted);
+}
+
+.tr-row-live {
+  grid-area: live;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.7rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.tr-heat {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.heat-lotando .tr-heat {
+  color: var(--accent-text);
+}
+
+.heat-recem .tr-heat {
+  color: var(--live);
+}
+
+.heat-quieto .tr-heat,
+.heat-lotado .tr-heat,
+.heat-partida .tr-heat {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tr-joined {
+  color: var(--live);
+}
+
+.tr-row-slots {
+  grid-area: slots;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-stretch: 87.5%;
+  color: var(--text-muted);
+}
+
+.tr-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.tr-pips i {
+  width: 4px;
+  height: 7px;
+  border: 1px solid var(--pip-free);
+}
+
+.tr-pips .pip-lit {
+  background: var(--win-lit);
+  border-color: var(--win-lit);
+}
+
+.tr-pips .pip-friend {
+  background: var(--win-friend);
+  border-color: var(--win-friend);
+}
+
+.tr-row-act {
+  grid-area: act;
+  justify-self: end;
+  width: 7.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tr-enter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  min-width: 6rem;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.tr-enter:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.tr-enter:active {
+  transform: scale(0.97);
+}
+
+.tr-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.5rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.tr-state.is-mine {
+  color: var(--live);
+  font-weight: 600;
+}
+
+.tr-more {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  text-underline-offset: 0.3em;
+  text-shadow: var(--tr-shadow-text);
+}
+
+@media (min-width: 48em) {
+  .tr-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) 9.5rem 6.5rem 7.5rem;
+    grid-template-areas: 'seal main live slots act';
+    padding-block: 0.8rem;
+  }
+  .tr-row-live {
+    display: grid;
+    gap: 0;
+  }
+  .tr-row-slots {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.3rem;
+  }
+}
+
+/* Selo do modo: 40 px recortado da arte da carta, com o numeral. */
+.tr-seal {
+  position: relative;
+  display: block;
+  width: 2.5rem;
+  height: 2.5rem;
+  overflow: hidden;
+  border: 1px solid hsl(var(--h) 30% 40% / 0.8);
+}
+
+.tr-seal .mode-art {
+  width: 100%;
+  height: 100%;
+}
+
+.tr-seal-num {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.1rem 0;
+  background: rgb(5 7 9 / 0.72);
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-align: center;
+  color: hsl(var(--h) 50% 78%);
+}
+
+/* Cena 3: o cofre dos modos. Cada carta tem a sua altura de rolagem. */
+.tr-vault {
+  padding-top: 20vh;
+}
+
+.tr-modes {
+  list-style: none;
+}
+
+.tr-mode {
+  min-height: 74vh;
+  display: grid;
+  align-items: center;
+}
+
+.tr-mode-panel {
+  display: grid;
+  gap: var(--sp-3);
+  max-width: 28rem;
+  opacity: 0.4;
+  transition: opacity 260ms var(--ease-out);
+}
+
+.tr-mode.is-active .tr-mode-panel,
+.tr-mode:focus-within .tr-mode-panel {
+  opacity: 1;
+}
+
+.tr-mode-name {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 0.95;
+}
+
+.tr-mode-num {
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  font-weight: 500;
+  font-stretch: 87.5%;
+  color: hsl(var(--h) 50% 72%);
+}
+
+.tr-mode-line {
+  color: var(--text-muted);
+  max-width: 40ch;
+}
+
+.tr-mode-now {
+  font-size: var(--fs-sm);
+}
+
+.tr-mode-count {
+  color: var(--text-muted);
+}
+
+.tr-vault-flat {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--sp-6);
+  padding-bottom: var(--sp-8);
+}
+
+/* Cena 4: o elevador. Uma parada do ponteiro por bloco de rolagem. */
+.tr-elevator {
+  padding-top: 18vh;
+}
+
+.tr-stops {
+  list-style: none;
+}
+
+.tr-stop {
+  min-height: 78vh;
+  display: grid;
+  align-content: center;
+  gap: var(--sp-5);
+}
+
+.tr-stop-panel {
+  display: grid;
+  gap: var(--sp-3);
+  max-width: 28rem;
+  opacity: 0.4;
+  transition: opacity 260ms var(--ease-out);
+}
+
+.tr-stop.is-active .tr-stop-panel,
+.tr-stop:focus-within .tr-stop-panel {
+  opacity: 1;
+}
+
+.tr-stop-name {
+  font-size: clamp(2.75rem, 1.6rem + 4vw, 5rem);
+  font-weight: 800;
+  line-height: 0.9;
+  color: var(--accent-text);
+}
+
+.tr-stop-panel p {
+  font-size: var(--fs-md);
+  max-width: 36ch;
+}
+
+/* A cabine: abre como porta de elevador (duas folhas de latão que correm). */
+.tr-car {
+  position: relative;
+  display: grid;
+  gap: var(--sp-2);
+  justify-items: start;
+  max-width: 28rem;
+  padding: var(--sp-5);
+  background:
+    linear-gradient(180deg, rgb(255 196 120 / 0.14), transparent 60%),
+    var(--tr-panel-solid);
+  border: 1px solid var(--accent-line);
+  clip-path: inset(0 50% 0 50%);
+  transition: clip-path 640ms var(--ease-out);
+}
+
+.tr-car.is-open {
+  clip-path: inset(0 0 0 0);
+}
+
+.tr-car-title {
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  font-stretch: 87.5%;
+  color: var(--accent-text);
+}
+
+.tr-car-name {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tr-car-meta {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  margin-bottom: var(--sp-2);
+}
+
+.tr-elev-flat {
+  display: grid;
+  gap: var(--sp-6);
+  padding-bottom: var(--sp-8);
+}
+
+.tr-stops-flat {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--sp-6);
+}
+
+.tr-stops-flat li {
+  display: grid;
+  gap: var(--sp-2);
+  align-content: start;
+}
+
+.tr-stops-flat .tr-stop-name {
+  font-size: 2.5rem;
+}
+
+.tr-stops-flat p {
+  color: var(--text-muted);
+  max-width: 34ch;
+}
+
+.tr-dial {
+  width: 100%;
+  max-width: 12rem;
+  height: auto;
+}
+
+.tr-dial-face {
+  fill: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+
+.tr-dial-rim {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+
+.tr-dial-tick {
+  stroke: var(--accent-line);
+  stroke-width: 1.2;
+}
+
+.tr-dial-lamp {
+  fill: var(--surface-2);
+  stroke: var(--accent-line);
+}
+
+.tr-dial-lamp.is-on {
+  fill: var(--win-lit);
+  stroke: none;
+}
+
+.tr-dial-needle {
+  stroke: var(--text);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.tr-dial-hub {
+  fill: var(--accent);
+}
+
+/* Cena 5: a placa de latão gravada. */
+.tr-plate-scene {
+  min-height: 130vh;
+  display: grid;
+  place-items: center;
+  padding-block: 20vh;
+}
+
+.tr-plate {
+  --ink: #2a1c09;
+  position: relative;
+  display: grid;
+  gap: var(--sp-5);
+  width: min(100%, 46rem);
+  padding: clamp(1.5rem, 1rem + 2.5vw, 3rem);
+  color: var(--ink);
+  background:
+    repeating-linear-gradient(0deg, rgb(255 244 220 / 0.05) 0 1px, transparent 1px 3px),
+    linear-gradient(100deg, rgb(132 97 45 / 0.94), rgb(196 154 85 / 0.92) 28%, rgb(222 189 124 / 0.92) 44%, rgb(178 137 70 / 0.93) 62%, rgb(122 89 41 / 0.95));
+  box-shadow:
+    inset 0 0 0 1px rgb(255 232 190 / 0.35),
+    inset 0 0 0 6px rgb(90 62 24 / 0.35),
+    0 30px 60px -30px rgb(0 0 0 / 0.7);
+  overflow: hidden;
+}
+
+.tr-low .tr-plate {
+  background:
+    repeating-linear-gradient(0deg, rgb(255 244 220 / 0.05) 0 1px, transparent 1px 3px),
+    linear-gradient(100deg, #84612d, #c49a55 28%, #debd7c 44%, #b28946 62%, #7a5929);
+}
+
+/* Luz rasante que corre a placa conforme a rolagem (só onde a animação por rolagem existe). */
+.tr-plate::after {
+  content: '';
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(100deg, transparent 40%, rgb(255 240 210 / 0.28) 50%, transparent 60%);
+  transform: translateX(-30%);
+  pointer-events: none;
+}
+
+@supports (animation-timeline: view()) {
+  .tr-plate::after {
+    animation: tr-rake linear both;
+    animation-timeline: view();
+    animation-range: cover;
+  }
+}
+
+@keyframes tr-rake {
+  from {
+    transform: translateX(-45%);
+  }
+  to {
+    transform: translateX(45%);
+  }
+}
+
+.tr-plate-screw {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e9cf98, #6e5021 70%);
+  box-shadow: inset 0 0 0 1px rgb(60 40 14 / 0.5);
+}
+
+.tr-plate-screw::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 4px;
+  height: 1.5px;
+  background: rgb(60 40 14 / 0.75);
+  rotate: 30deg;
+}
+
+.tr-plate-screw:nth-child(1) {
+  top: 14px;
+  left: 14px;
+}
+.tr-plate-screw:nth-child(2) {
+  top: 14px;
+  right: 14px;
+}
+.tr-plate-screw:nth-child(3) {
+  bottom: 14px;
+  left: 14px;
+}
+.tr-plate-screw:nth-child(4) {
+  bottom: 14px;
+  right: 14px;
+}
+
+/* Gravado: tinta escura com o fio de luz embaixo de cada traço. */
+.tr-plate :is(h2, dt, dd, p, code, a, button) {
+  text-shadow: 0 1px 0 rgb(255 236 200 / 0.4);
+}
+
+.tr-plate-title {
+  font-family: var(--font-stencil);
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 3.25rem);
+  font-weight: 800;
+  line-height: 0.95;
+  color: var(--ink);
+}
+
+.tr-plate-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+  border-block: 1px solid rgb(42 28 9 / 0.4);
+  padding-block: var(--sp-3);
+}
+
+.tr-plate-facts dt {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.tr-plate-facts dd {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tr-plate-hash {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--sp-2) var(--sp-4);
+  align-items: center;
+}
+
+.tr-plate-hash-label {
+  grid-column: 1 / -1;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.tr-hash {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-stretch: 87.5%;
+  line-height: 1.55;
+  word-break: break-all;
+  color: var(--ink);
+  user-select: all;
+}
+
+.tr-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0 var(--sp-4);
+  border: 1px solid rgb(42 28 9 / 0.55);
+  border-radius: var(--r-sm);
+  background: rgb(255 236 200 / 0.12);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+
+.tr-copy:hover {
+  background: rgb(255 236 200 / 0.28);
+}
+
+.tr-plate :focus-visible {
+  outline-color: #2a1c09;
+}
+
+.tr-plate-av {
+  max-width: 52ch;
+}
+
+.tr-plate-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-5);
+  font-size: var(--fs-xs);
+}
+
+.tr-plate-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration-color: rgb(42 28 9 / 0.5);
+  text-underline-offset: 0.3em;
+}
+
+@media (max-width: 34em) {
+  .tr-plate-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .tr-plate-hash {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tr-copy {
+    justify-self: start;
+  }
+}
+
+/* Cena 6: a rua. A folha da Gazeta no asfalto, com as manchetes reais. */
+.tr-street {
+  min-height: 100svh;
+  display: grid;
+  align-content: end;
+  padding-bottom: clamp(5rem, 14vh, 9rem);
+}
+
+.tr-gazette {
+  --paper: #d9d2c3;
+  --paper-ink: #1f1c17;
+  justify-self: end;
+  display: grid;
+  gap: var(--sp-3);
+  width: min(100%, 34rem);
+  padding: var(--sp-5) var(--sp-5) var(--sp-4);
+  background: var(--paper);
+  color: var(--paper-ink);
+  rotate: -1.2deg;
+  box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.75);
+}
+
+.tr-gazette-mast {
+  font-family: var(--font-news);
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: center;
+  padding-bottom: var(--sp-2);
+  border-bottom: 3px double rgb(31 28 23 / 0.75);
+}
+
+.tr-gazette-lead h3 {
+  font-family: var(--font-news);
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.tr-gazette a {
+  color: inherit;
+  text-decoration-color: rgb(31 28 23 / 0.35);
+}
+
+.tr-gazette-meta {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-stretch: 87.5%;
+  color: rgb(31 28 23 / 0.75);
+}
+
+.tr-gazette-lead .tr-gazette-meta {
+  margin-top: 0.4rem;
+}
+
+.tr-gazette-tldr {
+  margin-top: var(--sp-2);
+  font-family: var(--font-news);
+  font-size: 1.0625rem;
+  line-height: 1.45;
+}
+
+.tr-gazette-more {
+  list-style: none;
+  display: grid;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid rgb(31 28 23 / 0.35);
+}
+
+.tr-gazette-more li {
+  display: grid;
+  gap: 0.1rem;
+  font-family: var(--font-news);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.25;
+}
+
+.tr-gazette .tr-link {
+  color: #5a3c0c;
+}
+
+.tr-gazette :focus-visible {
+  outline-color: #1f1c17;
+}
+
+/* ───────── Nível baixo: a cidade SVG do v3 e o mesmo roteiro, sem palco fixo ───────── */
+
+.tr-low {
+  background: linear-gradient(180deg, var(--sky-top) 0, var(--sky-mid) 70svh, var(--bg) 140svh);
+}
+
+.tr-low .tr-hero {
+  min-height: auto;
+  align-content: start;
+  gap: var(--sp-7);
+  padding-bottom: var(--sp-8);
+}
+
+.tr-low .tr-hero::before {
+  display: none;
+}
+
+@media (min-width: 64em) {
+  .tr-low .tr-hero {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    align-items: center;
+  }
+  .tr-low .tr-hero > * {
+    margin-inline: 0;
+  }
+}
+
+.tr-low .tr-floors,
+.tr-low .tr-vault,
+.tr-low .tr-elevator {
+  padding-block: var(--sp-8) 0;
+}
+
+.tr-low .tr-plate-scene {
+  min-height: auto;
+  padding-block: var(--sp-8);
+}
+
+.tr-low .tr-street {
+  min-height: auto;
+  padding-block: var(--sp-6) var(--sp-8);
+}
+
+.tr-low .tr-gazette {
+  justify-self: start;
+  rotate: none;
+}
+
+/* Rodapé e conteúdo da página acima do palco fixo. */
+.site-footer {
+  position: relative;
+  z-index: 2;
+}
+
+.route-wait {
+  min-height: 60vh;
+  padding-top: calc(var(--header-h) + var(--sp-8));
+}
+
+.route-wait-text {
+  font-family: var(--font-mono);
+  font-size: var(--tr-mono-size);
+  color: var(--text-muted);
+}
+
+/* ───────── Celular ───────── */
+
+@media (max-width: 47.99em) {
+  .tr-sketch {
+    left: 50%;
+    right: auto;
+    translate: -50% 0;
+    width: 86vw;
+    bottom: 34vh;
+    height: 58vh;
+  }
+  .tr-hero {
+    padding-bottom: calc(var(--mobile-nav-h) + 3.75rem);
+  }
+  .tr-hero::before {
+    height: 68%;
+  }
+  .tr-floors {
+    padding-top: 46vh;
+  }
+  .tr-mode,
+  .tr-stop {
+    align-items: end;
+    align-content: end;
+    padding-bottom: 14vh;
+  }
+  .tr-mode-panel,
+  .tr-stop-panel {
+    max-width: none;
+  }
+  .tr-actions .btn {
+    flex: 1 1 auto;
+  }
+  .tr-gazette {
+    rotate: none;
+  }
+  .tr-featured-body {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .tr-featured-body > :last-child {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-car {
+    clip-path: none;
+  }
+}

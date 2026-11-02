@@ -2,6 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import '@fontsource-variable/big-shoulders/opsz.css';
+import '@fontsource-variable/big-shoulders-stencil/wght.css';
+import '@fontsource-variable/martian-mono/wdth.css';
 import '@fontsource-variable/newsreader/wght.css';
 import '@fontsource-variable/libre-franklin/wght.css';
 import './styles/tokens.css';
