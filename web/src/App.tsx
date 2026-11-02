@@ -10,6 +10,7 @@ const ModesIndex = lazy(() => import('./pages/Mode').then((m) => ({ default: m.M
 const ModePage = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModePage })));
 const Install = lazy(() => import('./pages/Install').then((m) => ({ default: m.Install })));
 const News = lazy(() => import('./pages/News').then((m) => ({ default: m.News })));
+const Room = lazy(() => import('./pages/Room').then((m) => ({ default: m.Room })));
 const QuickPlay = lazy(() => import('./pages/QuickPlay').then((m) => ({ default: m.QuickPlay })));
 
 /** Enquanto a tela carrega: nada nos primeiros 300 ms; depois, uma linha discreta. */
@@ -40,6 +41,7 @@ export function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="lobbies" element={<ToBrowser />} />
+            <Route path="sala/:id" element={<Suspense fallback={<RouteWait />}><Room /></Suspense>} />
             <Route path="jogar" element={<Suspense fallback={<RouteWait />}><QuickPlay /></Suspense>} />
             <Route path="modos" element={<Suspense fallback={<RouteWait />}><ModesIndex /></Suspense>} />
             <Route path="modos/:slug" element={<Suspense fallback={<RouteWait />}><ModePage /></Suspense>} />

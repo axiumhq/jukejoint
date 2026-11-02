@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { lobbies as seedLobbies, passersby, type Lobby } from '../data/lobbies';
 import { getMode, type Region } from '../data/modes';
 import { t } from '../i18n';
+import { useNavigate } from 'react-router';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
 import { dayPeriod } from '../lib/time';
 
@@ -46,6 +47,11 @@ interface SessionValue {
   closeLobby: (id: string) => void;
   leaveLobby: () => void;
   inviteTo: (lobby: Lobby) => void;
+  /** Você marcou "pronto" na sala em que está. */
+  ready: boolean;
+  toggleReady: () => void;
+  /** Só o anfitrião, com o mínimo de jogadores: começa a partida. */
+  startMatch: () => void;
   joiningId: string | null;
   /** Etapa simulada da entrada (índice em t.lobbies.joinSteps). */
   joiningStep: number;
@@ -80,6 +86,8 @@ const MOCK_USER: MockUser = { name: 'Corvo_Noturno', friendsOnline: 4 };
 const LIVE_TICK_MS = 3800;
 /** Quanto o anfitrião simulado leva para abrir a porta. */
 const KNOCK_ANSWER_MS = 6000;
+/** Na sala dos outros: com você pronto e o mínimo atingido, o anfitrião simulado começa depois disto. */
+const HOST_START_MS = 7000;
 
 /**
  * Um tique do ao vivo simulado. Na maioria das vezes alguém entra num lobby com vaga
@@ -124,11 +132,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [hostDialog, setHostDialog] = useState<{ open: boolean; modeSlug?: string }>({ open: false });
   const [notify, setNotify] = useState<Set<string>>(() => new Set());
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [ready, setReady] = useState(false);
+  const navigate = useNavigate();
   const toastId = useRef(0);
   const hereRef = useRef(hereId);
   hereRef.current = hereId;
   const lobbiesRef = useRef(lobbies);
   lobbiesRef.current = lobbies;
+  // Trocou de sala (ou saiu): o "pronto" não vai junto.
+  useEffect(() => setReady(false), [hereId]);
   const joiningRef = useRef(joiningId);
   joiningRef.current = joiningId;
 
@@ -198,6 +210,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       vacate(true);
       setJoiningId(id);
       setJoiningStep(0);
+      navigate(`/sala/${encodeURIComponent(id)}`);
       pushToast(t.join.joiningToast(target.lobby.name));
       // Etapas simuladas; no produto, cada troca vem de um evento do app.
       window.setTimeout(() => setJoiningStep(1), 1300);
@@ -222,7 +235,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         pushToast(t.lobbies.joinedToast(live.name));
       }, 4000);
     },
-    [pushToast, vacate, user],
+    [pushToast, vacate, user, navigate],
   );
 
   const lobbyCtx = useMemo<LobbyContext>(() => ({ hereId, joiningId, knocks, notify }), [hereId, joiningId, knocks, notify]);
@@ -281,9 +294,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setLobbies((list) => [lobby, ...list]);
       setHereId(lobby.id);
       setHostDialog({ open: false });
+      navigate(`/sala/${encodeURIComponent(lobby.id)}`);
       pushToast(t.host.createdToast(d.name));
     },
-    [pushToast, user, vacate],
+    [pushToast, user, vacate, navigate],
   );
 
   const closeLobby = useCallback(
@@ -301,7 +315,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const inviteTo = useCallback(
     (lobby: Lobby) => {
-      const link = `${window.location.origin}/lobbies?convite=${encodeURIComponent(lobby.id)}`;
+      const link = `${window.location.origin}/sala/${encodeURIComponent(lobby.id)}`;
       navigator.clipboard?.writeText(link).catch(() => {
         /* sem permissão de área de transferência: o aviso continua valendo para o protótipo */
       });
@@ -309,6 +323,35 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     },
     [pushToast],
   );
+
+  /** Começa a partida do lobby `id` (anfitrião) e avisa. */
+  const begin = useCallback(
+    (id: string, toast: (l: Lobby) => string) => {
+      const l = lobbiesRef.current.find((x) => x.id === id);
+      if (!l || l.status === 'em-partida' || l.players < l.minPlayers) return;
+      const now = Date.now();
+      setLobbies((list) => list.map((x) => (x.id === id ? { ...x, status: 'em-partida', round: { current: 1, startedAt: now }, fullSince: undefined } : x)));
+      pushToast(toast(l));
+    },
+    [pushToast],
+  );
+
+  const startMatch = useCallback(() => {
+    const id = hereRef.current;
+    const l = lobbiesRef.current.find((x) => x.id === id);
+    if (l?.mine) begin(l.id, (x) => t.room.startedToast(x.name));
+  }, [begin]);
+
+  const toggleReady = useCallback(() => setReady((v) => !v), []);
+
+  // Na sala dos outros, o anfitrião simulado começa quando você está pronto e já dá o mínimo.
+  const here = lobbies.find((l) => l.id === hereId);
+  const hostCanStart = !!here && !here.mine && ready && here.status !== 'em-partida' && here.players >= here.minPlayers;
+  useEffect(() => {
+    if (!hostCanStart || !hereId) return;
+    const id = window.setTimeout(() => begin(hereId, (x) => t.room.hostStartedToast(x.host)), HOST_START_MS);
+    return () => window.clearTimeout(id);
+  }, [hostCanStart, hereId, begin]);
 
   const sendKnock = useCallback(
     (_message: string) => {
@@ -354,6 +397,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       closeLobby,
       leaveLobby,
       inviteTo,
+      ready,
+      toggleReady,
+      startMatch,
       joiningId,
       joiningStep,
       requestJoin,
@@ -375,7 +421,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       pushToast,
       dismissToast,
     }),
-    [user, signIn, signOut, appConnected, lobbies, hereId, lobbyCtx, createLobby, closeLobby, leaveLobby, inviteTo, joiningId, joiningStep, requestJoin, joinTarget, confirmJoin, knockTarget, sendKnock, knocks, hostDialog, notify, toggleNotify, toasts, pushToast, dismissToast],
+    [user, signIn, signOut, appConnected, lobbies, hereId, lobbyCtx, createLobby, closeLobby, leaveLobby, inviteTo, ready, toggleReady, startMatch, joiningId, joiningStep, requestJoin, joinTarget, confirmJoin, knockTarget, sendKnock, knocks, hostDialog, notify, toggleNotify, toasts, pushToast, dismissToast],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

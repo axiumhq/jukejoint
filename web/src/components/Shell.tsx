@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
-import { useLiveStats } from '../hooks';
+import { useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
 import { useSession } from '../state/session';
 import { Icon } from './Icon';
@@ -97,8 +97,54 @@ function LivePill() {
   );
 }
 
+/**
+ * A barra "Jogar agora": sempre à vista, diz onde você está. Livre: "Jogar agora".
+ * Entrando: a etapa. Numa sala: o nome e as vagas, e leva de volta para ela.
+ * No desktop mora no cabeçalho; no celular, fixa embaixo (ao alcance do polegar).
+ */
+export function PlayDock({ placement }: { placement: 'header' | 'bottom' }) {
+  const { lobbies, hereId, joiningId, joiningStep } = useSession();
+  const { pathname } = useLocation();
+  const id = joiningId ?? hereId;
+  const lobby = id ? lobbies.find((l) => l.id === id) : undefined;
+  const cls = `dock dock--${placement}`;
+
+  if (!lobby) {
+    return (
+      <div className={cls}>
+        <Link to="/jogar" className="btn btn-primary btn-sm dock-play">
+          {t.dock.play}
+          <Icon name="arrowRight" size={14} />
+        </Link>
+      </div>
+    );
+  }
+
+  const to = `/sala/${encodeURIComponent(lobby.id)}`;
+  const onRoom = pathname === to;
+  const joining = joiningId === lobby.id;
+  const steps = t.lobbies.joinSteps.length;
+  const label = joining ? t.dock.joining(lobby.name) : lobby.status === 'em-partida' ? t.dock.playing(lobby.name) : t.dock.here(lobby.name);
+  const meta = joining ? t.dock.step(joiningStep + 1, steps) : `${lobby.players}/${lobby.slots}`;
+
+  return (
+    <div className={`${cls} is-busy`} aria-live="polite">
+      <Link to={to} className="dock-state" aria-current={onRoom ? 'page' : undefined}>
+        <i className={joining ? 'dock-win is-joining' : 'dock-win'} aria-hidden="true" />
+        <span className="dock-label">{label}</span>
+        <span className="num dock-meta">{meta}</span>
+      </Link>
+      {placement === 'bottom' && !onRoom && (
+        <Link to={to} className="btn btn-line btn-sm">
+          {t.dock.open}
+        </Link>
+      )}
+    </div>
+  );
+}
+
 /** O único cabeçalho do site: fixo no topo, como a barra de um app. */
-export function SiteHeader() {
+export function SiteHeader({ dock }: { dock: boolean }) {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   useEffect(() => setOpen(false), [pathname]);
@@ -131,6 +177,7 @@ export function SiteHeader() {
         </nav>
         <div className="site-right">
           <LivePill />
+          {dock && <PlayDock placement="header" />}
           <div className="site-account">
             <AccountArea />
           </div>
@@ -174,6 +221,7 @@ export function SiteFooter() {
 export function Layout() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
+  const narrow = useMediaQuery('(max-width: 900px)');
   const first = useRef(true);
 
   useEffect(() => {
@@ -197,11 +245,12 @@ export function Layout() {
       <a href="#main" className="skip-link">
         {t.a11y.skip}
       </a>
-      <SiteHeader />
+      <SiteHeader dock={!narrow} />
       <main id="main" ref={main} tabIndex={-1}>
         <Outlet />
       </main>
       <SiteFooter />
+      {narrow && <PlayDock placement="bottom" />}
       <JoinDialog />
       <HostDialog />
       <Toasts />

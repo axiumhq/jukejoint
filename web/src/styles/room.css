@@ -1,0 +1,435 @@
+/*
+ * A barra "Jogar agora" e a sala do lobby (/sala/:id).
+ * Vagas como as janelinhas da tabela, maiores: âmbar cheio = pronto, contorno = ainda não,
+ * tracejado = vaga livre. Verdete só para amigo. Um botão principal por fase, no painel.
+ */
+
+/* ───────── Barra "Jogar agora" ───────── */
+
+.dock {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.dock-play {
+  white-space: nowrap;
+}
+
+.dock-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  max-width: 260px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius);
+  font-size: var(--fs-xs);
+  color: var(--ink);
+  transition:
+    border-color var(--t) var(--ease),
+    background-color var(--t) var(--ease);
+}
+
+.dock-state:hover {
+  border-color: var(--ink-2);
+  background: var(--raise);
+}
+
+.dock-state[aria-current='page'] {
+  border-color: var(--sodium);
+}
+
+.dock-win {
+  flex: none;
+  width: 7px;
+  height: 11px;
+  background: var(--sodium);
+}
+
+.dock-win.is-joining {
+  background: none;
+  border: 1px solid var(--sodium);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dock-win.is-joining {
+    animation: dock-blink 1.2s steps(2, jump-none) infinite;
+  }
+}
+
+@keyframes dock-blink {
+  50% {
+    background: var(--sodium);
+  }
+}
+
+.dock-label {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
+.dock-meta {
+  flex: none;
+  color: var(--ink-2);
+}
+
+/* Entre 900 e 1180 px o cabeçalho aperta: o "jogando" vira só o número. */
+@media (max-width: 1180px) {
+  .live-pill-label {
+    display: none;
+  }
+
+  .dock-state {
+    max-width: 220px;
+  }
+}
+
+/* Celular: fixa embaixo, ao alcance do polegar. O corpo ganha o espaço para nada ficar coberto. */
+.dock--bottom {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 25;
+  justify-content: space-between;
+  min-height: 64px;
+  padding: 10px var(--m) calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule-strong);
+  background: var(--bg);
+}
+
+.dock--bottom .dock-play {
+  flex: 1;
+  justify-content: space-between;
+  --h: 44px;
+  font-size: var(--fs-sm);
+}
+
+.dock--bottom .dock-state {
+  flex: 1;
+  max-width: none;
+  min-height: 44px;
+  border: 0;
+  padding: 0;
+  font-size: var(--fs-sm);
+}
+
+@media (max-width: 900px) {
+  body {
+    padding-bottom: 64px;
+  }
+
+  /* Os avisos sobem para cima da barra. */
+  .toasts {
+    bottom: calc(64px + env(safe-area-inset-bottom) + var(--s-2));
+  }
+
+  /* O "Jogar agora" do herói seria o segundo na mesma tela: fica só o da barra. */
+  .hero-ctas {
+    display: none;
+  }
+}
+
+/* ───────── Sala do lobby ───────── */
+
+.room-page {
+  padding-top: var(--s-3);
+}
+
+.room-back {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  font-size: var(--fs-sm);
+}
+
+.room-head {
+  padding: var(--s-2) 0 var(--s-4);
+}
+
+.room-head h1 {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: clamp(2.25rem, 3.6vw, 3.25rem);
+}
+
+.room-lock {
+  color: var(--ink-3);
+}
+
+.room-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--s-3);
+  margin-top: var(--s-2);
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+
+.room-meta .num {
+  color: var(--ink);
+  margin-left: 4px;
+}
+
+.room-live {
+  color: var(--sodium);
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--s-5);
+  align-items: start;
+}
+
+.room-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.room-sec-head h2 {
+  font-family: var(--sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.room-sec-head p {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+
+.room-sec-head .num {
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+/* As vagas em duas colunas, cada uma uma linha de 52 px. */
+.seats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--s-4);
+}
+
+.seat {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.seat-win {
+  display: block;
+  width: 10px;
+  height: 16px;
+  border: 1px solid rgb(236 231 220 / 0.35);
+}
+
+.seat.is-ready .seat-win {
+  background: var(--sodium);
+  border-color: var(--sodium);
+}
+
+.seat.is-free .seat-win {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+}
+
+.seat-name {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: var(--fs-sm);
+  font-weight: 550;
+}
+
+.seat-name.is-friend {
+  color: var(--verdigris);
+}
+
+.seat.is-free .seat-name {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.seat-tag {
+  margin-left: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.seat-state {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+}
+
+.seat.is-ready .seat-state {
+  color: var(--ink-2);
+}
+
+.seat.is-you {
+  background: linear-gradient(90deg, var(--raise), transparent);
+}
+
+.seat-invite {
+  font-size: var(--fs-xs);
+}
+
+.room-mode {
+  margin-top: var(--s-6);
+  display: grid;
+  gap: var(--s-2);
+  justify-items: start;
+}
+
+.room-mode .room-sec-head {
+  justify-self: stretch;
+}
+
+.room-mode-line {
+  max-width: 60ch;
+  color: var(--ink);
+}
+
+.room-rules {
+  display: grid;
+  gap: 6px;
+  max-width: 64ch;
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+}
+
+.room-rules li::before {
+  content: '— ';
+  color: var(--ink-3);
+}
+
+/* O painel: a ação da fase. Fica à vista enquanto a lista de vagas rola. */
+.panel {
+  position: sticky;
+  top: calc(var(--header-h) + var(--s-3));
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  background: var(--raise);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.panel-title {
+  font-family: var(--sans);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.panel-note {
+  font-size: var(--fs-sm);
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.panel .btn-act {
+  max-width: none;
+}
+
+.panel-more {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  padding-top: var(--s-2);
+  margin-top: var(--s-1);
+  border-top: 1px solid var(--rule);
+}
+
+.btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.steps {
+  display: grid;
+  gap: 2px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  font-size: var(--fs-sm);
+  color: var(--ink-3);
+}
+
+.step-n {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--rule-strong);
+  font-size: var(--fs-xs);
+}
+
+.step.is-done {
+  color: var(--ink-2);
+}
+
+.step.is-done .step-n {
+  border-color: var(--ink-3);
+}
+
+.step.is-now {
+  color: var(--ink);
+  font-weight: 550;
+}
+
+.step.is-now .step-n {
+  border-color: var(--sodium);
+  color: var(--sodium);
+}
+
+.room-gone {
+  font-size: var(--fs-h2);
+}
+
+@media (max-width: 960px) {
+  .room-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* No celular o painel vem antes das vagas: a ação da fase é o que importa primeiro. */
+  .panel {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .seats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* O nome do lobby na tabela leva para a sala. */
+a.lt-name {
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition: text-decoration-color var(--t) var(--ease);
+}
+
+a.lt-name:hover {
+  text-decoration-color: var(--ink-2);
+}

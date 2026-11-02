@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode } from '../data/modes';
 import { t } from '../i18n';
@@ -75,10 +76,10 @@ function Row({ lobby, ctx, featured, signedIn, now }: RowProps) {
   return (
     <tr className={cls} role="row" data-kind={st.kind}>
       <th scope="row" className="lt-lobby" role="rowheader">
-        <span className="lt-name" id={nameId}>
+        <Link to={`/sala/${encodeURIComponent(lobby.id)}`} className="lt-name" id={nameId}>
           {lobby.name}
           {lobby.locked && <Icon name="lock" size={13} className="lt-lock" label={t.lobbies.locked} />}
-        </span>
+        </Link>
         <span className={`lt-note${note.tone === 'friend' ? ' is-friend' : note.tone === 'state' ? ' is-state' : ''}`}>{noteText}</span>
       </th>
       <td className="lt-mode" role="cell">
