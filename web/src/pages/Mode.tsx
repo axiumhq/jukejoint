@@ -1,251 +1,230 @@
-import { useLayoutEffect, useState, type CSSProperties } from 'react';
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
-import { Setback } from '../components/Deco';
-import { Icon } from '../components/Icon';
+import { LobbyTable } from '../components/LobbyTable';
 import { ModeArt } from '../components/ModeArt';
-import { modeTransitionName, TarotCard } from '../components/TarotCard';
 import { getMode, modes } from '../data/modes';
 import { releases } from '../data/patches';
-import { useDocumentTitle, useReducedMotion } from '../hooks';
-import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
-import { DaySessions, QuorumAsk } from '../components/DaySessions';
-import { LobbyRow } from '../components/LobbyRow';
+import { useDocumentTitle, useLiveStats } from '../hooks';
+import { useFeaturedLobby } from '../hooks/useFeatured';
 import { useNow } from '../hooks/useNow';
-import { EMPTY_FILTERS, filterLobbies, hasRoom, pickBestLobby } from '../lib/lobbies';
-import { markViewReady } from '../lib/viewTransition';
+import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
+import { EMPTY_FILTERS, filterLobbies } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
 
 export function ModePage() {
   const { slug } = useParams();
   const mode = getMode(slug);
-  const reduced = useReducedMotion();
-  const [paused, setPaused] = useState(false);
   const { lobbies, requestJoin, openHost, lobbyCtx, user } = useSession();
+  const stats = useLiveStats();
   const now = useNow(5000);
   useDocumentTitle(mode ? t.meta.mode(mode.name) : t.meta.notFound);
-  // Avisa a View Transition (se houver) que a página do modo já está no DOM.
-  useLayoutEffect(() => {
-    markViewReady();
-  }, [slug]);
+  const featured = useFeaturedLobby(lobbies, mode?.slug ?? '__none__', now);
+  const modeLobbies = useMemo(
+    () => (mode ? filterLobbies(lobbies, { ...EMPTY_FILTERS, mode: mode.slug }, !!user, lobbyCtx, now).filter((l) => l.modeSlug === mode.slug) : []),
+    [lobbies, mode, user, lobbyCtx, now],
+  );
 
   if (!mode) return <NotFound title={t.modes.notFoundTitle} body={t.modes.notFoundBody} />;
 
-  const open = lobbies.filter((l) => l.modeSlug === mode.slug && hasRoom(l));
-  const best = pickBestLobby(lobbies, { mode: mode.slug, ctx: lobbyCtx, now });
-  const modeLobbies = filterLobbies(lobbies, { ...EMPTY_FILTERS, mode: mode.slug }, !!user, lobbyCtx, now).filter((l) => l.modeSlug === mode.slug);
+  const c = stats.byMode[mode.slug] ?? { players: 0, lobbies: 0, withRoom: 0 };
   const recent = releases
-    .flatMap((r) => r.changes.filter((c) => c.scope === mode.slug).map((c) => ({ ...c, version: r.version, date: r.date })))
+    .flatMap((r) => r.changes.filter((ch) => ch.scope === mode.slug).map((ch) => ({ ...ch, version: r.version, date: r.date })))
     .slice(0, 4);
-  const others = modes.filter((m) => m.slug !== mode.slug).slice(0, 3);
-  const playing = !reduced && !paused;
+  const others = modes.filter((m) => m.slug !== mode.slug);
 
   return (
-    <div className="container page">
-      <nav aria-label={t.a11y.breadcrumb} className="breadcrumb">
-        <ol>
-          <li>
-            <Link to="/modos">{t.modes.breadcrumb}</Link>
-          </li>
-          <li aria-current="page">{mode.name}</li>
-        </ol>
-      </nav>
+    <div className="page mode-page">
+      <div className="wrap">
+        <nav aria-label={t.a11y.breadcrumb} className="crumbs">
+          <ol>
+            <li>
+              <Link to="/modos">{t.modes.breadcrumb}</Link>
+            </li>
+            <li aria-current="page">{mode.name}</li>
+          </ol>
+        </nav>
 
-      <section className="mode-hero" aria-labelledby="mode-title">
-        <div className="mode-hero-art" style={{ viewTransitionName: modeTransitionName(mode.slug) } as CSSProperties}>
-          <Setback className="frame-crown" />
-          <ModeArt mode={mode} playing={playing} label={t.modes.artLabel(mode.name)} />
-          {!reduced && (
-            <button
-              type="button"
-              className="art-toggle"
-              aria-pressed={paused}
-              aria-label={paused ? t.a11y.play : t.a11y.pause}
-              onClick={() => setPaused((v) => !v)}
-            >
-              <Icon name={paused ? 'play' : 'pause'} size={16} />
-            </button>
-          )}
-        </div>
-        <div className="mode-hero-copy">
-          <h1 id="mode-title">{mode.name}</h1>
-          <p className="page-lead">{mode.tagline}</p>
-          <p className="mode-author">
-            {t.modes.by} <strong>{mode.author}</strong>
-          </p>
-          <dl className="facts">
-            <div>
-              <dt>{t.modes.facts.players}</dt>
-              <dd>
-                <span className="live-dot" aria-hidden="true" />
-                <span className="num">{formatNumber(mode.playersNow)}</span>
-              </dd>
-            </div>
-            <div>
-              <dt>{t.modes.facts.lobbies}</dt>
-              <dd className="num">{open.length}</dd>
-            </div>
-            <div>
-              <dt>{t.modes.facts.format}</dt>
-              <dd>{t.modes.formatValue(mode.format, mode.minPlayers, mode.maxPlayers)}</dd>
-            </div>
-            <div>
-              <dt>{t.modes.facts.duration}</dt>
-              <dd>{t.modes.durationValue(mode.durationMin)}</dd>
-            </div>
-          </dl>
-          <div className="hero-actions">
-            {best ? (
-              <button type="button" className="btn btn-primary btn-lg" onClick={() => requestJoin({ kind: 'lobby', lobby: best })} aria-describedby="join-hint">
-                {t.modes.joinLobby}
+        <header className="mode-head">
+          <div className="mode-head-copy">
+            <h1>{mode.name}</h1>
+            <p className="lead">{mode.tagline}</p>
+            <p className="fine">
+              {t.modes.by} {mode.author}
+            </p>
+            <dl className="facts">
+              <div>
+                <dt>{t.modes.facts.players}</dt>
+                <dd className="num">{formatNumber(c.players)}</dd>
+              </div>
+              <div>
+                <dt>{t.modes.facts.lobbies}</dt>
+                <dd className="num">{formatNumber(c.lobbies)}</dd>
+              </div>
+              <div>
+                <dt>{t.modes.facts.format}</dt>
+                <dd>{t.modes.formatValue(mode.format, mode.minPlayers, mode.maxPlayers)}</dd>
+              </div>
+              <div>
+                <dt>{t.modes.facts.duration}</dt>
+                <dd>{t.modes.durationValue(mode.durationMin)}</dd>
+              </div>
+            </dl>
+            <div className="actions">
+              {featured && (
+                <button type="button" className="btn btn-primary btn-lg" onClick={() => requestJoin({ kind: 'lobby', lobby: featured })} aria-describedby="join-hint">
+                  {t.modes.joinLobby}
+                </button>
+              )}
+              <button type="button" className={`btn btn-lg ${featured ? 'btn-line' : 'btn-primary'}`} onClick={() => openHost(mode.slug)}>
+                {t.modes.host}
               </button>
-            ) : null}
-            <button type="button" className={`btn btn-lg ${best ? 'btn-ghost' : 'btn-primary'}`} onClick={() => openHost(mode.slug)}>
-              {t.modes.host}
-            </button>
+            </div>
+            <p id="join-hint" className="fine">
+              {featured ? t.modes.joinHint(c.withRoom) : t.modes.noLobbies}
+            </p>
           </div>
-          <p id="join-hint" className="hint">
-            {best ? t.modes.joinHint(open.length) : t.modes.noLobbies}{' '}
-            <Link to={`/lobbies?modo=${mode.slug}`} className="text-link">
-              {t.modes.seeLobbies}
-            </Link>
-          </p>
-        </div>
-      </section>
+          <ModeArt mode={mode} label={t.modes.artLabel(mode.name)} className="mode-head-art" />
+        </header>
 
-      <section className="mode-lobbies" aria-labelledby="mode-lobbies-title">
-        <div className="mode-lobbies-list">
-          <div className="section-head">
-            <h2 id="mode-lobbies-title">
-              {t.lobbies.modeListTitle} <span className="section-count num">{modeLobbies.length}</span>
-            </h2>
-            <Link to={`/lobbies?modo=${mode.slug}`} className="text-link">
+        <section className="section-tight" aria-labelledby="mode-lobbies-title">
+          <header className="section-head">
+            <h2 id="mode-lobbies-title">{t.lobbies.modeListTitle}</h2>
+            <Link to={`/lobbies?modo=${mode.slug}`} className="link-line">
               {t.lobbies.modeListAll}
             </Link>
-          </div>
+          </header>
           {modeLobbies.length > 0 ? (
-            <ul className="lb-list is-compact">
-              {modeLobbies.map((l) => (
-                <LobbyRow key={l.id} lobby={l} now={now} />
-              ))}
-            </ul>
+            <LobbyTable lobbies={modeLobbies} featured={featured} now={now} label={`${t.lobbies.modeListTitle}: ${mode.name}`} />
           ) : (
-            <div className="empty lb-empty is-inline">
-              <p>{t.lobbies.modeListEmpty(mode.name)}</p>
-              <div className="empty-actions">
-                <button type="button" className="btn btn-outline" onClick={() => openHost(mode.slug)}>
-                  {t.modes.host}
-                </button>
-                <QuorumAsk mode={mode.slug} />
-              </div>
-            </div>
+            <p className="empty-line">{t.lobbies.modeListEmpty(mode.name)}</p>
           )}
-        </div>
-        <DaySessions mode={mode.slug} headingLevel={2} />
-      </section>
+        </section>
 
-      <div className="mode-columns">
-        <div className="mode-col-main">
-          <section aria-labelledby="about-title" className="prose">
-            <h2 id="about-title">{t.modes.about}</h2>
+        <div className="mode-cols">
+          <div className="prose">
+            <h2>{t.modes.about}</h2>
             {mode.description.map((p) => (
               <p key={p}>{p}</p>
             ))}
-          </section>
-          <section aria-labelledby="rules-title" className="prose">
-            <h2 id="rules-title">{t.modes.rules}</h2>
+            <h2>{t.modes.rules}</h2>
             <ul className="rules">
               {mode.rules.map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ul>
-          </section>
-        </div>
+          </div>
 
-        <div className="mode-col-side">
-          {mode.leaderboard.length > 0 && (
-            <section aria-labelledby="lb-title" className="panel">
-              <h2 id="lb-title">{t.modes.leaderboard}</h2>
-              <table className="leaderboard">
-                <thead>
-                  <tr>
-                    <th scope="col">
-                      <span className="sr-only">{t.modes.leaderboardCols.pos}</span>
-                    </th>
-                    <th scope="col">{t.modes.leaderboardCols.player}</th>
-                    <th scope="col">{t.modes.leaderboardCols.wins}</th>
-                    <th scope="col">{t.modes.leaderboardCols.rating}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mode.leaderboard.map((e, i) => (
-                    <tr key={e.player}>
-                      <td className="lb-pos">{i + 1}</td>
-                      <th scope="row">
-                        {e.player} <span className="lb-region">{t.regions[e.region]}</span>
+          <aside className="mode-side">
+            {mode.leaderboard.length > 0 && (
+              <section aria-labelledby="rank-title">
+                <h2 id="rank-title" className="h-side">
+                  {t.modes.leaderboard}
+                </h2>
+                <table className="rank">
+                  <thead>
+                    <tr>
+                      <th scope="col">
+                        <span className="sr-only">{t.modes.leaderboardCols.pos}</span>
                       </th>
-                      <td className="num">{formatNumber(e.wins)}</td>
-                      <td className="num">{formatNumber(e.rating)}</td>
+                      <th scope="col">{t.modes.leaderboardCols.player}</th>
+                      <th scope="col">{t.modes.leaderboardCols.wins}</th>
+                      <th scope="col">{t.modes.leaderboardCols.rating}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
-          )}
-
-          <section aria-labelledby="cl-title" className="panel">
-            <h2 id="cl-title">{t.modes.changelog}</h2>
-            {recent.length ? (
-              <ul className="digest">
-                {recent.map((c) => (
-                  <li key={c.text}>
-                    <span className={`cat cat-${c.category}`}>{t.categories[c.category]}</span>
-                    <p>{c.text}</p>
-                    <p className="digest-meta">
-                      {c.version}, <time dateTime={c.date}>{formatShortDate(c.date)}</time>
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="muted">{t.modes.changelogEmpty}</p>
+                  </thead>
+                  <tbody>
+                    {mode.leaderboard.map((e, i) => (
+                      <tr key={e.player}>
+                        <td className="num">{i + 1}</td>
+                        <th scope="row">
+                          {e.player} <span className="fine">{t.regions[e.region]}</span>
+                        </th>
+                        <td className="num">{formatNumber(e.wins)}</td>
+                        <td className="num">{formatNumber(e.rating)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
             )}
-            <Link to={`/novidades?modo=${mode.slug}`} className="text-link">
-              {t.modes.changelogLink}
-            </Link>
-          </section>
-          <p className="fine">
-            {t.modes.facts.updated} <time dateTime={mode.updatedAt}>{formatDate(mode.updatedAt)}</time>
-          </p>
-        </div>
-      </div>
 
-      <section className="section" aria-labelledby="others-title">
-        <div className="section-head">
-          <h2 id="others-title">{t.modes.others}</h2>
+            <section aria-labelledby="cl-title">
+              <h2 id="cl-title" className="h-side">
+                {t.modes.changelog}
+              </h2>
+              {recent.length ? (
+                <ul className="digest">
+                  {recent.map((ch) => (
+                    <li key={ch.text}>
+                      <p className="digest-meta">
+                        {t.categories[ch.category]}, {ch.version}, <time dateTime={ch.date}>{formatShortDate(ch.date)}</time>
+                      </p>
+                      <p>{ch.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="fine">{t.modes.changelogEmpty}</p>
+              )}
+              <Link to={`/novidades?modo=${mode.slug}`} className="link-line">
+                {t.modes.changelogLink}
+              </Link>
+            </section>
+            <p className="fine">
+              {t.modes.facts.updated} <time dateTime={mode.updatedAt}>{formatDate(mode.updatedAt)}</time>
+            </p>
+          </aside>
         </div>
-        <div className="tarot-row">
-          {others.map((m) => (
-            <TarotCard key={m.slug} mode={m} size="sm" />
-          ))}
-        </div>
-      </section>
+
+        <nav className="others" aria-labelledby="others-title">
+          <h2 id="others-title" className="h-side">
+            {t.modes.others}
+          </h2>
+          <ul>
+            {others.map((m) => (
+              <li key={m.slug}>
+                <Link to={`/modos/${m.slug}`}>{m.name}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </div>
     </div>
   );
 }
 
 export function ModesIndex() {
   useDocumentTitle(t.meta.modes);
+  const stats = useLiveStats();
   return (
-    <div className="container page">
-      <header className="page-head">
-        <h1>{t.modes.title}</h1>
-        <p className="page-lead">{t.modes.lead}</p>
-      </header>
-      <div className="tarot-grid">
-        {modes.map((m) => (
-          <TarotCard key={m.slug} mode={m} headingLevel={2} />
-        ))}
+    <div className="page modes-page">
+      <div className="wrap">
+        <header className="page-head">
+          <div>
+            <h1>{t.modes.title}</h1>
+            <p className="lead">{t.modes.lead}</p>
+          </div>
+        </header>
+        <ul className="mi">
+          {modes.map((m) => {
+            const c = stats.byMode[m.slug] ?? { players: 0, lobbies: 0, withRoom: 0 };
+            return (
+              <li key={m.slug} className="mi-row">
+                <h2 className="mi-name">
+                  <Link to={`/modos/${m.slug}`}>{m.name}</Link>
+                </h2>
+                <p className="mi-line">{m.line}</p>
+                <p className="mi-format">{t.modes.formatValue(m.format, m.minPlayers, m.maxPlayers)}</p>
+                <p className="mi-count">
+                  <span className="num">{formatNumber(c.players)}</span> {t.modes.playersNow}
+                  <br />
+                  <span className="num">{formatNumber(c.lobbies)}</span> {t.lobbies.resultsUnit(c.lobbies)}
+                </p>
+                <ModeArt mode={m} className="mi-art" />
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

@@ -1,3 +1,8 @@
-/** Definido em vite.config.ts: o kit glTF da Torre existe em public/models/torre-kit.glb. */
-declare const __TORRE_KIT__: boolean;
-declare const __CIDADE_KIT__: boolean;
+/** Definido em vite.config.ts: quais arquivos do loop do herói existem em public/media. */
+declare const __HERO_VIDEO__: {
+  webm: boolean;
+  mp4: boolean;
+  poster: boolean;
+  mobileWebm: boolean;
+  mobileMp4: boolean;
+};

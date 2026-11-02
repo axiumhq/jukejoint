@@ -1,14 +1,14 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { modes } from '../data/modes';
 import { useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
 import { pickBestLobby } from '../lib/lobbies';
+import { busiestMode, liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
 
 /**
  * /jogar: o "Jogar agora". Escolhe com `pickBestLobby()` (o mesmo pool da lista, nada de fila
- * paralela), pede para entrar e leva para /lobbies, onde "Em cartaz agora" mostra o mesmo lobby.
+ * paralela), pede para entrar e leva para /lobbies, onde o mesmo lobby é a primeira linha (Recomendado).
  * Sem candidato, abre o criar lobby no modo mais jogado. `?modo=` restringe a um modo.
  * A home pode linkar direto para cá (`<Link to="/jogar">`).
  */
@@ -28,16 +28,18 @@ export function QuickPlay() {
     if (best) {
       requestJoin({ kind: 'lobby', lobby: best });
     } else {
-      const top = mode ?? [...modes].sort((a, b) => b.playersNow - a.playersNow)[0]?.slug;
+      const top = mode ?? busiestMode(liveStats(lobbies)).slug;
       openHost(top);
     }
   }, [lobbies, lobbyCtx, mode, navigate, openHost, requestJoin]);
 
   return (
-    <div className="container page">
-      <p className="tech-line" role="status">
-        {t.quickPlay.searching}
-      </p>
+    <div className="page">
+      <div className="wrap">
+        <p className="fine" role="status">
+          {t.quickPlay.searching}
+        </p>
+      </div>
     </div>
   );
 }

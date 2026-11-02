@@ -13,7 +13,7 @@ const Install = lazy(() => import('./pages/Install').then((m) => ({ default: m.I
 const News = lazy(() => import('./pages/News').then((m) => ({ default: m.News })));
 const QuickPlay = lazy(() => import('./pages/QuickPlay').then((m) => ({ default: m.QuickPlay })));
 
-/** Enquanto a tela carrega: nada nos primeiros 300 ms; depois, uma linha mono discreta. */
+/** Enquanto a tela carrega: nada nos primeiros 300 ms; depois, uma linha discreta. */
 function RouteWait() {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -21,8 +21,8 @@ function RouteWait() {
     return () => window.clearTimeout(id);
   }, []);
   return (
-    <div className="container route-wait" aria-busy="true">
-      {show && <p className="route-wait-text">Abrindo…</p>}
+    <div className="page route-wait" aria-busy="true">
+      <div className="wrap">{show && <p className="fine">Abrindo…</p>}</div>
     </div>
   );
 }

@@ -1,235 +1,73 @@
 /*
- * Tokens de design. Único lugar com valores de cor, tipo, espaço e movimento.
- *
- * Direção (v3, "Cidade Acesa"): a home é o corte de uma torre déco à noite e
- * cada lobby é um andar. Base em preto de pátina, latão como único acento e
- * como LUZ (janela acesa = jogador), verdete para amigos/ao vivo, e um terceiro
- * tom próprio, o anil, só para o céu e a névoa. No tema claro a cidade vira
- * planta de arquiteto: traço anil sobre papel de pedra.
- *
- * Regras de cor:
- *  - Latão (--accent) = ação principal e gente (vaga ocupada). Nada mais.
- *  - Verdete (--live) = ao vivo, amigos, conectado.
- *  - Texto secundário nunca é cinza neutro: é tingido da mesma família da base.
+ * Tokens v6 "Minimal + cinema" (docs/design/brief-v6.md).
+ * Uma noite: azul-noite, tinta clara quente e uma luz de sódio. O verdete só quer dizer
+ * "amigo" ou "ao vivo". Um sistema de tipo: Bodoni Moda (títulos), Mona Sans (texto e
+ * interface), Fragment Mono (só números). Cantos de 2 px em tudo que é interativo.
  */
-
-:root,
-[data-theme='dark'] {
+:root {
   color-scheme: dark;
 
-  /* Paleta base: noite de pátina */
-  --c-ink-950: #0b0f0e;
-  --c-ink-900: #0f1413;
-  --c-ink-850: #141a19;
-  --c-ink-800: #1a2120;
-  --c-ink-700: #222b29;
-  --c-ink-600: #34403d;
-  --c-bone: #ebe5d6;
-  --c-sage: #a4aca6;
-  --c-brass: #d2a55a;
-  --c-brass-bright: #e0b86f;
-  --c-patina: #7cc0a7;
-  --c-rust: #e59684;
-  --c-slate: #a3b6dc;
+  /* Cor */
+  --bg: #0a0d12; /* azul-noite: fundo e faixas de cinema */
+  --raise: #11151c; /* linha em foco, painel, diálogo */
+  --raise-2: #171c24; /* hover sobre o raise */
+  --rule: rgb(236 231 220 / 0.1);
+  --rule-strong: rgb(236 231 220 / 0.22);
+  --ink: #ece7dc; /* tinta clara quente */
+  --ink-2: #aaadb2;
+  --ink-3: #858a92;
+  --sodium: #f2a33a; /* o único destaque: ação e gente */
+  --sodium-hi: #ffb85e;
+  --sodium-ink: #1a1107;
+  --verdigris: #6cc2a8; /* só amigo e ao vivo */
 
-  /* Semântica */
-  --bg: var(--c-ink-900);
-  --bg-deep: var(--c-ink-950);
-  --surface: var(--c-ink-850);
-  --surface-2: var(--c-ink-800);
-  --surface-hover: var(--c-ink-700);
-  --line: #222b29;
-  --line-strong: var(--c-ink-600);
-  --text: var(--c-bone);
-  --text-muted: var(--c-sage);
-  --accent: var(--c-brass);
-  --accent-hover: var(--c-brass-bright);
-  --accent-ink: #17120a;
-  --accent-text: #dcb26a;
-  --accent-soft: rgb(210 165 90 / 0.12);
-  --accent-line: rgb(210 165 90 / 0.5);
-  --live: var(--c-patina);
-  --live-soft: rgb(124 192 167 / 0.13);
-  --danger: var(--c-rust);
-  --danger-soft: rgb(229 150 132 / 0.13);
-  --info: var(--c-slate);
-  --info-soft: rgb(163 182 220 / 0.13);
-  --focus: var(--c-brass-bright);
-  --line-input: #5f6c68;
-  --pip-taken: var(--c-brass);
-  --pip-free: #5f6c68;
-  --header-bg: rgb(15 20 19 / 0.82);
-  --backdrop: rgb(5 8 7 / 0.72);
-  --shadow-pop: 0 24px 48px -20px rgb(2 6 5 / 0.7), 0 2px 6px rgb(2 6 5 / 0.35);
-  --glow-lit: 0 0 0 1px rgb(210 165 90 / 0.25);
+  /* Tipo */
+  --display: 'Bodoni Moda Variable', 'Bodoni 72', Didot, Georgia, serif;
+  --sans: 'Mona Sans Variable', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'Fragment Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
-  /* Cidade Acesa: céu anil, fachada, janelas e luz emissiva */
-  --c-anil-950: #0a1120;
-  --c-anil-800: #16233b;
-  --c-anil-600: #2c3f63;
-  --sky-top: var(--c-anil-950);
-  --sky-mid: #101a2b;
-  --sky-haze: rgb(210 165 90 / 0.16);
-  --skyline-far: #121c2b;
-  --skyline-mid: #141f24;
-  --facade: #131918;
-  --facade-2: #172020;
-  --facade-line: #2b3633;
-  --facade-ledge: rgb(210 165 90 / 0.55);
-  --win-free: #1b2322;
-  --win-free-line: #64716c;
-  --win-lit: #f1c877;
-  --win-lit-deep: #d9a752;
-  --win-friend: #8fd8bb;
-  --win-glow: rgb(241 196 110 / 0.6);
-  --win-glow-friend: rgb(143 216 187 / 0.5);
-  --floor-active: rgb(241 200 119 / 0.09);
-  --grain-opacity: 0.07;
-  --glow-brass: 0 0 0 1px rgb(241 200 119 / 0.35), 0 8px 28px -6px rgb(241 196 110 / 0.45);
-  --paper: var(--c-ink-850);
-  --paper-ink: var(--c-bone);
-  --paper-rule: #3a4643;
-  --halftone: rgb(210 165 90 / 0.35);
-}
-
-[data-theme='light'] {
-  color-scheme: light;
-
-  /* Paleta base: pedra à luz do dia, tingida de verde-pátina (não é creme) */
-  --bg: #eef0ec;
-  --bg-deep: #e4e8e3;
-  --surface: #f9faf7;
-  --surface-2: #e8ece7;
-  --surface-hover: #dfe4de;
-  --line: #d5dbd4;
-  --line-strong: #aab3ab;
-  --text: #121816;
-  --text-muted: #4a5451;
-  --accent: #c99a4e;
-  --accent-hover: #d6aa60;
-  --accent-ink: #17120a;
-  --accent-text: #7a5514;
-  --accent-soft: rgb(176 128 52 / 0.12);
-  --accent-line: rgb(122 85 20 / 0.45);
-  --live: #1b6a54;
-  --live-soft: rgb(27 106 84 / 0.1);
-  --danger: #a13e2c;
-  --danger-soft: rgb(161 62 44 / 0.09);
-  --info: #33508c;
-  --info-soft: rgb(51 80 140 / 0.09);
-  --focus: #7a5514;
-  --line-input: #7d8781;
-  --pip-taken: #a5772c;
-  --pip-free: #7d8781;
-  --header-bg: rgb(238 240 236 / 0.86);
-  --backdrop: rgb(18 24 22 / 0.45);
-  --shadow-pop: 0 24px 48px -24px rgb(18 32 28 / 0.35), 0 2px 6px rgb(18 32 28 / 0.08);
-  --glow-lit: 0 0 0 1px rgb(122 85 20 / 0.2);
-
-  /* Planta de arquiteto: traço anil, janelas acesas em latão escuro */
-  --sky-top: #dfe5ee;
-  --sky-mid: #e9edf0;
-  --sky-haze: rgb(176 128 52 / 0.1);
-  --skyline-far: #d3dbe6;
-  --skyline-mid: #dde3e6;
-  --facade: #f7f9f8;
-  --facade-2: #eef2f3;
-  --facade-line: #3a5078;
-  --facade-ledge: #3a5078;
-  --win-free: #e9edf2;
-  --win-free-line: #6d7b93;
-  --win-lit: #b8812a;
-  --win-lit-deep: #8f6118;
-  --win-friend: #1b6a54;
-  --win-glow: rgb(184 129 42 / 0.28);
-  --win-glow-friend: rgb(27 106 84 / 0.2);
-  --floor-active: rgb(58 80 120 / 0.08);
-  --grain-opacity: 0.05;
-  --glow-brass: 0 0 0 1px rgb(122 85 20 / 0.3), 0 8px 24px -8px rgb(176 128 52 / 0.45);
-  --paper: #f7f8f5;
-  --paper-ink: #151a18;
-  --paper-rule: #aab3ab;
-  --halftone: rgb(58 80 120 / 0.3);
-}
-
-:root {
-  /* Tipografia
-   * Big Shoulders: grotesca condensada desenhada para a cidade de Chicago a partir da
-   *   sinalização industrial e déco dos anos 1920-30. Vertical como os prédios escalonados.
-   *   Títulos, números grandes e marca. Eixo de tamanho óptico (opsz) ligado.
-   * Libre Franklin: herdeira da Franklin Gothic (1902). Texto corrido e interface.
-   * Newsreader: serifa feita para jornal (Production Type). Só na Gazeta (Novidades).
-   * Martian Mono (v4): a camada técnica (cantos, rótulos, contadores, texto que se decifra).
-   *   Eixo de largura (wdth 75-112.5): etiquetas condensadas tipo fita de telégrafo; por ser
-   *   mono, o texto se decifra sem pular o layout. Também é a fonte de código e hash.
-   * Big Shoulders Stencil: só na placa de latão do instalador (cena 5).
-   * Todas auto-hospedadas via @fontsource-variable (ver main.tsx). */
-  --font-display: 'Big Shoulders Variable', 'Arial Narrow', system-ui, sans-serif;
-  --font-stencil: 'Big Shoulders Stencil Variable', 'Big Shoulders Variable', 'Arial Narrow', sans-serif;
-  --font-body: 'Libre Franklin Variable', 'Segoe UI', system-ui, sans-serif;
-  --font-news: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
-  --font-mono: 'Martian Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
-
-  --fs-xs: 0.8125rem;
+  /* Escala (razão ~1,5 entre os saltos de título) */
+  --fs-hero: clamp(2.75rem, 4.7vw, 4.9rem);
+  --fs-h1: clamp(2.5rem, 4.2vw, 3.75rem);
+  --fs-h2: clamp(1.875rem, 2.8vw, 2.625rem);
+  --fs-h3: clamp(1.375rem, 1.8vw, 1.625rem);
+  --fs-lead: clamp(1.0625rem, 1.25vw, 1.1875rem);
+  --fs-body: 1rem;
   --fs-sm: 0.875rem;
-  --fs-base: 1rem;
-  --fs-md: 1.125rem;
-  --fs-lg: 1.3125rem;
-  --fs-xl: clamp(1.75rem, 0.8vw + 1.45rem, 2.25rem);
-  --fs-2xl: clamp(2.5rem, 2.4vw + 1.7rem, 3.75rem);
-  --fs-hero: clamp(3.25rem, 4.6vw + 1.6rem, 6rem);
+  --fs-xs: 0.8125rem;
 
-  --lh-tight: 0.92;
-  --lh-snug: 1.08;
-  --lh-body: 1.6;
+  /* Espaço (grade de 8) */
+  --m: clamp(20px, 4vw, 64px); /* margem lateral */
+  --max: 1440px;
+  --s-1: 8px;
+  --s-2: 16px;
+  --s-3: 24px;
+  --s-4: 32px;
+  --s-5: 48px;
+  --s-6: 64px;
+  --s-7: 96px;
+  --s-8: 144px;
+  --section: clamp(96px, 11vw, 176px);
 
-  --track-display: -0.01em;
+  /* Forma e movimento */
+  --radius: 2px;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1); /* a curva do site */
+  --slow: cubic-bezier(0.65, 0, 0.15, 1); /* só a abertura do herói */
+  --t: 220ms;
 
-  /* Espaço (base 4) */
-  --sp-1: 0.25rem;
-  --sp-2: 0.5rem;
-  --sp-3: 0.75rem;
-  --sp-4: 1rem;
-  --sp-5: 1.5rem;
-  --sp-6: 2rem;
-  --sp-7: 3rem;
-  --sp-8: 4rem;
-  --sp-9: 6rem;
-
-  --gutter: 1rem;
-  --container: 76rem;
-  --header-h: 4rem;
-  --mobile-nav-h: 4.25rem;
-
-  /* Raios: um sistema só, quase reto (déco é aresta, não bolha).
-   * Controles e painéis 4px, pips 1px, nada de pílula. */
-  --r-xs: 2px;
-  --r-sm: 4px;
-  --r-md: 6px;
-
-  /* Camadas */
-  --z-plaque: 5;
-  --z-header: 40;
-  --z-grain: 50;
-  --z-toast: 60;
-  --z-skip: 100;
-
-  /* Movimento */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --dur-1: 140ms;
-  --dur-2: 240ms;
-  --dur-3: 520ms;
-  --ease-flicker: cubic-bezier(0.2, 0.9, 0.3, 1);
+  /* Faixas de cinema: a imagem fica em ~2,39:1, sem passar de 17% da altura por faixa */
+  --bar: clamp(56px, calc((100dvh - 100vw / 2.39) / 2), 17vh);
+  --header-h: 72px;
 }
 
-@media (min-width: 40em) {
+@media (orientation: portrait) {
   :root {
-    --gutter: 1.5rem;
+    --bar: 56px;
   }
 }
 
-@media (min-width: 64em) {
+@media (max-width: 760px) {
   :root {
-    --gutter: 2.5rem;
+    --header-h: 60px;
   }
 }

@@ -1,27 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
-import { useTheme } from '../hooks';
 import { t } from '../i18n';
 import { useSession } from '../state/session';
-import { TowerMark } from './Deco';
-import { Icon, type IconName } from './Icon';
-import { HudClock, SoundToggle } from './torre/Hud';
+import { Icon } from './Icon';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 
-const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
-  { to: '/', label: t.nav.home, icon: 'home', end: true },
-  { to: '/lobbies', label: t.nav.lobbies, icon: 'door' },
-  { to: '/modos', label: t.nav.modes, icon: 'sigil' },
-  { to: '/novidades', label: t.nav.news, icon: 'scroll' },
-  { to: '/instalar', label: t.nav.install, icon: 'download' },
+const NAV: { to: string; label: string; end?: boolean }[] = [
+  { to: '/', label: t.nav.home, end: true },
+  { to: '/lobbies', label: t.nav.lobbies },
+  { to: '/modos', label: t.nav.modes },
+  { to: '/novidades', label: t.nav.news },
+  { to: '/instalar', label: t.nav.install },
 ];
 
+/** A marca provisória: uma janela acesa e o nome (BRAND_NAME, ainda não decidido). */
 export function Wordmark() {
   return (
-    <span className="wordmark">
-      <TowerMark className="wordmark-mark" />
-      <span className="wordmark-text">{BRAND_NAME}</span>
+    <span className="mark">
+      <i aria-hidden="true" />
+      {BRAND_NAME}
     </span>
   );
 }
@@ -53,156 +51,108 @@ function AccountArea() {
 
   if (!user) {
     return (
-      <button type="button" className="btn btn-steam" onClick={signIn}>
-        <Icon name="user" size={18} />
-        <span className="hide-sm">{t.account.signIn}</span>
-        <span className="show-sm">{t.account.signInShort}</span>
+      <button type="button" className="steam" onClick={signIn}>
+        {t.account.signIn}
       </button>
     );
   }
 
   return (
     <div className="account" ref={wrap}>
-      <button
-        ref={btn}
-        type="button"
-        className="account-btn"
-        aria-expanded={open}
-        aria-controls="account-menu"
-        aria-label={t.account.menu(user.name)}
-        onClick={() => setOpen((v) => !v)}
-      >
-        <span className="avatar avatar-lg" aria-hidden="true">
-          {user.name.slice(0, 1)}
-        </span>
-        <span className="account-name hide-sm">{user.name}</span>
-        <Icon name="chevronDown" size={16} />
+      <button ref={btn} type="button" className="steam" aria-expanded={open} aria-label={t.account.menu(user.name)} onClick={() => setOpen((v) => !v)}>
+        {user.name}
+        <Icon name="chevronDown" size={14} />
       </button>
-      <div id="account-menu" className="account-menu" hidden={!open}>
-        <p className="account-menu-name">{user.name}</p>
-        <p className="account-menu-meta">
-          <span className="live-dot" aria-hidden="true" />
-          {t.account.friendsOnline(user.friendsOnline)}
-        </p>
-        <p className="fine">{t.account.mockNote}</p>
-        <button
-          type="button"
-          className="btn btn-ghost btn-block"
-          onClick={() => {
-            setOpen(false);
-            signOut();
-          }}
-        >
-          {t.account.signOut}
-        </button>
-      </div>
+      {open && (
+        <div className="account-menu">
+          <p className="account-name">{user.name}</p>
+          <p className="account-meta">{t.account.friendsOnline(user.friendsOnline)}</p>
+          <p className="fine">{t.account.mockNote}</p>
+          <button
+            type="button"
+            className="btn btn-line btn-sm"
+            onClick={() => {
+              setOpen(false);
+              signOut();
+            }}
+          >
+            {t.account.signOut}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
-function Header() {
-  const { appConnected } = useSession();
-  // Na home o cabeçalho vira a camada técnica dos cantos (marca + hora; Steam + som).
-  const isHome = useLocation().pathname === '/';
+/**
+ * O único cabeçalho do site. Na home ele mora dentro da faixa de cinema de cima
+ * (variante `overlay`, transparente); nas outras páginas é a mesma barra com fundo e um fio embaixo.
+ */
+export function SiteHeader({ overlay = false }: { overlay?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
   return (
-    <header className={`site-header${isHome ? ' is-hud' : ''}`}>
-      <div className="container header-inner">
-        <Link to="/" className="brand-link" aria-label={t.a11y.home}>
+    <header className={`site-header${overlay ? ' is-overlay' : ''}${open ? ' is-open' : ''}`}>
+      <div className="wrap site-header-in">
+        <Link to="/" className="mark-link" aria-label={t.a11y.home}>
           <Wordmark />
         </Link>
-        {isHome && <HudClock />}
-        <nav className="main-nav" aria-label={t.a11y.mainNav}>
+        <nav id="site-nav" className="site-nav" aria-label={t.a11y.mainNav}>
           <ul>
             {NAV.map((item) => (
               <li key={item.to}>
                 <NavLink to={item.to} end={item.end} className="nav-link">
                   {item.label}
-                  {item.to === '/instalar' && appConnected && <span className="nav-dot" aria-hidden="true" />}
                 </NavLink>
               </li>
             ))}
           </ul>
+          <div className="site-nav-account">
+            <AccountArea />
+          </div>
         </nav>
-        {isHome && <SoundToggle />}
-        <AccountArea />
+        <div className="site-account">
+          <AccountArea />
+        </div>
+        <button type="button" className="menu-btn" aria-expanded={open} aria-controls="site-nav" onClick={() => setOpen((v) => !v)}>
+          {t.a11y.menu}
+          <i aria-hidden="true" />
+        </button>
       </div>
     </header>
   );
 }
 
-function MobileNav() {
-  return (
-    <nav className="mobile-nav" aria-label={t.a11y.mobileNav}>
-      <ul>
-        {NAV.map((item) => (
-          <li key={item.to}>
-            <NavLink to={item.to} end={item.end} className="mobile-link">
-              <Icon name={item.icon} size={22} />
-              <span>{item.label}</span>
-            </NavLink>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  );
-}
-
-function Footer() {
-  const [theme, setTheme] = useTheme();
+/** O único rodapé do site. */
+export function SiteFooter() {
   return (
     <footer className="site-footer">
-      <div className="container footer-inner">
-        <div className="footer-brand">
+      <div className="wrap site-footer-in">
+        <div className="site-footer-brand">
           <Wordmark />
           <p>{t.footer.about}</p>
-          <p className="footer-disclaimer">{t.footer.disclaimer}</p>
         </div>
-        <nav className="footer-col" aria-label={t.footer.product}>
-          <h2>{t.footer.product}</h2>
+        <nav aria-label={t.a11y.footerNav}>
           <ul>
             {NAV.slice(1).map((item) => (
               <li key={item.to}>
                 <Link to={item.to}>{item.label}</Link>
               </li>
             ))}
-          </ul>
-        </nav>
-        <nav className="footer-col" aria-label={t.footer.trust}>
-          <h2>{t.footer.trust}</h2>
-          <ul>
             <li>
               <Link to="/instalar#hash">{t.footer.hash}</Link>
             </li>
-            <li>
-              <Link to="/instalar#antivirus">{t.footer.antivirus}</Link>
-            </li>
-            <li>
-              <span className="footer-soon">{t.footer.source}</span>
-            </li>
           </ul>
         </nav>
-        <div className="footer-col">
-          <h2 id="footer-lang">{t.footer.language}</h2>
-          <ul aria-labelledby="footer-lang">
-            <li aria-current="true">{t.footer.languageCurrent}</li>
-            <li className="muted">{t.footer.languageSoon}</li>
-          </ul>
-          <h2 id="footer-theme">{t.footer.theme}</h2>
-          <div className="segmented segmented-sm" role="group" aria-labelledby="footer-theme">
-            <button type="button" className="seg-btn" aria-pressed={theme === 'dark'} onClick={() => setTheme('dark')}>
-              <Icon name="moon" size={16} />
-              {t.footer.themeDark}
-            </button>
-            <button type="button" className="seg-btn" aria-pressed={theme === 'light'} onClick={() => setTheme('light')}>
-              <Icon name="sun" size={16} />
-              {t.footer.themeLight}
-            </button>
-          </div>
-        </div>
-      </div>
-      <div className="container footer-base">
-        <p className="footer-signoff">{t.footer.signoff}</p>
-        <p>{t.footer.prototype}</p>
+        <p className="fine">{t.footer.prototype}</p>
       </div>
     </footer>
   );
@@ -212,6 +162,7 @@ export function Layout() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
   const first = useRef(true);
+  const isHome = pathname === '/';
 
   useEffect(() => {
     if (first.current) {
@@ -234,12 +185,11 @@ export function Layout() {
       <a href="#main" className="skip-link">
         {t.a11y.skip}
       </a>
-      <Header />
+      <SiteHeader overlay={isHome} />
       <main id="main" ref={main} tabIndex={-1}>
         <Outlet />
       </main>
-      <Footer />
-      <MobileNav />
+      <SiteFooter />
       <JoinDialog />
       <HostDialog />
       <Toasts />

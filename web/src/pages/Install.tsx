@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { CopyField } from '../components/Common';
-import { Setback } from '../components/Deco';
 import { Icon } from '../components/Icon';
 import { APP_RELEASE } from '../config/brand';
 import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
@@ -32,11 +31,11 @@ function AppStatus() {
       </p>
       <div className="app-status-actions">
         {appConnected && (
-          <Link to="/lobbies" className="btn btn-primary btn-sm">
+          <Link to="/lobbies" className="btn btn-line btn-sm">
             {t.install.goLobbies}
           </Link>
         )}
-        <button type="button" className="link-btn fine" onClick={() => setAppConnected(!appConnected)}>
+        <button type="button" className="link-quiet" onClick={() => setAppConnected(!appConnected)}>
           {appConnected ? t.install.simulateOff : t.install.simulate} ({t.common.prototype})
         </button>
       </div>
@@ -99,24 +98,28 @@ export function Install() {
   const { pushToast } = useSession();
 
   return (
-    <div className="container page">
+    <div className="page install-page">
+      <div className="wrap">
       <header className="page-head">
-        <h1>{t.install.title}</h1>
-        <p className="page-lead">{t.install.lead}</p>
+        <div>
+          <h1>{t.install.title}</h1>
+          <p className="lead">{t.install.lead}</p>
+        </div>
       </header>
 
       <div className="install-layout">
         <aside className="install-side" aria-label={t.install.title}>
-          <div className="panel download-panel">
-            <Setback className="frame-crown" />
+          <div className="download-panel">
             <dl className="download-meta">
               <div>
                 <dt>{t.install.version}</dt>
-                <dd>{APP_RELEASE.version}</dd>
+                <dd className="num">{APP_RELEASE.version}</dd>
               </div>
               <div>
                 <dt>{t.install.size}</dt>
-                <dd>{APP_RELEASE.sizeMb.toLocaleString('pt-BR')} MB</dd>
+                <dd>
+                  <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB
+                </dd>
               </div>
               <div>
                 <dt>{t.install.date}</dt>
@@ -126,44 +129,35 @@ export function Install() {
               </div>
             </dl>
             <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => pushToast(t.install.downloadToast)}>
-              <Icon name="download" size={20} />
               <span className="btn-file">{t.install.download(APP_RELEASE.fileName)}</span>
             </button>
             <p className="fine">{t.install.requirements}</p>
             <p className="fine mobile-note">{t.install.mobileNote}</p>
 
             <div className="hash" id="hash">
-              <h2 className="h-small">{t.install.hashTitle}</h2>
+              <h2 className="h-side">{t.install.hashTitle}</h2>
               <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
               <p className="fine">{t.install.hashHelp}</p>
             </div>
 
-            <a href={APP_RELEASE.sourceUrl} className="source-link" aria-disabled="true" onClick={(e) => e.preventDefault()}>
-              <Icon name="code" size={18} />
-              {t.install.source}
-              <span className="fine">({t.install.sourceNote})</span>
-            </a>
+            <p className="source-link">
+              {t.install.source} <span className="fine">({t.install.sourceNote})</span>
+            </p>
           </div>
           <AppStatus />
         </aside>
 
         <div className="install-main">
           <section id="antivirus" className="install-section av" aria-labelledby="av-title">
-            <h2 id="av-title">
-              <Icon name="shield" size={24} />
-              {t.install.avTitle}
-            </h2>
+            <h2 id="av-title">{t.install.avTitle}</h2>
             <p>{t.install.avWhy}</p>
             <AvTabs />
-            <h3 className="h-small">{t.install.avVerify}</h3>
+            <h3 className="h-side">{t.install.avVerify}</h3>
             <CopyField value={hashCommand} label={t.install.avVerify} copyLabel={t.install.copyCommand} />
           </section>
 
           <section className="install-section" aria-labelledby="what-title">
-            <h2 id="what-title">
-              <Icon name="folder" size={24} />
-              {t.install.whatTitle}
-            </h2>
+            <h2 id="what-title">{t.install.whatTitle}</h2>
             <div className="table-wrap">
               <table className="table">
                 <thead>
@@ -178,7 +172,7 @@ export function Install() {
                     <tr key={it.item}>
                       <th scope="row">{it.item}</th>
                       <td>
-                        <code className="path">{it.path}</code>
+                        <code className="path num">{it.path}</code>
                       </td>
                       <td className="nowrap">{it.size}</td>
                     </tr>
@@ -194,7 +188,7 @@ export function Install() {
               <ul className="check-list">
                 {appDoes.map((x) => (
                   <li key={x}>
-                    <Icon name="check" size={16} />
+                    <Icon name="check" size={14} />
                     {x}
                   </li>
                 ))}
@@ -205,7 +199,7 @@ export function Install() {
               <ul className="check-list is-negative">
                 {appDoesnt.map((x) => (
                   <li key={x}>
-                    <Icon name="close" size={16} />
+                    <Icon name="close" size={14} />
                     {x}
                   </li>
                 ))}
@@ -227,6 +221,7 @@ export function Install() {
 
           <p className="install-affiliation">{t.install.affiliation}</p>
         </div>
+      </div>
       </div>
     </div>
   );

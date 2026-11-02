@@ -1,33 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { DaySessions, QuorumAsk } from '../components/DaySessions';
-import { QuietSkyline } from '../components/Deco';
-import { FeaturedLobby } from '../components/FeaturedLobby';
+import { Credits } from '../components/Common';
 import { Icon } from '../components/Icon';
-import { LobbyRow } from '../components/LobbyRow';
-import { LobbyTicket } from '../components/LobbyTicket';
-import { ModeSeal } from '../components/ModeSeal';
+import { LobbyTable } from '../components/LobbyTable';
 import { modes, type Region } from '../data/modes';
-import { liveBase } from '../data/stats';
-import { useDocumentTitle, useLiveNumber } from '../hooks';
+import { useDocumentTitle, useLiveStats } from '../hooks';
+import { useFeaturedLobby } from '../hooks/useFeatured';
 import { useNow } from '../hooks/useNow';
-import { formatNumber, t } from '../i18n';
-import {
-  EMPTY_FILTERS,
-  filterCounts,
-  filterLobbies,
-  hasRoom,
-  isSortKey,
-  nearestAlternatives,
-  REGIONS,
-  SORT_KEYS,
-  type LobbyFilters,
-  type SortKey,
-} from '../lib/lobbies';
+import { t } from '../i18n';
+import { EMPTY_FILTERS, filterCounts, filterLobbies, isSortKey, nearestAlternatives, REGIONS, type LobbyFilters } from '../lib/lobbies';
+import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
-
-export type LobbyView = 'compacta' | 'ingresso';
-const VIEW_KEY = 'projeto-lobby-vista';
 
 function readFilters(p: URLSearchParams): LobbyFilters {
   const sort = p.get('ordem');
@@ -52,24 +35,9 @@ function writeFilters(f: LobbyFilters, keep: URLSearchParams) {
   if (f.slotsOnly) p.set('vagas', '1');
   if (f.friendsOnly) p.set('amigos', '1');
   if (f.sort !== 'ativos') p.set('ordem', f.sort);
-  for (const k of ['vista', 'vazio']) {
-    const v = keep.get(k);
-    if (v) p.set(k, v);
-  }
+  const empty = keep.get('vazio');
+  if (empty) p.set('vazio', empty);
   return p;
-}
-
-/** Vista: URL manda; senão a última escolha; senão compacta no celular e ingresso no desktop. */
-function initialView(p: URLSearchParams): LobbyView {
-  const v = p.get('vista');
-  if (v === 'compacta' || v === 'ingresso') return v;
-  try {
-    const saved = localStorage.getItem(VIEW_KEY);
-    if (saved === 'compacta' || saved === 'ingresso') return saved;
-  } catch {
-    /* armazenamento indisponível */
-  }
-  return window.matchMedia('(min-width: 48em)').matches ? 'ingresso' : 'compacta';
 }
 
 /** Anúncio resumido para leitor de tela: no máximo um a cada 15 s, nunca por linha. */
@@ -93,273 +61,127 @@ function useActivityAnnouncer(lobbies: ReturnType<typeof useSession>['lobbies'])
 
 export function Lobbies() {
   useDocumentTitle(t.meta.lobbies);
-  const { lobbies, user, signIn, openHost, requestJoin, notify, toggleNotify, lobbyCtx } = useSession();
+  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx } = useSession();
   const [params, setParams] = useSearchParams();
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [view, setView] = useState<LobbyView>(() => initialView(params));
   const now = useNow(5000);
-  const playersLive = useLiveNumber(liveBase.playersOnline, liveBase.playersJitter, liveBase.intervalMs);
   const f = readFilters(params);
   /** ?vazio=1 simula a cidade sem nenhum lobby (para revisar o estado vazio). */
   const simulateEmpty = params.get('vazio') === '1';
   const pool = simulateEmpty ? [] : lobbies;
+  const live = useLiveStats();
+  const stats = simulateEmpty ? liveStats([]) : live;
   const announcement = useActivityAnnouncer(pool);
 
   const update = (patch: Partial<LobbyFilters>) => setParams(writeFilters({ ...f, ...patch }, params), { replace: true });
-
-  const urlView = params.get('vista');
-  useEffect(() => {
-    if (urlView === 'compacta' || urlView === 'ingresso') setView(urlView);
-  }, [urlView]);
-
-  const chooseView = (v: LobbyView) => {
-    setView(v);
-    try {
-      localStorage.setItem(VIEW_KEY, v);
-    } catch {
-      /* ignora */
-    }
-    const p = new URLSearchParams(params);
-    p.set('vista', v);
-    setParams(p, { replace: true });
-  };
-
   const results = useMemo(() => filterLobbies(pool, f, !!user, lobbyCtx, now), [pool, params, user, lobbyCtx, now]);
   const counts = useMemo(() => filterCounts(pool, f, !!user), [pool, params, user]);
+  const featured = useFeaturedLobby(pool, f.mode || undefined, now);
 
-  const activeCount = (f.mode ? 1 : 0) + (f.regions.length ? 1 : 0) + (f.slotsOnly ? 1 : 0) + (f.friendsOnly ? 1 : 0);
-  const anyFilter = activeCount > 0 || f.q !== '';
-  const filteredEmpty = anyFilter && !simulateEmpty;
-  const suggestions = results.length === 0 && filteredEmpty ? nearestAlternatives(pool, f, !!user) : [];
-  const notifyKey = `vazio:${f.mode}:${f.regions.join(',')}`;
-  const notifyOn = notify.has(notifyKey);
-  const topMode = [...modes].sort((a, b) => b.playersNow - a.playersNow)[0]!;
-
+  const anyFilter = !!f.mode || f.regions.length > 0 || f.slotsOnly || f.friendsOnly || f.q !== '';
+  const suggestions = results.length === 0 && anyFilter ? nearestAlternatives(pool, f, !!user) : [];
   const clearAll = () => setParams(writeFilters({ ...EMPTY_FILTERS, sort: f.sort }, params), { replace: true });
   const toggleRegion = (r: Region) => update({ regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r] });
 
-  const listedLobbies = pool.filter((l) => l.status !== 'cheio').length;
-  const withRoom = pool.filter(hasRoom).length;
-
   return (
-    <div className="container page lobbies-page">
-      <header className="page-head page-head-split lb-head">
-        <div>
-          <h1>{t.lobbies.title}</h1>
-          <p className="page-lead">{t.lobbies.lead}</p>
-          <p className="tech-line">
-            <span>
-              <span className="live-dot" aria-hidden="true" />
-              <b className="num">{formatNumber(simulateEmpty ? 0 : playersLive)}</b> {t.lobbies.techPlayers}
-            </span>
-            <span>
-              <b className="num">{listedLobbies}</b> {t.lobbies.techLobbies(listedLobbies)}
-            </span>
-            <span>
-              <b className="num">{withRoom}</b> {t.lobbies.techOpen}
-            </span>
-          </p>
-        </div>
-        <button type="button" className="btn btn-ghost" onClick={() => openHost(f.mode || undefined)}>
-          <Icon name="plus" size={18} />
-          {t.lobbies.create}
-        </button>
-      </header>
-
-      <FeaturedLobby empty={simulateEmpty} />
-
-      <div className="toolbar lb-toolbar">
-        <div className="search">
-          <label htmlFor="lobby-search" className="sr-only">
-            {t.lobbies.search}
-          </label>
-          <Icon name="search" size={18} />
-          <input id="lobby-search" type="search" placeholder={t.lobbies.searchPlaceholder} value={f.q} onChange={(e) => update({ q: e.target.value })} />
-        </div>
-        <button
-          type="button"
-          className="btn btn-ghost filters-toggle"
-          aria-expanded={panelOpen}
-          aria-controls="lobby-filters"
-          onClick={() => setPanelOpen((v) => !v)}
-        >
-          <Icon name="sliders" size={18} />
-          {t.lobbies.filtersActive(activeCount)}
-        </button>
-        <div className="sort">
-          <label htmlFor="lobby-sort">{t.lobbies.sort}</label>
-          <select id="lobby-sort" value={f.sort} aria-describedby="sort-hint" onChange={(e) => update({ sort: e.target.value as SortKey })}>
-            {(SORT_KEYS.includes(f.sort) ? SORT_KEYS : [f.sort, ...SORT_KEYS]).map((k) => (
-              <option key={k} value={k}>
-                {t.lobbies.sortOptions[k]}
-              </option>
-            ))}
-          </select>
-          <span id="sort-hint" className="sr-only">
-            {t.lobbies.sortHint}
-          </span>
-        </div>
-        <div className="view-toggle" role="group" aria-label={t.lobbies.view}>
-          <button type="button" className="seg-btn" aria-pressed={view === 'compacta'} onClick={() => chooseView('compacta')}>
-            {t.lobbies.viewCompact}
-          </button>
-          <button type="button" className="seg-btn" aria-pressed={view === 'ingresso'} onClick={() => chooseView('ingresso')}>
-            {t.lobbies.viewTicket}
-          </button>
-        </div>
-      </div>
-
-      <div className="lobbies-layout">
-        <aside id="lobby-filters" className={`filters lb-filters${panelOpen ? ' is-open' : ''}`} aria-label={t.lobbies.filters}>
-          <fieldset className="field">
-            <legend>{t.lobbies.mode}</legend>
-            <ul className="mode-filter">
-              <li>
-                <button type="button" className="mode-opt" aria-pressed={!f.mode} onClick={() => update({ mode: '' })}>
-                  <span className="mode-opt-all" aria-hidden="true" />
-                  <span className="mode-opt-name">{t.lobbies.allModes}</span>
-                  <span className="mode-opt-count num">{counts.all}</span>
-                </button>
-              </li>
-              {modes.map((m) => (
-                <li key={m.slug}>
-                  <button type="button" className="mode-opt" aria-pressed={f.mode === m.slug} onClick={() => update({ mode: f.mode === m.slug ? '' : m.slug })}>
-                    <ModeSeal mode={m} size="sm" />
-                    <span className="mode-opt-name">{m.name}</span>
-                    <span className="mode-opt-count num">{counts.modes[m.slug] ?? 0}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </fieldset>
-
-          <fieldset className="field">
-            <legend>{t.lobbies.region}</legend>
-            <div className="segmented lb-regions">
-              {REGIONS.map((r) => (
-                <button key={r} type="button" className="seg-btn" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
-                  {t.regions[r]}
-                  <span className="seg-count num">{counts.regions[r]}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
-
-          <label className="check">
-            <input type="checkbox" checked={f.slotsOnly} onChange={(e) => update({ slotsOnly: e.target.checked })} />
-            <span>
-              {t.lobbies.slotsOnly} <span className="check-count num">{counts.slotsOnly}</span>
-            </span>
-          </label>
-
+    <div className="page lobbies-page">
+      <div className="wrap">
+        <header className="page-head lb-head">
           <div>
-            <label className="check">
-              <input
-                type="checkbox"
-                checked={f.friendsOnly && !!user}
-                disabled={!user}
-                aria-describedby={!user ? 'friends-hint' : undefined}
-                onChange={(e) => update({ friendsOnly: e.target.checked })}
-              />
-              <span>
-                {t.lobbies.friendsOnly} {user && <span className="check-count num">{counts.friendsOnly}</span>}
-              </span>
+            <h1>{t.lobbies.title}</h1>
+            <Credits counts={stats} className="credits--inline" />
+          </div>
+          <button type="button" className="btn btn-line" onClick={() => openHost(f.mode || undefined)}>
+            <Icon name="plus" size={14} />
+            {t.lobbies.create}
+          </button>
+        </header>
+
+        <div className="filters" role="group" aria-label={t.lobbies.filtersLabel}>
+          <label className="f-select">
+            <span className="sr-only">{t.lobbies.mode}</span>
+            <select value={f.mode} onChange={(e) => update({ mode: e.target.value })}>
+              <option value="">{t.lobbies.modeOption(t.lobbies.allModes, counts.all)}</option>
+              {modes.map((m) => (
+                <option key={m.slug} value={m.slug}>
+                  {t.lobbies.modeOption(m.name, counts.modes[m.slug] ?? 0)}
+                </option>
+              ))}
+            </select>
+            <Icon name="chevronDown" size={14} />
+          </label>
+          <div className="f-seg" role="group" aria-label={t.lobbies.region}>
+            {REGIONS.map((r) => (
+              <button key={r} type="button" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
+                {t.regions[r]}
+              </button>
+            ))}
+          </div>
+          <label className="f-check">
+            <input type="checkbox" checked={f.slotsOnly} onChange={(e) => update({ slotsOnly: e.target.checked })} />
+            <span>{t.lobbies.slotsOnly}</span>
+          </label>
+          <span className="f-check-wrap">
+            <label className="f-check">
+              <input type="checkbox" checked={f.friendsOnly && !!user} disabled={!user} onChange={(e) => update({ friendsOnly: e.target.checked })} />
+              <span>{t.lobbies.friendsOnly}</span>
             </label>
             {!user && (
-              <p id="friends-hint" className="hint">
-                {t.lobbies.friendsNeedSignIn}{' '}
-                <button type="button" className="link-btn" onClick={signIn}>
-                  {t.account.signIn}
-                </button>
-              </p>
+              <button type="button" className="link-quiet" onClick={signIn}>
+                ({t.lobbies.friendsSignIn})
+              </button>
             )}
+          </span>
+          <p className="f-count" aria-live="polite">
+            <span>
+              <span className="num">{results.length}</span> {t.lobbies.resultsUnit(results.length)}
+            </span>
+            {anyFilter && (
+              <button type="button" className="link-quiet" onClick={clearAll}>
+                {t.lobbies.clear}
+              </button>
+            )}
+          </p>
+        </div>
+
+        {results.length > 0 ? (
+          <LobbyTable lobbies={results} featured={featured} now={now} />
+        ) : anyFilter ? (
+          <div className="empty">
+            <h2>{t.lobbies.emptyFilteredTitle}</h2>
+            <p>{t.lobbies.emptyFilteredBody}</p>
+            <div className="empty-actions">
+              {suggestions.map((s) => (
+                <button key={s.label} type="button" className="btn btn-line" onClick={() => update(s.patch)}>
+                  {s.label}
+                </button>
+              ))}
+              <button type="button" className="btn btn-quiet" onClick={clearAll}>
+                {t.lobbies.clear}
+              </button>
+              <button type="button" className="btn btn-quiet" onClick={() => openHost(f.mode || undefined)}>
+                {t.lobbies.emptyCreate}
+              </button>
+            </div>
           </div>
-
-          {anyFilter && (
-            <button type="button" className="link-btn" onClick={clearAll}>
-              {t.lobbies.clear}
-            </button>
-          )}
-        </aside>
-
-        <section className="results" aria-labelledby="results-count">
-          <h2 id="results-count" className="results-count" aria-live="polite">
-            {t.lobbies.results(results.length)}
-          </h2>
-          {results.length > 0 ? (
-            view === 'compacta' ? (
-              <ul className="lb-list is-compact">
-                {results.map((l) => (
-                  <LobbyRow key={l.id} lobby={l} now={now} />
-                ))}
-              </ul>
-            ) : (
-              <ul className="lb-list is-tickets">
-                {results.map((l) => (
-                  <LobbyTicket key={l.id} lobby={l} now={now} />
-                ))}
-              </ul>
-            )
-          ) : filteredEmpty ? (
-            <div className="empty lb-empty">
-              <QuietSkyline className="empty-art" lit={false} />
-              <h3>{t.lobbies.emptyFilteredTitle}</h3>
-              <p>{t.lobbies.emptyFilteredBody}</p>
-              {suggestions.length > 0 && (
-                <ul className="suggestions">
-                  {suggestions.map((s) => (
-                    <li key={s.label}>
-                      <button type="button" className="btn btn-outline" onClick={() => update(s.patch)}>
-                        {s.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <div className="empty-actions">
-                <button type="button" className="btn btn-ghost" onClick={clearAll}>
-                  {t.lobbies.emptyFilteredClear}
-                </button>
-                <button type="button" className="btn btn-ghost" onClick={() => openHost(f.mode || undefined)}>
-                  <Icon name="plus" size={18} />
-                  {t.lobbies.emptyCreate}
-                </button>
-                <button type="button" className="btn btn-ghost" aria-pressed={notifyOn} onClick={() => toggleNotify(notifyKey, t.lobbies.emptyNotifyToast)}>
-                  <Icon name={notifyOn ? 'check' : 'bell'} size={18} />
-                  {notifyOn ? t.lobbies.emptyNotifyOn : t.lobbies.emptyNotify}
-                </button>
-              </div>
+        ) : (
+          <div className="empty">
+            <h2>{t.lobbies.emptyNoneTitle}</h2>
+            <p>{t.lobbies.emptyNoneBody}</p>
+            <div className="empty-actions">
+              <button type="button" className="btn btn-primary" onClick={() => openHost()}>
+                {t.lobbies.create}
+              </button>
+              <button type="button" className="btn btn-line" onClick={() => requestJoin({ kind: 'bots' })}>
+                {t.lobbies.emptyBots}
+              </button>
             </div>
-          ) : (
-            <div className="empty lb-empty">
-              <QuietSkyline className="empty-art" />
-              <h3>{t.lobbies.emptyNoneTitle}</h3>
-              <p>{t.lobbies.emptyNoneBody}</p>
-              <div className="empty-seals" role="group" aria-label={t.lobbies.emptyNoneSeals}>
-                {modes.map((m) => (
-                  <button key={m.slug} type="button" className="seal-shortcut" onClick={() => openHost(m.slug)}>
-                    <ModeSeal mode={m} size="lg" />
-                    <span>{m.name}</span>
-                  </button>
-                ))}
-              </div>
-              <div className="empty-actions">
-                <QuorumAsk mode={f.mode || topMode.slug} />
-                <button type="button" className="btn btn-ghost" onClick={() => requestJoin({ kind: 'bots' })}>
-                  <Icon name="bot" size={18} />
-                  {t.lobbies.emptyBots}
-                </button>
-              </div>
-            </div>
-          )}
-        </section>
+          </div>
+        )}
+
+        <p className="sr-only" role="status" aria-live="polite" aria-label={t.lobbies.activityRegion}>
+          {announcement}
+        </p>
       </div>
-
-      <DaySessions />
-
-      <p className="sr-only" role="status" aria-live="polite" aria-label={t.lobbies.activityRegion}>
-        {announcement}
-      </p>
     </div>
   );
 }

@@ -22,17 +22,16 @@ export interface Mode {
   durationMin: number;
   author: string;
   updatedAt: string;
-  /** Matiz da arte (graus HSL). Mantido discreto para não competir com o acento. */
-  hue: number;
+  /** Uma frase só, para a linha de modos da home e o índice. */
+  line: string;
   motif: Motif;
-  playersNow: number;
-  featured: boolean;
   leaderboard: LeaderboardEntry[];
 }
 
 export const modes: Mode[] = [
   {
     slug: 'circulo-profano',
+    line: 'Doze num anel ritual que fecha a cada minuto.',
     name: 'Círculo Profano',
     tagline: 'Até doze num anel ritual que fecha a cada minuto. Do lado de fora, ninguém dura.',
     description: [
@@ -51,10 +50,7 @@ export const modes: Mode[] = [
     durationMin: 12,
     author: 'velha_guarda',
     updatedAt: '2026-10-28',
-    hue: 38,
     motif: 'rings',
-    playersNow: 412,
-    featured: true,
     leaderboard: [
       { player: 'Ametista', region: 'BR', wins: 184, rating: 2412 },
       { player: 'k0rvo', region: 'BR', wins: 171, rating: 2388 },
@@ -65,6 +61,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'ultimo-bonde',
+    line: 'Escolte o bonde até o fim da linha antes da meia-noite.',
     name: 'Último Bonde',
     tagline: 'Escolte o bonde até o fim da linha antes da meia-noite.',
     description: [
@@ -83,10 +80,7 @@ export const modes: Mode[] = [
     durationMin: 18,
     author: 'trilho_sul',
     updatedAt: '2026-10-14',
-    hue: 168,
     motif: 'rails',
-    playersNow: 288,
-    featured: true,
     leaderboard: [
       { player: 'Maquinista', region: 'BR', wins: 96, rating: 2190 },
       { player: 'ferrugem', region: 'BR', wins: 91, rating: 2154 },
@@ -97,6 +91,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'neblina',
+    line: 'Doze metros de visão, um caçador e três minutos.',
     name: 'Neblina',
     tagline: 'Doze metros de visão, um caçador e três minutos para não ser pego.',
     description: [
@@ -115,10 +110,7 @@ export const modes: Mode[] = [
     durationMin: 15,
     author: 'nevoeiro',
     updatedAt: '2026-10-02',
-    hue: 250,
     motif: 'fog',
-    playersNow: 197,
-    featured: true,
     leaderboard: [
       { player: 'Sombra Fina', region: 'BR', wins: 120, rating: 1988 },
       { player: 'luz_baixa', region: 'BR', wins: 112, rating: 1950 },
@@ -129,6 +121,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'duelo-meia-noite',
+    line: 'x1 com o mesmo herói, melhor de cinco.',
     name: 'Duelo à Meia-Noite',
     tagline: 'x1, mesmo herói, melhor de cinco. Perdeu, volta para a fila.',
     description: [
@@ -147,10 +140,7 @@ export const modes: Mode[] = [
     durationMin: 6,
     author: 'relojoeiro',
     updatedAt: '2026-09-21',
-    hue: 8,
     motif: 'clock',
-    playersNow: 86,
-    featured: false,
     leaderboard: [
       { player: 'Ponteiro', region: 'BR', wins: 302, rating: 2560 },
       { player: 'Agulha', region: 'BR', wins: 288, rating: 2511 },
@@ -161,6 +151,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'cerco-ao-cofre',
+    line: 'Três trancas: arrombe o cofre ou segure a porta.',
     name: 'Cerco ao Cofre',
     tagline: 'Três trancas, dois minutos cada. Arrombe o cofre ou segure a porta.',
     description: [
@@ -179,10 +170,7 @@ export const modes: Mode[] = [
     durationMin: 20,
     author: 'cofre_forte',
     updatedAt: '2026-10-28',
-    hue: 200,
     motif: 'vault',
-    playersNow: 154,
-    featured: true,
     leaderboard: [
       { player: 'Gazua', region: 'BR', wins: 77, rating: 2044 },
       { player: 'Tranca', region: 'BR', wins: 73, rating: 2010 },
@@ -193,6 +181,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'campo-de-treino',
+    line: 'Todos os itens, bots no seu ritmo e nenhum placar.',
     name: 'Campo de Treino',
     tagline: 'Todos os itens liberados, bots no seu ritmo e nenhum placar olhando.',
     description: [
@@ -210,10 +199,7 @@ export const modes: Mode[] = [
     durationMin: 0,
     author: `equipe ${BRAND_NAME}`,
     updatedAt: '2026-10-14',
-    hue: 90,
     motif: 'grid',
-    playersNow: 147,
-    featured: false,
     leaderboard: [],
   },
 ];

@@ -1,19 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import '@fontsource-variable/big-shoulders/opsz.css';
-import '@fontsource-variable/big-shoulders-stencil/wght.css';
-import '@fontsource-variable/martian-mono/wdth.css';
-import '@fontsource-variable/newsreader/wght.css';
-import '@fontsource-variable/libre-franklin/wght.css';
+// Sistema de tipo v6: Bodoni Moda (títulos, com eixo de tamanho óptico), Mona Sans (texto e interface)
+// e Fragment Mono (só números). Auto-hospedadas via @fontsource; só o subconjunto latino é baixado.
+import '@fontsource-variable/bodoni-moda/opsz.css';
+import '@fontsource-variable/mona-sans/wght.css';
+import '@fontsource/fragment-mono/latin-400.css';
 import './styles/tokens.css';
 import './styles/base.css';
-import './styles/components.css';
+import './styles/home.css';
+import './styles/lobbies.css';
 import './styles/pages.css';
-import './styles/city.css';
-import './styles/cards.css';
-import './styles/gazette.css';
-import './styles/torre.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
