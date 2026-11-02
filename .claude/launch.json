@@ -4,14 +4,41 @@
     {
       "name": "web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "web", "run", "dev", "--", "--port", "5173", "--strictPort"],
+      "runtimeArgs": [
+        "--prefix",
+        "web",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
       "port": 5173
     },
     {
       "name": "direcoes",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "4190", "--directory", "prototipos/direcoes"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4190",
+        "--directory",
+        "prototipos/direcoes"
+      ],
       "port": 4190
+    },
+    {
+      "name": "v7",
+      "runtimeExecutable": "python",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "4191",
+        "--directory",
+        "prototipos/v7"
+      ],
+      "port": 4191
     }
   ]
 }

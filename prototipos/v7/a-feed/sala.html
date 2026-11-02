@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lobby · Círculo da madrugada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+<style>
+/* ===== A · Feed ao vivo: tokens ===== */
+:root{
+  --bg:#0d0e11; --bg2:#101115; --s1:#15171c; --s2:#1d2027; --s3:#262a33; --s4:#30343e;
+  --line:rgba(255,255,255,.065); --line2:rgba(255,255,255,.11);
+  --tx:#eceef2; --tx2:#a4aab6; --tx3:#6d7381;
+  --acc:#c6f432; --acc-2:#d8ff5c; --acc-ink:#0f1206; --acc-dim:rgba(198,244,50,.14); --acc-line:rgba(198,244,50,.38);
+  --amber:#f5b544; --amber-dim:rgba(245,181,68,.13);
+  --r-sm:8px; --r:12px; --r-lg:16px;
+  --top:56px; --rail:312px;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --sans:"Geist",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:400 14px/1.45 var(--sans);letter-spacing:-.006em;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+svg.i{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+
+/* ===== top bar ===== */
+.top{position:sticky;top:0;z-index:30;height:var(--top);display:flex;align-items:center;gap:20px;padding:0 20px 0 18px;
+  background:rgba(13,14,17,.86);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:650;font-size:16px;letter-spacing:-.035em}
+.brand .mark{width:26px;height:26px}
+.brand small{font:500 10px/1 var(--mono);color:var(--tx3);letter-spacing:.02em;padding:3px 5px;border:1px solid var(--line2);border-radius:5px;margin-left:2px}
+.nav{display:flex;gap:2px;margin-left:10px}
+.nav a{height:32px;display:flex;align-items:center;padding:0 12px;border-radius:8px;color:var(--tx2);font-weight:500;font-size:13.5px;transition:color .15s,background .15s}
+.nav a:hover{color:var(--tx);background:var(--s1)}
+.nav a.on{color:var(--tx);background:var(--s2)}
+.search{display:flex;align-items:center;gap:10px;height:34px;width:min(360px,30vw);margin-left:auto;padding:0 6px 0 12px;border-radius:9px;background:var(--s1);border:1px solid var(--line);color:var(--tx3);font-size:13px;transition:border-color .15s}
+.search:hover{border-color:var(--line2)}
+.search span{flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+kbd{font:500 10.5px/1 var(--mono);color:var(--tx2);background:var(--s3);border-radius:5px;padding:4px 5px;border:0;box-shadow:inset 0 -1px 0 rgba(0,0,0,.35)}
+.kbds{display:flex;gap:3px}
+.live{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 11px;border-radius:9px;background:var(--s1);border:1px solid var(--line);font-size:13px;color:var(--tx2);white-space:nowrap}
+.live b{color:var(--tx);font-weight:600}
+.me{display:flex;align-items:center;gap:8px;height:34px;padding:0 4px 0 4px;border-radius:999px}
+.me .av{--s:30px}
+
+/* ===== live system ===== */
+.dot{position:relative;width:8px;height:8px;border-radius:50%;background:var(--acc);flex:none}
+.dot::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--acc);animation:ping 2.4s var(--ease) infinite}
+.dot.amber{background:var(--amber)} .dot.amber::after{background:var(--amber)}
+.dot.still::after{display:none}
+@keyframes ping{0%{transform:scale(1);opacity:.55}70%,100%{transform:scale(2.6);opacity:0}}
+/* odometer */
+.odo{display:inline-flex;height:1.2em;line-height:1.2em;overflow:hidden;vertical-align:-.22em;font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.03em;color:var(--tx);font-weight:600}
+.odo .col{display:inline-block;height:1.2em;overflow:hidden}
+.odo .strip{display:flex;flex-direction:column;transition:transform .55s var(--ease)}
+.odo .strip span{height:1.2em}
+
+/* ===== avatars ===== */
+.av{--s:28px;position:relative;display:inline-block;width:var(--s);height:var(--s);border-radius:50%;flex:none;background:var(--s3)}
+.av svg{width:100%;height:100%;border-radius:50%;display:block}
+.av.ring::before{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--acc)}
+.av.menu::before{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid #5b6270}
+.av .st{position:absolute;right:-1px;bottom:-1px;width:30%;height:30%;min-width:8px;min-height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 0 2.5px var(--ring-bg,var(--bg))}
+.av .st.menu{background:#7c8494}
+.stack{display:flex;align-items:center}
+.stack .av{box-shadow:0 0 0 2px var(--stack-bg,var(--s1))}
+.stack .av+.av{margin-left:-7px}
+.stack .more{margin-left:6px;font:500 12px/1 var(--mono);color:var(--tx3)}
+
+/* ===== mode covers: glyph over grainy gradient ===== */
+.cover{position:relative;overflow:hidden;isolation:isolate;color:color-mix(in srgb,var(--c2) 45%,#fff);
+  background:
+    radial-gradient(90% 120% at 88% 18%, var(--c2) 0%, transparent 62%),
+    radial-gradient(70% 90% at 0% 110%, var(--c3) 0%, transparent 70%),
+    linear-gradient(155deg, var(--c1) 0%, #0e0f13 100%)}
+.cover::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");background-size:180px}
+.cover .gl{position:absolute;z-index:1;top:50%;right:-14%;height:150%;aspect-ratio:1;transform:translateY(-50%) rotate(var(--rot,0deg));transition:transform .5s var(--ease);opacity:.92}
+.cover .gl use{color:inherit}
+.m-circulo{--c1:#2c0b14;--c2:#ff5a3d;--c3:#5b0f2a;--rot:0deg}
+.m-bonde{--c1:#071f1e;--c2:#2fd1a8;--c3:#08383a;--rot:-8deg}
+.m-neblina{--c1:#161b28;--c2:#9db4dc;--c3:#2a3550;--rot:0deg}
+.m-cofre{--c1:#221505;--c2:#f0a92f;--c3:#3d2407;--rot:12deg}
+.m-duelo{--c1:#120d2b;--c2:#7b6dff;--c3:#2a1660;--rot:-10deg}
+.m-treino{--c1:#141c09;--c2:#b8e636;--c3:#26380a;--rot:0deg}
+
+/* ===== shared atoms ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 14px;border-radius:9px;font-weight:600;font-size:13px;letter-spacing:-.01em;white-space:nowrap;transition:background .15s,color .15s,transform .12s,box-shadow .15s}
+.btn:active{transform:translateY(1px) scale(.985)}
+.btn-acc{background:var(--acc);color:var(--acc-ink);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 0 0 1px rgba(198,244,50,.5)}
+.btn-acc:hover{background:var(--acc-2)}
+.btn-acc kbd{background:rgba(15,18,6,.14);color:var(--acc-ink);box-shadow:none}
+.btn-fill{background:var(--s3);color:var(--tx)}
+.btn-fill:hover{background:var(--acc);color:var(--acc-ink)}
+.btn-ghost{color:var(--tx2);box-shadow:inset 0 0 0 1px var(--line2)}
+.btn-ghost:hover{color:var(--tx);background:var(--s2)}
+.btn-sm{height:28px;padding:0 10px;font-size:12.5px;border-radius:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:7px;font-size:12px;font-weight:550;white-space:nowrap;background:var(--s2);color:var(--tx2)}
+.chip.acc{background:var(--acc-dim);color:var(--acc)}
+.chip.amber{background:var(--amber-dim);color:var(--amber)}
+.chip .i{width:13px;height:13px}
+.tag{font-size:11px;font-weight:600;color:var(--acc);letter-spacing:0}
+.muted{color:var(--tx3)}
+.sep{width:3px;height:3px;border-radius:50%;background:var(--tx3);flex:none;opacity:.7}
+
+/* ===== layout shell ===== */
+.shell{display:grid;grid-template-columns:minmax(0,1fr) var(--rail);min-height:calc(100dvh - var(--top))}
+.rail{border-left:1px solid var(--line);background:var(--bg2)}
+.rail-in{position:sticky;top:var(--top);max-height:calc(100dvh - var(--top));overflow:auto;scrollbar-width:thin;scrollbar-color:var(--s3) transparent}
+.rail-sec{padding:18px 18px 16px;border-bottom:1px solid var(--line)}
+.rail-sec:last-child{border-bottom:0}
+.rail-h{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:12.5px;font-weight:600;color:var(--tx2)}
+.rail-h .n{font:500 12px/1 var(--mono);color:var(--tx3)}
+.rail-h .r{margin-left:auto}
+
+.fr{--ring-bg:var(--bg2);display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:11px;padding:7px 8px;margin:0 -8px;border-radius:10px;transition:background .15s}
+.fr:hover{background:var(--s1)}
+.fr .av{--s:32px}
+.fr .nm{font-weight:600;font-size:13.5px;letter-spacing:-.015em;line-height:1.2}
+.fr .wh{font-size:12.5px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35}
+.fr .wh b{font-weight:500;color:var(--tx2)}
+.fr .btn{opacity:.9}
+
+.feed-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 0;font-size:12.5px;color:var(--tx3)}
+.feed-row .av{--s:22px}
+.feed-row .t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-row .t b{color:var(--tx);font-weight:600}
+.feed-row .t em{font-style:normal;color:var(--tx2)}
+.feed-row .s{font:500 11.5px/1 var(--mono);color:var(--tx3)}
+.feed-row.in{animation:feedIn .45s var(--ease) both}
+@keyframes feedIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.pause{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 7px;border-radius:6px;font-size:11.5px;color:var(--tx3)}
+.pause:hover{background:var(--s2);color:var(--tx2)}
+.pause .i{width:12px;height:12px}
+
+.paused .dot::after,.paused .pulse-seat{animation-play-state:paused!important}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .dot::after{display:none}
+}
+
+/* ===== sala ===== */
+.main{padding:20px 28px 132px;min-width:0}
+.wrap{max-width:1160px;margin:0 auto}
+.roompill{display:flex;align-items:center;gap:9px;height:34px;padding:0 6px 0 11px;border-radius:9px;background:rgba(198,244,50,.07);box-shadow:inset 0 0 0 1px rgba(198,244,50,.25);font-size:13px;color:var(--tx2);white-space:nowrap}
+.roompill b{color:var(--tx);font-weight:600}
+.roompill .mono{font-size:12px;color:var(--tx);background:var(--s2);padding:4px 6px;border-radius:6px}
+
+.crumb{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--tx3)}
+.crumb a{display:inline-flex;align-items:center;gap:6px;color:var(--tx2)}
+.crumb a:hover{color:var(--tx)}
+.crumb .i{width:14px;height:14px}
+
+/* cabeçalho com capa */
+.rh{position:relative;border-radius:var(--r-lg);overflow:hidden;min-height:208px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:24px;padding:24px 26px;box-shadow:inset 0 0 0 1px var(--line)}
+.rh .cover{position:absolute;inset:0;z-index:0}
+.rh .gl{right:8%;height:260%;top:40%}
+.rh::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(15,16,20,.96) 0%,rgba(15,16,20,.8) 40%,rgba(15,16,20,.25) 100%),linear-gradient(0deg,rgba(15,16,20,.6),transparent 60%)}
+.rh>*:not(.cover){position:relative;z-index:2}
+.rh-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.rh h1{font-size:44px;line-height:1;font-weight:700;letter-spacing:-.045em}
+.rh-meta{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:13.5px;color:var(--tx2)}
+.rh-meta .who{display:flex;align-items:center;gap:7px;color:var(--tx)}
+.rh-meta .mono{color:var(--tx)}
+.rh-n{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.rh-n .big{font:600 52px/1 var(--mono);letter-spacing:-.06em;text-shadow:0 2px 24px rgba(0,0,0,.5)}
+.rh-n .big i{font-style:normal;color:rgba(255,255,255,.42)}
+.rh-n span{font-size:12.5px;color:var(--tx2)}
+
+/* prontos */
+.ready{display:flex;align-items:center;gap:16px;margin-top:22px}
+.ready h2{display:flex;align-items:center;gap:5px;font-size:18px;font-weight:650;letter-spacing:-.03em;white-space:nowrap}
+.ready h2 .odo{font-size:19px;vertical-align:0}
+.rbar{display:flex;gap:4px;flex:1;max-width:320px}
+.rbar i{flex:1;height:6px;border-radius:3px;background:var(--s3);transition:background .25s}
+.rbar i.on{background:var(--acc)}
+.rbar i.goal{box-shadow:0 0 0 1px var(--acc-line)}
+.ready p{font-size:13px;color:var(--tx3);margin-left:auto}
+.ready p b{color:var(--tx);font-weight:600}
+
+/* slots */
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}
+.slot{--ring-bg:var(--s1);position:relative;display:flex;align-items:center;gap:12px;height:74px;padding:0 14px;border-radius:14px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line);transition:box-shadow .2s,background .2s}
+.slot .av{--s:42px}
+.slot .nm{font-size:14px;font-weight:620;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot .tx{min-width:0;flex:1;padding-right:22px}
+.slot .ss{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12.5px;color:var(--tx3)}
+.slot .ss .tag{font-size:11.5px}
+.slot.is-ready .ss .ok{color:var(--acc)}
+.slot .chk{position:absolute;right:12px;top:12px;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--acc);color:var(--acc-ink)}
+.slot .chk .i{width:12px;height:12px;stroke-width:2.6}
+.slot .wait{position:absolute;right:12px;top:12px;width:20px;height:20px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #3b404b}
+.slot.me{background:linear-gradient(180deg,rgba(198,244,50,.06),rgba(198,244,50,.015));box-shadow:inset 0 0 0 1px var(--acc-line)}
+.slot.me .ss{color:var(--tx2)}
+.slot.empty{background:transparent;box-shadow:none;border:1.5px dashed #2c313b;color:var(--tx3);justify-content:center;gap:8px;font-weight:550;font-size:13px}
+.slot.empty:hover{border-color:var(--acc-line);color:var(--acc)}
+.slot.empty .i{width:15px;height:15px}
+.slot.pop{animation:pop .38s var(--ease)}
+@keyframes pop{0%{transform:scale(.96)}55%{transform:scale(1.025)}100%{transform:none}}
+
+/* regras */
+.rules{margin-top:26px}
+.rules h2{font-size:15px;font-weight:650;letter-spacing:-.02em;margin-bottom:10px}
+.rule-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-radius:14px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line)}
+.rule{display:flex;align-items:center;gap:12px;padding:14px 16px;font-size:13.5px;color:var(--tx2)}
+.rule+.rule{border-left:1px solid var(--line)}
+.rule .ic{width:34px;height:34px;flex:none;border-radius:10px;display:grid;place-items:center;background:var(--s2);color:var(--tx)}
+.rule .ic .i{width:17px;height:17px}
+
+/* trilho */
+.inv{--ring-bg:var(--bg2)}
+.copy{display:flex;align-items:center;gap:8px;height:38px;padding:0 5px 0 12px;border-radius:10px;background:var(--s1);box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;color:var(--tx3);margin-top:14px}
+.copy b{font-family:var(--mono);letter-spacing:-.01em}
+.copy span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log .feed-row .t em{color:var(--tx3)}
+
+/* barra inferior */
+.bar{position:fixed;z-index:35;left:0;right:var(--rail);bottom:0;padding:12px 28px 14px;background:linear-gradient(180deg,rgba(13,14,17,0),rgba(13,14,17,.9) 26%)}
+.bar-in{max-width:1160px;margin:0 auto;display:flex;align-items:center;gap:20px;height:76px;padding:0 12px 0 22px;border-radius:16px;background:rgba(24,26,32,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:inset 0 0 0 1px var(--line2),0 20px 50px -20px rgba(0,0,0,.8)}
+.bar-s{display:flex;flex-direction:column;gap:3px;flex:none;white-space:nowrap}
+.bar-s b{font-size:15px;font-weight:650;letter-spacing:-.02em}
+.bar-s span{font-size:12.5px;color:var(--tx3)}
+.steps{display:flex;align-items:center;gap:6px;flex:1;min-width:0;justify-content:center}
+.step{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--tx3);white-space:nowrap}
+.step .k{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font:600 10.5px/1 var(--mono);box-shadow:inset 0 0 0 1.5px #343944;color:var(--tx3);flex:none}
+.step .k .i{width:11px;height:11px;stroke-width:2.6}
+.step.now{color:var(--tx)} .step.now .k{box-shadow:inset 0 0 0 1.5px var(--acc);color:var(--acc)}
+.step.done{color:var(--tx2)} .step.done .k{background:var(--acc);box-shadow:none;color:var(--acc-ink)}
+.step-line{width:14px;height:1px;background:var(--line2);flex:none}
+.bar-a{display:flex;align-items:center;gap:8px}
+.btn-ready{height:52px;padding:0 26px;border-radius:12px;font-size:15px;font-weight:700;letter-spacing:.04em;min-width:200px}
+.btn-ready kbd{font-size:11px}
+.btn-ready.on{background:var(--s3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--acc-line)}
+.btn-ready.on .i{color:var(--acc)}
+.bar.go .btn-ready{pointer-events:none}
+
+@media (max-width:1320px){ .step:not(.now) .lb{display:none} .step-line{width:22px} }
+@media (max-width:1180px){ :root{--rail:288px} .main{padding:20px 22px 132px} .slots{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:760px){
+  .top{gap:10px;padding:0 12px 0 14px}
+  .nav,.search span,.search .kbds,.live{display:none}
+  .search{width:34px;padding:0;justify-content:center;margin-left:auto}
+  .roompill{padding:0 5px 0 10px} .roompill b{display:none}
+  .rh-meta .sep-w{display:none} .rh-meta .who{flex-basis:100%}
+  .shell{display:block}
+  .main{padding:12px 16px 0}
+  .rh{display:block;min-height:0;padding:60px 16px 16px}
+  .rh .gl{right:-20%;top:20%;height:170%}
+  .rh::before{background:linear-gradient(180deg,rgba(15,16,20,.15),rgba(15,16,20,.92) 60%)}
+  .rh h1{font-size:30px}
+  .rh-meta{gap:8px;font-size:13px}
+  .rh-n{flex-direction:row;align-items:baseline;justify-content:flex-start;gap:8px;margin-top:14px}
+  .rh-n .big{font-size:30px}
+  .ready{flex-wrap:wrap;gap:10px;margin-top:18px}
+  .ready h2{font-size:16px}
+  .rbar{max-width:none;order:3;flex-basis:100%}
+  .ready p{margin-left:0;order:4}
+  .slots{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .slot{height:64px;padding:0 10px;gap:10px}
+  .slot .av{--s:34px}
+  .slot .nm{font-size:13.5px}
+  .slot .ss{font-size:12px;white-space:nowrap}
+  .slot.me .ss .tag,.slot.me .ss .sep{display:none}
+  .slot .chk,.slot .wait{right:8px;top:8px;width:16px;height:16px}
+  .slot .chk .i{width:10px;height:10px}
+  .rule-list{grid-template-columns:1fr}
+  .rule+.rule{border-left:0;border-top:1px solid var(--line)}
+  .rail{border-left:0;background:transparent;margin:8px 0 0;padding-bottom:110px}
+  .rail-in{position:static;max-height:none;overflow:visible}
+  .rail-sec{padding:18px 16px}
+  .bar{right:0;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .bar-in{height:auto;padding:10px 10px 10px 14px;gap:12px}
+  .steps{display:none}
+  .bar-s{min-width:0;flex:1;overflow:hidden}
+  .bar-s b,.bar-s span{overflow:hidden;text-overflow:ellipsis}
+  .bar-a .btn-ghost{display:none}
+  .btn-ready{min-width:0;height:50px;padding:0 22px}
+  .btn-ready kbd{display:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <!-- marca placeholder: anel de 12 lugares com 1 vago -->
+  <symbol id="mark" viewBox="0 0 26 26">
+    <rect width="26" height="26" rx="7" fill="#1d2027"/>
+    <circle cx="13" cy="13" r="6.6" fill="none" stroke="#eceef2" stroke-width="2.6" stroke-dasharray="34.6 6.9" transform="rotate(-62 13 13)" stroke-linecap="round"/>
+    <circle cx="17.6" cy="7.4" r="2.1" fill="#c6f432"/>
+  </symbol>
+
+  <!-- glifos dos modos (originais) -->
+  <symbol id="g-circulo" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor">
+      <circle cx="50" cy="50" r="46" stroke-width="1.6" stroke-dasharray="1.5 3.5" opacity=".45"/>
+      <circle cx="50" cy="50" r="37" stroke-width="4" opacity=".55"/>
+      <circle cx="50" cy="50" r="25" stroke-width="7.5"/>
+    </g>
+    <circle cx="50" cy="50" r="7" fill="currentColor"/>
+  </symbol>
+  <symbol id="g-bonde" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M12 104 L45 4" stroke-width="6"/><path d="M88 104 L55 4" stroke-width="6"/>
+      <path d="M8 90H92" stroke-width="5" opacity=".7"/><path d="M17 68H83" stroke-width="4.5" opacity=".55"/>
+      <path d="M25 47H75" stroke-width="4" opacity=".42"/><path d="M31 31H69" stroke-width="3.5" opacity=".32"/>
+      <path d="M36 19H64" stroke-width="3" opacity=".24"/>
+    </g>
+  </symbol>
+  <symbol id="g-neblina" viewBox="0 0 100 100">
+    <g fill="currentColor">
+      <rect x="8" y="18" width="64" height="9" rx="4.5" opacity=".3"/>
+      <rect x="26" y="35" width="72" height="9" rx="4.5" opacity=".62"/>
+      <rect x="0" y="52" width="86" height="9" rx="4.5"/>
+      <rect x="18" y="69" width="62" height="9" rx="4.5" opacity=".5"/>
+      <rect x="38" y="86" width="48" height="9" rx="4.5" opacity=".22"/>
+    </g>
+  </symbol>
+  <symbol id="g-cofre" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <circle cx="50" cy="50" r="38" stroke-width="6"/>
+      <g stroke-width="3.2" opacity=".7">
+        <path d="M50 4V12"/><path d="M50 4V12" transform="rotate(30 50 50)"/><path d="M50 4V12" transform="rotate(60 50 50)"/>
+        <path d="M50 4V12" transform="rotate(90 50 50)"/><path d="M50 4V12" transform="rotate(120 50 50)"/><path d="M50 4V12" transform="rotate(150 50 50)"/>
+        <path d="M50 4V12" transform="rotate(180 50 50)"/><path d="M50 4V12" transform="rotate(210 50 50)"/><path d="M50 4V12" transform="rotate(240 50 50)"/>
+        <path d="M50 4V12" transform="rotate(270 50 50)"/><path d="M50 4V12" transform="rotate(300 50 50)"/><path d="M50 4V12" transform="rotate(330 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="15" stroke-width="7"/>
+      <path d="M50 35V20" stroke-width="7"/>
+    </g>
+  </symbol>
+  <symbol id="g-duelo" viewBox="0 0 100 100">
+    <path d="M52 8 A42 42 0 0 0 52 92 A55 55 0 0 1 52 8Z" fill="currentColor"/>
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <path d="M70 22V78" stroke-width="5" opacity=".8"/><path d="M84 32V68" stroke-width="5" opacity=".45"/>
+    </g>
+  </symbol>
+  <symbol id="g-treino" viewBox="0 0 100 100">
+    <g fill="none" stroke="currentColor" stroke-linecap="round">
+      <circle cx="50" cy="50" r="36" stroke-width="5"/>
+      <circle cx="50" cy="50" r="19" stroke-width="3" opacity=".6"/>
+      <path d="M50 0V24M50 76V100M0 50H24M76 50H100" stroke-width="4.5"/>
+    </g>
+    <rect x="45" y="45" width="10" height="10" rx="1.5" fill="currentColor"/>
+  </symbol>
+
+  <!-- ícones de interface (traço 1.75) -->
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2.5"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></symbol>
+  <symbol id="i-rows" viewBox="0 0 24 24"><path d="M4 6.5h16M4 12h16M4 17.5h16"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8.5 6v12M15.5 6v12"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><circle cx="17" cy="8.5" r="2.5"/><path d="M15.5 13.6A4.5 4.5 0 0 1 20.5 18"/></symbol>
+  <symbol id="i-shrink" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" stroke-dasharray="2.2 2.6"/><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M12 3.5l7.5 4.2v8.6L12 20.5l-7.5-4.2V7.7z"/><path d="M4.5 7.7L12 12l7.5-4.3M12 12v8.5"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M5 18v-2M9.5 18v-5M14 18v-8M18.5 18V6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 4.5l2.3 4.8 5.2.7-3.8 3.6.9 5.2L12 16.3l-4.6 2.5.9-5.2-3.8-3.6 5.2-.7z"/></symbol>
+</svg>
+
+<header class="top">
+  <a class="brand" href="home.html" aria-label="Lobby, início"><svg class="mark"><use href="#mark"/></svg>Lobby</a>
+  <nav class="nav" aria-label="Principal"><a class="on" href="home.html">Jogar</a><a href="home.html#modos">Modos</a><a href="#">Hoje</a><a href="#">Instalar</a></nav>
+  <button class="search" aria-label="Buscar"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><span>Buscar lobby ou jogador</span><span class="kbds"><kbd>Ctrl</kbd><kbd>K</kbd></span></button>
+  <div class="live" title="Jogando agora"><span class="dot"></span><span class="odo" id="odo"></span><span class="lbl">jogando</span></div>
+  <a class="roompill" href="sala.html" aria-label="Você está na sala Círculo da madrugada, 10 de 12"><span class="dot"></span><span class="rp-l">Na sala</span><b>Círculo da madrugada</b><span class="mono">10/12</span></a>
+  <button class="me" aria-label="Sua conta: Corvo_Noturno"><span class="av" data-n="Corvo_Noturno" style="--s:30px"></span></button>
+</header>
+
+<div class="shell">
+<main class="main"><div class="wrap">
+  <div class="crumb"><a href="home.html"><svg class="i" aria-hidden="true"><use href="#i-back"/></svg>Lobbies</a><span class="muted">/</span><span>Círculo Profano</span><a class="btn btn-ghost btn-sm" href="home.html" style="margin-left:auto">Sair da sala</a></div>
+
+  <section class="rh">
+    <div class="cover m-circulo"><svg class="gl" viewBox="0 0 100 100" aria-hidden="true"><use href="#g-circulo"/></svg></div>
+    <div>
+      <div class="rh-top"><span class="chip acc" id="phase"><span class="dot"></span>Esperando prontos</span><span class="chip">Começa com 8</span></div>
+      <h1>Círculo da madrugada</h1>
+      <div class="rh-meta">
+        <span>Círculo Profano</span><span class="sep"></span>
+        <span>BR/SA <span class="mono">14</span> ms</span><span class="sep sep-w"></span>
+        <span class="who"><span class="av" data-n="Ametista" style="--s:20px"></span>Ametista <span class="muted">anfitriã</span></span>
+      </div>
+    </div>
+    <div class="rh-n"><span class="big">10<i>/12</i></span><span>2 vagas livres</span></div>
+  </section>
+
+  <div class="ready">
+    <h2><span class="odo" id="readyN"></span> de 10 prontos</h2>
+    <div class="rbar" id="rbar" aria-hidden="true"></div>
+    <p id="readyMsg">Com mais <b>1 pronto</b>, a partida começa.</p>
+  </div>
+
+  <section class="slots" id="slots" aria-label="Jogadores na sala"></section>
+
+  <section class="rules">
+    <h2>Regras do modo</h2>
+    <div class="rule-list">
+      <div class="rule"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-users"/></svg></span>Todos contra todos, sem times.</div>
+      <div class="rule"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-shrink"/></svg></span>O círculo encolhe a cada 60 s.</div>
+      <div class="rule"><span class="ic"><svg class="i" aria-hidden="true"><use href="#i-box"/></svg></span>Cada abate dá um item aleatório.</div>
+    </div>
+  </section>
+</div></main>
+
+<aside class="rail" aria-label="Convidar"><div class="rail-in">
+  <div class="rail-sec">
+    <div class="rail-h">Convidar amigos <span class="n">5 online</span></div>
+    <div id="inv"></div>
+    <div class="copy"><svg class="i" aria-hidden="true"><use href="#i-link"/></svg><span>Código <b style="color:var(--tx);font-weight:600">MDR-7Q4K</b></span><button class="btn btn-ghost btn-sm">Copiar</button></div>
+  </div>
+  <div class="rail-sec log">
+    <div class="rail-h">Na sala agora <span class="r"><button class="pause" data-live-toggle></button></span></div>
+    <div class="feed" id="log"></div>
+  </div>
+</div></aside>
+</div>
+
+<div class="bar" id="bar"><div class="bar-in">
+  <div class="bar-s"><b id="barT">Falta você</b><span id="barS">Começa com 8 prontos</span></div>
+  <div class="steps" id="steps"></div>
+  <div class="bar-a">
+    <button class="btn btn-acc btn-ready" id="ready">PRONTO <kbd>F</kbd></button>
+  </div>
+</div></div>
+
+<script>
+// ===== helpers comuns (avatar determinístico, ícones, capas, odômetro) =====
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const I = (id, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${id}"/></svg>`;
+const MODE = {
+  circulo: 'Círculo Profano', bonde: 'Último Bonde', neblina: 'Neblina',
+  cofre: 'Cerco ao Cofre', duelo: 'Duelo à Meia-Noite', treino: 'Campo de Treino',
+};
+const cover = (m, extra = '') => `<div class="cover m-${m} ${extra}"><svg class="gl" viewBox="0 0 100 100" aria-hidden="true"><use href="#g-${m}"/></svg>`;
+
+function hash(s) { let h = 2166136261; for (const c of s) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+const PAL = ['#ff8a5c', '#7d9bff', '#efe6d4', '#343a47', '#b58cff', '#3fd3b0', '#f5b544', '#e85d75', '#5d6678', '#9fd6ff'];
+function avatarSVG(name) {
+  const h = hash(name), h2 = hash(name + '·'), p = (n, k) => PAL[(n >>> k) % PAL.length];
+  let c0 = p(h, 0), c1 = p(h, 5), c2 = p(h2, 3), c3 = p(h2, 9);
+  if (c1 === c0) c1 = PAL[(PAL.indexOf(c0) + 3) % PAL.length];
+  if (c2 === c1) c2 = PAL[(PAL.indexOf(c1) + 4) % PAL.length];
+  const f = (k, a, b) => a + (((h2 >>> k) & 255) / 255) * (b - a);
+  const rot = Math.round(f(0, 0, 360)), sq = f(8, 14, 26), cx = f(16, 8, 28), cy = f(20, 8, 28), cr = f(4, 5, 10);
+  const lrot = Math.round(f(12, 0, 180));
+  return `<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" fill="${c0}"/>
+    <rect x="${18 - sq / 2}" y="${18 - sq / 2}" width="${sq}" height="${sq}" rx="${h % 3 === 0 ? sq / 2 : 2}" fill="${c1}" transform="rotate(${rot} 18 18) translate(${f(24, -7, 7)} ${f(26, -7, 7)})"/>
+    <circle cx="${cx}" cy="${cy}" r="${cr}" fill="${c2}"/>
+    <path d="M4 18H32" stroke="${c3}" stroke-width="2.6" stroke-linecap="round" transform="rotate(${lrot} 18 18) translate(0 ${f(28, -6, 6)})"/></svg>`;
+}
+function paintAvatars(root = document) {
+  $$('.av[data-n]', root).forEach((el) => {
+    if (el.dataset.done) return;
+    el.insertAdjacentHTML('afterbegin', avatarSVG(el.dataset.n));
+    el.dataset.done = 1;
+    if (!el.title && !el.dataset.anon) el.title = el.dataset.n;
+  });
+}
+const av = (n, s = 28, cls = '', inner = '') => `<span class="av ${cls}" data-n="${n}" style="--s:${s}px">${inner}</span>`;
+
+// odômetro: contador que rola
+function odo(el, v) {
+  const s = String(v);
+  if (!el._cols || el._cols.length !== s.length) {
+    el.innerHTML = [...s].map(() => `<span class="col"><span class="strip">${'0123456789'.split('').map((d) => `<span>${d}</span>`).join('')}</span></span>`).join('');
+    el._cols = $$('.strip', el);
+  }
+  [...s].forEach((d, i) => { el._cols[i].style.transform = `translateY(${-Number(d) * 1.2}em)`; });
+  el.setAttribute('aria-label', s);
+}
+
+let LIVE = !REDUCED;
+function setLive(on) {
+  LIVE = on;
+  document.documentElement.classList.toggle('paused', !on);
+  $$('[data-live-toggle]').forEach((b) => {
+    b.innerHTML = on ? `${I('pause')}Pausar` : `${I('play')}Retomar`;
+    b.setAttribute('aria-pressed', String(!on));
+  });
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-live-toggle]'); if (b) setLive(!LIVE); });
+
+const PLAYERS = [
+  { n: 'Ametista', role: 'anfitriã', r: true, f: 1 },
+  { n: 'Corvo_Noturno', role: 'você', me: true, r: false },
+  { n: 'Odete', role: 'amiga', friend: true, r: true, f: 1 },
+  { n: 'Tordo', role: 'amigo', friend: true, r: true },
+  { n: 'capivara.exe', r: true },
+  { n: 'Lanterneiro', r: true },
+  { n: 'Brasa', r: true },
+  { n: 'Sereno', r: false },
+  { n: 'Agulha', r: false },
+  { n: 'Ivone', r: true, f: 1 },
+];
+const INV = [
+  { n: 'Lume', menu: true }, { n: 'Pixote', menu: true },
+  { n: 'k0rvo', l: 'Só mira, sem choro' }, { n: 'luz_baixa', l: 'Neblina sem lanterna' }, { n: 'Garoa', l: 'Testando build de arma' },
+];
+const STEPS = ['Baixando o modo', 'Abrindo o Deadlock', 'Entrando no lobby', 'Dentro do lobby'];
+
+function slot(p) {
+  const tag = p.role ? `<span class="tag" style="${p.friend || p.me ? '' : 'color:var(--tx2)'}">${p.role}</span>` : '';
+  const st = p.r ? `<span class="ok">${p.f ? 'Pronta' : 'Pronto'}</span>` : (p.me ? '<b style="color:var(--tx);font-weight:600">Falta você</b>' : 'Ainda não');
+  return `<div class="slot ${p.r ? 'is-ready' : ''} ${p.me ? 'me' : ''}" data-n="${p.n}">
+    ${av(p.n, 42, p.friend ? 'ring' : '')}
+    <div class="tx"><div class="nm">${p.n}</div><div class="ss">${tag}${tag ? '<span class="sep"></span>' : ''}${st}</div></div>
+    ${p.r ? `<span class="chk">${I('check')}</span>` : `<span class="wait"></span>`}</div>`;
+}
+const renderSlots = () => {
+  $('#slots').innerHTML = PLAYERS.map(slot).join('') + `<button class="slot empty">${I('plus')}Convidar</button>`.repeat(2);
+  paintAvatars($('#slots'));
+};
+renderSlots();
+
+$('#inv').innerHTML = INV.map((f) => `<div class="fr inv">${av(f.n, 32, f.menu ? 'menu' : 'ring', `<i class="st ${f.menu ? 'menu' : ''}"></i>`)}
+  <div style="min-width:0"><div class="nm">${f.n}</div><div class="wh">${f.menu ? 'no menu do Deadlock' : `em <b>${f.l}</b>`}</div></div>
+  <button class="btn btn-fill btn-sm">Convidar</button></div>`).join('');
+
+const LOG = [
+  { n: 'Corvo_Noturno', t: 'Você', e: 'entrou na sala', s: 'agora' },
+  { n: 'Odete', t: 'Odete', e: 'entrou e ficou pronta', s: 35 },
+  { n: 'Sereno', t: 'Sereno', e: 'entrou', s: 52 },
+];
+$('#log').innerHTML = LOG.map((r, i) => `<div class="feed-row in" style="animation-delay:${i * 80}ms">${av(r.n, 22)}<span class="t"><b>${r.t}</b> <em>${r.e}</em></span><span class="s" ${typeof r.s === 'number' ? `data-tick="${r.s}"` : ''}>${typeof r.s === 'number' ? r.s + ' s' : r.s}</span></div>`).join('');
+
+const stepsHTML = (cur) => STEPS.map((s, i) => `${i ? '<span class="step-line"></span>' : ''}<span class="step ${cur > i ? 'done' : cur === i ? 'now' : ''}"><span class="k">${cur > i ? I('check') : i + 1}</span><span class="lb">${s}</span></span>`).join('');
+$('#steps').innerHTML = stepsHTML(-1);
+
+let ready = 7;
+const rbar = () => { $('#rbar').innerHTML = Array.from({ length: 10 }, (_, i) => `<i class="${i < ready ? 'on' : ''} ${i === 7 && ready < 8 ? 'goal' : ''}"></i>`).join(''); odo($('#readyN'), ready); };
+rbar();
+paintAvatars();
+setLive(!REDUCED);
+let players = 143; odo($('#odo'), players);
+setInterval(() => {
+  if (!LIVE) return;
+  $$('[data-tick]').forEach((el) => { const v = +el.dataset.tick + 1; el.dataset.tick = v; el.textContent = `${v} s`; });
+}, 1000);
+
+// PRONTO: o slot estala, contador rola, e começa o handoff
+$('#ready').addEventListener('click', () => {
+  const b = $('#ready');
+  if (b.classList.contains('on')) return;
+  PLAYERS[1].r = true; ready = 8; renderSlots(); rbar();
+  const me = $('.slot.me'); me.classList.add('pop');
+  b.classList.add('on'); b.innerHTML = `${I('check')}PRONTO`;
+  $('#readyMsg').innerHTML = '<b>8 prontos.</b> Começando.';
+  $('#barT').textContent = 'Começando a partida';
+  $('#phase').innerHTML = '<span class="dot"></span>Começando';
+  $('#bar').classList.add('go');
+  let i = 0; const D = REDUCED ? 0 : 900;
+  const next = () => { $('#steps').innerHTML = stepsHTML(i); $('#barS').textContent = STEPS[Math.min(i, 3)]; if (i < 3) { i++; setTimeout(next, D); } else { $('#barS').textContent = 'Dentro do lobby. Boa partida.'; } };
+  next();
+});
+addEventListener('keydown', (e) => { if ((e.key === 'f' || e.key === 'F') && !e.target.closest('input,textarea')) $('#ready').click(); });
+</script>
+</body>
+</html>

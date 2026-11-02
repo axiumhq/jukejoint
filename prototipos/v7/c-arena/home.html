@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lobby · Jogar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wght@400;500;600;700;800&display=swap">
+<style>
+/* Arena BR · tokens
+   Regra de forma: tudo reto (raio 0). Coisas que você escolhe (botões, cartões, slots, capas)
+   levam UM corte de 45° no canto superior direito, sempre do mesmo tamanho (--cut).
+   Pessoas são redondas (avatares). Nada mais tem corte. */
+:root{
+  color-scheme: dark;
+  --bg:#0a0a0c;
+  --s1:#121215;
+  --s2:#19191d;
+  --s3:#222227;
+  --line:rgba(255,255,255,.07);
+  --line2:rgba(255,255,255,.12);
+  --tx:#f2f0eb;
+  --tx2:#a4a3a8;
+  --tx3:#6f6e75;
+  --ac:#ff4b3a;          /* coral: ação, pronto, recomendado */
+  --ac-ink:#120504;
+  --ac-soft:rgba(255,75,58,.13);
+  --live:#c6ff3a;        /* ácido: só "ao vivo" e "amigo" */
+  --live-soft:rgba(198,255,58,.12);
+  --bone:#ebe7de;
+  --cut:12px;
+  --gut:32px;
+  --panel:312px;
+  --top:60px;
+  --f-d:'Big Shoulders Display','Barlow Condensed',Impact,sans-serif;
+  --f-u:'Mona Sans','Barlow',system-ui,sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font:500 14px/1.45 var(--f-u);min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+svg{display:block}
+.num{font-variant-numeric:tabular-nums}
+.d{font-family:var(--f-d);font-weight:800;text-transform:uppercase;letter-spacing:.005em;line-height:.9}
+.cut{clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+:focus-visible{outline:2px solid var(--tx);outline-offset:2px}
+
+/* ---------- barra superior ---------- */
+.top{position:sticky;top:0;z-index:30;height:var(--top);display:flex;align-items:center;gap:28px;padding:0 var(--gut) 0 24px;background:rgba(10,10,12,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;flex:none}
+.brand b{font:900 25px/1 var(--f-d);letter-spacing:.02em;text-transform:uppercase}
+.nav{display:flex;gap:4px}
+.nav a{height:36px;display:flex;align-items:center;padding:0 12px;color:var(--tx2);font-weight:600;font-size:14px;position:relative}
+.nav a:hover{color:var(--tx)}
+.nav a[aria-current]{color:var(--tx)}
+.nav a[aria-current]::after{content:"";position:absolute;left:12px;right:12px;bottom:-12px;height:2px;background:var(--ac)}
+.search{margin-left:auto;display:flex;align-items:center;gap:10px;height:38px;width:300px;padding:0 10px 0 12px;background:var(--s2);color:var(--tx3);font-size:13px}
+.search span{flex:1;text-align:left}
+kbd{font:600 11px/1 var(--f-u);color:var(--tx2);background:var(--s3);padding:4px 6px}
+.livecount{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px;color:var(--tx2);white-space:nowrap}
+.livecount strong{color:var(--tx);font-weight:700}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--live);flex:none;box-shadow:0 0 0 0 rgba(198,255,58,.5)}
+.me{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13px}
+.iconbtn{width:38px;height:38px;display:none;place-items:center;background:var(--s2);color:var(--tx2)}
+
+/* ---------- avatar ---------- */
+.av{display:inline-block;border-radius:50%;flex:none;position:relative;vertical-align:middle}
+.av svg{width:100%;height:100%;border-radius:50%}
+.av.on::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--live)}
+.av.on.dotonly::after{inset:auto -1px -1px auto;width:9px;height:9px;border:2px solid var(--s1);background:var(--live)}
+.stack{display:flex;align-items:center}
+.stack .av{margin-left:-7px;box-shadow:0 0 0 2px var(--s1)}
+.stack .av:first-child{margin-left:0}
+.stack .av.on{box-shadow:0 0 0 2px var(--live),0 0 0 4px var(--s1)}
+.stack .av.on::after{display:none}
+.stack .more{margin-left:6px;font-size:12px;color:var(--tx2);font-weight:600}
+.stack .gap{width:22px;height:22px;border-radius:50%;margin-left:-7px;border:1.5px dashed var(--tx3);background:var(--s1)}
+
+/* ---------- botões ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 18px 0 16px;font-weight:700;font-size:13px;white-space:nowrap;transition:transform .15s var(--ease),background-color .15s,color .15s;clip-path:polygon(0 0,calc(100% - var(--cut)) 0,100% var(--cut),100% 100%,0 100%)}
+.btn:active{transform:translateY(1px) scale(.985)}
+.btn-ac{background:var(--ac);color:var(--ac-ink)}
+.btn-ac:hover{background:#ff6252}
+.btn-bone{background:var(--bone);color:#0b0b0d}
+.btn-bone:hover{background:#fff}
+.btn-ghost{background:var(--s3);color:var(--tx)}
+.btn-ghost:hover{background:#2c2c32}
+.btn-sm{height:32px;padding:0 14px 0 12px;font-size:12.5px}
+
+/* ---------- chips ---------- */
+.chip{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;font-size:11.5px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--tx2)}
+.chip.ac{background:var(--ac-soft);color:#ff7a6c}
+.chip.live{background:var(--live-soft);color:var(--live)}
+.chip.solid{background:var(--ac);color:var(--ac-ink)}
+.tag-friend{font-size:11px;font-weight:700;color:var(--live)}
+
+/* ---------- capas (pôsteres) ---------- */
+.poster{position:relative;overflow:hidden;isolation:isolate}
+.poster svg.art{position:absolute;inset:0;width:100%;height:100%}
+
+/* ---------- painel social ---------- */
+.social{position:sticky;top:var(--top);height:calc(100dvh - var(--top));overflow:auto;border-left:1px solid var(--line);background:var(--bg);padding:24px 20px 32px;scrollbar-width:thin}
+.social h3{font:800 15px/1 var(--f-d);text-transform:uppercase;letter-spacing:.06em;color:var(--tx2);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.social h3 em{font-style:normal;color:var(--tx3)}
+.social section+section{margin-top:28px}
+.party{background:var(--s1);padding:16px}
+.party .row{display:flex;align-items:center;gap:12px}
+.party .who b{display:block;font-weight:700;font-size:14px}
+.party .who span{font-size:12px;color:var(--tx2)}
+.party .slots{display:flex;gap:8px;margin-top:14px}
+.party .slots i{width:34px;height:34px;border-radius:50%;border:1.5px dashed var(--tx3);display:grid;place-items:center;color:var(--tx3);font-style:normal;font-size:16px}
+.invite{background:var(--s1);padding:14px;display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;border-left:2px solid var(--ac)}
+.invite p{font-size:13px;color:var(--tx2);line-height:1.4}
+.invite p b{color:var(--tx)}
+.invite .acts{grid-column:1/-1;display:flex;gap:8px}
+.friend{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:9px 0}
+.friend>div{min-width:0}
+.friend b{display:block;font-weight:700;font-size:13.5px;line-height:1.2}
+.friend span{display:block;font-size:12px;color:var(--tx2);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.friend span em{font-style:normal;color:var(--tx)}
+.friend.idle span{color:var(--tx3)}
+.sub{font-size:11.5px;font-weight:700;color:var(--tx3);margin:10px 0 2px}
+
+/* ---------- movimento ---------- */
+@media (prefers-reduced-motion:no-preference){
+  .pulse{animation:pulse 2.4s var(--ease) infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(198,255,58,.55)}70%,100%{box-shadow:0 0 0 7px rgba(198,255,58,0)}}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- celular (comum) ---------- */
+@media (max-width:860px){
+  :root{--gut:16px;--top:56px}
+  .top{gap:10px;padding:0 12px 0 14px}
+  .nav,.search,.me .nm{display:none}
+  .iconbtn{display:grid}
+  .livecount{margin-left:auto;font-size:12px}
+  .social{position:static;height:auto;overflow:visible;border:0;padding:0}
+}
+
+/* ---------- contador que rola ---------- */
+.roll{display:inline-flex;line-height:1}
+.dg{display:inline-block;height:1em;overflow:hidden;transition:width .7s var(--ease)}
+.dg i{text-align:center}
+.dg>span{display:flex;flex-direction:column;transition:transform .7s var(--ease)}
+.dg i{font-style:normal;height:1em;display:block}
+
+
+/* ================= HOME ================= */
+.app{display:grid;grid-template-columns:minmax(0,1fr) var(--panel);align-items:start}
+.main{padding:24px var(--gut) 64px;min-width:0;display:flex;flex-direction:column;gap:44px}
+
+/* faixa AO VIVO (transmissão) */
+.onair{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:stretch;background:var(--s1);height:76px}
+.onair .bug{display:flex;align-items:center;gap:10px;padding:0 20px;background:var(--live);color:#0a0a0c;font:900 20px/1 var(--f-d);letter-spacing:.06em;text-transform:uppercase}
+.onair .bug i{width:9px;height:9px;border-radius:50%;background:#0a0a0c}
+.stats{display:flex;align-items:center;gap:0;padding:0 4px}
+.stat{display:flex;flex-direction:column;justify-content:center;gap:3px;padding:0 18px;border-right:1px solid var(--line);height:52px}
+.stat .d{font-size:40px;font-weight:900;letter-spacing:0}
+.stat small{font-size:11.5px;font-weight:600;color:var(--tx2);line-height:1;white-space:nowrap}
+.ticker{display:flex;align-items:center;gap:14px;padding:0 6px 0 22px;min-width:0}
+.ticker .lbl{font:800 14px/1 var(--f-d);text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);white-space:nowrap}
+.feed{display:flex;gap:22px;overflow:hidden;min-width:0;flex:1;-webkit-mask-image:linear-gradient(90deg,#000 80%,transparent);mask-image:linear-gradient(90deg,#000 80%,transparent)}
+.arr{display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:13px}
+.arr b{font-weight:700}
+.arr span{color:var(--tx2)}
+.arr time{color:var(--tx3);font-size:12px}
+.arr.enter{animation:arrIn .45s var(--ease) both}
+@keyframes arrIn{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.pausebtn{width:34px;height:34px;display:grid;place-items:center;color:var(--tx3);flex:none}
+.pausebtn:hover{color:var(--tx)}
+
+/* JOGAR AGORA */
+.hero{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,1fr);min-height:348px;background:var(--s1)}
+.hero .poster{min-height:348px}
+/* título em 'knockout': cada linha tem a cor do fundo da capa, o meio-tom para em volta do tipo */
+.ko{display:inline-block;background:var(--pbg);padding:.05em .1em .0em .02em;margin-bottom:-.02em}
+.hero .poster .ttl .ko{padding:.06em .1em 0 28px}
+.hero .poster .ttl .ko:last-child{padding-bottom:24px}
+.hero .poster .ttl{position:absolute;left:0;bottom:0;font:900 104px/.82 var(--f-d);text-transform:uppercase;color:var(--bone);letter-spacing:-.01em;z-index:2}
+.hero .poster .kick{position:absolute;left:28px;top:24px;z-index:2;display:flex;gap:8px;align-items:center}
+.kick .chip{background:rgba(10,10,12,.72);color:var(--tx);backdrop-filter:blur(6px)}
+.hero .info{padding:28px 32px 28px;display:flex;flex-direction:column;min-width:0}
+.hero .eyebrow{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--tx2);font-weight:600}
+.hero h1{font:900 68px/.86 var(--f-d);text-transform:uppercase;margin:16px 0 20px;letter-spacing:-.005em}
+.meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:13px;color:var(--tx2)}
+.meta .who{display:flex;align-items:center;gap:8px;color:var(--tx)}
+.meta .who b{font-weight:700}
+.meta .ping{display:flex;align-items:center;gap:6px}
+.fill{display:flex;align-items:center;justify-content:space-between;margin:22px 0 22px;gap:16px}
+.fill .stack .av{box-shadow:0 0 0 2px var(--s1)}
+.fill .ratio{font:900 40px/1 var(--f-d);white-space:nowrap}
+.fill .ratio em{font-style:normal;color:var(--tx3)}
+.play{margin-top:auto;display:grid;grid-template-columns:1fr auto;gap:10px}
+.btn-play{height:72px;font:900 40px/1 var(--f-d);letter-spacing:.05em;text-transform:uppercase;justify-content:space-between;padding:0 26px 0 24px}
+.fill .stack .more{font-size:13px;margin:0 8px 0 8px}
+.btn-play svg{width:30px;height:30px}
+.play .btn-ghost{height:72px;padding:0 22px}
+
+/* cabeçalho de seção */
+.sh{display:flex;align-items:flex-end;gap:20px;margin-bottom:18px}
+.sh h2{font:900 34px/.9 var(--f-d);text-transform:uppercase;letter-spacing:.01em}
+.sh .lnk{margin-left:auto;font-size:13px;font-weight:600;color:var(--tx2)}
+.sh .lnk:hover{color:var(--tx)}
+
+/* modos */
+.modes-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.mode{display:block;position:relative}
+.mode .poster{aspect-ratio:4/5;transition:transform .2s var(--ease)}
+.mode:hover .poster{transform:translateY(-3px)}
+.mode .poster .nm .ko{padding:.08em .14em 0 12px}
+.mode .poster .nm .ko:last-child{padding-bottom:10px}
+.mode .poster .nm{position:absolute;left:0;right:0;bottom:0;z-index:2;font:900 27px/.86 var(--f-d);text-transform:uppercase;color:var(--pfg)}
+.mode .poster .cnt{position:absolute;left:12px;top:12px;z-index:2}
+.mode .cnt .chip{background:rgba(10,10,12,.78);color:var(--tx)}
+.mode[aria-pressed=true]::after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:3px;background:var(--ac)}
+
+/* lobbies */
+.lhead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.tabs{display:flex;background:var(--s1);padding:3px}
+.tabs button{height:32px;padding:0 14px;font-weight:700;font-size:13px;color:var(--tx2);display:flex;gap:7px;align-items:center}
+.tabs button em{font-style:normal;color:var(--tx3);font-weight:600}
+.tabs button[aria-selected=true]{background:var(--s3);color:var(--tx)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin-bottom:20px}
+.chips::-webkit-scrollbar{display:none}
+.fchip{height:34px;padding:0 14px;display:flex;align-items:center;gap:8px;background:var(--s1);color:var(--tx2);font-weight:600;font-size:13px;white-space:nowrap;flex:none}
+.fchip:hover{color:var(--tx);background:var(--s2)}
+.fchip[aria-pressed=true]{background:var(--tx);color:#0b0b0d}
+.fchip.sort{margin-left:auto;background:none;color:var(--tx2)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.lc{background:var(--s1);display:flex;flex-direction:column;transition:transform .2s var(--ease),background-color .2s}
+.lc:hover{transform:translateY(-3px);background:var(--s2)}
+.lc .poster{height:92px}
+.lc .poster .nm .ko{padding:.4em .7em .3em 14px}
+.lc .poster .nm{position:absolute;left:0;bottom:0;z-index:2;font:900 17px/1 var(--f-d);text-transform:uppercase;letter-spacing:.04em;color:var(--pfg)}
+.lc .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.lc h3{font:900 27px/.9 var(--f-d);text-transform:uppercase;min-height:49px}
+.lc .host{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx2)}
+.lc .host b{color:var(--tx);font-weight:600}
+.lc .ppl{display:flex;align-items:center;justify-content:space-between}
+.lc .ppl .ratio{font:900 24px/1 var(--f-d)}
+.lc .ppl .ratio em{font-style:normal;color:var(--tx3)}
+.lc .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:2px}
+.lc .foot .ping{font-size:12px;color:var(--tx2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.lc .state{display:flex;gap:6px;flex-wrap:wrap;min-height:22px}
+.more-lobbies{margin-top:16px;width:100%;height:48px}
+.ic{width:14px;height:14px;flex:none}
+
+/* social (home) */
+.social .fhead{display:none}
+
+/* barra fixa celular */
+.mplay{display:none}
+
+/* ---------- 1440 refinamentos ---------- */
+@media (max-width:1280px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hero .poster .ttl{font-size:84px}
+}
+@media (max-width:1100px){
+  .app{grid-template-columns:1fr}
+  .social{display:none}
+  .stat small{display:none}
+}
+
+/* ---------- celular ---------- */
+@media (max-width:860px){
+  .app{display:flex;flex-direction:column;align-items:stretch}
+  .main>*{min-width:0}
+  .main{display:contents}
+  .main>*{margin:0 var(--gut)}
+  .onair{order:1;margin-top:16px!important;height:auto;grid-template-columns:auto 1fr;grid-template-rows:auto auto}
+  .onair .bug{font-size:15px;padding:0 12px;gap:7px;white-space:nowrap}
+  .stats{padding:0;justify-content:space-between;min-width:0}
+  .stat{padding:12px 10px;border:0;gap:4px;height:auto}
+  .stat .d{font-size:32px}
+  .stat small{display:block;font-size:10.5px}
+  .ticker{grid-column:1/-1;border-top:1px solid var(--line);padding:10px 4px 10px 12px;gap:10px}
+  .ticker .lbl{display:none}
+  .hero{order:2;margin-top:20px!important;grid-template-columns:1fr;min-height:0}
+  .hero .poster{min-height:0;height:184px}
+  .hero .poster .ttl{font-size:58px}
+  .hero .poster .ttl .ko{padding-left:18px}
+  .hero .poster .ttl .ko:last-child{padding-bottom:16px}
+  .hero .poster .kick{left:16px;top:14px}
+  .hero .info{padding:18px 18px 20px}
+  .hero h1{font-size:46px;margin:12px 0 14px}
+  .fill{margin:16px 0 4px}
+  .fill .ratio{font-size:32px}
+  .play{display:none}
+  .social{order:3;display:block;margin-top:20px!important}
+  .social .fhead{display:flex;width:100%;align-items:center;gap:12px;background:var(--s1);padding:12px 14px;text-align:left}
+  .social .fhead b{font:900 18px/1 var(--f-d);text-transform:uppercase;letter-spacing:.03em}
+  .social .fhead span{font-size:12px;color:var(--tx2)}
+  .social .fhead .chev{margin-left:auto;transition:transform .2s}
+  .social.open .fhead .chev{transform:rotate(180deg)}
+  .social .fbody{display:none;background:var(--s1);padding:6px 14px 16px}
+  .social.open .fbody{display:block}
+  .social .fbody .party{background:var(--s2)}
+  .social .fbody .invite{background:var(--s2)}
+  .modes{order:4;margin-top:40px!important}
+  .modes-row{display:flex;overflow-x:auto;scrollbar-width:none;margin:0 calc(var(--gut)*-1);padding:0 var(--gut) 10px;scroll-snap-type:x mandatory}
+  .modes-row::-webkit-scrollbar{display:none}
+  .mode{flex:0 0 132px;scroll-snap-align:start}
+  .mode .poster .nm{font-size:23px}
+  .lobbies{order:5;margin-top:40px!important;margin-bottom:120px!important}
+  .sh h2{font-size:30px}
+  .lhead .sh{margin:0}
+  .chips{margin:0 calc(var(--gut)*-1) 16px;padding:0 var(--gut)}
+  .fchip.sort{margin-left:0}
+  .grid{grid-template-columns:1fr;gap:12px}
+  .lc{display:grid;grid-template-columns:96px 1fr}
+  .lc .poster{height:auto;min-height:100%}
+  .lc .poster .nm{display:none}
+  .lc .body{padding:12px 14px 14px;gap:9px}
+  .lc h3{font-size:23px;min-height:0}
+  .mplay{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;align-items:center;gap:12px;padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 14px;background:rgba(10,10,12,.94);backdrop-filter:blur(14px);border-top:1px solid var(--line2)}
+  .mplay .t{min-width:0;flex:1}
+  .mplay .t b{display:block;font:900 19px/1 var(--f-d);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mplay .t span{font-size:12px;color:var(--tx2)}
+  .mplay .btn{height:50px;font:900 22px/1 var(--f-d);letter-spacing:.04em;text-transform:uppercase;padding:0 20px 0 18px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="home.html" aria-label="Lobby, início">
+    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M0 0H18L26 8V26H0Z" fill="#ff4b3a"/><path d="M6 20V9h4v7h7v4Z" fill="#0a0a0c"/></svg>
+    <b>Lobby</b>
+  </a>
+  <nav class="nav" aria-label="Principal">
+    <a href="home.html" aria-current="page">Jogar</a>
+    <a href="#modos">Modos</a>
+    <a href="#">Hoje</a>
+    <a href="#">Instalar</a>
+  </nav>
+  <button class="search" type="button" aria-label="Buscar (Ctrl K)">
+    <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+    <span>Buscar lobby, modo ou jogador</span><kbd>Ctrl K</kbd>
+  </button>
+  <div class="livecount"><i class="pulse"></i><span><strong class="num" id="topCount">143</strong> jogando</span></div>
+  <button class="iconbtn" type="button" aria-label="Buscar"><svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg></button>
+  <a class="me" href="#"><i class="av" data-n="Corvo_Noturno" data-s="32"></i><span class="nm">Corvo_Noturno</span></a>
+</header>
+
+<div class="app">
+  <main class="main">
+
+    <!-- AO VIVO -->
+    <section class="onair" aria-label="Ao vivo agora">
+      <div class="bug"><i></i>Ao vivo</div>
+      <div class="stats">
+        <div class="stat"><span class="d roll num" id="cPlay" data-v="143"></span><small>jogando agora</small></div>
+        <div class="stat"><span class="d roll num" data-v="18"></span><small>lobbies abertos</small></div>
+        <div class="stat"><span class="d roll num" data-v="14"></span><small>com vaga</small></div>
+      </div>
+      <div class="ticker">
+        <span class="lbl">Chegando agora</span>
+        <div class="feed" id="feed" aria-live="polite"></div>
+        <button class="pausebtn" id="pause" type="button" aria-label="Pausar feed" aria-pressed="false">
+          <svg class="ic" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="3" width="3" height="10"/><rect x="9.5" y="3" width="3" height="10"/></svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- JOGAR AGORA -->
+    <section class="hero cut" aria-labelledby="hTitle">
+      <div class="poster" data-m="circulo" data-v="640,348,10">
+        <div class="kick"><span class="chip"><span class="num">41</span>&nbsp;jogando</span></div>
+        <div class="ttl" aria-hidden="true"><span class="ko">Círculo</span><br><span class="ko">Profano</span></div>
+      </div>
+      <div class="info">
+        <div class="eyebrow"><span class="chip solid">Falta 1</span>Recomendado pra você</div>
+        <h1 id="hTitle">Só mira,<br>sem choro</h1>
+        <div class="meta">
+          <span class="who"><i class="av on" data-n="k0rvo" data-s="24"></i><b>k0rvo</b><span class="tag-friend">amigo</span></span>
+          <span class="ping"><svg class="ic" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="10" width="3" height="5"/><rect x="6" y="6" width="3" height="9"/><rect x="11" y="2" width="3" height="13"/></svg>BR/SA <span class="num">22 ms</span></span>
+        </div>
+        <div class="fill">
+          <div class="stack" id="heroStack"></div>
+          <div class="ratio num">11<em>/12</em></div>
+        </div>
+        <div class="play">
+          <a class="btn btn-ac btn-play" href="sala.html">Jogar<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M4 12h15M13 5l7 7-7 7"/></svg></a>
+          <a class="btn btn-ghost" href="sala.html">Ver sala</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODOS -->
+    <section class="modes" id="modos" aria-labelledby="mTitle">
+      <div class="sh"><h2 id="mTitle">Modos</h2><a class="lnk" href="#">Ver os 6 modos</a></div>
+      <div class="modes-row" id="modesRow"></div>
+    </section>
+
+    <!-- LOBBIES -->
+    <section class="lobbies" aria-labelledby="lTitle">
+      <div class="lhead">
+        <div class="sh"><h2 id="lTitle">Lobbies</h2></div>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true">Todos <em class="num">18</em></button>
+          <button role="tab" aria-selected="false">Amigos <em class="num">4</em></button>
+          <button role="tab" aria-selected="false">Favoritos <em class="num">2</em></button>
+        </div>
+      </div>
+      <div class="chips" role="group" aria-label="Filtros">
+        <button class="fchip" aria-pressed="true">BR/SA</button>
+        <button class="fchip" aria-pressed="false">Com vaga</button>
+        <button class="fchip" aria-pressed="false">Com amigos</button>
+        <button class="fchip" aria-pressed="false">Em partida</button>
+        <button class="fchip" aria-pressed="false">Iniciantes ok</button>
+        <button class="fchip sort" aria-pressed="false">Mais cheios primeiro
+          <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="m4 6 4 4 4-4"/></svg></button>
+      </div>
+      <div class="grid" id="grid"></div>
+      <button class="btn btn-ghost more-lobbies" type="button">Ver os 18 lobbies</button>
+    </section>
+  </main>
+
+  <!-- PAINEL SOCIAL -->
+  <aside class="social" id="social" aria-label="Amigos e grupo">
+    <button class="fhead" type="button" aria-expanded="false" aria-controls="fbody">
+      <div class="stack" id="fheadStack"></div>
+      <div><b>Amigos</b><br><span>7 online, 5 em lobby</span></div>
+      <svg class="chev ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 6 4 4 4-4"/></svg>
+    </button>
+    <div class="fbody" id="fbody">
+      <section>
+        <h3>Seu grupo</h3>
+        <div class="party">
+          <div class="row"><i class="av" data-n="Corvo_Noturno" data-s="40"></i>
+            <div class="who"><b>Corvo_Noturno</b><span><span class="num">142</span> partidas · sozinho</span></div></div>
+          <div class="slots"><i>+</i><i>+</i><i>+</i><i>+</i></div>
+        </div>
+      </section>
+      <section>
+        <h3>Convite</h3>
+        <div class="invite">
+          <i class="av on" data-n="k0rvo" data-s="34"></i>
+          <p><b>k0rvo</b> te chamou pra <b>Só mira, sem choro</b>. Falta 1.</p>
+          <div class="acts"><a class="btn btn-ac btn-sm" href="sala.html">Aceitar</a><button class="btn btn-ghost btn-sm">Agora não</button></div>
+        </div>
+      </section>
+      <section>
+        <h3>Amigos online <em class="num">7</em></h3>
+        <div id="friends"></div>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<div class="mplay" role="region" aria-label="Jogar agora">
+  <div class="t"><b>Só mira, sem choro</b><span><span class="num">11/12</span> · falta 1 · <span class="num">22 ms</span></span></div>
+  <a class="btn btn-ac" href="sala.html">Jogar agora</a>
+</div>
+
+<script>
+/* Arena BR · avatares gerados, capas em meio-tom, contador que rola */
+(function(){
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function hash(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}return h>>>0}
+  function rng(seed){let a=seed;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+  /* ---- avatar: formas determinísticas por nome ---- */
+  const PAL=['#ff4b3a','#ebe7de','#2b2c32','#6b7480','#a8402c','#d6c3a2','#3b4a60','#8c6a55','#c9cdd2','#53413c'];
+  function avatar(name){
+    const r=rng(hash(name)),pick=()=>PAL[Math.floor(r()*PAL.length)];
+    let bg=pick(),a=pick(),b=pick();
+    while(a===bg)a=pick(); while(b===bg||b===a)b=pick();
+    const rot=Math.floor(r()*8)*45, cx=20+r()*40, cy=20+r()*40, rs=22+r()*26;
+    const kind=Math.floor(r()*3);
+    const shape = kind===0
+      ? `<rect x="${10+r()*20}" y="${10+r()*20}" width="${rs*1.4}" height="${rs*1.4}" fill="${a}" transform="rotate(${rot} 40 40)"/>`
+      : kind===1
+      ? `<path d="M0 ${30+r()*30} L80 ${10+r()*30} L80 80 L0 80Z" fill="${a}"/>`
+      : `<circle cx="${cx}" cy="${cy}" r="${rs}" fill="${a}"/>`;
+    return `<svg viewBox="0 0 80 80" aria-hidden="true"><rect width="80" height="80" fill="${bg}"/>${shape}<circle cx="${80-cx}" cy="${80-cy}" r="${8+r()*12}" fill="${b}"/></svg>`;
+  }
+  function paintAvatars(root=document){
+    root.querySelectorAll('.av[data-n]:not([data-done])').forEach(el=>{
+      const s=el.dataset.s||28; el.style.width=el.style.height=s+'px';
+      el.innerHTML=avatar(el.dataset.n); el.dataset.done=1;
+      if(!el.title) el.title=el.dataset.n;
+    });
+  }
+
+  /* ---- capas: pôster 2D duotone com meio-tom real (raio varia) ---- */
+  const K='#0e0e11',C='#ff4b3a',B='#ebe7de',G='#18181c';
+  const clamp=v=>Math.max(0,Math.min(1,v));
+  function halftone(W,H,step,color,tone){
+    let out='';const ang=Math.PI/4,ca=Math.cos(ang),sa=Math.sin(ang),D=Math.hypot(W,H);
+    for(let v=-D;v<D;v+=step)for(let u=-D;u<D;u+=step){
+      const x=W/2+u*ca-v*sa,y=H/2+u*sa+v*ca;
+      if(x<-step||y<-step||x>W+step||y>H+step)continue;
+      const t=clamp(tone(x/W,y/H,x,y)); const rr=t*step*.62;
+      if(rr<.45)continue;
+      out+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${rr.toFixed(2)}"/>`;
+    }
+    return `<g fill="${color}">${out}</g>`;
+  }
+  const MODES={
+    circulo:{name:'Círculo Profano',count:41,bg:K,fg:B,art(W,H,s){
+      const cx=W*.64,cy=H*.46,R=Math.min(W,H)*.36;
+      return halftone(W,H,s,C,(u,v,x,y)=>{const d=Math.hypot(x-cx,y-cy);return 1-Math.abs(d-R)/(R*.85)})+
+        `<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="${C}" stroke-width="${R*.13}"/>`+
+        `<circle cx="${cx}" cy="${cy}" r="${R*.55}" fill="none" stroke="${C}" stroke-width="${R*.035}" stroke-dasharray="${R*.12} ${R*.09}"/>`;
+    }},
+    bonde:{name:'Último Bonde',count:39,bg:C,fg:K,art(W,H,s){
+      const L=Math.hypot(W,H)*1.2,w=Math.min(W,H)*.05;let sl='';
+      for(let i=-14;i<14;i++)sl+=`<rect x="${-w*3.2}" y="${i*w*2.6}" width="${w*6.4}" height="${w*.9}"/>`;
+      return halftone(W,H,s,K,(u,v)=>v*1.05-u*.35+.05)+
+        `<g transform="translate(${W*.58} ${H*.5}) rotate(-32)" fill="${K}"><rect x="${-w*2.6}" y="${-L/2}" width="${w*.8}" height="${L}"/><rect x="${w*1.8}" y="${-L/2}" width="${w*.8}" height="${L}"/>${sl}</g>`;
+    }},
+    neblina:{name:'Neblina',count:24,bg:G,fg:B,art(W,H,s){
+      return halftone(W,H,s,B,(u,v)=>(.5+.5*Math.sin(v*9.5+u*2.2))*(.25+v*.7)*.95)+
+        `<rect x="0" y="${H*.62}" width="${W}" height="${Math.max(2,H*.012)}" fill="${B}" opacity=".85"/>`+
+        [[.56,.34,.05],[.7,.22,.035],[.8,.42,.06],[.9,.3,.03]].map(([x,t,w])=>`<rect x="${W*x}" y="${H*t}" width="${Math.max(3,W*w)}" height="${H*(.62-t)}" fill="${K}"/>`).join('')+
+        halftone(W,H,s*1.6,B,(u,v)=>v>.3&&v<.62?(.62-v)*1.4*(.5+.5*Math.sin(u*7)):0);
+    }},
+    cofre:{name:'Cerco ao Cofre',count:32,bg:B,fg:K,art(W,H,s){
+      const cx=W*.66,cy=H*.48,a=Math.min(W,H)*.62,sw=a*.05;let q='';
+      [1,.72,.46].forEach(k=>{q+=`<rect x="${cx-a*k/2}" y="${cy-a*k/2}" width="${a*k}" height="${a*k}" fill="none" stroke="${K}" stroke-width="${sw}"/>`});
+      return halftone(W,H,s,K,(u,v,x,y)=>Math.hypot(x-cx,y-cy)/(Math.hypot(W,H)*.55)-.05)+q+
+        `<rect x="${cx-a*.11}" y="${cy-a*.11}" width="${a*.22}" height="${a*.22}" fill="${C}"/>`;
+    }},
+    duelo:{name:'Duelo à Meia-Noite',count:5,bg:K,fg:B,art(W,H,s){
+      const cy=H*.47,R=Math.min(W,H)*.3,g=R*.18,cx=W*.62;
+      return halftone(W,H,s,C,(u,v,x,y)=>1-Math.hypot(x-cx,y-cy)/(R*2.3))+
+        `<path d="M${cx-g} ${cy-R} A${R} ${R} 0 0 0 ${cx-g} ${cy+R}Z" fill="${C}"/>`+
+        `<path d="M${cx+g} ${cy-R} A${R} ${R} 0 0 1 ${cx+g} ${cy+R}Z" fill="${B}"/>`;
+    }},
+    treino:{name:'Campo de Treino',count:2,bg:'#222226',fg:B,art(W,H,s){
+      const cx=W*.64,cy=H*.46,R=Math.min(W,H)*.34,sw=Math.max(1.5,R*.03);
+      return halftone(W,H,s,'#4a4a52',(u,v,x,y)=>.85-Math.hypot(x-cx,y-cy)/(R*2.6))+
+        `<g fill="none" stroke="${B}" stroke-width="${sw}"><circle cx="${cx}" cy="${cy}" r="${R}"/><circle cx="${cx}" cy="${cy}" r="${R*.62}"/><path d="M${cx-R*1.35} ${cy}H${cx-R*.2}M${cx+R*.2} ${cy}H${cx+R*1.35}M${cx} ${cy-R*1.35}V${cy-R*.2}M${cx} ${cy+R*.2}V${cy+R*1.35}"/></g>`+
+        `<circle cx="${cx}" cy="${cy}" r="${R*.14}" fill="${C}"/>`;
+    }},
+  };
+  function poster(key,W,H,step){
+    const m=MODES[key];
+    return `<svg class="art" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="${W}" height="${H}" fill="${m.bg}"/>${m.art(W,H,step||7)}</svg>`;
+  }
+  function paintPosters(root=document){
+    root.querySelectorAll('.poster[data-m]:not([data-done])').forEach(el=>{
+      const [w,h,s]=(el.dataset.v||'300,200,7').split(',').map(Number);
+      el.insertAdjacentHTML('afterbegin',poster(el.dataset.m,w,h,s));
+      el.style.setProperty('--pfg',MODES[el.dataset.m].fg);
+      el.style.setProperty('--pbg',MODES[el.dataset.m].bg);
+      el.dataset.done=1;
+    });
+  }
+
+  /* ---- contador que rola ---- */
+  const WCACHE={};
+  function digitWidths(el){
+    const cs=getComputedStyle(el),key=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+    if(WCACHE[key])return WCACHE[key];
+    const c=document.createElement('canvas').getContext('2d');c.font=key.replace(/^(\S+) (\S+)/,'$1 $2');
+    const w=[...'0123456789'].map(n=>Math.ceil(c.measureText(n).width)+1);
+    if(document.fonts.check(cs.fontWeight+' '+cs.fontSize+' "Big Shoulders Display"'))WCACHE[key]=w;
+    return w;
+  }
+  function roll(el,val){
+    const s=String(val);
+    if(!el.dataset.built||el.children.length!==s.length){
+      el.innerHTML=[...s].map(()=>`<span class="dg"><span>${'0123456789'.split('').map(n=>`<i>${n}</i>`).join('')}</span></span>`).join('');
+      el.dataset.built=1; el.setAttribute('aria-label',s);
+    }
+    const ws=digitWidths(el);
+    [...s].forEach((d,i)=>{el.children[i].firstChild.style.transform=`translateY(${-d*10}%)`;if(ws)el.children[i].style.width=ws[d]+'px'});
+    el.setAttribute('aria-label',s);
+  }
+
+  window.Arena={avatar,paintAvatars,poster,paintPosters,MODES,roll,RM,hash};
+  document.addEventListener('DOMContentLoaded',()=>{paintAvatars();paintPosters();
+    document.querySelectorAll('.roll[data-v]').forEach(el=>roll(el,el.dataset.v));
+    document.fonts.ready.then(()=>document.querySelectorAll('.roll[data-v]').forEach(el=>roll(el,el.getAttribute('aria-label'))));
+    addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();document.querySelector('.search')?.focus()}});
+  });
+})();
+
+</script>
+<script>
+(function(){
+const POOL=['bala_perdida','Mandacaru','ze_do_rifle','Kaiju','neon_fosco','Pitanga','tatu_bola','Sabiá','r4posa','Jabuti','Caju','m0rcego','Ipê','vulgo_tanque','Graúna','Brisa','Faísca','Nanquim','Quati','Urutau','Jambo','pé_de_pano'];
+function people(seed,n,friends=[]){const out=[...friends];let i=Arena.hash(seed)%POOL.length;while(out.length<n){const p=POOL[i++%POOL.length];if(!out.includes(p))out.push(p)}return out}
+const FR=['Odete','Tordo','k0rvo','luz_baixa','Garoa','Lume','Pixote'];
+function stack(names,max,size=22,gaps=0){
+  const vis=names.slice(0,max);
+  let h=vis.map(n=>`<i class="av${FR.includes(n)?' on':''}" data-n="${n}" data-s="${size}"></i>`).join('');
+  if(names.length>max)h+=`<span class="more num">+${names.length-max}</span>`;
+  for(let g=0;g<gaps;g++)h+=`<i class="gap" style="width:${size}px;height:${size}px"></i>`;
+  return h;
+}
+const ico={
+  ping:'<svg class="ic" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="10" width="3" height="5"/><rect x="6" y="6" width="3" height="9"/><rect x="11" y="2" width="3" height="13"/></svg>',
+  lock:'<svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="7" width="10" height="7"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>',
+};
+
+/* hero */
+document.getElementById('heroStack').innerHTML=stack(people('somira',11,['k0rvo']),7,30,1);
+
+/* modos */
+const order=['circulo','bonde','cofre','neblina','duelo','treino'];
+document.getElementById('modesRow').innerHTML=order.map(k=>{const m=Arena.MODES[k];
+  return `<a class="mode" href="#" aria-pressed="false"><div class="poster cut" data-m="${k}" data-v="220,275,8"><span class="cnt"><span class="chip"><span class="num">${m.count}</span>&nbsp;jogando</span></span><span class="nm">${(m.name.includes(' à ')?m.name.replace(' à ',' à|'):m.name.replace(/^(\S+) /,'$1|')).split('|').map(w=>`<span class="ko">${w}</span>`).join('<br>')}</span></div></a>`}).join('');
+
+/* lobbies */
+const L=[
+  {n:'Círculo da madrugada',m:'circulo',c:9,t:12,ms:14,host:'Ametista',fr:['Odete','Tordo'],st:[['live','2 amigos dentro']],b:['Entrar','bone','sala.html']},
+  {n:'Bonde das 23h',m:'bonde',c:10,t:12,ms:18,host:'maquinista',st:[['ac','Falta 2']],b:['Entrar','bone']},
+  {n:'Caçada rápida',m:'neblina',c:8,t:10,ms:31,host:'Graúna',st:[['','Em partida'],['','Rodada 3 de 5']],b:['Entrar no meio','bone']},
+  {n:'Neblina sem lanterna, iniciantes ok',m:'neblina',c:6,t:10,ms:26,host:'luz_baixa',fr:['luz_baixa'],hf:1,st:[['','Iniciantes ok']],b:['Entrar','bone']},
+  {n:'Clã Vigília',m:'cofre',c:7,t:10,ms:19,host:'vigia_7',st:[['','lock','Só com convite']],b:['Bater na porta','ghost']},
+  {n:'x1 até o sol nascer',m:'duelo',c:5,t:8,ms:12,host:'ponteiro',st:[['','Duelo 1 contra 1']],b:['Entrar','bone']},
+  {n:'Trilho sul, sem tóxico',m:'bonde',c:12,t:12,ms:22,host:'Mandacaru',st:[['','Lotado']],b:['Avisar quando vagar','ghost']},
+  {n:'Testando build de arma',m:'treino',c:2,t:6,ms:9,host:'Garoa',fr:['Garoa'],hf:1,st:[['','Treino livre']],b:['Entrar','bone']},
+];
+document.getElementById('grid').innerHTML=L.map(l=>{
+  const names=people(l.n,l.c,l.fr||[]);
+  const chips=l.st.map(s=>s[1]==='lock'?`<span class="chip">${ico.lock}${s[2]}</span>`:`<span class="chip ${s[0]}">${s[1]}</span>`).join('');
+  const href=l.b[2]||'#';
+  return `<article class="lc cut">
+    <div class="poster" data-m="${l.m}" data-v="300,110,6"><span class="nm"><span class="ko">${Arena.MODES[l.m].name}</span></span></div>
+    <div class="body">
+      <div class="state">${chips}</div>
+      <h3>${l.n}</h3>
+      <div class="host"><i class="av${l.hf?' on':''}" data-n="${l.host}" data-s="20"></i><span>por <b>${l.host}</b></span>${l.hf?'<span class="tag-friend">amigo</span>':''}</div>
+      <div class="ppl"><div class="stack">${stack(names,5,24,0)}</div><div class="ratio num">${l.c}<em>/${l.t}</em></div></div>
+      <div class="foot"><span class="ping">${ico.ping}<span class="num">${l.ms} ms</span></span><a class="btn btn-${l.b[1]} btn-sm" href="${href}">${l.b[0]}</a></div>
+    </div></article>`}).join('');
+
+/* amigos */
+const F=[
+  ['Odete','em','Círculo da madrugada','Entrar','sala.html'],
+  ['Tordo','em','Círculo da madrugada','Entrar','sala.html'],
+  ['k0rvo','abriu','Só mira, sem choro','Entrar','sala.html'],
+  ['luz_baixa','abriu','Neblina sem lanterna','Entrar'],
+  ['Garoa','abriu','Testando build de arma','Entrar'],
+];
+const I=[['Lume'],['Pixote']];
+document.getElementById('friends').innerHTML=
+  F.map(f=>`<div class="friend"><i class="av on" data-n="${f[0]}" data-s="34"></i><div><b>${f[0]}</b><span>${f[1]} <em>${f[2]}</em></span></div><a class="btn btn-ghost btn-sm" href="${f[4]||'#'}">${f[3]}</a></div>`).join('')+
+  `<p class="sub">No menu do Deadlock</p>`+
+  I.map(f=>`<div class="friend idle"><i class="av on dotonly" data-n="${f[0]}" data-s="34"></i><div><b>${f[0]}</b><span>no menu do Deadlock</span></div><button class="btn btn-ghost btn-sm">Chamar</button></div>`).join('');
+document.getElementById('fheadStack').innerHTML=stack(FR,4,26);
+
+/* celular: amigos recolhíveis */
+const soc=document.getElementById('social'),fh=soc.querySelector('.fhead');
+fh.addEventListener('click',()=>{const o=soc.classList.toggle('open');fh.setAttribute('aria-expanded',o)});
+
+/* chegando agora */
+const ARR=[['ferro_velho','Bonde das 23h',22],['Sereno','Círculo sem pressa',30],['Odete','Círculo da madrugada',35],['Agulha','x1 até o sol nascer',40]];
+const EXTRA=[['Pitanga','Bonde das 23h'],['tatu_bola','Caçada rápida'],['Brisa','Neblina sem lanterna'],['Quati','x1 até o sol nascer']];
+const feed=document.getElementById('feed');
+const arrHTML=(a,t,cls='')=>`<div class="arr ${cls}"><i class="av${FR.includes(a[0])?' on':''}" data-n="${a[0]}" data-s="24"></i><b>${a[0]}</b><span>→ ${a[1]}</span><time class="num">${t}</time></div>`;
+feed.innerHTML=ARR.map(a=>arrHTML(a,a[2]+' s')).join('');
+Arena.paintAvatars(document);
+let paused=false,ei=0,count=143;
+const pb=document.getElementById('pause');
+pb.addEventListener('click',()=>{paused=!paused;pb.setAttribute('aria-pressed',paused);pb.setAttribute('aria-label',paused?'Retomar feed':'Pausar feed');
+  pb.innerHTML=paused?'<svg class="ic" viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>':'<svg class="ic" viewBox="0 0 16 16" fill="currentColor"><rect x="3.5" y="3" width="3" height="10"/><rect x="9.5" y="3" width="3" height="10"/></svg>'});
+if(Arena.RM)pb.click();
+setInterval(()=>{
+  if(paused||document.hidden)return;
+  const a=EXTRA[ei++%EXTRA.length];
+  feed.insertAdjacentHTML('afterbegin',arrHTML(a,'agora','enter'));
+  if(feed.children.length>6)feed.lastElementChild.remove();
+  Arena.paintAvatars(feed);
+  count+= (ei%3===0?-1:1);
+  Arena.roll(document.getElementById('cPlay'),count);
+  document.getElementById('topCount').textContent=count;
+},4200);
+
+/* filtros (visual) */
+document.querySelectorAll('.fchip:not(.sort)').forEach(b=>b.addEventListener('click',()=>b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')!=='true')));
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();const on=b.getAttribute('aria-pressed')!=='true';document.querySelectorAll('.mode').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed',on)}));
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tabs button').forEach(x=>x.setAttribute('aria-selected','false'));b.setAttribute('aria-selected','true')}));
+})();
+</script>
+</body>
+</html>

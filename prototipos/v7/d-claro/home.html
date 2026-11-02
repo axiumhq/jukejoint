@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lobby · Jogar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&family=Schibsted+Grotesk:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ Tokens · pele D "Claro editorial" ============ */
+:root{
+  --canvas:#F3F2EE; --paper:#FFFFFF; --wash:#ECEAE4;
+  --ink:#111113; --ink2:#4D4C48; --ink3:#85837D; --line:#E3E0D8; --line2:#ECE9E2;
+  --co:#2A44F5; --co-d:#1C32D4; --co-soft:#E7EBFF; --co-n:#7C8CFF; /* cobalto: a única cor de ação */
+  --night:#0F1013; --night2:#17181C; --night3:#202127; --nline:#2A2B31; --ntext:#F1F0EB; --nmuted:#9B9BA3;
+  --r:16px; --r-in:12px;
+  --sh:0 1px 0 rgba(30,24,16,.03),0 1px 2px rgba(30,24,16,.06),0 10px 28px -14px rgba(70,44,20,.22);
+  --disp:'Schibsted Grotesk',system-ui,sans-serif; --sans:'Geist',system-ui,sans-serif; --mono:'Geist Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--canvas);color:var(--ink);font:400 15px/1.45 var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+h1,h2,h3,p{margin:0}
+ul{list-style:none;margin:0;padding:0}
+.mono{font-family:var(--mono);font-size:12px;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.caps{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+:focus-visible{outline:2px solid var(--co);outline-offset:2px;border-radius:8px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* grão: sempre um pseudo-elemento sem eventos */
+.grain{position:relative;isolation:isolate;overflow:hidden}
+.grain::after{content:"";position:absolute;inset:0;background:var(--grain);background-size:200px;mix-blend-mode:overlay;opacity:.62;pointer-events:none;z-index:1}
+
+/* ============ Botões, chips, avatares ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:36px;padding:0 16px;border-radius:999px;font:500 14px/1 var(--sans);white-space:nowrap;transition:transform .15s var(--ease),background .15s,box-shadow .15s}
+.btn:active{transform:scale(.97)}
+.btn-co{background:var(--co);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 6px 18px -8px rgba(42,68,245,.7)}
+.btn-co:hover{background:var(--co-d)}
+.btn-ink{background:var(--ink);color:#fff}
+.btn-ghost{background:var(--paper);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
+.btn-ghost:hover{box-shadow:inset 0 0 0 1px #CFCBC1}
+.btn-soft{background:var(--co-soft);color:var(--co-d)}
+.btn-soft:hover{background:#D9DFFF}
+.btn-lg{height:52px;padding:0 24px;font-size:16px;font-weight:600}
+.btn-sm{height:30px;padding:0 12px;font-size:13px}
+.btn svg{width:16px;height:16px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font:500 12px/1 var(--sans);white-space:nowrap;background:var(--wash);color:var(--ink2)}
+.av{--s:28px;width:var(--s);height:var(--s);border-radius:50%;flex:none;display:inline-block;overflow:hidden;position:relative;background:var(--wash)}
+.av svg{width:100%;height:100%;display:block}
+.pres{position:relative;display:inline-flex;flex:none}
+.pres::after{content:"";position:absolute;right:-1px;bottom:-1px;width:28%;height:28%;min-width:9px;min-height:9px;border-radius:50%;background:var(--co);box-shadow:0 0 0 2.5px var(--ring,var(--paper))}
+.pres.idle::after{background:#B9B5AB}
+.stack{display:inline-flex;align-items:center}
+.stack .av{--s:24px;box-shadow:0 0 0 2px var(--bg,var(--paper));margin-left:-7px}
+.stack .av:first-child{margin-left:0}
+.stack .more{margin-left:6px;font:500 12px/1 var(--mono);color:var(--muted,var(--ink3))}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--co);display:inline-block;flex:none}
+.pulse{position:relative}
+.pulse::before{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--co);opacity:.25;animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%{transform:scale(.5);opacity:.45}70%,100%{transform:scale(1.6);opacity:0}}
+
+/* ============ Barra superior ============ */
+.top{position:sticky;top:0;z-index:30;height:60px;background:rgba(243,242,238,.82);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);border-bottom:1px solid var(--line)}
+.top-in{max-width:1440px;margin:0 auto;height:100%;padding:0 24px;display:flex;align-items:center;gap:28px}
+.brand{display:flex;align-items:center;gap:8px;font:800 20px/1 var(--disp);letter-spacing:-.04em}
+.brand svg{width:24px;height:24px}
+.nav{display:flex;gap:2px}
+.nav a{height:34px;display:flex;align-items:center;padding:0 12px;border-radius:999px;font-weight:500;font-size:14px;color:var(--ink2)}
+.nav a:hover{background:var(--wash);color:var(--ink)}
+.nav a[aria-current]{background:var(--ink);color:#fff}
+.search{flex:1;max-width:380px;margin-left:auto;height:36px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;border-radius:999px;background:var(--paper);box-shadow:inset 0 0 0 1px var(--line);color:var(--ink3);font-size:14px}
+.search svg{width:16px;height:16px}
+.search kbd{margin-left:auto;font:500 11px/1 var(--mono);color:var(--ink2);background:var(--wash);border-radius:999px;padding:6px 9px}
+.live{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink2);white-space:nowrap}
+.live b{font:600 14px/1 var(--mono);color:var(--ink)}
+.me{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px 0 4px;border-radius:999px;font-weight:500;font-size:14px}
+.me:hover{background:var(--wash)}
+.me svg.chev{width:14px;height:14px;color:var(--ink3)}
+.icon-btn{display:none;width:36px;height:36px;border-radius:50%;align-items:center;justify-content:center;background:var(--paper);box-shadow:inset 0 0 0 1px var(--line)}
+.icon-btn svg{width:18px;height:18px}
+
+/* rolagem do contador */
+.roll{display:inline-flex;overflow:hidden;height:1em;line-height:1}
+.roll span{display:inline-block;animation:roll .9s var(--ease) both}
+@keyframes roll{from{transform:translateY(100%)}to{transform:none}}
+
+/* ============ Layout ============ */
+.app{max-width:1440px;margin:0 auto;padding:16px 24px 72px;display:grid;grid-template-columns:minmax(0,1fr) 304px;gap:24px;align-items:start}
+.main{display:flex;flex-direction:column;gap:20px;min-width:0}
+
+/* ============ Herói "Jogar agora" ============ */
+.hero{border-radius:24px;min-height:320px;display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:stretch;
+  background:
+    radial-gradient(60% 75% at 82% 78%, rgba(255,246,232,.95) 0%, rgba(255,214,176,.35) 34%, rgba(255,214,176,0) 60%),
+    radial-gradient(90% 90% at 100% 100%, #F2451C 0%, rgba(242,69,28,0) 62%),
+    linear-gradient(158deg,#F7F2EA 0%,#FBE6D3 30%,#FFC197 58%,#FF915A 82%,#F4602F 100%);
+  box-shadow:var(--sh)}
+.hero>*{position:relative;z-index:2}
+.hero-copy{padding:22px 0 22px 30px;display:flex;flex-direction:column}
+.kick{display:flex;align-items:center;gap:10px}
+.kick .chip{background:var(--ink);color:#fff}
+.kick .need{background:rgba(255,255,255,.7);color:var(--co-d)}
+.hero h1{margin-top:18px;font:800 clamp(46px,5.7vw,82px)/.9 var(--disp);letter-spacing:-.05em}
+.hero-meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+.hero-meta li{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px 0 6px;border-radius:999px;background:rgba(255,255,255,.66);backdrop-filter:blur(6px);font-size:14px;font-weight:500}
+.hero-meta li.m{padding-left:12px}
+.hero-meta .av{--s:24px}
+.hero-meta .tag{font:500 11px/1 var(--mono);color:var(--co-d);text-transform:uppercase;letter-spacing:.06em}
+.hero-meta .cv-mini{width:24px;height:24px;border-radius:50%}
+.hero-cta{margin-top:auto;padding-top:20px;display:flex;gap:10px;align-items:center}
+.hero-cta .btn-ghost{background:rgba(255,255,255,.72);box-shadow:none}
+.hero-cta .hint{margin-left:6px;color:rgba(17,17,19,.6)}
+
+/* a roda: o lobby como um círculo de lugares */
+.roda{position:relative;align-self:center;justify-self:center;width:300px;height:300px;margin-right:24px}
+.roda .rings{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.roda .rings circle{fill:none;stroke:rgba(17,17,19,.16);stroke-width:1}
+.roda .rings .shrink{stroke:rgba(17,17,19,.42);stroke-width:1.5;transform-origin:50% 50%;animation:shrink 4s cubic-bezier(.55,0,.45,1) infinite}
+@keyframes shrink{0%{transform:scale(1);opacity:0}15%{opacity:1}100%{transform:scale(.38);opacity:0}}
+.seat{position:absolute;left:50%;top:50%;width:44px;height:44px;margin:-22px 0 0 -22px;transform:rotate(var(--a)) translateY(-120px) rotate(calc(var(--a) * -1))}
+.seat .av{--s:44px;box-shadow:0 0 0 3px rgba(255,255,255,.85),0 8px 16px -8px rgba(80,30,10,.5)}
+.seat.host .av{box-shadow:0 0 0 3px var(--ink),0 8px 16px -8px rgba(80,30,10,.5)}
+.seat.free{display:grid;place-items:center;border-radius:50%;border:2px dashed var(--co);background:rgba(255,255,255,.7);color:var(--co);font:600 20px/1 var(--sans)}
+.seat.free::before{content:"";position:absolute;inset:-7px;border-radius:50%;border:2px solid var(--co);opacity:0;animation:pulse2 2.4s var(--ease) infinite}
+@keyframes pulse2{0%{transform:scale(.8);opacity:.6}80%,100%{transform:scale(1.25);opacity:0}}
+.seat-lbl{position:absolute;white-space:nowrap;right:calc(100% + 8px);top:50%;transform:translateY(-50%);font:500 11px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em;color:#fff;background:var(--co);border-radius:999px;padding:5px 8px}
+.roda-c{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.roda-c b{font:800 76px/.8 var(--disp);letter-spacing:-.06em}
+.roda-c b small{font-size:.42em;letter-spacing:-.03em;color:rgba(17,17,19,.55)}
+.roda-c span{margin-top:12px;color:rgba(17,17,19,.66)}
+
+/* ============ Modos ============ */
+.sec-h{display:flex;align-items:baseline;gap:14px;margin-bottom:12px}
+.sec-h h2{font:800 30px/1 var(--disp);letter-spacing:-.04em}
+.sec-h .sub{color:var(--ink3)}
+.sec-h .end{margin-left:auto}
+.mode-row{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.mode{text-align:left;display:flex;flex-direction:column;gap:8px;padding:6px 6px 10px;border-radius:var(--r);background:var(--paper);box-shadow:var(--sh);transition:transform .2s var(--ease),box-shadow .2s}
+.mode:hover{transform:translateY(-2px)}
+.mode[aria-pressed="true"]{box-shadow:0 0 0 2px var(--co),var(--sh)}
+.mode .cv{height:56px;border-radius:11px}
+.mode-n{padding:0 6px;font:700 15px/1.15 var(--disp);letter-spacing:-.02em}
+.mode-c{padding:0 6px;display:flex;align-items:center;gap:6px;color:var(--ink3)}
+.mode-c b{color:var(--ink);font-weight:500}
+
+/* capas: glifo próprio sobre céu granulado */
+.cv{display:block;position:relative}
+.cv svg.g{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.cv-circulo{background:radial-gradient(70% 90% at 50% 100%,#FFF1E0 0%,rgba(255,241,224,0) 55%),linear-gradient(180deg,#FFE2C7 0%,#FF9C62 55%,#EE4A1E 100%)}
+.cv-bonde{background:radial-gradient(80% 70% at 50% 100%,#FFC7A0 0%,rgba(255,199,160,0) 60%),linear-gradient(180deg,#C9D1FF 0%,#7287FF 45%,#2A44F5 100%)}
+.cv-neblina{background:linear-gradient(180deg,#FBFAF7 0%,#E7E3DA 50%,#CFC9BC 100%)}
+.cv-cofre{background:radial-gradient(70% 60% at 50% 105%,#FF6A2B 0%,rgba(255,106,43,0) 70%),linear-gradient(180deg,#2B2C31 0%,#131316 100%)}
+.cv-duelo{background:radial-gradient(90% 50% at 50% 110%,#FF8F55 0%,rgba(255,143,85,0) 70%),linear-gradient(180deg,#0E1336 0%,#1E2E9E 60%,#3A4EF0 100%)}
+.cv-treino{background:linear-gradient(180deg,#FBF6EE 0%,#FFE4BF 55%,#FFC47E 100%)}
+
+/* ============ Bloco escuro: ao vivo ============ */
+.live-b{--bg:var(--night2);--muted:var(--nmuted);background:var(--night);color:var(--ntext);border-radius:24px;padding:18px 18px 22px}
+.lv-head{display:flex;align-items:center;gap:16px}
+.lv-head .sec-h{margin:0 auto 0 4px}
+.live-b .sec-h h2{color:var(--ntext)}
+.live-b .sec-h .sub{color:var(--nmuted)}
+.lv-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tabs{display:flex;gap:2px;padding:3px;border-radius:999px;background:var(--night2);box-shadow:inset 0 0 0 1px var(--nline)}
+.tabs button{height:30px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--nmuted);display:flex;gap:6px;align-items:center}
+.tabs button span{font:500 11px/1 var(--mono)}
+.tabs button[aria-selected="true"]{background:var(--ntext);color:var(--night)}
+.fchips{display:flex;gap:6px}
+.fchip{height:32px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:500;color:var(--ntext);box-shadow:inset 0 0 0 1px var(--nline);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fchip[aria-pressed="true"]{background:var(--night3);box-shadow:inset 0 0 0 1px #3B3C44}
+.fchip svg{width:14px;height:14px;color:var(--co-n)}
+
+.arr{display:flex;align-items:center;gap:8px;margin:14px 0 12px;padding:8px 8px 8px 14px;border-radius:999px;background:var(--night2);overflow:hidden;white-space:nowrap;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.arr .caps{color:var(--nmuted);display:flex;align-items:center;gap:8px;margin-right:4px}
+.arr-i{display:flex;align-items:center;gap:8px;height:30px;padding:0 12px 0 4px;border-radius:999px;background:var(--night3);font-size:13px;animation:arrive .5s var(--ease) both;animation-delay:calc(var(--i) * 120ms + 300ms)}
+.arr-i .av{--s:22px}
+.arr-i b{font-weight:500}
+.arr-i .to{color:var(--nmuted)}
+.arr-i .t{font:500 11px/1 var(--mono);color:var(--nmuted)}
+@keyframes arrive{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.lc{display:grid;grid-template-columns:76px minmax(0,1fr) auto;grid-template-rows:auto auto 1fr;column-gap:14px;padding:12px 14px 12px 12px;border-radius:var(--r);background:var(--night2);box-shadow:inset 0 0 0 1px var(--nline);transition:background .2s,transform .2s var(--ease)}
+.lc:hover{background:#1B1C21}
+.lc .cv{grid-row:1/4;width:76px;height:76px;border-radius:12px;align-self:center}
+.lc h3{grid-column:2;align-self:center;min-width:0;font:700 17px/1.25 var(--disp);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lc .st{grid-column:3;justify-self:end;align-self:center}
+.lc-m{grid-column:2/4;margin-top:2px;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--nmuted);white-space:nowrap;overflow:hidden}
+.lc-m .av{--s:16px}
+.lc-m i{font-style:normal;opacity:.45}
+.lc-f{grid-column:2;align-self:end;display:flex;align-items:center;gap:12px;color:var(--nmuted);min-width:0;margin-top:10px}
+.lc-f .n{color:var(--ntext);font-weight:500}
+.lc-f .frc{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;color:#B7C1FF;white-space:nowrap}
+.lc .act{grid-column:3;justify-self:end;align-self:end}
+.chip.d{background:var(--night3);color:var(--ntext)}
+.chip.d.c{background:rgba(42,68,245,.18);color:#B7C1FF}
+.chip.d.w{background:rgba(255,106,43,.16);color:#FFB892}
+.chip.d.m{color:var(--nmuted)}
+.lc .btn-co{height:32px}
+.lc .btn-out{background:transparent;color:var(--ntext);box-shadow:inset 0 0 0 1px #3A3B42;height:32px}
+.lc .btn-out:hover{background:var(--night3)}
+.live-f{display:flex;justify-content:space-between;align-items:center;margin-top:14px;color:var(--nmuted)}
+.live-f .btn{background:var(--night3);color:var(--ntext)}
+
+/* ============ Painel social ============ */
+.rail{position:sticky;top:76px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--paper);border-radius:var(--r);box-shadow:var(--sh)}
+.me-c{padding:14px;display:flex;align-items:center;gap:12px}
+.me-c .av{--s:40px}
+.me-c b{display:block;font-weight:600}
+.me-c span{font-size:13px;color:var(--ink3)}
+.party{padding:12px 14px 14px;border-top:1px solid var(--line2);display:flex;align-items:center;gap:10px}
+.party .caps{color:var(--ink3);margin-right:auto}
+.party .slot{width:30px;height:30px;border-radius:50%;border:1.5px dashed #C4C0B6;display:grid;place-items:center;color:var(--ink3);font-size:16px}
+.party .slot:hover{border-color:var(--co);color:var(--co)}
+.party .av{--s:30px}
+.inv{padding:14px;display:grid;grid-template-columns:auto 1fr;gap:10px 12px;align-items:start;background:linear-gradient(135deg,#FFFFFF 0%,#FFF3E8 100%)}
+.inv .av{--s:34px}
+.inv p{font-size:14px;line-height:1.35}
+.inv p small{display:block;margin-top:3px;color:var(--ink3);font:500 11px/1 var(--mono)}
+.inv .acts{grid-column:2;display:flex;gap:6px}
+.fr-h{width:100%;padding:14px 14px 6px;display:flex;align-items:center;gap:8px;font:700 16px/1 var(--disp);letter-spacing:-.02em}
+.fr-h .count{font:500 12px/1 var(--mono);color:var(--co-d);background:var(--co-soft);padding:4px 7px;border-radius:999px}
+.fr-h svg{margin-left:auto;width:16px;height:16px;color:var(--ink3);display:none}
+.fr-h .peek{display:none}
+.fr-g{padding:6px 8px 8px}
+.fr-g .caps{display:block;padding:8px 6px 4px;color:var(--ink3);font-size:10.5px}
+.fr{display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:12px}
+.fr:hover{background:#F7F6F2}
+.fr .av{--s:32px}
+.fr-t{min-width:0;flex:1}
+.fr-t b{display:block;font-weight:500;font-size:14px}
+.fr-t span{display:block;font-size:12.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-t span em{font-style:normal;color:var(--ink2)}
+
+/* barra fixa do celular */
+.mbar{display:none}
+
+/* ============ Movimento: entrada ============ */
+@media (prefers-reduced-motion:no-preference){
+  .rise{animation:rise .6s var(--ease) both;animation-delay:var(--d,0ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .roda .rings .shrink{display:none}
+}
+
+/* ============ Tablet ============ */
+@media (max-width:1180px){
+  .app{grid-template-columns:minmax(0,1fr) 280px}
+  .mode-row{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid{grid-template-columns:minmax(0,1fr)}
+  .hero{grid-template-columns:1fr 300px}
+  .roda{transform:scale(.82)}
+  .nav{display:none}
+}
+
+/* ============ Celular ============ */
+@media (max-width:760px){
+  body{font-size:14px;padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+  .top{height:56px}
+  .top-in{padding:0 16px;gap:10px}
+  .search,.me .nm,.me svg.chev{display:none}
+  .live{margin-left:auto;font-size:13px}
+  .icon-btn{display:flex}
+  .me{padding:0}
+  .app{display:flex;flex-direction:column;align-items:stretch;gap:16px;padding:12px 16px 32px}
+  .main{display:contents}
+  .hero,.rail,.modes,.live-b{min-width:0}
+  .hero{order:1}
+  .rail{order:2;position:static}
+  .modes{order:3}
+  .live-b{order:4}
+  .hero{display:block;min-height:0;border-radius:20px}
+  .hero-copy{padding:18px 18px 18px}
+  .hero h1{margin-top:16px;font-size:38px;min-height:114px;max-width:200px}
+  .hero-meta{margin-top:14px;gap:6px}
+  .hero-meta li{height:30px;font-size:13px}
+  .hero-cta{display:none}
+  .roda{position:absolute;right:10px;top:56px;transform:none;width:124px;height:124px;margin:0}
+  .seat{width:22px;height:22px;margin:-11px 0 0 -11px;transform:rotate(var(--a)) translateY(-51px) rotate(calc(var(--a) * -1))}
+  .seat .av{--s:22px;box-shadow:0 0 0 2px rgba(255,255,255,.85)}
+  .seat-lbl{display:none}
+  .seat.free{border-width:1.5px}
+  .seat.free::before{inset:-4px}
+  .seat.host .av{box-shadow:0 0 0 2px var(--ink)}
+  .seat.free{font-size:13px}
+  .roda-c b{font-size:30px}
+  .roda-c span{display:none}
+  .kick .chip{height:24px;font-size:11.5px}
+  .hero-meta{max-width:100%}
+  .rail .me-c,.rail .party{display:none}
+  .fr-h{padding:14px;font-size:15px}
+  .fr-h svg{display:block;transition:transform .2s}
+  .fr-h .peek{display:inline-flex;margin-left:6px}
+  .fr-h .peek .av{--s:22px}
+  .fr-h[aria-expanded="true"] svg{transform:rotate(180deg)}
+  .fr-h[aria-expanded="true"] .peek{display:none}
+  .fr-h[aria-expanded="false"] + .fr-body{display:none}
+  .inv{border-radius:var(--r);padding:12px;grid-template-columns:auto 1fr auto;align-items:center}
+  .inv .av{--s:30px}
+  .inv p{font-size:13px}
+  .inv p small{display:none}
+  .inv .acts{grid-column:3}
+  .inv .acts .btn-ghost{display:none}
+  .sec-h{flex-wrap:wrap;gap:4px 10px}
+  .sec-h h2{font-size:26px}
+  .sec-h .end{display:none}
+  .mode-row{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding-inline:16px;margin:0 -16px;padding:2px 16px 8px;scrollbar-width:none}
+  .mode-row::-webkit-scrollbar{display:none}
+  .modes .sec-h{display:none}
+  .mode{flex:none;flex-direction:row;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:999px;scroll-snap-align:start}
+  .mode .cv{width:32px;height:32px;border-radius:50%}
+  .mode-n{padding:0;font-size:14px;white-space:nowrap}
+  .mode-c{padding:0}
+  .mode-c .dot{display:none}
+  .mode-c{font-size:11px}
+  .mode-c b+*{display:none}
+  .live-b{margin:0 -16px;border-radius:24px 24px 0 0;padding:20px 16px 24px}
+  .lv-head{flex-direction:column;align-items:stretch;gap:12px}
+  .lv-tools{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:0 16px;scrollbar-width:none}
+  .lv-tools::-webkit-scrollbar{display:none}
+  .fchips{margin-left:0}
+  .arr{border-radius:16px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .arr::-webkit-scrollbar{display:none}
+  .arr .caps{display:none}
+  .lc{grid-template-columns:56px minmax(0,1fr) auto;column-gap:12px;padding:12px}
+  .lc .cv{width:56px;height:56px;grid-row:1/3}
+  .lc h3{font-size:16px}
+  .lc .st{display:none}
+  .lc-m{grid-column:2/4}
+  .lc-f{grid-column:1/3;gap:10px}
+  .lc-f .frc{display:none}
+  .live-f{flex-direction:column;gap:10px;align-items:stretch;text-align:center}
+  .mbar{display:flex;position:fixed;z-index:40;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));align-items:center;gap:12px;padding:8px 8px 8px 10px;border-radius:999px;background:rgba(17,17,19,.94);backdrop-filter:blur(12px);color:#fff;box-shadow:0 16px 40px -12px rgba(0,0,0,.5)}
+  .mbar .cv{width:40px;height:40px;border-radius:50%;flex:none}
+  .mbar div{min-width:0;flex:1}
+  .mbar b{display:block;font:700 15px/1.15 var(--disp);letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbar span{color:#B9B8B2}
+  .mbar .btn{height:44px;padding:0 18px}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <a class="brand" href="home.html" aria-label="Lobby, início">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 15a8.5 8.5 0 0 1 17 0z" fill="#111113"/><rect x="1" y="17" width="22" height="3" rx="1.5" fill="#2A44F5"/></svg>
+      Lobby
+    </a>
+    <nav class="nav" aria-label="Principal">
+      <a href="home.html" aria-current="page">Jogar</a>
+      <a href="#modos">Modos</a>
+      <a href="#">Hoje</a>
+      <a href="#">Instalar</a>
+    </nav>
+    <button class="search" type="button" aria-label="Buscar (Ctrl K)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      Buscar lobby, modo ou pessoa
+      <kbd>Ctrl K</kbd>
+    </button>
+    <div class="live" aria-live="polite"><span class="dot pulse"></span><b class="roll" data-roll="143">143</b> jogando</div>
+    <button class="icon-btn" type="button" aria-label="Buscar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
+    <button class="me" type="button" aria-label="Sua conta">
+      <span class="av on" data-n="Corvo_Noturno" style="--s:30px"></span>
+      <span class="nm">Corvo_Noturno</span>
+      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <main class="main">
+
+    <!-- 1 · Jogar agora -->
+    <section class="hero grain rise" aria-labelledby="rec-t">
+      <div class="hero-copy">
+        <p class="kick"><span class="chip">Jogar agora</span><span class="chip need">Falta 1 para fechar</span></p>
+        <h1 id="rec-t">Só mira,<br>sem choro</h1>
+        <ul class="hero-meta">
+          <li><span class="cv cv-circulo cv-mini" data-g="circulo"></span>Círculo Profano</li>
+          <li class="m mono" style="font-size:13px">BR/SA 22 ms</li>
+          <li><span class="av" data-n="k0rvo"></span>k0rvo abriu <span class="tag">amigo</span></li>
+        </ul>
+        <div class="hero-cta">
+          <a class="btn btn-co btn-lg" href="sala.html">Jogar agora
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a class="btn btn-ghost btn-lg" href="#ao-vivo">Ver outros lobbies</a>
+        </div>
+      </div>
+      <div class="roda" id="roda" aria-label="11 de 12 lugares ocupados, falta 1">
+        <svg class="rings" viewBox="0 0 300 300" aria-hidden="true">
+          <circle cx="150" cy="150" r="149"/><circle cx="150" cy="150" r="92"/><circle cx="150" cy="150" r="58"/>
+          <circle class="shrink" cx="150" cy="150" r="149"/>
+        </svg>
+        <div class="roda-c"><b>11<small>/12</small></b><span>na roda agora</span></div>
+      </div>
+    </section>
+
+    <!-- 2 · Modos -->
+    <section class="modes rise" style="--d:80ms" id="modos" aria-labelledby="modos-t">
+      <div class="sec-h">
+        <h2 id="modos-t">Modos</h2>
+        <span class="sub mono">143 jogando em 6 modos</span>
+        <a class="btn btn-ghost btn-sm end" href="#">Ver todos</a>
+      </div>
+      <div class="mode-row" id="modeRow"></div>
+    </section>
+
+    <!-- 3 · Lobbies ao vivo -->
+    <section class="live-b rise" style="--d:160ms" id="ao-vivo" aria-labelledby="live-t">
+      <div class="lv-head">
+      <div class="sec-h">
+        <h2 id="live-t">Ao vivo</h2>
+        <span class="sub mono">18 lobbies, 14 com vaga</span>
+      </div>
+      <div class="lv-tools">
+        <div class="tabs" role="tablist" aria-label="Filtrar lobbies">
+          <button role="tab" aria-selected="true" data-tab="todos">Todos <span>18</span></button>
+          <button role="tab" aria-selected="false" data-tab="amigos">Amigos <span>4</span></button>
+          <button role="tab" aria-selected="false" data-tab="fav">Favoritos <span>2</span></button>
+        </div>
+        <div class="fchips">
+          <button class="fchip" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m5 12 5 5 9-10"/></svg>BR/SA</button>
+          <button class="fchip" aria-pressed="false">Com vaga</button>
+          <button class="fchip" aria-pressed="false">Iniciantes ok</button>
+          <button class="fchip" aria-pressed="false">Compacto</button>
+        </div>
+      </div>
+      </div>
+
+      <div class="arr" aria-label="Chegando agora">
+        <span class="caps"><span class="dot pulse"></span>Chegando agora</span>
+        <span class="arr-i" style="--i:0"><span class="av" data-n="ferro_velho"></span><b>ferro_velho</b><span class="to">entrou em Bonde das 23h</span><span class="t" data-s="22">22 s</span></span>
+        <span class="arr-i" style="--i:1"><span class="av" data-n="Sereno"></span><b>Sereno</b><span class="to">entrou em Círculo sem pressa</span><span class="t" data-s="30">30 s</span></span>
+        <span class="arr-i" style="--i:2"><span class="av" data-n="Odete"></span><b>Odete</b><span class="to">entrou em Círculo da madrugada</span><span class="t" data-s="35">35 s</span></span>
+        <span class="arr-i" style="--i:3"><span class="av" data-n="Agulha"></span><b>Agulha</b><span class="to">entrou em x1 até o sol nascer</span><span class="t" data-s="40">40 s</span></span>
+      </div>
+
+      <div class="grid" id="grid"></div>
+      <div class="live-f">
+        <span class="mono">Mostrando 8 de 18</span>
+        <button class="btn btn-sm" type="button">Mostrar mais 10</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Painel social -->
+  <aside class="rail rise" style="--d:120ms" aria-label="Você e seus amigos">
+    <div class="card">
+      <div class="me-c">
+        <span class="av on" data-n="Corvo_Noturno"></span>
+        <div><b>Corvo_Noturno</b><span>Online, sem grupo</span></div>
+      </div>
+      <div class="party">
+        <span class="caps">Seu grupo</span>
+        <span class="av" data-n="Corvo_Noturno"></span>
+        <button class="slot" aria-label="Convidar para o grupo">+</button>
+        <button class="slot" aria-label="Convidar para o grupo">+</button>
+        <button class="slot" aria-label="Convidar para o grupo">+</button>
+      </div>
+    </div>
+
+    <div class="card inv">
+      <span class="av on" data-n="k0rvo"></span>
+      <p><b>k0rvo</b> te chamou para <b>Só mira, sem choro</b><small>Convite, há 2 min</small></p>
+      <div class="acts"><a class="btn btn-co btn-sm" href="sala.html">Entrar</a><button class="btn btn-ghost btn-sm">Agora não</button></div>
+    </div>
+
+    <div class="card">
+      <button class="fr-h" type="button" aria-expanded="true" aria-controls="frBody" id="frToggle">
+        Amigos online <span class="count">7</span>
+        <span class="peek stack" style="--bg:var(--paper)"><span class="av" data-n="Odete"></span><span class="av" data-n="Tordo"></span><span class="av" data-n="k0rvo"></span><span class="av" data-n="luz_baixa"></span></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div class="fr-body" id="frBody">
+        <div class="fr-g">
+          <span class="caps">Jogando</span>
+          <div class="fr"><span class="av on" data-n="Odete"></span><div class="fr-t"><b>Odete</b><span>em <em>Círculo da madrugada</em></span></div><a class="btn btn-soft btn-sm" href="sala.html">Entrar</a></div>
+          <div class="fr"><span class="av on" data-n="Tordo"></span><div class="fr-t"><b>Tordo</b><span>em <em>Círculo da madrugada</em></span></div><a class="btn btn-soft btn-sm" href="sala.html">Entrar</a></div>
+          <span class="caps">Abriram lobby</span>
+          <div class="fr"><span class="av on" data-n="k0rvo"></span><div class="fr-t"><b>k0rvo</b><span>abriu <em>Só mira, sem choro</em></span></div><a class="btn btn-soft btn-sm" href="sala.html">Entrar</a></div>
+          <div class="fr"><span class="av on" data-n="luz_baixa"></span><div class="fr-t"><b>luz_baixa</b><span>abriu <em>Neblina sem lanterna</em></span></div><a class="btn btn-soft btn-sm" href="#">Entrar</a></div>
+          <div class="fr"><span class="av on" data-n="Garoa"></span><div class="fr-t"><b>Garoa</b><span>abriu <em>Testando build de arma</em></span></div><a class="btn btn-soft btn-sm" href="#">Entrar</a></div>
+          <span class="caps">No menu do Deadlock</span>
+          <div class="fr"><span class="av idle" data-n="Lume"></span><div class="fr-t"><b>Lume</b><span>no menu do Deadlock</span></div><button class="btn btn-ghost btn-sm">Chamar</button></div>
+          <div class="fr"><span class="av idle" data-n="Pixote"></span><div class="fr-t"><b>Pixote</b><span>no menu do Deadlock</span></div><button class="btn btn-ghost btn-sm">Chamar</button></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Celular: Jogar agora fixo -->
+<div class="mbar" role="region" aria-label="Jogar agora">
+  <span class="cv cv-circulo grain" data-g="circulo"></span>
+  <div><b>Só mira, sem choro</b><span class="mono">11/12, 22 ms, falta 1</span></div>
+  <a class="btn btn-co" href="sala.html">Jogar agora</a>
+</div>
+
+<script>
+/* ---------- avatares gerados (determinísticos por nome) ---------- */
+const PAL=[["#2A44F5","#FFD3B0","#111113"],["#FF6A2B","#111113","#F6F0E6"],["#111113","#FF8A4C","#A9B7FF"],["#FFD3B0","#2A44F5","#FF6A2B"],["#A9B7FF","#111113","#FFF3E4"],["#EFEAE0","#FF6A2B","#2A44F5"],["#FFAE6E","#2A44F5","#111113"],["#1C278C","#FF9A5C","#FFE6D1"],["#F25C2A","#FFE6D1","#1C278C"]];
+function hash(s){let x=2166136261;for(const c of s){x^=c.codePointAt(0);x=Math.imul(x,16777619)}return x>>>0}
+function avSvg(n){
+  const v=hash(n),p=PAL[v%PAL.length],b=k=>((v>>>k)&255)/255,t=(v>>>3)%4;
+  const cx=8+b(8)*24,cy=8+b(12)*24,r=10+b(16)*10,rot=Math.round(b(20)*90);
+  let s=`<rect width="40" height="40" fill="${p[0]}"/>`;
+  if(t===0)s+=`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${p[1]}"/><rect x="${18+b(4)*10}" y="${18+b(6)*8}" width="18" height="18" fill="${p[2]}" transform="rotate(${rot} 30 30)"/>`;
+  if(t===1)s+=`<path d="M0 ${22+b(4)*8} A20 20 0 0 1 40 ${22+b(4)*8} V40 H0Z" fill="${p[1]}"/><circle cx="${cx}" cy="${10+b(6)*8}" r="${5+b(2)*4}" fill="${p[2]}"/>`;
+  if(t===2)s+=`<g transform="rotate(${rot} 20 20)"><rect x="-10" y="6" width="60" height="9" fill="${p[1]}"/><rect x="-10" y="24" width="60" height="9" fill="${p[1]}"/></g><circle cx="${cx}" cy="${cy}" r="${6+b(9)*5}" fill="${p[2]}"/>`;
+  if(t===3)s+=`<circle cx="${b(8)>.5?34:6}" cy="${b(12)>.5?34:8}" r="${22+b(16)*6}" fill="${p[1]}"/><rect x="${10+b(4)*12}" y="${8+b(6)*14}" width="${8+b(9)*6}" height="22" rx="4" fill="${p[2]}" transform="rotate(${rot-45} 20 20)"/>`;
+  return `<svg viewBox="0 0 40 40" aria-hidden="true">${s}</svg>`;
+}
+function paintAv(root=document){root.querySelectorAll(".av[data-n]").forEach(e=>{if(!e.firstChild){e.innerHTML=avSvg(e.dataset.n);e.title=e.dataset.n}})}
+
+/* ---------- glifos dos modos (formas próprias) ---------- */
+const G={
+  circulo:(c="#111113")=>`<circle cx="50" cy="62" r="34" fill="none" stroke="${c}" stroke-opacity=".35" stroke-width="1.4"/><circle cx="50" cy="62" r="22" fill="none" stroke="${c}" stroke-opacity=".6" stroke-width="1.6"/><circle cx="50" cy="62" r="11" fill="${c}"/>`,
+  bonde:(c="#FFF3E6")=>`<path d="M30 100 L46 40 M70 100 L54 40" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><path d="M37 82h26M41 66h18M44 54h12" stroke="${c}" stroke-opacity=".75" stroke-width="2" stroke-linecap="round"/><circle cx="50" cy="34" r="6" fill="${c}"/>`,
+  neblina:(c="#111113")=>`<rect x="14" y="34" width="56" height="7" rx="3.5" fill="${c}" fill-opacity=".2"/><rect x="28" y="48" width="58" height="7" rx="3.5" fill="${c}" fill-opacity=".34"/><rect x="10" y="62" width="64" height="7" rx="3.5" fill="${c}" fill-opacity=".5"/><rect x="32" y="76" width="44" height="7" rx="3.5" fill="${c}" fill-opacity=".72"/>`,
+  cofre:(c="#FFF3E6")=>`<rect x="28" y="30" width="44" height="44" rx="9" fill="none" stroke="${c}" stroke-width="2.2"/><circle cx="50" cy="52" r="11" fill="none" stroke="${c}" stroke-width="2.2"/><path d="M50 41v6M61 52h-6" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/><circle cx="50" cy="52" r="3" fill="${c}"/>`,
+  duelo:(c="#FFF3E6")=>`<path d="M47 30 A22 22 0 0 0 47 74 Z" fill="${c}"/><path d="M53 30 A22 22 0 0 1 53 74 Z" fill="none" stroke="${c}" stroke-width="2.2"/><circle cx="50" cy="20" r="2" fill="${c}"/>`,
+  treino:(c="#111113")=>`<g fill="${c}" fill-opacity=".35">${[30,50,70].map(x=>[34,52,70].map(y=>`<circle cx="${x}" cy="${y}" r="2.6"/>`).join("")).join("")}</g><circle cx="50" cy="52" r="15" fill="none" stroke="${c}" stroke-width="2"/><circle cx="50" cy="52" r="5" fill="${c}"/>`
+};
+function paintCv(root=document){root.querySelectorAll(".cv[data-g]").forEach(e=>{if(!e.querySelector("svg"))e.insertAdjacentHTML("beforeend",`<svg class="g" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${G[e.dataset.g]()}</svg>`)})}
+
+/* ---------- dados (fictícios, iguais nas quatro peles) ---------- */
+const MODES=[["circulo","Círculo Profano",41],["bonde","Último Bonde",39],["neblina","Neblina",24],["cofre","Cerco ao Cofre",32],["duelo","Duelo à Meia-Noite",5],["treino","Campo de Treino",2]];
+const POOL=["Baleeiro","Fumaça","gato_preto","Quintal","nhoque","Sabiá","Pavio","Tatu","Graxa","Breu","Faísca","Jaca","Orvalho","Cometa","Pêssego","Maré","Sol_Posto","Maquinista","Vigia","Carvão","Lontra"];
+const pick=(seed,k)=>{const out=[];let i=hash(seed);while(out.length<k){const n=POOL[i%POOL.length];if(!out.includes(n))out.push(n);i=Math.imul(i^61,2654435761)>>>0}return out};
+const L=[
+ {n:"Bonde das 23h",g:"bonde",h:"Baleeiro",c:10,m:12,p:18,st:["2 vagas",""],a:["Entrar","co"]},
+ {n:"Círculo da madrugada",g:"circulo",h:"Ametista",c:9,m:12,p:14,fr:["Odete","Tordo"],members:["Odete","Tordo","Ametista","capivara.exe","Lanterneiro"],st:["3 vagas",""],a:["Entrar","co"],href:"sala.html"},
+ {n:"Caçada rápida",g:"neblina",h:"Fumaça",c:8,m:10,p:31,st:["Rodada 3 de 5","w"],a:["Entrar no meio","out"]},
+ {n:"Neblina sem lanterna, iniciantes ok",g:"neblina",h:"luz_baixa",hf:1,c:6,m:10,p:26,fr:["luz_baixa"],st:["4 vagas",""],a:["Entrar","co"]},
+ {n:"Clã Vigília",g:"cofre",h:"Vigia",c:7,m:10,p:19,st:["Só com convite","m"],a:["Bater na porta","out"]},
+ {n:"x1 até o sol nascer",g:"duelo",h:"Sol_Posto",c:5,m:8,p:12,st:["3 vagas",""],a:["Entrar","co"]},
+ {n:"Trilho sul, sem tóxico",g:"bonde",h:"Maquinista",c:12,m:12,p:24,st:["Lotado","m"],a:["Avisar quando vagar","out"]},
+ {n:"Testando build de arma",g:"treino",h:"Garoa",hf:1,c:2,m:6,p:9,fr:["Garoa"],st:["4 vagas",""],a:["Entrar","co"]}
+];
+const grid=document.getElementById("grid");
+grid.innerHTML=L.map((l,i)=>{
+  const mem=(l.members||[l.h,...pick(l.n,4)]).slice(0,4),more=l.c-mem.length;
+  return `<article class="lc" data-mode="${l.g}" data-fr="${l.fr?1:0}">
+    <span class="cv cv-${l.g} grain" data-g="${l.g}"></span>
+    <h3>${l.n}</h3>
+    <span class="chip d ${l.st[1]} st">${l.st[0]}</span>
+    <p class="lc-m"><span class="av" data-n="${l.h}"></span>${l.h}${l.hf?" (amigo)":""}<i>/</i>${MODES.find(m=>m[0]===l.g)[1]}</p>
+    <div class="lc-f"><span class="stack">${mem.map(n=>`<span class="av" data-n="${n}"></span>`).join("")}${more>0?`<span class="more">+${more}</span>`:""}</span><span class="mono n">${l.c}/${l.m}</span><span class="mono">${l.p} ms</span>${l.fr&&!l.hf?`<span class="frc"><span class="dot"></span>${l.fr.length} amigos dentro</span>`:""}</div>
+    <a class="btn btn-${l.a[1]} btn-sm act" href="${l.href||"#"}">${l.a[0]}</a>
+  </article>`}).join("");
+
+document.getElementById("modeRow").innerHTML=MODES.map(m=>`<button class="mode" type="button" aria-pressed="false" data-mode="${m[0]}">
+  <span class="cv cv-${m[0]} grain" data-g="${m[0]}"></span>
+  <span class="mode-n">${m[1]}</span>
+  <span class="mode-c mono"><span class="dot"></span><b>${m[2]}</b><span>&nbsp;jogando</span></span></button>`).join("");
+
+/* roda do herói */
+const roda=document.getElementById("roda");
+const seats=["k0rvo",...pick("Só mira, sem choro",10)];
+const ang=[0,30,60,90,120,150,180,210,240,300,330];
+roda.insertAdjacentHTML("beforeend",seats.map((n,i)=>`<span class="seat${i===0?" host":""}" style="--a:${ang[i]}deg"><span class="av" data-n="${n}"></span></span>`).join("")+`<span class="seat free" style="--a:270deg" aria-hidden="true">+<span class="seat-lbl">Seu lugar</span></span>`);
+
+paintAv();paintCv();
+/* presença: ponto no canto, sem anel */
+document.querySelectorAll(".av.on,.av.idle").forEach(a=>{const w=document.createElement("span");w.className="pres"+(a.classList.contains("idle")?" idle":"");a.classList.remove("on","idle");a.replaceWith(w);w.appendChild(a)});
+
+/* filtros: modo e abas */
+let modeF=null,tabF="todos";
+function apply(){grid.querySelectorAll(".lc").forEach(c=>{const okM=!modeF||c.dataset.mode===modeF,okT=tabF!=="amigos"||c.dataset.fr==="1";c.style.display=okM&&okT?"":"none"})}
+document.getElementById("modeRow").addEventListener("click",e=>{const b=e.target.closest(".mode");if(!b)return;const on=b.getAttribute("aria-pressed")==="true";document.querySelectorAll(".mode").forEach(x=>x.setAttribute("aria-pressed","false"));if(!on){b.setAttribute("aria-pressed","true");modeF=b.dataset.mode}else modeF=null;apply()});
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-selected","false"));b.setAttribute("aria-selected","true");tabF=b.dataset.tab;apply()}));
+document.querySelectorAll(".fchip").forEach(b=>b.addEventListener("click",()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")==="true"?"false":"true")));
+
+/* amigos recolhíveis no celular */
+const ft=document.getElementById("frToggle"),mq=matchMedia("(max-width:760px)");
+const syncFr=()=>ft.setAttribute("aria-expanded",mq.matches?"false":"true");syncFr();mq.addEventListener("change",syncFr);
+ft.addEventListener("click",()=>{if(mq.matches)ft.setAttribute("aria-expanded",ft.getAttribute("aria-expanded")==="true"?"false":"true")});
+
+/* contador que rola + "há x s" vivo */
+document.querySelectorAll("[data-roll]").forEach(e=>{e.innerHTML=[...e.dataset.roll].map((d,i)=>`<span style="animation-delay:${i*90}ms">${d}</span>`).join("")});
+setInterval(()=>document.querySelectorAll(".t[data-s]").forEach(t=>{t.dataset.s=+t.dataset.s+1;t.textContent=t.dataset.s+" s"}),1000);
+</script>
+</body>
+</html>

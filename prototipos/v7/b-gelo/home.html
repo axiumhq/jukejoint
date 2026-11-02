@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lobby · Jogar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ===== Gelo técnico · tokens ===== */
+:root{
+  --bg:#07080b; --bg2:#0a0c10; --s1:#0f1217; --s2:#13171d; --s3:#191e26; --s4:#222833;
+  --line:rgba(196,220,255,.065); --line2:rgba(196,220,255,.11); --line3:rgba(196,220,255,.18);
+  --tx:#eaf0f7; --tx2:#a5afbd; --tx3:#707a89; --tx4:#4b5360;
+  --ice:#72e8ff; --ice-2:#b8f5ff; --ice-ink:#021219; --ice-a:rgba(114,232,255,.12); --ice-b:rgba(114,232,255,.32);
+  --r-s:8px; --r:12px; --r-l:16px; --r-xl:20px;
+  --ease:cubic-bezier(.22,.8,.24,1); --spring:cubic-bezier(.32,.72,0,1);
+  --f:'Geist',ui-sans-serif,system-ui,sans-serif; --fm:'Geist Mono',ui-monospace,monospace;
+  --top:60px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--bg);color-scheme:dark;-webkit-text-size-adjust:100%}
+body{font-family:var(--f);font-size:14px;line-height:1.45;color:var(--tx);background:var(--bg);
+  -webkit-font-smoothing:antialiased;font-feature-settings:"ss01","cv11";overflow-x:hidden;min-height:100dvh}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(1200px 520px at 30% -120px,rgba(120,170,255,.07),transparent 70%),
+             radial-gradient(800px 400px at 100% 0,rgba(114,232,255,.04),transparent 70%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:90;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+img,svg{display:block}
+:focus-visible{outline:2px solid var(--ice);outline-offset:2px;border-radius:6px}
+.mono{font-family:var(--fm);font-size:11px;letter-spacing:.02em;text-transform:uppercase;font-feature-settings:"zero"}
+.dim{color:var(--tx3)} .dimmer{color:var(--tx4)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ico{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ===== Top bar ===== */
+.top{position:sticky;top:0;z-index:40;height:var(--top);display:flex;align-items:center;gap:20px;padding:0 20px 0 22px;
+  background:rgba(7,8,11,.72);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);
+  border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px;letter-spacing:-.03em;flex:none}
+.brand svg{width:24px;height:24px}
+.nav{display:flex;gap:2px;margin-left:10px}
+.nav a{height:32px;padding:0 12px;display:flex;align-items:center;border-radius:8px;color:var(--tx2);font-weight:500;font-size:13.5px;letter-spacing:-.01em;transition:color .2s var(--ease),background .2s var(--ease)}
+.nav a:hover{color:var(--tx);background:rgba(255,255,255,.04)}
+.nav a[aria-current]{color:var(--tx);background:rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.search{flex:1;max-width:420px;margin-left:auto;height:36px;display:flex;align-items:center;gap:10px;padding:0 6px 0 12px;border-radius:10px;
+  background:rgba(255,255,255,.035);border:1px solid var(--line);color:var(--tx3);font-size:13px;transition:border-color .2s var(--ease),background .2s}
+.search:hover{border-color:var(--line2);background:rgba(255,255,255,.05)}
+.search span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+kbd{font-family:var(--fm);font-size:10.5px;color:var(--tx2);padding:2px 6px;border-radius:5px;background:rgba(255,255,255,.06);border:1px solid var(--line2);line-height:1.3}
+.live-count{display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:12px;color:var(--tx2);white-space:nowrap;flex:none}
+.live-count b{color:var(--tx);font-weight:500;display:inline-flex;overflow:hidden;height:16px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ice);flex:none;box-shadow:0 0 0 0 var(--ice-b);animation:pulse 2.4s var(--ease) infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(114,232,255,.45)}70%{box-shadow:0 0 0 7px rgba(114,232,255,0)}100%{box-shadow:0 0 0 0 rgba(114,232,255,0)}}
+.me{display:flex;align-items:center;gap:9px;height:38px;padding:0 10px 0 4px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.025);flex:none}
+.me-name{font-size:13px;font-weight:500;letter-spacing:-.01em}
+.icon-btn{width:36px;height:36px;border-radius:10px;display:none;align-items:center;justify-content:center;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--tx2)}
+.in-room{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px 0 6px;border-radius:999px;background:var(--ice-a);border:1px solid var(--ice-b);color:var(--ice-2);font-size:12.5px;font-weight:500;white-space:nowrap;flex:none}
+.in-room .mono{color:var(--ice);font-size:10.5px}
+
+/* ===== Avatars ===== */
+.av{--s:28px;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;flex:none;position:relative;display:block;background:#111;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.av svg{width:100%;height:100%}
+.av::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.pres{position:relative;flex:none;border-radius:50%;padding:2px}
+.pres::before{content:"";position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--pc,rgba(255,255,255,.25))}
+.pres.lobby{--pc:var(--ice)}
+.pres.menu{--pc:rgba(234,240,247,.45)}
+.pres i{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--pc);border:2px solid var(--bg2)}
+.stack{display:flex;align-items:center}
+.stack .av{box-shadow:0 0 0 2px var(--stack-bg,var(--s1))}
+.stack > *+*{margin-left:-7px}
+.stack .more{height:var(--s,24px);min-width:var(--s,24px);padding:0 6px;border-radius:999px;background:var(--s3);font-family:var(--fm);font-size:10px;color:var(--tx2);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--stack-bg,var(--s1))}
+.stack .av.friend{box-shadow:0 0 0 2px var(--stack-bg,var(--s1)),0 0 0 3.5px var(--ice)}
+
+/* ===== Buttons / chips ===== */
+.btn{height:34px;padding:0 14px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:500;font-size:13px;letter-spacing:-.01em;white-space:nowrap;
+  transition:transform .18s var(--spring),background .2s var(--ease),box-shadow .2s var(--ease),color .2s;position:relative}
+.btn:active{transform:scale(.97)}
+.btn-ice{background:var(--ice);color:var(--ice-ink);font-weight:600;box-shadow:0 0 0 1px rgba(255,255,255,.2) inset,0 8px 24px -10px rgba(114,232,255,.7)}
+.btn-ice:hover{background:#9af0ff;box-shadow:0 0 0 1px rgba(255,255,255,.3) inset,0 10px 30px -8px rgba(114,232,255,.8)}
+.btn-ice kbd{background:rgba(2,18,25,.12);border-color:rgba(2,18,25,.2);color:var(--ice-ink)}
+.btn-glass{background:rgba(255,255,255,.06);border:1px solid var(--line2);color:var(--tx);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.btn-glass:hover{background:rgba(255,255,255,.1)}
+.btn-ghost{color:var(--tx2);border:1px solid var(--line)}
+.btn-ghost:hover{color:var(--tx);border-color:var(--line2);background:rgba(255,255,255,.03)}
+.btn-sm{height:28px;padding:0 10px;font-size:12px;border-radius:8px}
+.btn-l{height:46px;padding:0 18px 0 20px;font-size:14.5px;border-radius:12px}
+.chip{height:22px;padding:0 8px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:10.5px;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;
+  background:rgba(255,255,255,.06);color:var(--tx2);border:1px solid var(--line)}
+.chip.ice{background:var(--ice-a);color:var(--ice);border-color:var(--ice-b)}
+.chip.ice-glass{background:rgba(4,22,28,.72);color:var(--ice);border-color:var(--ice-b);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.chip.glass{background:rgba(8,10,14,.5);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-color:rgba(255,255,255,.1);color:var(--tx)}
+.chip .dot{width:5px;height:5px}
+.mdot{width:7px;height:7px;border-radius:2px;background:var(--t);box-shadow:0 0 10px var(--t);flex:none;transform:rotate(45deg)}
+
+/* ===== Covers ===== */
+.cover{position:absolute;inset:0;overflow:hidden;background:#07090c}
+.cover svg{width:100%;height:100%}
+.cover::after{content:"";position:absolute;inset:0;pointer-events:none;opacity:.22;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.cv-breathe{animation:breathe 4.8s ease-in-out infinite alternate}
+@keyframes breathe{from{opacity:.25}to{opacity:.55}}
+.cv-tele text{font-family:var(--fm);letter-spacing:.02em}
+
+/* ===== Glow card (cursor) ===== */
+.glow{position:relative;isolation:isolate}
+.glow::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;opacity:0;transition:opacity .35s var(--ease);
+  background:radial-gradient(360px circle at var(--mx,50%) var(--my,50%),rgba(150,236,255,.07),transparent 45%)}
+.glow::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:3;padding:1px;opacity:0;transition:opacity .35s var(--ease);
+  background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),rgba(170,242,255,.55),transparent 60%);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+.glow:hover::before,.glow:hover::after,.glow.is-hover::before,.glow.is-hover::after{opacity:1}
+
+/* ===== Section heads ===== */
+.sec{margin-top:34px}
+.sec-h{display:flex;align-items:center;gap:14px;margin-bottom:14px;min-height:30px}
+.sec-h h2{font-size:19px;font-weight:600;letter-spacing:-.035em}
+.sec-h .mono{color:var(--tx3)}
+.sec-h .end{margin-left:auto;display:flex;align-items:center;gap:8px}
+.link{color:var(--tx2);font-size:13px;display:inline-flex;align-items:center;gap:6px;transition:color .2s}
+.link:hover{color:var(--tx)}
+
+/* ===== Rail (social) ===== */
+.rail-sec{padding:18px 18px 6px}
+.rail-sec + .rail-sec{border-top:1px solid var(--line)}
+.rail-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.rail-h .mono{color:var(--tx3)}
+.fr{display:flex;align-items:center;gap:11px;padding:7px 8px;margin:0 -8px;border-radius:10px;transition:background .2s var(--ease)}
+.fr:hover{background:rgba(255,255,255,.035)}
+.fr-t{flex:1;min-width:0}
+.fr-n{font-size:13.5px;font-weight:500;letter-spacing:-.01em;display:flex;align-items:center;gap:6px}
+.fr-s{font-size:12px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr-s b{font-weight:400;color:var(--tx2)}
+.fr .btn{opacity:.95}
+
+/* ===== Motion ===== */
+.rise{animation:rise .6s var(--spring) both;animation-delay:calc(var(--i,0)*45ms)}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+
+
+/* ===== Home layout ===== */
+.app{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:calc(100dvh - var(--top))}
+.main{padding:22px 32px 72px;min-width:0}
+.rail{position:sticky;top:var(--top);height:calc(100dvh - var(--top));overflow:auto;border-left:1px solid var(--line);background:linear-gradient(180deg,rgba(15,18,23,.7),rgba(10,12,16,.7));scrollbar-width:thin}
+
+/* hero */
+.hero{height:350px;border-radius:var(--r-xl);overflow:hidden;background:#06080b;box-shadow:0 0 0 1px var(--line2),0 30px 80px -40px rgba(120,140,255,.35)}
+.hero .cover{border-radius:inherit}
+.hero-shade{position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(6,7,10,.94) 0,rgba(6,7,10,.72) 30%,rgba(6,7,10,0) 58%),linear-gradient(0deg,rgba(6,7,10,.6),transparent 40%)}
+.hero-body{position:absolute;z-index:4;left:32px;top:28px;right:46%}
+.eyebrow{display:flex;align-items:center;gap:10px;color:var(--tx2)}
+.eyebrow .ice{color:var(--ice)}
+.hero h1{font-size:62px;line-height:.94;font-weight:600;letter-spacing:-.055em;margin:18px 0 16px;color:#f4f8fc;text-wrap:balance}
+.hero-sub{display:flex;align-items:center;gap:10px;color:var(--tx2);font-size:13.5px;flex-wrap:wrap}
+.hero-sub .sep{width:3px;height:3px;border-radius:50%;background:var(--tx4)}
+.mode-tag{display:inline-flex;align-items:center;gap:8px;color:var(--tx);font-weight:500}
+.hero-glass{position:absolute;z-index:4;left:14px;right:14px;bottom:14px;height:78px;border-radius:14px;display:grid;grid-template-columns:auto auto auto auto 1fr;align-items:center;
+  background:rgba(14,17,23,.52);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09),inset 0 0 0 1px rgba(255,255,255,.07),0 20px 40px -20px rgba(0,0,0,.6)}
+.hg{padding:0 22px;height:46px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(255,255,255,.07)}
+.hg .mono{color:var(--tx3);font-size:10px}
+.hg-v{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:500;white-space:nowrap}
+.hg-big{font-family:var(--fm);font-size:15px;font-weight:500;letter-spacing:-.01em}
+.hg-big small{color:var(--tx3);font-size:12px}
+.ticks{display:flex;gap:3px;align-items:center}
+.ticks i{width:7px;height:4px;border-radius:2px;background:rgba(234,240,247,.8)}
+.ticks i.e{background:rgba(255,255,255,.1)}
+.ticks i.e.next{background:transparent;box-shadow:inset 0 0 0 1.2px var(--ice);animation:slot 1.6s var(--ease) infinite}
+@keyframes slot{50%{background:var(--ice-b)}}
+.hg-act{flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;padding:0 16px;border:0;height:auto}
+.falta{color:var(--ice);font-family:var(--fm);font-size:11px;text-transform:uppercase;white-space:nowrap}
+
+/* modes */
+.modes{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.mode{position:relative;height:148px;border-radius:14px;overflow:hidden;text-align:left;background:#06080b;box-shadow:0 0 0 1px var(--line);transition:box-shadow .25s var(--ease),transform .25s var(--spring)}
+.mode:hover{transform:translateY(-2px);box-shadow:0 0 0 1px var(--line3),0 16px 30px -18px var(--t)}
+.mode[aria-pressed=true]{box-shadow:0 0 0 1.5px var(--ice),0 16px 40px -16px rgba(114,232,255,.5)}
+.mode .cover svg{transition:transform .6s var(--spring)}
+.mode:hover .cover svg{transform:scale(1.06)}
+.mode::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,rgba(5,6,9,.92),rgba(5,6,9,.1) 55%,transparent)}
+.mode-i{position:absolute;z-index:2;top:10px;left:12px;color:rgba(234,240,247,.55);font-size:10px}
+.mode-b{position:absolute;z-index:2;left:12px;right:12px;bottom:11px}
+.mode-n{font-size:14px;font-weight:600;letter-spacing:-.025em;line-height:1.15;margin-bottom:5px}
+.mode-c{display:flex;align-items:center;gap:7px;color:var(--tx2)}
+.mode-c .dot{width:5px;height:5px}
+
+/* lobby controls */
+.ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.seg{display:flex;padding:3px;border-radius:10px;background:rgba(255,255,255,.035);border:1px solid var(--line)}
+.seg button{height:28px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:500;color:var(--tx3);display:flex;align-items:center;gap:7px;transition:color .2s,background .2s}
+.seg button span{font-family:var(--fm);font-size:10.5px;color:var(--tx4)}
+.seg button[aria-selected=true]{background:rgba(255,255,255,.08);color:var(--tx);box-shadow:inset 0 1px 0 rgba(255,255,255,.06)}
+.seg button[aria-selected=true] span{color:var(--tx2)}
+.fchips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.fchip{height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--line);color:var(--tx2);font-size:12.5px;display:flex;align-items:center;gap:7px;white-space:nowrap;flex:none;transition:border-color .2s,color .2s}
+.fchip:hover{border-color:var(--line2);color:var(--tx)}
+.fchip.on{border-color:var(--ice-b);background:var(--ice-a);color:var(--ice-2)}
+.fchip .x{font-family:var(--fm);font-size:10px;color:var(--tx4)}
+.ctl .end{margin-left:auto;display:flex;gap:6px}
+.vt{display:flex;border:1px solid var(--line);border-radius:9px;padding:2px}
+.vt button{width:28px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:var(--tx3)}
+.vt button[aria-pressed=true]{background:rgba(255,255,255,.08);color:var(--tx)}
+
+/* lobby card */
+.lgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.lc{border-radius:var(--r-l);background:linear-gradient(180deg,var(--s2),var(--s1));box-shadow:0 0 0 1px var(--line),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden;display:flex;flex-direction:column;transition:transform .3s var(--spring),box-shadow .3s var(--ease)}
+.lc:hover{transform:translateY(-2px);box-shadow:0 0 0 1px var(--line2),inset 0 1px 0 rgba(255,255,255,.05),0 24px 40px -24px rgba(0,0,0,.9)}
+.lc-cv{position:relative;height:92px;flex:none}
+.lc-cv::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(0deg,var(--s2),rgba(19,23,29,0) 70%)}
+.lc-cv .cover svg{transition:transform .7s var(--spring)}
+.lc:hover .lc-cv .cover svg{transform:scale(1.05)}
+.lc-id{position:absolute;z-index:2;left:12px;top:11px}
+.lc-st{position:absolute;z-index:2;right:12px;top:11px}
+.lc-b{padding:2px 16px 16px;display:flex;flex-direction:column;gap:10px;flex:1;position:relative;z-index:1}
+.lc-m{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)}
+.lc-m .tag{margin-left:auto}
+.lc-n{font-size:18px;font-weight:600;letter-spacing:-.035em;line-height:1.15}
+.lc-h{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--tx3)}
+.lc-h b{color:var(--tx);font-weight:500}
+.fr-tag{font-family:var(--fm);font-size:9.5px;text-transform:uppercase;color:var(--ice);padding:1px 5px;border-radius:4px;background:var(--ice-a)}
+.lc-f{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.lc-cnt{font-family:var(--fm);font-size:12.5px;color:var(--tx)}
+.lc-cnt small{color:var(--tx3);font-size:12.5px}
+.lc-f .btn{margin-left:auto}
+.btn-w{background:#e9eff6;color:#0a0d12;font-weight:600;box-shadow:inset 0 -1px 0 rgba(0,0,0,.15)}
+.btn-w:hover{background:#fff}
+.bar{flex:1;max-width:84px;height:3px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--tx2);border-radius:3px}
+.bar.full i{background:var(--tx3)}
+.lc.full .lc-n,.lc.full .lc-cv{opacity:.6}
+.lc-create{border-radius:var(--r-l);border:1px dashed var(--line3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--tx2);min-height:250px;transition:border-color .2s,color .2s,background .2s}
+.lc-create:hover{border-color:var(--ice-b);color:var(--tx);background:rgba(114,232,255,.03)}
+.lc-create .pl{width:40px;height:40px;border-radius:12px;border:1px solid var(--line2);display:flex;align-items:center;justify-content:center}
+.more-row{display:flex;justify-content:center;margin-top:16px}
+.empty{grid-column:1/-1;padding:40px;text-align:center;color:var(--tx3);border:1px dashed var(--line2);border-radius:var(--r-l)}
+
+/* chegando agora */
+.feed{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.fe{display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:var(--r);background:var(--s1);box-shadow:0 0 0 1px var(--line)}
+.fe-t{min-width:0;flex:1}
+.fe-n{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fe-l{font-size:12px;color:var(--tx3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fe-l b{font-weight:400;color:var(--tx2)}
+.fe .mono{color:var(--tx4);font-size:10.5px;align-self:flex-start;margin-top:2px}
+
+/* rail specifics */
+.party{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:rgba(255,255,255,.03);box-shadow:inset 0 0 0 1px var(--line)}
+.party-t{flex:1;min-width:0}
+.party-n{font-weight:600;letter-spacing:-.02em;font-size:14px}
+.party-s{font-size:12px;color:var(--tx3)}
+.slots{display:flex;gap:6px;margin:10px 0 12px}
+.slots span{width:30px;height:30px;border-radius:50%;border:1px dashed var(--line3);display:flex;align-items:center;justify-content:center;color:var(--tx4)}
+.slots span .ico{width:12px;height:12px}
+.invite{padding:12px;border-radius:14px;background:linear-gradient(180deg,rgba(114,232,255,.08),rgba(114,232,255,.02));box-shadow:inset 0 0 0 1px var(--ice-b)}
+.invite-top{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.invite-top p{font-size:13px;line-height:1.35}
+.invite-top p span{display:block;color:var(--tx3);font-size:12px}
+.invite .row{display:flex;gap:8px}
+.invite .row .btn{flex:1}
+.offline{display:flex;align-items:center;justify-content:space-between;color:var(--tx3);font-size:12.5px;padding:12px 0 16px}
+
+/* mobile-only parts */
+.mfriends,.mbar{display:none}
+
+@media (max-width:1240px){
+  .app{grid-template-columns:minmax(0,1fr) 288px}
+  .main{padding:20px 24px 72px}
+  .hero h1{font-size:52px}
+  .hg{padding:0 16px}
+  .modes{grid-template-columns:repeat(6,minmax(132px,1fr));overflow-x:auto;scrollbar-width:none}
+  .lgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .feed{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:1100px){ .hg-ping{display:none} .hero-glass{grid-template-columns:auto auto auto 1fr} }
+@media (max-width:960px){
+  .app{grid-template-columns:1fr}
+  .rail{display:none}
+  .mfriends{display:block}
+  .nav{display:none}
+}
+@media (max-width:760px){
+  :root{--top:56px}
+  .top{gap:10px;padding:0 14px}
+  .search,.me-name,.me .ico{display:none}
+  .icon-btn{display:flex}
+  .me{padding:0;border:0;background:none;height:auto}
+  .live-count{margin-left:auto;font-size:11.5px}
+  .main{padding:14px 16px 120px}
+  .hero{height:auto;display:flex;flex-direction:column;border-radius:18px}
+  .hero .cover{position:relative;height:210px;inset:auto}
+  .hero-shade{background:linear-gradient(0deg,rgba(6,8,11,1) 0,rgba(6,8,11,.85) 42%,rgba(6,8,11,0) 70%)}
+  .hero-body{position:relative;left:auto;right:auto;top:auto;margin:-34px 16px 0}
+  .hero .cv-tele{display:none}
+  .hg .ticks{display:none}
+  .hg-v{white-space:nowrap}
+  .hero h1{font-size:40px;margin:12px 0 10px}
+  .hero-sub .sep:last-of-type,.hero-sub span:last-child{display:none}
+  .hero-glass{position:relative;left:auto;right:auto;bottom:auto;margin:14px 10px 10px;height:auto;grid-template-columns:1fr 1fr;padding:6px 0}
+  .hg{height:auto;gap:8px;padding:10px 14px;border-right:0}
+  .hg-ping{display:flex}
+  .hg:nth-child(odd){border-right:1px solid rgba(255,255,255,.07)}
+  .hg:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.07)}
+  .hg-act{display:none}
+  .sec{margin-top:26px}
+  .sec-h h2{font-size:18px}
+  .sec-h .end .link span{display:none}
+  .modes{display:flex;gap:8px;margin:0 -16px;padding:0 16px;overflow-x:auto;scroll-snap-type:x mandatory}
+  .mode{flex:0 0 128px;height:128px;scroll-snap-align:start}
+  .ctl{gap:8px}
+  .ctl .seg{order:1;width:100%}
+  .ctl .seg button{flex:1;justify-content:center}
+  .fchips{order:2;margin:0 -16px;padding:0 16px;width:calc(100% + 32px)}
+  .ctl .end{display:none}
+  .lgrid{grid-template-columns:1fr;gap:12px}
+  .lc-create{min-height:120px}
+  .feed{grid-template-columns:1fr;gap:8px}
+  .mbar{display:flex;position:fixed;z-index:45;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));height:64px;border-radius:16px;align-items:center;gap:12px;padding:0 10px 0 12px;
+    background:rgba(16,19,25,.72);backdrop-filter:blur(22px) saturate(150%);-webkit-backdrop-filter:blur(22px) saturate(150%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.09),inset 0 1px 0 rgba(255,255,255,.1),0 20px 40px -10px rgba(0,0,0,.8)}
+  .mbar-cv{width:42px;height:42px;border-radius:10px;overflow:hidden;position:relative;flex:none}
+  .mbar-t{flex:1;min-width:0}
+  .mbar-t b{display:block;font-size:13.5px;font-weight:600;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mbar-t span{font-size:10.5px;color:var(--tx3)}
+  .mbar-t span em{font-style:normal;color:var(--ice)}
+  .mbar .btn{height:44px;padding:0 16px}
+}
+/* mobile friends sheet */
+.mfriends{margin-top:14px;border-radius:16px;background:var(--s1);box-shadow:0 0 0 1px var(--line)}
+.mfriends summary{list-style:none;display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+.mfriends summary::-webkit-details-marker{display:none}
+.mfriends summary .t{flex:1}
+.mfriends summary .t b{display:block;font-size:14px;font-weight:600;letter-spacing:-.02em}
+.mfriends summary .t span{font-size:12px;color:var(--tx3)}
+.mfriends summary .ico{transition:transform .25s var(--spring);color:var(--tx3)}
+.mfriends[open] summary .ico{transform:rotate(180deg)}
+.mfriends .list{padding:0 14px 10px;--stack-bg:var(--s1)}
+</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="home.html" aria-label="Lobby, início"><span data-logo></span>Lobby</a>
+  <nav class="nav" aria-label="Principal">
+    <a href="home.html" aria-current="page">Jogar</a><a href="#">Modos</a><a href="#">Hoje</a><a href="#">Instalar</a>
+  </nav>
+  <button class="search" aria-label="Buscar (Ctrl K)"><span data-ico="search"></span><span>Buscar lobby, modo ou jogador</span><kbd>Ctrl K</kbd></button>
+  <div class="live-count"><span class="dot"></span><b id="liveN">143</b><span>jogando</span></div>
+  <button class="icon-btn" aria-label="Buscar"><span data-ico="search"></span></button>
+  <button class="me" aria-label="Sua conta: Corvo_Noturno"><span class="pres lobby" style="--pc:rgba(234,240,247,.5)"><span data-av="Corvo_Noturno" data-size="28"></span></span><span class="me-name">Corvo_Noturno</span><span data-ico="chev" class="dim"></span></button>
+</header>
+
+<div class="app">
+<main class="main">
+
+  <!-- 1 · Jogar agora -->
+  <section class="hero glow" aria-labelledby="heroT">
+    <div class="cover" data-cover="cp" data-wide data-tele="hero"></div>
+    <div class="hero-shade"></div>
+    <div class="hero-body">
+      <div class="eyebrow mono"><span class="dot"></span><span class="ice">Recomendado</span><span class="dimmer">//</span><span>Lobby 04 · BR/SA · 22ms</span></div>
+      <h1 id="heroT">Só mira,<br>sem choro</h1>
+      <div class="hero-sub">
+        <span class="mode-tag"><i class="mdot" style="--t:var(--t-cp)"></i>Círculo Profano</span><i class="sep"></i>
+        <span>Todos contra todos</span><i class="sep"></i><span>o círculo fecha a cada 60 s</span>
+      </div>
+    </div>
+    <div class="hero-glass">
+      <div class="hg"><span class="mono">Anfitrião</span><span class="hg-v"><span class="pres lobby" style="padding:1.5px"><span data-av="k0rvo" data-size="22"></span></span>k0rvo<span class="fr-tag">amigo</span></span></div>
+      <div class="hg"><span class="mono">Vagas</span><span class="hg-v"><span class="hg-big">11<small>/12</small></span><span class="ticks" id="heroTicks"></span><span class="falta">falta 1</span></span></div>
+      <div class="hg"><span class="mono">Dentro</span><span class="hg-v" id="heroStack"></span></div>
+      <div class="hg hg-ping"><span class="mono">Servidor</span><span class="hg-v"><span data-ico="signal" style="color:var(--ice)"></span><span class="hg-big">22<small> ms</small></span><span class="dim" style="font-size:12px">BR/SA</span></span></div>
+      <div class="hg hg-act">
+        <a class="btn btn-glass btn-l" href="#" style="padding:0 16px">Ver sala</a>
+        <a class="btn btn-ice btn-l" href="#">Jogar agora <kbd>↵</kbd></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- social (mobile sheet) -->
+  <details class="mfriends" id="mfriends">
+    <summary><span class="stack" id="mfStack" style="--stack-bg:var(--s1)"></span><span class="t"><b>Amigos · 7 online</b><span>5 em lobbies · 1 convite</span></span><span data-ico="chev"></span></summary>
+    <div class="list" id="mfList"></div>
+  </details>
+
+  <!-- 2 · Modos -->
+  <section class="sec" aria-labelledby="modosT">
+    <div class="sec-h"><h2 id="modosT">Modos</h2><span class="mono">6 modos · 143 jogando</span><div class="end"><a class="link" href="#"><span>Ver todos</span><span data-ico="arrow"></span></a></div></div>
+    <div class="modes" id="modes"></div>
+  </section>
+
+  <!-- 3 · Lobbies -->
+  <section class="sec" aria-labelledby="lobT">
+    <div class="sec-h"><h2 id="lobT">Lobbies</h2><span class="mono" id="lobMeta">18 abertos · 14 com vaga</span>
+      <div class="end"><button class="btn btn-ghost btn-sm"><span data-ico="plus"></span>Criar lobby</button></div></div>
+    <div class="ctl">
+      <div class="seg" role="tablist" aria-label="Lista">
+        <button role="tab" aria-selected="true" data-tab="all">Todos <span>18</span></button>
+        <button role="tab" aria-selected="false" data-tab="friends">Amigos <span>4</span></button>
+        <button role="tab" aria-selected="false" data-tab="fav">Favoritos <span>2</span></button>
+      </div>
+      <div class="fchips" id="fchips">
+        <button class="fchip on">BR/SA <span class="x">22–31ms</span></button>
+        <button class="fchip">Com vaga</button>
+        <button class="fchip">Iniciantes ok</button>
+        <button class="fchip">Em partida</button>
+        <button class="fchip">Ping &lt; 30</button>
+      </div>
+      <div class="end"><div class="vt" role="group" aria-label="Visualização"><button aria-pressed="true" aria-label="Cartões"><span data-ico="grid"></span></button><button aria-pressed="false" aria-label="Compacto"><span data-ico="rows"></span></button></div></div>
+    </div>
+    <div class="lgrid" id="lgrid"></div>
+    <div class="more-row"><button class="btn btn-ghost">Mostrar os outros 9 lobbies <span data-ico="chev"></span></button></div>
+  </section>
+
+  <!-- 4 · Chegando agora -->
+  <section class="sec" aria-labelledby="chT">
+    <div class="sec-h"><h2 id="chT">Chegando agora</h2><span class="chip ice"><span class="dot"></span>ao vivo</span></div>
+    <div class="feed" id="feed"></div>
+  </section>
+</main>
+
+<aside class="rail" aria-label="Social">
+  <div class="rail-sec">
+    <div class="rail-h"><span class="mono">Seu grupo · 1/5</span><a class="link" href="#" style="font-size:12px">Ajustes</a></div>
+    <div class="party"><span class="pres" style="--pc:rgba(234,240,247,.5)"><span data-av="Corvo_Noturno" data-size="40"></span></span>
+      <div class="party-t"><div class="party-n">Corvo_Noturno</div><div class="party-s">Sozinho · no site</div></div></div>
+    <div class="slots"><span><span data-ico="plus"></span></span><span><span data-ico="plus"></span></span><span><span data-ico="plus"></span></span><span><span data-ico="plus"></span></span>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto">Chamar</button></div>
+  </div>
+  <div class="rail-sec">
+    <div class="rail-h"><span class="mono">Convite · agora</span></div>
+    <div class="invite">
+      <div class="invite-top"><span class="pres lobby"><span data-av="k0rvo" data-size="32"></span></span><p><b>k0rvo</b> te chamou<span>Só mira, sem choro · 11/12</span></p></div>
+      <div class="row"><button class="btn btn-ice btn-sm">Aceitar</button><button class="btn btn-ghost btn-sm">Agora não</button></div>
+    </div>
+  </div>
+  <div class="rail-sec" style="--stack-bg:var(--bg2)">
+    <div class="rail-h"><span class="mono">Amigos online · 7</span><span class="mono dimmer">5 em lobbies</span></div>
+    <div id="friends"></div>
+    <div class="offline"><span>Offline · 23</span><span data-ico="chev"></span></div>
+  </div>
+</aside>
+</div>
+
+<div class="mbar" role="region" aria-label="Jogar agora">
+  <div class="mbar-cv"><div class="cover" data-cover="cp"></div></div>
+  <div class="mbar-t"><b>Só mira, sem choro</b><span class="mono">11/12 · 22ms · <em>falta 1</em></span></div>
+  <a class="btn btn-ice" href="#">Jogar agora</a>
+</div>
+
+<script>
+/* ===== Gelo técnico · shared runtime (avatars, covers, icons, glow) ===== */
+const MODES = {
+  cp:{name:'Círculo Profano', n:41, tint:'#a9adff', rule:'Todos contra todos'},
+  ub:{name:'Último Bonde',    n:39, tint:'#5ff0c6', rule:'Times de 6'},
+  nb:{name:'Neblina',         n:24, tint:'#c2cde0', rule:'Caçada em duplas'},
+  cc:{name:'Cerco ao Cofre',  n:32, tint:'#ffbf75', rule:'Ataque e defesa'},
+  dm:{name:'Duelo à Meia-Noite', n:5, tint:'#ff7593', rule:'1 contra 1'},
+  ct:{name:'Campo de Treino', n:2,  tint:'#dcf36e', rule:'Livre'},
+};
+const MODE_ORDER = ['cp','ub','nb','cc','dm','ct'];
+
+function hash(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}h^=h>>>13;h=Math.imul(h,0x5bd1e995);h^=h>>>15;return h>>>0}
+function mix(a,b,t){const p=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16));const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('')}
+
+/* --- avatars: deterministic "marble" from name --- */
+const PAL = [
+  ['#16213d','#6fd8ff','#e3f6ff','#3d5cff'],
+  ['#2b1838','#ff8fb3','#ffe1d4','#8758ff'],
+  ['#0e2b27','#4ff0bd','#eafff6','#1b8f7b'],
+  ['#35200f','#ffb35c','#fff0d6','#ff5e3a'],
+  ['#1b1c33','#a3a8ff','#f2f3ff','#5355d8'],
+  ['#232a10','#d4ff5e','#f7ffe0','#5f9a16'],
+  ['#331221','#ff5f7f','#ffd5de','#a82a57'],
+  ['#0f2433','#5dd0ff','#ffd9a8','#ff8a5c'],
+  ['#211433','#c58bff','#d9fff4','#3fd9b4'],
+];
+function avatarSVG(name){
+  const h=hash(name), g=hash(name+'·'), P=PAL[h%PAL.length];
+  const b=(x,i,m)=>((x>>>i)&255)%m;
+  const rot=b(g,0,4)*45+b(h,2,30);
+  const sw=b(h,6,2);
+  const A=sw?P[1]:P[3], B=sw?P[3]:P[1];
+  return `<svg viewBox="0 0 36 36" aria-hidden="true"><rect width="36" height="36" fill="${P[0]}"/>
+  <circle cx="${6+b(h,4,24)}" cy="${6+b(h,12,24)}" r="${12+b(h,20,8)}" fill="${A}"/>
+  <rect x="${4+b(g,8,14)}" y="${14+b(g,16,10)}" width="${22+b(g,24,10)}" height="${8+b(h,26,6)}" rx="2" transform="rotate(${rot} 18 18)" fill="${B}" style="mix-blend-mode:screen" opacity=".92"/>
+  <circle cx="${8+b(g,3,20)}" cy="${8+b(g,11,20)}" r="${3+b(g,19,4)}" fill="${P[2]}"/></svg>`;
+}
+function av(name,size=28,cls=''){return `<span class="av ${cls}" style="--s:${size}px" title="${name}">${avatarSVG(name)}</span>`}
+function pres(name,size,kind){return `<span class="pres ${kind}">${av(name,size)}<i></i></span>`}
+function stack(names,size=24,total,friends=[]){
+  const shown=names.slice(0,4); const more=(total??names.length)-shown.length;
+  return `<span class="stack" style="--s:${size}px">${shown.map(n=>av(n,size,friends.includes(n)?'friend':'')).join('')}${more>0?`<span class="more">+${more}</span>`:''}</span>`;
+}
+
+/* --- logo glyph (original): a split ring with an orbiting node --- */
+const LOGO = `<svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3fbff"/><stop offset="1" stop-color="#72e8ff"/></linearGradient></defs>
+<path d="M12 3.2a8.8 8.8 0 1 0 8.8 8.8" fill="none" stroke="url(#lg)" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M12 8.2a3.8 3.8 0 1 0 3.8 3.8" fill="none" stroke="#eaf0f7" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"/>
+<circle cx="19.2" cy="4.8" r="2.2" fill="#72e8ff"/></svg>`;
+
+/* --- icons (thin line) --- */
+const I = {
+  search:'<circle cx="7" cy="7" r="4.6"/><path d="m10.5 10.5 3.6 3.6"/>',
+  arrow:'<path d="M3.5 8h9M9 4.5 12.5 8 9 11.5"/>',
+  back:'<path d="M12.5 8h-9M7 4.5 3.5 8 7 11.5"/>',
+  lock:'<rect x="3.5" y="7" width="9" height="6.5" rx="1.6"/><path d="M5.5 7V5.2a2.5 2.5 0 0 1 5 0V7"/>',
+  bell:'<path d="M4 11.5V7.2a4 4 0 0 1 8 0v4.3l1 1.2H3z"/><path d="M6.6 14.2a1.5 1.5 0 0 0 2.8 0"/>',
+  knock:'<path d="M5 8.5V4.2a1.1 1.1 0 0 1 2.2 0V8M7.2 7.4V3.4a1.1 1.1 0 0 1 2.2 0v4M9.4 7.6V4.4a1.1 1.1 0 0 1 2.2 0v5.2c0 2.6-1.7 4.4-4.2 4.4-1.8 0-2.7-.8-3.7-2.2L2.4 9.4a1.1 1.1 0 0 1 1.8-1.2L5 9.2"/>',
+  play:'<path d="M5 3.6v8.8L12.4 8z"/>',
+  plus:'<path d="M8 3.5v9M3.5 8h9"/>',
+  grid:'<rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1.2"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1.2"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1.2"/><rect x="9" y="9" width="4.5" height="4.5" rx="1.2"/>',
+  rows:'<path d="M2.5 4h11M2.5 8h11M2.5 12h11"/>',
+  chev:'<path d="m4.5 6.2 3.5 3.5 3.5-3.5"/>',
+  check:'<path d="m3.5 8.4 3 3 6-6.4"/>',
+  users:'<circle cx="6" cy="5.5" r="2.4"/><path d="M1.8 13.2c.4-2.3 2-3.6 4.2-3.6s3.8 1.3 4.2 3.6"/><circle cx="11.4" cy="5.9" r="1.9"/><path d="M11.6 9.6c1.6.2 2.6 1.3 2.9 3.1"/>',
+  signal:'<path d="M3 12.5v-1.5M6.3 12.5V9M9.6 12.5V6.5M12.9 12.5V4"/>',
+  link:'<path d="M6.8 9.2a2.6 2.6 0 0 0 3.7 0l2-2a2.6 2.6 0 0 0-3.7-3.7l-.7.7"/><path d="M9.2 6.8a2.6 2.6 0 0 0-3.7 0l-2 2a2.6 2.6 0 0 0 3.7 3.7l.7-.7"/>',
+  shrink:'<circle cx="8" cy="8" r="5.6"/><circle cx="8" cy="8" r="2.6"/><path d="M8 .9v1.6M8 13.5v1.6M.9 8h1.6M13.5 8h1.6"/>',
+  dice:'<rect x="2.6" y="2.6" width="10.8" height="10.8" rx="2.4"/><circle cx="5.7" cy="5.7" r=".7" fill="currentColor"/><circle cx="10.3" cy="10.3" r=".7" fill="currentColor"/><circle cx="8" cy="8" r=".7" fill="currentColor"/>',
+  swords:'<path d="m2.5 2.5 7 7M2.5 2.5h3M2.5 2.5v3M13.5 2.5l-7 7M13.5 2.5h-3M13.5 2.5v3M5 11l-2 2M11 11l2 2M4 9.5 6.5 12M12 9.5 9.5 12"/>',
+  menu:'<path d="M2.5 5h11M2.5 11h11"/>',
+  exit:'<path d="M9.5 3.5h3v9h-3M7 5.2 4.2 8 7 10.8M4.4 8h6"/>',
+  star:'<path d="m8 2.6 1.6 3.4 3.7.4-2.8 2.5.8 3.6L8 10.6l-3.3 1.9.8-3.6L2.7 6.4l3.7-.4z"/>',
+};
+const ico=(n,c='')=>`<svg class="ico ${c}" viewBox="0 0 16 16" aria-hidden="true">${I[n]}</svg>`;
+
+/* --- global SVG defs (filters + per-mode gradients) --- */
+function injectDefs(){
+  let s=`<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false"><defs>
+  <filter id="avb" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="2.8"/></filter>
+  <filter id="avb2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".6"/></filter>
+  <filter id="bl1" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.2"/></filter>
+  <filter id="bl2" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5"/></filter>
+  <filter id="bl3" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="bl4" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="22"/></filter>
+  <filter id="fogf" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.006 0.022" numOctaves="4" seed="11"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 .86  0 0 0 0 .9  0 0 0 0 1  0 0 0 2.1 -.95"/><feGaussianBlur stdDeviation="1.5"/></filter>
+  <filter id="frost" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="3"/>
+    <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 9 -8.3"/></filter>`;
+  for(const k of MODE_ORDER){
+    const t=MODES[k].tint, d=mix(t,'#07090c',.86), dd=mix(t,'#05070a',.94);
+    s+=`<radialGradient id="bg-${k}" gradientUnits="userSpaceOnUse" cx="200" cy="120" r="320"><stop offset="0" stop-color="${d}"/><stop offset=".55" stop-color="${dd}"/><stop offset="1" stop-color="#05060a"/></radialGradient>
+    <linearGradient id="rim-${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(t,'#ffffff',.55)}"/><stop offset=".28" stop-color="${mix(t,'#0a0d14',.45)}"/><stop offset=".55" stop-color="${mix(t,'#0a0d14',.75)}"/><stop offset=".8" stop-color="${t}"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <linearGradient id="glass-${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".75"/><stop offset=".35" stop-color="${t}" stop-opacity=".28"/><stop offset=".7" stop-color="${t}" stop-opacity=".08"/><stop offset="1" stop-color="#ffffff" stop-opacity=".35"/></linearGradient>
+    <linearGradient id="beam-${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(t,'#ffffff',.5)}" stop-opacity=".7"/><stop offset="1" stop-color="${t}" stop-opacity="0"/></linearGradient>
+    <linearGradient id="metal-${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${mix(t,'#ffffff',.6)}"/><stop offset=".22" stop-color="${mix(t,'#0a0d14',.55)}"/><stop offset=".45" stop-color="${mix(t,'#ffffff',.15)}"/><stop offset=".62" stop-color="${mix(t,'#0a0d14',.7)}"/><stop offset=".85" stop-color="${t}"/><stop offset="1" stop-color="${mix(t,'#0a0d14',.5)}"/></linearGradient>
+    <linearGradient id="fade-${k}" gradientUnits="userSpaceOnUse" x1="0" y1="112" x2="0" y2="260"><stop offset="0" stop-color="${t}" stop-opacity="0"/><stop offset="1" stop-color="${t}" stop-opacity=".55"/></linearGradient>
+    <linearGradient id="blade-${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${mix(t,'#0a0d14',.6)}"/><stop offset=".48" stop-color="#ffffff"/><stop offset=".52" stop-color="${t}"/><stop offset="1" stop-color="${mix(t,'#0a0d14',.8)}"/></linearGradient>`;
+  }
+  s+=`</defs></svg>`;
+  document.body.insertAdjacentHTML('afterbegin',s);
+}
+
+/* --- mode covers: abstract "rendered" objects (pure SVG) --- */
+function sparks(seed,n,t,area=[20,20,360,210]){
+  let h=hash('s'+seed),o='';
+  for(let i=0;i<n;i++){h=Math.imul(h^(h>>>15),2246822507)>>>0;
+    const x=area[0]+(h%area[2]), y=area[1]+((h>>>9)%area[3]), r=((h>>>20)%10)/10*1.1+.3, op=((h>>>4)%60)/100+.2;
+    o+=`<circle cx="${x}" cy="${y}" r="${r.toFixed(2)}" fill="${i%3?'#fff':t}" opacity="${op.toFixed(2)}"/>`;}
+  return o;
+}
+function coverArt(k){
+  const t=MODES[k].tint;
+  const BG=`<rect x="-1200" y="-400" width="2800" height="1050" fill="url(#bg-${k})"/>`;
+  if(k==='cp'){ // ice ring
+    return BG+`
+    <rect x="180" y="-60" width="40" height="300" fill="url(#beam-${k})" filter="url(#bl3)" opacity=".45"/>
+    <ellipse cx="200" cy="206" rx="170" ry="22" fill="${t}" opacity=".16" filter="url(#bl3)"/>
+    <ellipse cx="200" cy="204" rx="104" ry="11" fill="none" stroke="${t}" stroke-width="5" opacity=".22" filter="url(#bl2)"/>
+    <ellipse class="cv-breathe" cx="200" cy="128" rx="110" ry="42" fill="none" stroke="${t}" stroke-width="34" opacity=".4" filter="url(#bl3)"/>
+    <ellipse cx="200" cy="128" rx="96" ry="30" fill="${t}" opacity=".08" filter="url(#bl2)"/>
+    <ellipse cx="200" cy="128" rx="110" ry="42" fill="none" stroke="url(#rim-${k})" stroke-width="17"/>
+    <ellipse cx="200" cy="121" rx="111" ry="40" fill="none" stroke="#fff" stroke-width="2.2" opacity=".5" filter="url(#bl1)"/>
+    <ellipse cx="200" cy="134" rx="104" ry="37" fill="none" stroke="#04060a" stroke-width="2.5" opacity=".55" filter="url(#bl1)"/>
+    <path d="M104 146 Q150 178 236 171" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".95" filter="url(#bl1)"/>
+    <path d="M250 92 Q290 98 304 116" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".55" filter="url(#bl1)"/>
+    <ellipse cx="132" cy="160" rx="16" ry="5" fill="#fff" opacity=".85" filter="url(#bl2)"/>
+    <rect x="80" y="80" width="240" height="100" filter="url(#frost)" opacity=".5"/>
+    ${sparks(k,26,t)}`;
+  }
+  if(k==='ub'){ // glass rail into a vanishing point
+    let sl=''; for(let i=1;i<=13;i++){const f=Math.pow(i/13,2.1), y=92+168*f, hw=4+150*f;
+      sl+=`<line x1="${200-hw}" y1="${y.toFixed(1)}" x2="${200+hw}" y2="${y.toFixed(1)}" stroke="${t}" stroke-width="${(.3+1.6*f).toFixed(2)}" opacity="${(.12+.3*f).toFixed(2)}"/>`;}
+    return BG+`
+    <ellipse cx="200" cy="92" rx="220" ry="26" fill="${t}" opacity=".28" filter="url(#bl3)"/>
+    <line x1="-400" y1="92" x2="800" y2="92" stroke="${t}" stroke-width=".6" opacity=".5"/>
+    ${sl}
+    <polygon points="196,92 198.5,92 128,262 96,262" fill="url(#glass-${k})"/>
+    <polygon points="201.5,92 204,92 304,262 272,262" fill="url(#glass-${k})"/>
+    <line x1="196" y1="92" x2="96" y2="262" stroke="#fff" stroke-width="1" opacity=".8"/>
+    <line x1="204" y1="92" x2="304" y2="262" stroke="#fff" stroke-width="1" opacity=".8"/>
+    <polygon points="196,92 198.5,92 128,262 96,262" fill="${t}" opacity=".25" filter="url(#bl3)"/>
+    <polygon points="201.5,92 204,92 304,262 272,262" fill="${t}" opacity=".25" filter="url(#bl3)"/>
+    <g transform="rotate(-9 200 140)"><rect x="60" y="134" width="280" height="10" rx="3" fill="url(#glass-${k})" stroke="#fff" stroke-opacity=".55" stroke-width=".6"/>
+    <rect x="60" y="144" width="280" height="4" rx="2" fill="${t}" opacity=".35"/><rect x="60" y="140" width="280" height="16" fill="${t}" opacity=".3" filter="url(#bl3)"/>
+    <line x1="64" y1="135.2" x2="336" y2="135.2" stroke="#fff" stroke-width=".8" opacity=".9"/></g>
+    <circle cx="200" cy="92" r="3" fill="#fff"/><circle cx="200" cy="92" r="16" fill="${t}" opacity=".5" filter="url(#bl2)"/>
+    ${sparks(k,14,t,[20,20,360,70])}`;
+  }
+  if(k==='nb'){ // volumetric fog + cold point light
+    return BG+`
+    <polygon points="176,-20 224,-20 360,270 40,270" fill="url(#beam-${k})" filter="url(#bl3)" opacity=".5"/>
+    <rect x="-420" y="40" width="1240" height="240" filter="url(#fogf)" opacity=".6"/>
+    <ellipse cx="200" cy="210" rx="320" ry="50" fill="#d6deeb" opacity=".16" filter="url(#bl4)"/>
+    <ellipse cx="110" cy="158" rx="160" ry="22" fill="#d6deeb" opacity=".13" filter="url(#bl3)"/>
+    <ellipse cx="310" cy="128" rx="170" ry="18" fill="#d6deeb" opacity=".1" filter="url(#bl3)"/>
+    <circle cx="200" cy="116" r="34" fill="${t}" opacity=".35" filter="url(#bl3)"/>
+    <circle cx="200" cy="116" r="9" fill="#fff" opacity=".8" filter="url(#bl2)"/>
+    <circle cx="200" cy="116" r="2.6" fill="#fff"/>
+    <rect x="-420" y="150" width="1240" height="140" filter="url(#fogf)" opacity=".35"/>
+    ${sparks(k,10,t,[60,60,280,140])}`;
+  }
+  if(k==='cc'){ // vault wheel + lattice
+    let lat=''; for(let i=-12;i<=22;i++){lat+=`<line x1="${i*28-120}" y1="-20" x2="${i*28+150}" y2="270" stroke="${t}" stroke-width=".5" opacity=".08"/><line x1="${i*28+150}" y1="-20" x2="${i*28-120}" y2="270" stroke="${t}" stroke-width=".5" opacity=".08"/>`;}
+    let bolts=''; for(let i=0;i<16;i++){const a=i/16*Math.PI*2; bolts+=`<circle cx="${(200+86*Math.cos(a)).toFixed(1)}" cy="${(125+86*Math.sin(a)).toFixed(1)}" r="2.4" fill="url(#metal-${k})" stroke="#000" stroke-opacity=".4" stroke-width=".5"/>`;}
+    let spokes=''; for(let i=0;i<6;i++){spokes+=`<line x1="200" y1="108" x2="200" y2="70" stroke="url(#metal-${k})" stroke-width="5.5" stroke-linecap="round" transform="rotate(${i*60+12} 200 125)"/><circle cx="200" cy="68" r="5" fill="url(#metal-${k})" transform="rotate(${i*60+12} 200 125)"/>`;}
+    return BG+lat+`
+    <circle cx="200" cy="125" r="104" fill="none" stroke="${t}" stroke-width="30" opacity=".22" filter="url(#bl3)"/>
+    <circle cx="200" cy="125" r="98" fill="#06080c" opacity=".7"/>
+    <circle cx="200" cy="125" r="96" fill="none" stroke="url(#metal-${k})" stroke-width="10"/>
+    <circle cx="200" cy="125" r="90.5" fill="none" stroke="#000" stroke-opacity=".5" stroke-width="1"/>
+    ${bolts}
+    <circle cx="200" cy="125" r="74" fill="none" stroke="${t}" stroke-width=".7" opacity=".45"/>
+    <circle cx="200" cy="125" r="60" fill="none" stroke="url(#metal-${k})" stroke-width="3"/>
+    ${spokes}
+    <circle cx="200" cy="125" r="18" fill="url(#metal-${k})" stroke="#fff" stroke-opacity=".4" stroke-width=".8"/>
+    <circle cx="200" cy="125" r="6" fill="#06080c"/>
+    <path d="M128 70 A96 96 0 0 1 220 30" fill="none" stroke="#fff" stroke-width="2.4" opacity=".7" filter="url(#bl1)"/>
+    <ellipse cx="150" cy="60" rx="20" ry="6" transform="rotate(-32 150 60)" fill="#fff" opacity=".45" filter="url(#bl2)"/>
+    ${sparks(k,10,t)}`;
+  }
+  if(k==='dm'){ // clock + two blades at midnight
+    let ticks=''; for(let i=0;i<60;i++){const L=i%5?3:9; ticks+=`<line x1="200" y1="${30}" x2="200" y2="${30+L}" stroke="#fff" stroke-width="${i%5?.5:1.1}" opacity="${i%5?.25:.6}" transform="rotate(${i*6} 200 128)"/>`;}
+    const blade=(rot,len,w)=>`<g transform="rotate(${rot} 200 128)"><polygon points="${200-w},134 200,${128-len} ${200+w},134 200,146" fill="url(#blade-${k})"/><line x1="200" y1="${128-len}" x2="200" y2="140" stroke="#fff" stroke-width=".6" opacity=".9"/></g>`;
+    return BG+`
+    <circle cx="200" cy="128" r="104" fill="none" stroke="${t}" stroke-width="22" opacity=".14" filter="url(#bl3)"/>
+    <circle cx="200" cy="128" r="98" fill="none" stroke="#fff" stroke-width=".7" opacity=".2"/>
+    <circle cx="200" cy="128" r="102" fill="none" stroke="#fff" stroke-width=".4" opacity=".1"/>
+    ${ticks}
+    <ellipse cx="200" cy="40" rx="40" ry="22" fill="${t}" opacity=".55" filter="url(#bl3)"/>
+    <g filter="url(#bl3)" opacity=".7">${blade(-7,92,6)}${blade(5,80,5)}</g>
+    ${blade(-7,92,5)}${blade(5,80,4)}
+    <circle cx="200" cy="128" r="9" fill="none" stroke="${t}" stroke-width="1.4"/>
+    <circle cx="200" cy="128" r="4" fill="#fff"/>
+    <circle cx="196" cy="40" r="3" fill="#fff" filter="url(#bl1)"/>
+    ${sparks(k,12,t)}`;
+  }
+  if(k==='ct'){ // perspective grid + floating target
+    let g=''; for(let i=-16;i<=26;i++){const xb=i*30-130; const x0=200+(xb-200)*((112-70)/(260-70));
+      g+=`<line x1="${x0.toFixed(1)}" y1="112" x2="${xb}" y2="262" stroke="url(#fade-${k})" stroke-width=".7"/>`;}
+    for(let i=1;i<=11;i++){const f=Math.pow(i/11,2), y=112+150*f; g+=`<line x1="-400" y1="${y.toFixed(1)}" x2="800" y2="${y.toFixed(1)}" stroke="${t}" stroke-width="${(.3+.6*f).toFixed(2)}" opacity="${(.06+.4*f).toFixed(2)}"/>`;}
+    return BG+g+`
+    <line x1="-400" y1="112" x2="800" y2="112" stroke="${t}" stroke-width="1" opacity=".7" filter="url(#bl1)"/>
+    <ellipse cx="200" cy="112" rx="200" ry="14" fill="${t}" opacity=".2" filter="url(#bl3)"/>
+    <ellipse cx="200" cy="176" rx="46" ry="7" fill="#000" opacity=".7" filter="url(#bl2)"/>
+    <circle cx="200" cy="96" r="44" fill="${t}" opacity=".2" filter="url(#bl3)"/>
+    <circle cx="200" cy="96" r="34" fill="#080a0c" opacity=".55" stroke="#fff" stroke-opacity=".75" stroke-width="1.2"/>
+    <circle cx="200" cy="96" r="23" fill="none" stroke="${t}" stroke-width="1.4"/>
+    <circle cx="200" cy="96" r="12" fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="1"/>
+    <circle cx="200" cy="96" r="4" fill="${t}"/>
+    <path d="M200 52v10M200 130v10M156 96h10M234 96h10" stroke="#fff" stroke-width=".8" opacity=".6"/>
+    ${sparks(k,8,t,[20,10,360,90])}`;
+  }
+}
+function cover(k,{wide=false,tele=''}={}){
+  const vb = wide && !matchMedia('(max-width:760px)').matches ? '-300 12 680 228' : '0 0 400 250';
+  return `<svg viewBox="${vb}" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${coverArt(k)}${tele}</svg>`;
+}
+function paintCovers(root=document){
+  root.querySelectorAll('[data-cover]').forEach(el=>{
+    if(el.dataset.painted) return; el.dataset.painted=1;
+    el.insertAdjacentHTML('afterbegin',cover(el.dataset.cover,{wide:el.hasAttribute('data-wide'),tele:el.dataset.tele?TELE[el.dataset.tele]:''}));
+  });
+}
+const TELE = {};
+
+/* --- cursor-following glow --- */
+function bindGlow(){
+  document.addEventListener('pointermove',e=>{
+    const c=e.target.closest && e.target.closest('.glow'); if(!c) return;
+    const r=c.getBoundingClientRect(); c.style.setProperty('--mx',(e.clientX-r.left)+'px'); c.style.setProperty('--my',(e.clientY-r.top)+'px');
+  },{passive:true});
+}
+function paintAvatars(root=document){
+  root.querySelectorAll('[data-av]').forEach(el=>{el.outerHTML=av(el.dataset.av,+el.dataset.size||28,el.className||'')});
+}
+function boot(){
+  injectDefs();
+  document.querySelectorAll('[data-logo]').forEach(el=>el.innerHTML=LOGO);
+  document.querySelectorAll('[data-ico]').forEach(el=>{el.outerHTML=ico(el.dataset.ico,el.className)});
+  paintAvatars(); paintCovers(); bindGlow();
+}
+
+
+const POOL=['ferro_velho','Trilheira','nanquim','Vespa','Bigorna','Faísca','Remo','Ocre','Cobalto','Siri','Mancha','Pólvora','Quartzo','Toco','Brisa','Jabuti','Zinco','Carcará','Mutum','Pirata'];
+const pick=(seed,n)=>{const out=[];let h=hash(seed);while(out.length<n){h=Math.imul(h^(h>>>13),2654435761)>>>0;const p=POOL[h%POOL.length];if(!out.includes(p))out.push(p)}return out};
+const LOBBIES=[
+  {id:'07',name:'Bonde das 23h',m:'ub',n:10,max:12,ping:18,host:'maquinista',state:'open'},
+  {id:'02',name:'Círculo da madrugada',m:'cp',n:9,max:12,ping:14,host:'Ametista',friends:['Odete','Tordo'],people:['Odete','Tordo','Ametista','capivara.exe','Lanterneiro','Brasa','Sereno','Agulha','Ivone'],state:'open',href:'sala.html'},
+  {id:'11',name:'Caçada rápida',m:'nb',n:8,max:10,ping:31,host:'vulto',state:'mid'},
+  {id:'09',name:'Neblina sem lanterna',m:'nb',n:6,max:10,ping:26,host:'luz_baixa',hostFriend:true,tag:'iniciantes ok',state:'open'},
+  {id:'13',name:'Clã Vigília',m:'cc',n:7,max:10,ping:19,host:'Vigia',state:'invite'},
+  {id:'15',name:'x1 até o sol nascer',m:'dm',n:5,max:8,ping:12,host:'meia_lua',state:'open'},
+  {id:'06',name:'Trilho sul, sem tóxico',m:'ub',n:12,max:12,ping:24,host:'trilheiro',state:'full'},
+  {id:'17',name:'Testando build de arma',m:'ct',n:2,max:6,ping:9,host:'Garoa',hostFriend:true,state:'open'},
+];
+const FRIENDS=[
+  ['Odete','lobby','em','Círculo da madrugada','Entrar','sala.html'],
+  ['Tordo','lobby','em','Círculo da madrugada','Entrar','sala.html'],
+  ['k0rvo','lobby','abriu','Só mira, sem choro','Entrar','#'],
+  ['luz_baixa','lobby','abriu','Neblina sem lanterna','Entrar','#'],
+  ['Garoa','lobby','abriu','Testando build de arma','Entrar','#'],
+  ['Lume','menu','','no menu do Deadlock','Chamar','#'],
+  ['Pixote','menu','','no menu do Deadlock','Chamar','#'],
+];
+const FEED=[['ferro_velho','Bonde das 23h',22],['Sereno','Círculo sem pressa',30],['Odete','Círculo da madrugada',35],['Agulha','x1 até o sol nascer',40]];
+
+boot();
+document.documentElement.style.cssText = MODE_ORDER.map(k=>`--t-${k}:${MODES[k].tint}`).join(';');
+
+/* hero */
+TELE.hero=''; // painted already; add telemetry overlay into hero svg
+(function(){
+  const svg=document.querySelector('.hero .cover svg'); const t=MODES.cp.tint;
+  const P=[[70,118,'11/12'],[150,70,'41 NO MODO'],[330,96,'22MS'],[290,190,'BR/SA']];
+  let o=`<g class="cv-tele" opacity=".9"><polyline points="${P.map(p=>p[0]+','+p[1]).join(' ')} ${P[0][0]},${P[0][1]}" fill="none" stroke="#fff" stroke-width=".5" opacity=".45"/>`;
+  P.forEach(([x,y,l],i)=>{o+=`<path d="M${x-3.5} ${y}h7M${x} ${y-3.5}v7" stroke="#fff" stroke-width=".8"/><text x="${x+(i===0?-6:6)}" y="${y-5}" text-anchor="${i===0?'end':'start'}" font-size="7.2" fill="#fff" opacity=".85">${l}</text>`});
+  o+=`<text x="372" y="28" text-anchor="end" font-size="6.2" fill="#fff" opacity=".45">////// ANEL 01 · FECHA EM 60S</text>`;
+  for(let i=0;i<5;i++){o+=`<line x1="${-90+i*130}" y1="0" x2="${-90+i*130}" y2="250" stroke="#fff" stroke-width=".3" opacity=".05"/>`}
+  o+='</g>'; svg.insertAdjacentHTML('beforeend',o);
+})();
+document.getElementById('heroTicks').innerHTML = Array.from({length:12},(_,i)=>`<i class="${i<11?'':'e next'}"></i>`).join('');
+document.getElementById('heroStack').innerHTML = stack(['k0rvo','Quartzo','Siri','Brisa'],22,11,['k0rvo'])+`<span class="dim" style="font-size:12.5px;font-weight:400">1 amigo</span>`;
+
+/* modes */
+document.getElementById('modes').innerHTML = MODE_ORDER.map((k,i)=>`<button class="mode rise" style="--t:${MODES[k].tint};--i:${i}" data-mode="${k}" aria-pressed="false">
+  <div class="cover" data-cover="${k}"></div><span class="mode-i mono">0${i+1}</span>
+  <div class="mode-b"><div class="mode-n">${MODES[k].name}</div><div class="mode-c mono"><span class="dot"></span>${MODES[k].n} jogando</div></div></button>`).join('');
+paintCovers(document.getElementById('modes'));
+
+/* lobbies */
+function stateChip(l){
+  if(l.state==='mid') return `<span class="chip glass"><span class="dot"></span>Em partida · rodada 3 de 5</span>`;
+  if(l.state==='invite') return `<span class="chip glass">${ico('lock')}Só com convite</span>`;
+  if(l.state==='full') return `<span class="chip glass">Lotado</span>`;
+  if(l.friends) return `<span class="chip ice-glass">${l.friends.length} amigos dentro</span>`;
+  if(l.max-l.n<=2) return `<span class="chip glass">Falta ${l.max-l.n}</span>`;
+  return `<span class="chip glass">${l.max-l.n} vagas</span>`;
+}
+function action(l){
+  if(l.state==='mid') return `<a class="btn btn-w btn-sm" href="#">Entrar no meio</a>`;
+  if(l.state==='invite') return `<a class="btn btn-ghost btn-sm" href="#">${ico('knock')}Bater na porta</a>`;
+  if(l.state==='full') return `<a class="btn btn-ghost btn-sm" href="#">${ico('bell')}Avisar quando vagar</a>`;
+  return `<a class="btn btn-w btn-sm" href="${l.href||'#'}">Entrar</a>`;
+}
+function lcard(l,i){
+  const ppl=l.people||[l.host,...pick(l.name,l.n-1)];
+  const fr=l.friends||(l.hostFriend?[l.host]:[]);
+  const ordered=[...fr,...ppl.filter(p=>!fr.includes(p))];
+  return `<article class="lc glow rise ${l.state==='full'?'full':''}" style="--i:${i}" data-mode="${l.m}" data-friends="${fr.length?1:0}">
+  <div class="lc-cv"><div class="cover" data-cover="${l.m}"></div><span class="lc-id chip glass">Lobby ${l.id} · BR/SA · ${l.ping}ms</span><span class="lc-st">${stateChip(l)}</span></div>
+  <div class="lc-b">
+    <div class="lc-m"><i class="mdot" style="--t:${MODES[l.m].tint}"></i>${MODES[l.m].name}${l.tag?`<span class="chip tag">${l.tag}</span>`:''}</div>
+    <h3 class="lc-n">${l.name}</h3>
+    <div class="lc-h">${av(l.host,18)}<b>${l.host}</b>${l.hostFriend?'<span class="fr-tag">amigo</span>':''}<span>· anfitrião</span></div>
+    <div class="lc-f">${stack(ordered,24,l.n,fr)}<span class="lc-cnt">${l.n}<small>/${l.max}</small></span><span class="bar ${l.state==='full'?'full':''}"><i style="width:${l.n/l.max*100}%"></i></span>${action(l)}</div>
+  </div></article>`;
+}
+const grid=document.getElementById('lgrid');
+let filt=null, tab='all';
+function renderLobbies(){
+  let ls=LOBBIES.filter(l=>(!filt||l.m===filt)&&(tab!=='friends'||l.friends||l.hostFriend)&&(tab!=='fav'||['02','15'].includes(l.id)));
+  grid.innerHTML = ls.map(lcard).join('') + (filt||tab!=='all' ? (ls.length?'':`<div class="empty">Nenhum lobby aqui agora. <a class="link" href="#">Criar um</a></div>`) :
+   `<button class="lc-create rise" style="--i:8"><span class="pl">${ico('plus')}</span><b style="font-weight:600;letter-spacing:-.02em">Criar lobby</b><span class="mono dim">Modo · região · vagas</span></button>`);
+  paintCovers(grid);
+}
+renderLobbies();
+document.getElementById('modes').addEventListener('click',e=>{
+  const b=e.target.closest('.mode'); if(!b) return;
+  const on=b.getAttribute('aria-pressed')!=='true';
+  document.querySelectorAll('.mode').forEach(x=>x.setAttribute('aria-pressed','false'));
+  b.setAttribute('aria-pressed',on?'true':'false'); filt=on?b.dataset.mode:null; renderLobbies();
+});
+document.querySelector('.seg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-selected',x===b)); tab=b.dataset.tab; renderLobbies();
+});
+document.querySelectorAll('.fchip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('on')));
+
+/* friends */
+const frHTML = FRIENDS.map(([n,k,verb,where,act,href],i)=>`<div class="fr">${pres(n,32,k)}
+  <div class="fr-t"><div class="fr-n">${n}</div><div class="fr-s">${verb?verb+' <b>'+where+'</b>':where}</div></div>
+  <a class="btn ${act==='Entrar'?'btn-glass':'btn-ghost'} btn-sm" href="${href}">${act}</a></div>`).join('');
+document.getElementById('friends').innerHTML=frHTML;
+document.getElementById('mfList').innerHTML=frHTML;
+document.getElementById('mfStack').innerHTML=stack(FRIENDS.map(f=>f[0]),26,7).replace(/^<span class="stack"[^>]*>|<\/span>$/g,'');
+
+/* feed */
+const feed=document.getElementById('feed');
+feed.innerHTML=FEED.map(([n,where,s],i)=>`<div class="fe rise" style="--i:${i+2}">${pres(n,32,'lobby')}<div class="fe-t"><div class="fe-n">${n}</div><div class="fe-l">entrou em <b>${where}</b></div></div><span class="mono" data-s="${s}">${s} s</span></div>`).join('');
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches){
+  setInterval(()=>feed.querySelectorAll('[data-s]').forEach(el=>{el.dataset.s=+el.dataset.s+1;el.textContent=el.dataset.s+' s'}),1000);
+}
+</script>
+</body>
+</html>
