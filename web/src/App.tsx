@@ -1,13 +1,31 @@
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router';
 import { Layout } from './components/Shell';
 import { Home } from './pages/Home';
-import { Install } from './pages/Install';
-import { Lobbies } from './pages/Lobbies';
-import { ModePage, ModesIndex } from './pages/Mode';
-import { News } from './pages/News';
-import { QuickPlay } from './pages/QuickPlay';
 import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
+
+// A home pinta primeiro; as outras telas viram chunks próprios (menos JS na primeira visita).
+const Lobbies = lazy(() => import('./pages/Lobbies').then((m) => ({ default: m.Lobbies })));
+const ModesIndex = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModesIndex })));
+const ModePage = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModePage })));
+const Install = lazy(() => import('./pages/Install').then((m) => ({ default: m.Install })));
+const News = lazy(() => import('./pages/News').then((m) => ({ default: m.News })));
+const QuickPlay = lazy(() => import('./pages/QuickPlay').then((m) => ({ default: m.QuickPlay })));
+
+/** Enquanto a tela carrega: nada nos primeiros 300 ms; depois, uma linha mono discreta. */
+function RouteWait() {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShow(true), 300);
+    return () => window.clearTimeout(id);
+  }, []);
+  return (
+    <div className="container route-wait" aria-busy="true">
+      {show && <p className="route-wait-text">Abrindo…</p>}
+    </div>
+  );
+}
 
 export function App() {
   return (
@@ -16,12 +34,12 @@ export function App() {
         <Routes>
           <Route element={<Layout />}>
             <Route index element={<Home />} />
-            <Route path="lobbies" element={<Lobbies />} />
-            <Route path="jogar" element={<QuickPlay />} />
-            <Route path="modos" element={<ModesIndex />} />
-            <Route path="modos/:slug" element={<ModePage />} />
-            <Route path="instalar" element={<Install />} />
-            <Route path="novidades" element={<News />} />
+            <Route path="lobbies" element={<Suspense fallback={<RouteWait />}><Lobbies /></Suspense>} />
+            <Route path="jogar" element={<Suspense fallback={<RouteWait />}><QuickPlay /></Suspense>} />
+            <Route path="modos" element={<Suspense fallback={<RouteWait />}><ModesIndex /></Suspense>} />
+            <Route path="modos/:slug" element={<Suspense fallback={<RouteWait />}><ModePage /></Suspense>} />
+            <Route path="instalar" element={<Suspense fallback={<RouteWait />}><Install /></Suspense>} />
+            <Route path="novidades" element={<Suspense fallback={<RouteWait />}><News /></Suspense>} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

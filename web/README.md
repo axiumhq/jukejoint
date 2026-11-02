@@ -22,7 +22,7 @@ npm run preview    # serve o build em http://localhost:4173
 
 | Rota | Tela |
 | --- | --- |
-| `/` | Início: a Cidade Acesa (um prédio por região, um andar por lobby, uma janela por vaga), lista "Enchendo agora", modos em cartaz (cartas em leque), três passos |
+| `/` | Início v4, "A Torre": torre déco em 3D feita dos lobbies ao vivo, percorrida pela rolagem em 6 cenas (torre, andares, cofre dos modos, elevador, placa do instalador, rua com a Gazeta). `?tier=low` força a versão sem 3D |
 | `/lobbies` | "Em cartaz agora" no topo, lista em duas vistas (`?vista=compacta` ou `?vista=ingresso`), filtros com contagem, sugestão do vizinho mais próximo quando o filtro zera, Sessões do dia |
 | `/jogar` | "Jogar agora": escolhe o melhor lobby com `pickBestLobby()` (o mesmo pool da lista), pede para entrar e leva a `/lobbies`. `?modo=slug` restringe a um modo |
 | `/modos` | Todos os modos, como cartas de tarô |
@@ -47,7 +47,15 @@ web/
     styles/base.css       reset, foco, grão, View Transitions, prefers-reduced-motion
     styles/components.css botões, formulários, cabeçalho, lobby, diálogos, avisos
     styles/pages.css      layout de cada tela
-    styles/city.css       a Cidade Acesa (prédios, janelas, quadro de andares, legenda)
+    styles/city.css       a Cidade Acesa (prédios, janelas, quadro de andares, legenda); hoje é o nível baixo da home
+    styles/torre.css      home v4: palco fixo, camada técnica (HUD), painéis de asfalto, cenas e nível baixo
+    lib/tier.ts           nível de aparelho (alto, médio, baixo) e o parâmetro ?tier=
+    lib/towerBus.ts       canal HTML ↔ cena 3D (progresso, andar em foco, rolagem → cena)
+    lib/towerData.ts      andares a partir dos lobbies, ordem de chegada, temperatura do lobby
+    lib/sound.ts          som de interface sintetizado (WebAudio), desligado por padrão
+    components/Decode.tsx texto que se decifra (mono, sem reflow, estático com movimento reduzido)
+    components/torre/     palco e esboço de carregamento, HUD, lista dos andares, cenas 3 a 6 em HTML
+    three/                chunk 3D carregado depois da primeira pintura (R3F + cena + shaders próprios)
     styles/cards.css      cartas de modo (tarô), círculo de espera, View Transitions
     styles/gazette.css    a Gazeta (Novidades)
     styles/lobbies.css    lobbies v4: selo, friso, linha compacta, ingresso, destaque, sessões, diálogos (importado pelos componentes)
@@ -111,7 +119,63 @@ Lobby com convite nunca entra direto (`isJoinable` agora considera `locked`). En
 
 **Fora deste ciclo:** página `/lobbies/:id` (sala de espera), fusão de lobbies, Maré, avatares reais e pilha de amigos, canal real dos avisos.
 
+## Home v4: A Torre
+
+Brief: `docs/design/brief-v4.md` (método do igloo.inc, com texto em HTML, rolagem nativa e um orçamento por aparelho). Uma torre art déco de obsidiana e latão, na névoa, com postes de luz de sódio. **Cada andar é um lobby, cada janela é uma vaga:** latão aceso = jogador, verdete = amigo, apagada = vaga livre. O recuo escalonado sai do dado (andares com mais vagas embaixo). Tudo é geometria procedural e shader; nada da Valve, nada baixado além do código.
+
+### As cenas (rolagem nativa, câmera amortecida)
+
+| # | Cena | 3D | HTML |
+| --- | --- | --- | --- |
+| 0 | Abertura | O esboço da torre em fio de latão acende andar por andar conforme o **progresso real** (fontes → módulo 3D → cena montada → ambiente → shaders compilados → primeiro quadro). Depois as janelas da torre 3D acendem **na ordem de chegada dos jogadores** (derivada de `minutesAgo`) | "Acendendo a cidade… 42%" no HUD |
+| 1 | A torre | Contra-plongée, névoa, postes de sódio, asfalto molhado com reflexo; deriva lenta e paralaxe do mouse | Título (2 linhas), apoio (18 palavras), **Jogar agora** (vai para `/lobbies` por enquanto) e **Ver lobbies** (desce até a lista) |
+| 2 | Os andares | A torre se separa em andares com etiqueta mono e fios de latão ligando andares do mesmo modo | Lista equivalente: selo do modo com friso, temperatura (Lotando, Esquentando, Recém-aberto, Quieto), "Fulano entrou agora", vagas e Entrar. Mouse ou foco numa linha acende o andar na torre. "Em cartaz agora" no topo |
+| 3 | O cofre dos modos | Porão: seis cartas de vidro e latão num carrossel; a rolagem gira e traz uma por vez | Nome, regra em uma linha, o lobby mais cheio do modo e "Ver modo" |
+| 4 | O elevador | Portas de latão gravadas e mostrador em meia-lua; o ponteiro para em Escolha, Instale e Jogue; na terceira parada as portas abrem | Uma frase por parada; a cabine mostra o lobby mais perto de lotar, com Entrar |
+| 5 | A placa | Close de latão escovado com luz rasante que corre conforme a rolagem | Placa gravada (HTML selecionável): versão, tamanho, data, SHA-256 com Copiar, nota de antivírus, link para `/instalar`, "Não afiliado à Valve" |
+| 6 | A rua | Volta ao asfalto; folhas da Gazeta voam com a velocidade da rolagem e assentam quando ela para | As três últimas manchetes reais da Gazeta e o rodapé |
+
+**Camada técnica (Martian Mono, nos cantos):** em cima, marca + hora local da cidade (fuso do navegador) e nav, som e Steam; embaixo, jogadores agora + lobbies abertos e a cena atual (`§ 2/6 Os andares`) com uma régua de posição da rolagem (animação ligada à rolagem em CSS, sem JS). Os rótulos se decifram uma vez ao entrar (glifos de cifra; mono, então nada pula) e aparecem prontos com movimento reduzido. O cabeçalho é transparente no hero e ganha fundo depois dele.
+
+**Som:** desligado por padrão. "Som: ligado" cria o `AudioContext` e sintetiza (WebAudio, zero arquivos) um clique de interruptor, um "plim" quando alguém entra num lobby (no máximo um a cada 1,2 s) e a campainha do elevador em cada parada. A escolha fica salva.
+
+### Níveis de aparelho
+
+| Nível | Quem | O que roda |
+| --- | --- | --- |
+| Alto | WebGL2 em GPU capaz | 18 andares, DPR até 1,5, passe de composição próprio (bloom pelas mips do quadro, aberração cromática nas bordas e na travessia do chão, vinheta, grão), 3 postes, 3 lençóis de névoa |
+| Médio | Celular, GPU integrada modesta, ≤4 núcleos ou ≤4 GB | 12 andares, DPR até 1,25, sem composição, 2 postes, 1 lençol de névoa |
+| Baixo | Sem WebGL2, GL por software, `prefers-reduced-motion`, `saveData`, aparelho fraco | Sem canvas e sem baixar o chunk 3D: a Cidade Acesa SVG do v3 no hero e o mesmo roteiro em HTML (cartas de tarô no cofre, três mostradores SVG no elevador, placa em CSS) |
+
+- Detecção própria em `lib/tier.ts` (sem `detect-gpu`, que busca a base de benchmarks num CDN de terceiros a cada visita e parou de ser atualizada). Um monitor de quadros na cena **rebaixa** em tempo de execução: alto → médio se a média passar de ~29 ms por quadro; médio → baixo se passar de ~45 ms.
+- **Para revisar um nível:** `/?tier=low`, `/?tier=mid` ou `/?tier=high`. O nível escolhido aparece em `data-tier` (e o motivo em `data-tier-reason`) na raiz da home.
+- Em desenvolvimento, `window.__torre` expõe câmera e cena, e `window.__torreSettle = true` tira o amortecimento da câmera (útil para capturas de tela).
+
+### Tema claro: amanhecer
+
+O tema claro não vira planta na home 3D: vira **amanhecer**. Céu anil que clareia até um horizonte pêssego, névoa clara, a torre de obsidiana como silhueta e as janelas ainda acesas. Painéis e HUD usam os tokens do tema claro. No nível baixo continua a planta de arquiteto do v3.
+
+### Técnica
+
+- `three@0.186.1` + `@react-three/fiber@9.8.2`, sem drei e sem biblioteca de pós-processamento. A cena é montada imperativamente em `three/world.ts` (tudo que se repete é `InstancedMesh`: corpos, frisos, pilares, janelas) e desenhada em `three/TowerScene.tsx` num `useFrame` de prioridade 1. Nada de `setState` no laço; as etiquetas dos andares são movidas direto no DOM.
+- Janelas com **interior falso** por shader (sala com abajur e, em metade delas, uma silhueta de gente), persiana quando o lobby está em partida, cortina quando é com convite, moldura verdete no seu lobby. Acender = a lâmpada pega, falha e firma (600 ms); só na entrada real de alguém.
+- Luzes pontuais num banco fixo, reaproveitadas entre a rua e o porão (nenhum shader recompila na travessia). Shaders compilados antes de mostrar (`compileAsync`).
+- A câmera lê `scrollY` uma vez por quadro dentro do laço (sem ouvir o evento de scroll) e mistura as poses das cenas numa zona de meia tela entre elas.
+
+### Desempenho (build de produção)
+
+| Parte | Tamanho (gzip) |
+| --- | --- |
+| JS da primeira pintura (`index` + `Icon` + `jsx-runtime`, as rotas internas viraram chunks próprios) | 91,4 + 21,6 + 3,6 = **116,6 KB** (orçamento 150) |
+| CSS | 17,8 KB |
+| Chunk 3D (`TowerScene`: three + R3F + cena), só depois da primeira pintura | **256,5 KB** (orçamento 280) |
+| Rotas internas (Lobbies, Modos, Instalar, Novidades) | 2 a 3 KB cada |
+
+Geometria e texturas são geradas no código (0 KB baixados). Fontes da home: Big Shoulders (58 KB), Libre Franklin (29 KB), Martian Mono (38 KB), mais Newsreader (58 KB, manchetes da Gazeta na rua) e Big Shoulders Stencil (37 KB, placa), todas `font-display: swap`.
+
 ## Direção visual (v3): Cidade Acesa
+
+*A home v3 agora é o nível baixo da v4; o resto desta seção continua valendo para as outras telas.*
 
 **O produto vira o cenário.** A home é o corte de prédios art déco à noite, gerado a partir dos lobbies: um prédio por região (BR/SA na frente, NA e EU ao fundo), um andar por lobby, uma janela por vaga. Janela acesa (latão, com brilho) é jogador, verde é amigo, apagada é vaga livre. Os andares com mais vagas ficam embaixo, então o recuo escalonado (setback) dos arranha-céus dos anos 1920 sai dos próprios dados. A ordem dos andares é estável: quando alguém entra, só a janela muda. Legenda fixa: "Cada janela acesa é um jogador. As verdes são seus amigos."
 
@@ -171,8 +235,9 @@ A cor nunca é o único canal: cada andar tem rótulo com "N de M vagas ocupadas
 - **Big Shoulders** (títulos, números grandes, marca): grotesca condensada desenhada para a cidade de Chicago a partir da sinalização industrial e déco dos anos 1920 e 30. É vertical como os prédios escalonados, tem eixo de tamanho óptico e não lembra as fontes da Valve (Pulp, Occult). Substitui a Jost, que o site oficial do Deadlock também usa.
 - **Libre Franklin** (texto e interface): mantida. Herdeira da Franklin Gothic (1902), legível em tamanho pequeno, com todos os acentos do pt-BR, e não aparece no site oficial.
 - **Newsreader** (só na Gazeta): serifa feita para leitura de jornal (Production Type). Só baixa quando a página de Novidades abre.
-- **Martian Mono** (v4, camada técnica dos lobbies): idades, ping, contadores e a linha ao vivo. Largura fixa, então "entrou agora" trocando por "aberto há 3 min" não faz a linha pular. `@fontsource-variable/martian-mono@5.3.0`, importada pelos componentes de lobby.
-- Auto-hospedadas por `@fontsource-variable/big-shoulders@5.3.0`, `@fontsource-variable/newsreader@5.3.0` e `@fontsource-variable/libre-franklin@5.2.8` (versões fixas, publicadas há mais de duas semanas). Nenhuma requisição ao Google Fonts.
+- **Martian Mono** (v4, camada técnica, rótulos, hash e código): mono com eixo de largura; o texto se decifra sem pular o layout.
+- **Big Shoulders Stencil** (v4): só na placa de latão do instalador.
+- Auto-hospedadas por `@fontsource-variable/big-shoulders@5.3.0`, `@fontsource-variable/big-shoulders-stencil@5.3.0`, `@fontsource-variable/martian-mono@5.3.0`, `@fontsource-variable/newsreader@5.3.0` e `@fontsource-variable/libre-franklin@5.2.8` (versões fixas, publicadas há mais de duas semanas). Nenhuma requisição ao Google Fonts.
 
 ### Movimento
 
@@ -181,7 +246,7 @@ A cor nunca é o único canal: cada andar tem rótulo com "N de M vagas ocupadas
 - O círculo de espera gira devagar e os segmentos acendem; a luz do mastro pisca devagar.
 - `prefers-reduced-motion`: nada anima; as janelas aparecem já acesas, sem tilt, sem brilho, sem transição de página. Para testar, ative "Reduzir movimento" no sistema ou, no DevTools do Chrome, Rendering > Emulate CSS media feature prefers-reduced-motion.
 
-### Desempenho (build de produção)
+### Desempenho (v3, histórico)
 
 - JS: 357,9 KB (112,4 KB gzip, medido pelo Vite) num único arquivo. CSS: 61,0 KB (13,2 KB gzip). Orçamento da pesquisa: 150 KB de JS gzip.
 - Fontes por página: Big Shoulders latin (58 KB) e Libre Franklin latin (29 KB); a Newsreader latin (58 KB) só em Novidades.
@@ -196,3 +261,4 @@ A cor nunca é o único canal: cada andar tem rótulo com "N de M vagas ocupadas
 - A arte dos modos continua sendo desenho de linha em SVG; quando houver material próprio (sem arte da Valve), ele entra nas cartas.
 - Anti-cheat e risco de banimento: texto pendente (ver acima).
 - A cidade comporta bem até uns 15 andares por prédio; com muito mais lobbies, agrupar por modo ou paginar os andares.
+- **Home v4:** sem kit de andares do Blender nem pôster renderizado (o esboço em SVG faz o papel do pôster); "Jogar agora" ainda leva a `/lobbies` (entrada rápida é de outra frente); "Fulano entrou agora" usa nomes simulados porque o protótipo não sabe quem entrou; as fontes da home somam ~220 KB (acima dos 120 KB do brief, por causa da Newsreader e da Stencil, que poderiam sair da home); nenhum teste num Android de entrada real ainda (só emulação de 375 px).

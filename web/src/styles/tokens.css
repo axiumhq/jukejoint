@@ -159,11 +159,16 @@
    *   Títulos, números grandes e marca. Eixo de tamanho óptico (opsz) ligado.
    * Libre Franklin: herdeira da Franklin Gothic (1902). Texto corrido e interface.
    * Newsreader: serifa feita para jornal (Production Type). Só na Gazeta (Novidades).
+   * Martian Mono (v4): a camada técnica (cantos, rótulos, contadores, texto que se decifra).
+   *   Eixo de largura (wdth 75-112.5): etiquetas condensadas tipo fita de telégrafo; por ser
+   *   mono, o texto se decifra sem pular o layout. Também é a fonte de código e hash.
+   * Big Shoulders Stencil: só na placa de latão do instalador (cena 5).
    * Todas auto-hospedadas via @fontsource-variable (ver main.tsx). */
   --font-display: 'Big Shoulders Variable', 'Arial Narrow', system-ui, sans-serif;
+  --font-stencil: 'Big Shoulders Stencil Variable', 'Big Shoulders Variable', 'Arial Narrow', sans-serif;
   --font-body: 'Libre Franklin Variable', 'Segoe UI', system-ui, sans-serif;
   --font-news: 'Newsreader Variable', Georgia, 'Times New Roman', serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', 'SFMono-Regular', Consolas, monospace;
+  --font-mono: 'Martian Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
   --fs-xs: 0.8125rem;
   --fs-sm: 0.875rem;

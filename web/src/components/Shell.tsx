@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { useSession } from '../state/session';
 import { TowerMark } from './Deco';
 import { Icon, type IconName } from './Icon';
+import { HudClock, SoundToggle } from './torre/Hud';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 
 const NAV: { to: string; label: string; icon: IconName; end?: boolean }[] = [
@@ -101,12 +102,15 @@ function AccountArea() {
 
 function Header() {
   const { appConnected } = useSession();
+  // Na home o cabeçalho vira a camada técnica dos cantos (marca + hora; Steam + som).
+  const isHome = useLocation().pathname === '/';
   return (
-    <header className="site-header">
+    <header className={`site-header${isHome ? ' is-hud' : ''}`}>
       <div className="container header-inner">
         <Link to="/" className="brand-link" aria-label={t.a11y.home}>
           <Wordmark />
         </Link>
+        {isHome && <HudClock />}
         <nav className="main-nav" aria-label={t.a11y.mainNav}>
           <ul>
             {NAV.map((item) => (
@@ -119,6 +123,7 @@ function Header() {
             ))}
           </ul>
         </nav>
+        {isHome && <SoundToggle />}
         <AccountArea />
       </div>
     </header>

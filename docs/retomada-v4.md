@@ -1,21 +1,28 @@
-# Retomada do v4 (pausado em 02/11/2026)
+# v4 "A Torre": estado (concluído em 03/11/2026)
 
-O v4 "A Torre" (estilo igloo.inc) estava sendo implementado por dois agentes em paralelo, cada um num worktree próprio. A pedido, os dois foram **parados** e o trabalho foi **salvo como commit WIP** no ramo de cada um. Nada disso está no `main` ainda.
+O v4 foi retomado e concluído: os dois ramos dos agentes (`worktree-agent-a5ee0aaabdf5ce411`, lobbies; `worktree-agent-ab2d93e7f671750c7`, home 3D) foram juntados no `main`.
 
-| Parte | Ramo | Commit | Estado ao parar |
-|---|---|---|---|
-| **Home 3D "A Torre"** | `worktree-agent-ab2d93e7f671750c7` | `fe71330` | **Meio do caminho.** Já tem: a cena three.js (`web/src/three/`: mundo, shaders, texturas), o HUD em mono, o texto que se decifra, as cenas, a lista de andares, o esboço da torre, a detecção de nível do aparelho e o som. Estava escrevendo o componente R3F principal (câmera, pós-processamento, rótulos e o guarda de FPS). **Não testado; pode não compilar.** |
-| **Lobbies** | `worktree-agent-a5ee0aaabdf5ce411` | `f135378` | **Quase pronto.** Já tem: estados com "Bater na porta", `ModeSeal`, `FeaturedLobby`, `LobbyTicket`, `DaySessions`, a página `/jogar` (`QuickPlay`), testes de `lib/lobbies` e a coluna de ação de largura fixa (sobreposição resolvida, sem "Aberto" repetido). Estava na verificação final (celular no tema claro e console). |
+**Integração feita no merge:**
+- rotas sob demanda (da Torre) + `/jogar` (dos lobbies);
+- "Jogar agora" da home → `/jogar`;
+- o "em cartaz" da home (`nearestToFull`) usa o mesmo `pickBestLobby` de `/lobbies`.
 
-Pastas dos worktrees: `.claude/worktrees/agent-ab2d93e7f671750c7` e `.claude/worktrees/agent-a5ee0aaabdf5ce411`.
+**Verificado:**
+- typecheck, 22 testes e build;
+- desktop 1440 no nível alto (torre, andares, cofre e elevador);
+- celular 375 no nível médio (a torre aparece na primeira tela);
+- `?tier=low` (sem canvas);
+- console limpo numa aba nova.
 
-## Para retomar
-1. **Lobbies:** rodar `npm install`, `npm run typecheck`, `npm run build` e os testes no worktree. Terminar a verificação (1440 e 375, escuro e claro, `/lobbies`, a página do modo e os diálogos) e fazer o commit final.
-2. **Torre:** terminar o componente R3F e as 7 cenas do `docs/design/brief-v4.md`, os níveis de aparelho e a reserva SVG; testar no dev server (porta 5180).
-3. **Juntar no `main`:** dar merge dos dois ramos. O conflito esperado é só em `web/src/i18n/pt-BR.ts` (e talvez no `package.json`). Depois, ligar `pickBestLobby` / `FeaturedLobby` / `ModeSeal` na home nova.
-4. Revisão no navegador, auditoria com Impeccable, e o commit do v4.
+## Ajustes conhecidos para a próxima rodada
+- **Cofre:** o painel do modo anterior continua visível no topo da cena.
+- **Cofre:** o contador do HUD no canto inferior esquerdo cobre o link "Ver …" do painel do modo.
+- **Elevador:** o mostrador e as portas 3D só se alinham mais ou menos com a coluna de texto. No celular, os painéis cobrem boa parte da porta.
+- **Rótulos dos andares** ficam escondidos abaixo de 1024 px.
+- **Fontes da home:** cerca de 220 KB, contra os 120 KB do brief. A Newsreader e a Stencil carregam na home.
+- **CSS morto** de `.lobby-row` (v3) em `components.css`.
+- **Sem pôster ou kit de andares feitos no Blender.** Não testado num Android fraco de verdade.
 
 ## Outras pendências do projeto
-- Teste com 2 PCs pela internet (`scripts/spike/LEIA.md`, pacote `dist/kit-amigo.zip`): é o go/no-go do spike.
+- Teste com 2 PCs pela internet (`scripts/spike/LEIA.md`, `dist/kit-amigo.zip`): é o go/no-go do spike.
 - Decisões: nome, envio do relatório de segurança ao autor do Modlock, texto de anti-cheat, canal dos avisos.
-- Reiniciar o PC para liberar o socket travado em `%APPDATA%\modlock`.
