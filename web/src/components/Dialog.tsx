@@ -7,10 +7,12 @@ interface DialogProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
+  /** Classe extra (ex.: `is-wide` no criar lobby). */
+  className?: string;
 }
 
 /** Diálogo modal nativo (<dialog>): foco preso, Esc fecha, fundo inerte. */
-export function Dialog({ open, onClose, title, children }: DialogProps) {
+export function Dialog({ open, onClose, title, children, className }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -24,7 +26,7 @@ export function Dialog({ open, onClose, title, children }: DialogProps) {
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={className ? `dialog ${className}` : 'dialog'}
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => {
