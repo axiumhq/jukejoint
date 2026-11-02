@@ -56,8 +56,8 @@ const PALETTES: Record<'night' | 'dawn', Palette> = {
   night: {
     skyTop: '#03060c',
     skyMid: '#0a1222',
-    horizon: '#161a21',
-    glow: '#3a2612',
+    horizon: '#1a1f28',
+    glow: '#4d3217',
     fog: '#121519',
     fogDensity: 0.0115,
     hemiSky: '#2c3c5e',
@@ -366,7 +366,7 @@ export function createWorld(quality: Quality, brand: string, modes: { motif: str
     let tk = 0;
     for (let i = 0; i < cityCount; i++) {
       const a = hash(i + 3) * Math.PI * 2;
-      const r = 34 + hash(i + 11) * 120;
+      const r = 46 + hash(i + 11) * 120;
       const x = Math.cos(a) * r;
       const z = Math.sin(a) * r - 10;
       if (z > 6 && Math.abs(x) < 26) continue; // deixa a rua livre na frente da câmera
@@ -995,10 +995,11 @@ export function createWorld(quality: Quality, brand: string, modes: { motif: str
           elev.distance = 12;
         }
         if (rake) {
-          rake.position.set(PLATE_POS.x - 0.55, PLATE_POS.y + 1.5, PLATE_POS.z + (f.plateLight - 0.5) * 7.5);
+          // luz rasante: corre a placa de um lado ao outro conforme a rolagem
+          rake.position.set(PLATE_POS.x - 1.1, PLATE_POS.y + 2.4, PLATE_POS.z + (f.plateLight - 0.5) * 8);
           rake.color.set('#ffd9a0');
-          rake.intensity = 14;
-          rake.distance = 7;
+          rake.intensity = 7;
+          rake.distance = 8;
         }
       } else {
         lampSpots.forEach((p, i) => {

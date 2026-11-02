@@ -35,7 +35,8 @@ export function HudClock() {
   const time = timeFmt.format(now);
   return (
     <p className="hud-clock" title={t.home.hud.clockLabel}>
-      <Decode on="mount" delay={250} text={city ? t.home.hud.clock(city, time) : time} />
+      {city && <span className="hud-city">{city}, </span>}
+      <Decode on="mount" delay={250} text={time} />
     </p>
   );
 }

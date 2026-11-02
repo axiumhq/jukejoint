@@ -62,20 +62,21 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
   let fovP = 52;
   switch (scene) {
     case 0:
-      out.pos.copy(P(V(0, 1.3, 58), V(0, 3, 54))).lerp(L(V(-3, 1.4, 41), V(-4.5, 3.4, 37)), wide);
-      out.look.copy(P(V(0.3, 15.5, 0), V(0.2, 17, 0))).lerp(L(V(-7.2, 12.2, 0), V(-6.6, 13.5, 0)), wide);
+      out.pos.copy(P(V(0, 1.2, 40), V(0, 2.4, 37))).lerp(L(V(-3, 1.4, 41), V(-4.5, 3.4, 37)), wide);
+      out.look.copy(P(V(0.2, 8.5, 0), V(0.2, 10, 0))).lerp(L(V(-10.5, 12.2, 0), V(-10, 13.5, 0)), wide);
       break;
     case 1:
+      // Torre separada à esquerda (com etiquetas), lista à direita; a câmera sobe com a lista.
       out.explode = 1;
       fovL = 40;
-      out.pos.copy(P(V(0, 20, 80), V(0, 26, 76))).lerp(L(V(-10, 18, 58), V(-8, 26, 55)), wide);
-      out.look.copy(P(V(0, 22, 0), V(0, 28, 0))).lerp(L(V(6.5, 19, 0), V(6.5, 26, 0)), wide);
+      out.pos.copy(P(V(0, 14, 60), V(0, 24, 58))).lerp(L(V(-2, 15, 64), V(-1, 31, 62)), wide);
+      out.look.copy(P(V(0, 17, 0), V(0, 26, 0))).lerp(L(V(10.5, 17, 0), V(10.5, 32, 0)), wide);
       break;
     case 2:
       out.vaultRot = stepped(Math.min(5, Math.max(0, local * 6 - 0.5)));
       fovP = 56;
-      out.pos.copy(V(0, -44.0, 11)).lerp(V(0.6, -44.5, 8.2), wide);
-      out.look.copy(V(0, -43.9, -4)).lerp(V(-2.2, -44.7, -4), wide);
+      out.pos.copy(V(0, -44.0, 11)).lerp(V(0.9, -44.4, 9.6), wide);
+      out.look.copy(V(0, -43.9, -4)).lerp(V(-3.4, -44.7, -4), wide);
       break;
     case 3:
       out.needle = stepped(Math.min(2, Math.max(0, local * 3 - 0.5)));
@@ -161,6 +162,7 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
   // Montagem: ambiente, estados iniciais (apagados), compilação antecipada dos shaders.
   useEffect(() => {
     let alive = true;
+    gl.toneMappingExposure = 1.15;
     towerBus.progress(66);
     world.setDawn(dawn, gl);
     towerBus.progress(78);
@@ -205,6 +207,12 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
 
   const anchor = useMemo(() => V(0, 0, 0), []);
 
+  // Só em desenvolvimento: inspecionar a cena pelo console (window.__torre).
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as unknown as { __torre?: unknown }).__torre = { camera, world, gl, poses };
+  }, [camera, world, gl, poses]);
+
   useFrame((_, rawDt) => {
     const s = state.current;
     const dt = Math.min(rawDt, 0.1);
@@ -245,7 +253,9 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     }
     // Abertura: a câmera chega devagar enquanto as janelas acendem; depois, perseguição normal.
     s.intro = Math.max(0, s.intro - dt * 0.45);
-    const k = 1 - Math.exp(-dt * (3.2 - s.intro * 2.4));
+    // (dev) window.__torreSettle = true: câmera sem amortecimento, para capturas de tela.
+    const settle = import.meta.env.DEV && (window as unknown as { __torreSettle?: boolean }).__torreSettle;
+    const k = settle ? 1 : 1 - Math.exp(-dt * (3.2 - s.intro * 2.4));
     const prevY = camera.position.y;
     camera.position.lerp(m.pos, k);
     s.look.lerp(m.look, k);
@@ -294,7 +304,7 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
         anchor.project(camera);
         const x = (anchor.x * 0.5 + 0.5) * size.width;
         const y = (-anchor.y * 0.5 + 0.5) * size.height;
-        const visible = anchor.z < 1 && y > 40 && y < size.height - 40;
+        const visible = anchor.z < 1 && x > 8 && y > 84 && y < size.height - 56;
         el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
         el.style.opacity = visible ? String(Math.min(1, (m.explode - 0.04) * 1.6)) : '0';
       });

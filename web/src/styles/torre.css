@@ -1,9 +1,9 @@
 /*
- * Home v4, "A Torre". A cena (3D ou SVG) fica num palco fixo atrás; o texto é HTML por cima.
+ * Home v4, "A Torre". A cena (3D ou SVG) fica num palco fixo atrÃ¡s; o texto Ã© HTML por cima.
  *
- * Uma superfície só para texto sobre a cena: o painel de asfalto, com canto chanfrado e
- * fio duplo de latão em cima (nada de vidro fosco). A luz vem da cena; o painel não brilha.
- * Camada técnica em Martian Mono, caixa normal, nos cantos.
+ * Uma superfÃ­cie sÃ³ para texto sobre a cena: o painel de asfalto, com canto chanfrado e
+ * fio duplo de latÃ£o em cima (nada de vidro fosco). A luz vem da cena; o painel nÃ£o brilha.
+ * Camada tÃ©cnica em Martian Mono, caixa normal, nos cantos.
  */
 
 .tr {
@@ -24,7 +24,7 @@
   --tr-shadow-text: 0 1px 14px rgb(236 232 224 / 0.85);
 }
 
-/* ───────── Palco ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Palco â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .tr-stage {
   position: fixed;
@@ -152,7 +152,7 @@
   color: var(--live);
 }
 
-/* ───────── Cabeçalho da home = camada técnica de cima ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ CabeÃ§alho da home = camada tÃ©cnica de cima â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .site-header.is-hud {
   position: fixed;
@@ -164,6 +164,13 @@
 
 [data-theme='light'] .site-header.is-hud {
   background: linear-gradient(180deg, rgb(236 234 228 / 0.75), rgb(236 234 228 / 0));
+}
+
+/* Depois do hero o texto passa por baixo do cabeÃ§alho: ele ganha fundo e fio. */
+html[data-cena]:not([data-cena='0']) .site-header.is-hud {
+  background: var(--header-bg);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--line);
 }
 
 .site-header.is-hud .nav-link {
@@ -235,12 +242,15 @@
     overflow: hidden;
     clip: rect(0 0 0 0);
   }
-  .hud-clock {
-    font-size: 0.6875rem;
+  .hud-city {
+    display: none;
+  }
+  .site-header.is-hud .header-inner {
+    gap: var(--sp-3);
   }
 }
 
-/* ───────── Camada técnica de baixo ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Camada tÃ©cnica de baixo â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .hud-bottom {
   position: fixed;
@@ -309,7 +319,7 @@
   transform: scaleX(0);
 }
 
-/* Posição da rolagem sem JS: animação ligada à rolagem do documento, onde existir. */
+/* PosiÃ§Ã£o da rolagem sem JS: animaÃ§Ã£o ligada Ã  rolagem do documento, onde existir. */
 @supports (animation-timeline: scroll()) {
   .hud-track-fill {
     animation: tr-track linear both;
@@ -336,7 +346,7 @@
   }
 }
 
-/* ───────── Cenas ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Cenas â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .tr-scene {
   position: relative;
@@ -353,9 +363,13 @@
 .tr-head {
   display: grid;
   gap: var(--sp-3);
-  max-width: 34rem;
+  justify-items: start;
   margin-bottom: var(--sp-7);
   text-shadow: var(--tr-shadow-text);
+}
+
+.tr-head > * {
+  max-width: 34rem;
 }
 
 .tr-head h2 {
@@ -404,7 +418,7 @@
   text-decoration-color: var(--accent-line);
 }
 
-/* Cena 1: a torre (hero). Título e ação embaixo à esquerda, a torre à direita. */
+/* Cena 1: a torre (hero). TÃ­tulo e aÃ§Ã£o embaixo Ã  esquerda, a torre Ã  direita. */
 .tr-hero {
   min-height: 100svh;
   display: grid;
@@ -432,7 +446,7 @@
 }
 
 .tr-title {
-  font-size: min(clamp(2.6rem, 1.2rem + 4.6vw, 6rem), 9.4vw);
+  font-size: min(clamp(2.6rem, 1.2rem + 4.2vw, 5.5rem), 9vw);
   font-weight: 800;
   line-height: 0.9;
   letter-spacing: -0.012em;
@@ -476,7 +490,7 @@
   background: rgb(var(--tr-scrim) / 0.55);
 }
 
-/* Cena 2: os andares. A torre explodida à esquerda, a lista à direita. */
+/* Cena 2: os andares. A torre explodida Ã  esquerda, a lista Ã  direita. */
 .tr-floors {
   padding-top: 34vh;
   padding-bottom: 26vh;
@@ -487,17 +501,34 @@
   gap: var(--sp-6);
 }
 
+.tr-floors-col {
+  display: grid;
+  min-width: 0;
+}
+
+.tr-floors-col .tr-head {
+  margin-bottom: var(--sp-6);
+}
+
+/* A torre separada fica Ã  esquerda (com as etiquetas); tÃ­tulo e lista Ã  direita. */
 @media (min-width: 64em) {
   .tr-floors-inner {
     grid-template-columns: minmax(0, 1fr) minmax(0, 46rem);
-    align-items: start;
   }
-  .tr-floors .tr-head {
-    position: sticky;
-    top: calc(var(--header-h) + var(--sp-6));
+  .tr-floors-col {
+    grid-column: 2;
   }
   .tr-low .tr-floors-inner {
-    grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .tr-low .tr-floors-col {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 63.99em) {
+  .tr-labels {
+    display: none;
   }
 }
 
@@ -561,18 +592,6 @@
 
 .tr-row + .tr-row {
   box-shadow: inset 0 1px 0 var(--line);
-}
-
-/* Friso do modo: 3 px na cor do modo, só na borda de cima (não é a cor da janela). */
-.tr-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.7rem;
-  bottom: 0.7rem;
-  width: 3px;
-  background: hsl(var(--h) 45% 55%);
-  opacity: 0.85;
 }
 
 .tr-row:hover,
@@ -766,7 +785,8 @@
   }
 }
 
-/* Selo do modo: 40 px recortado da arte da carta, com o numeral. */
+/* Selo do modo: 40 px recortado da arte da carta, com o numeral, e o friso de 3 px
+ * na cor do modo embaixo (como o friso do andar na torre; a janela nunca usa essa cor). */
 .tr-seal {
   position: relative;
   display: block;
@@ -774,6 +794,7 @@
   height: 2.5rem;
   overflow: hidden;
   border: 1px solid hsl(var(--h) 30% 40% / 0.8);
+  border-bottom: 3px solid hsl(var(--h) 48% 56%);
 }
 
 .tr-seal .mode-art {
@@ -814,7 +835,7 @@
   display: grid;
   gap: var(--sp-3);
   max-width: 28rem;
-  opacity: 0.4;
+  opacity: 0.55;
   transition: opacity 260ms var(--ease-out);
 }
 
@@ -880,7 +901,7 @@
   display: grid;
   gap: var(--sp-3);
   max-width: 28rem;
-  opacity: 0.4;
+  opacity: 0.55;
   transition: opacity 260ms var(--ease-out);
 }
 
@@ -901,7 +922,7 @@
   max-width: 36ch;
 }
 
-/* A cabine: abre como porta de elevador (duas folhas de latão que correm). */
+/* A cabine: abre como porta de elevador (duas folhas de latÃ£o que correm). */
 .tr-car {
   position: relative;
   display: grid;
@@ -1010,7 +1031,7 @@
   fill: var(--accent);
 }
 
-/* Cena 5: a placa de latão gravada. */
+/* Cena 5: a placa de latÃ£o gravada. */
 .tr-plate-scene {
   min-height: 130vh;
   display: grid;
@@ -1034,6 +1055,7 @@
     inset 0 0 0 6px rgb(90 62 24 / 0.35),
     0 30px 60px -30px rgb(0 0 0 / 0.7);
   overflow: hidden;
+  isolation: isolate;
 }
 
 .tr-low .tr-plate {
@@ -1042,7 +1064,7 @@
     linear-gradient(100deg, #84612d, #c49a55 28%, #debd7c 44%, #b28946 62%, #7a5929);
 }
 
-/* Luz rasante que corre a placa conforme a rolagem (só onde a animação por rolagem existe). */
+/* Luz rasante que corre a placa conforme a rolagem (sÃ³ onde a animaÃ§Ã£o por rolagem existe). */
 .tr-plate::after {
   content: '';
   position: absolute;
@@ -1050,6 +1072,7 @@
   background: linear-gradient(100deg, transparent 40%, rgb(255 240 210 / 0.28) 50%, transparent 60%);
   transform: translateX(-30%);
   pointer-events: none;
+  z-index: -1;
 }
 
 @supports (animation-timeline: view()) {
@@ -1106,7 +1129,7 @@
   right: 14px;
 }
 
-/* Gravado: tinta escura com o fio de luz embaixo de cada traço. */
+/* Gravado: tinta escura com o fio de luz embaixo de cada traÃ§o. */
 .tr-plate :is(h2, dt, dd, p, code, a, button) {
   text-shadow: 0 1px 0 rgb(255 236 200 / 0.4);
 }
@@ -1307,7 +1330,7 @@
   outline-color: #1f1c17;
 }
 
-/* ───────── Nível baixo: a cidade SVG do v3 e o mesmo roteiro, sem palco fixo ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ NÃ­vel baixo: a cidade SVG do v3 e o mesmo roteiro, sem palco fixo â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 .tr-low {
   background: linear-gradient(180deg, var(--sky-top) 0, var(--sky-mid) 70svh, var(--bg) 140svh);
@@ -1324,10 +1347,20 @@
   display: none;
 }
 
+.tr-low .tr-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
 @media (min-width: 64em) {
+  .tr-low .tr-title {
+    font-size: min(4.4rem, 4.5vw);
+  }
   .tr-low .tr-hero {
-    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: center;
+    max-width: calc(var(--container) + var(--gutter) * 2);
+    margin-inline: auto;
   }
   .tr-low .tr-hero > * {
     margin-inline: 0;
@@ -1355,7 +1388,7 @@
   rotate: none;
 }
 
-/* Rodapé e conteúdo da página acima do palco fixo. */
+/* RodapÃ© e conteÃºdo da pÃ¡gina acima do palco fixo. */
 .site-footer {
   position: relative;
   z-index: 2;
@@ -1372,7 +1405,7 @@
   color: var(--text-muted);
 }
 
-/* ───────── Celular ───────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€ Celular â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 @media (max-width: 47.99em) {
   .tr-sketch {
@@ -1414,6 +1447,19 @@
   .tr-featured-body > :last-child {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+  .tr-row {
+    padding-inline: var(--sp-3);
+    column-gap: var(--sp-3);
+  }
+  .tr-row-act {
+    width: auto;
+  }
+  .tr-enter {
+    min-width: 0;
+  }
+  .tr-row-sub span:nth-child(2) {
+    display: none;
   }
 }
 

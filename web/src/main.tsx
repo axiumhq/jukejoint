@@ -13,6 +13,7 @@ import './styles/pages.css';
 import './styles/city.css';
 import './styles/cards.css';
 import './styles/gazette.css';
+import './styles/torre.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

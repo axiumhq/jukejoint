@@ -11,7 +11,6 @@ import { detectTier } from '../lib/tier';
 import { invalidateScenes, registerScene, towerBus, useTower } from '../lib/towerBus';
 import { buildFloors, FLOOR_CAP } from '../lib/towerData';
 import { useSession } from '../state/session';
-import '../styles/torre.css';
 
 /**
  * Home v4, "A Torre" (docs/design/brief-v4.md).
@@ -72,8 +71,14 @@ export function Home() {
     return () => ro.disconnect();
   }, []);
 
+  // O cabeçalho é a camada técnica transparente só no hero; depois ganha fundo (CSS por data-cena).
+  useEffect(() => {
+    document.documentElement.dataset.cena = String(scene);
+  }, [scene]);
+
   useEffect(
     () => () => {
+      delete document.documentElement.dataset.cena;
       towerBus.set({ ready: false, progress: 0, focusId: null });
       for (let i = 0; i < SCENES; i++) registerScene(i, null);
     },
@@ -112,11 +117,13 @@ export function Home() {
 
       <SceneSection index={1} id="andares" className="tr-floors" labelledBy="andares-title" register={register}>
         <div className="tr-floors-inner">
-          <header className="tr-head">
-            <h2 id="andares-title">{t.home.floors.title}</h2>
-            <p>{t.home.floors.lead}</p>
-          </header>
-          <FloorList floors={floors} total={lobbies.length} />
+          <div className="tr-floors-col">
+            <header className="tr-head">
+              <h2 id="andares-title">{t.home.floors.title}</h2>
+              <p>{t.home.floors.lead}</p>
+            </header>
+            <FloorList floors={floors} total={lobbies.length} />
+          </div>
         </div>
       </SceneSection>
 
