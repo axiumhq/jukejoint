@@ -108,6 +108,8 @@ export const ptBR = {
     raising: 'Erguendo a torre…',
     souls: 'Chegando gente…',
     loaded: 'Cidade acesa.',
+    /** Letreiro de lâmpadas na cidade 3D (cenário, aria-hidden; o HUD tem o mesmo número). */
+    sign: { playing: 'JOGANDO AGORA', featured: 'EM CARTAZ' },
     news: {
       raised: (n: number) => `Andar ${String(n).padStart(2, '0')} erguido agora`,
       gone: 'Um andar se desfez',

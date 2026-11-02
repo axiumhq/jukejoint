@@ -58,3 +58,13 @@
 - `base`: escala X = largura do andar de baixo / 8 e **também Z** = profundidade / 5 (os módulos de fachada deixam a torre mais funda que 5). Pilastras a x = ±1,0 (escaladas com X) e sol em y = 2,4, nos encaixes do modelador.
 - `crown`: escala **uniforme** para a largura do último andar (0,9 a 1,6). A agulha assenta em y = 5,3 da coroa e, na abertura, sobe de dentro da lanterna.
 - Material `glass` vira luz: âmbar no `base` (gente), azul-frio na coroa e nas gárgulas (o sobrenatural).
+
+## Como o código encaixa a cidade (v5 leva 2, `web/src/three/city.ts`)
+- Peças parecidas viram uma geometria só por peça (`mergeKit`), com a classe do material por vértice; tudo que fica parado é assado numa malha única. Trem e holofotes são instanciados.
+- `bldg_*`: escala por fileira (1,0 perto a 1,6 longe), giro de no máximo ±0,12 rad (a frente continua para a câmera). Caixas d'água vão para o telhado plano mais baixo achado na geometria (`roofAt`).
+- `lamp_post` ×1,25 (a luz pontual e o cone saem de `lamp_light`); `el_track` ×1,25, emendado de ponta a ponta em z = −17; `el_car` ×1,25 correndo no trilho.
+- `searchlight` ×1,6: a base gira em Y (pan), `searchlight_drum` gira em X (tilt) e o facho sai de `beam_origin`.
+- `cable_pylon` ×1,15 girada 90° (o cabo corre em X na cena); o cabo sai de `cable_anchor`.
+- `billboard_frame` ×1,25 no telhado do prédio à direita da torre; o texto vai num plano em `text_anchor` (5,9 × 2,4). O `sodium` dela vira lâmpada que corre.
+- `stone` da cidade é uma pedra mais clara que a da torre; `window_lit` do vagão vira janela quente; `sodium` do tambor vira lente fria.
+

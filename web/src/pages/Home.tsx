@@ -9,7 +9,8 @@ import { useDocTheme, useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
 import { detectTier } from '../lib/tier';
 import { invalidateScenes, registerScene, towerBus, useTower } from '../lib/towerBus';
-import { buildFloors, FLOOR_CAP } from '../lib/towerData';
+import { getMode, modes } from '../data/modes';
+import { buildFloors, FLOOR_CAP, nearestToFull } from '../lib/towerData';
 import { useSession } from '../state/session';
 
 /**
@@ -37,6 +38,12 @@ export function Home() {
   const dawn = useDocTheme() === 'light';
   const flat = tier === 'low';
   const floors = useMemo(() => buildFloors(lobbies, FLOOR_CAP[tier]), [lobbies, tier]);
+  // Letreiro da cidade: o modo do lobby em cartaz (o mesmo destaque da lista e do elevador).
+  const featured = useMemo(
+    () => getMode(nearestToFull(lobbies)?.modeSlug)?.name ?? [...modes].sort((a, b) => b.playersNow - a.playersNow)[0]?.name ?? '',
+    [lobbies],
+  );
+  useEffect(() => towerBus.set({ featured }), [featured]);
   const [scene, setScene] = useState(0);
   const [floorsSeen, setFloorsSeen] = useState(false);
   // Newsreader (Gazeta) e Big Shoulders Stencil (placa) só baixam quando a rolagem chega

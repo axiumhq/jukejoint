@@ -3,6 +3,7 @@ import { liveBase } from '../../data/stats';
 import { useLiveNumber } from '../../hooks';
 import { formatNumber, t } from '../../i18n';
 import { setSound, useSoundOn } from '../../lib/sound';
+import { towerBus } from '../../lib/towerBus';
 import { useSession } from '../../state/session';
 import { Decode } from '../Decode';
 import { LoadStatus } from './TowerStage';
@@ -58,6 +59,8 @@ export function SoundToggle() {
 export function HudBottom({ scene, total }: { scene: number; total: number }) {
   const { lobbies } = useSession();
   const players = useLiveNumber(liveBase.playersOnline, liveBase.playersJitter, liveBase.intervalMs);
+  // O letreiro da cidade 3D mostra o mesmo número (cenário; o texto de verdade é este).
+  useEffect(() => towerBus.set({ playersNow: players }), [players]);
   const open = lobbies.filter((l) => l.status !== 'cheio').length;
   const name = t.home.scenes[scene] ?? '';
   return (

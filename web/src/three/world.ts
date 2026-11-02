@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { advanceObra, OBRA, planObra, ramp, type ObraPlan } from '../lib/obra';
 import type { TowerFloor, WindowKind } from '../lib/towerData';
-import { IL, illus, markBox, meltAttr, updateIllus } from './illus';
-import { loadKit, type Kit, type KitMaterial, type KitPiece } from './kit';
+import { createCity } from './city';
+import { IL, illus, markBox, meltAttr, setIllusDetail, updateIllus } from './illus';
+import { CLS, loadCityKit, loadKit, mergeKit, type Kit, type KitPiece } from './kit';
+import { createSigils } from './life';
 import { createEmbers, createFlame, createForeground, createRitualCircle, createThreadMaterial, EMBER } from './occult';
-import { createConeMaterial, createFogSheetMaterial, createSkyMaterial, createWindowMaterial } from './shaders';
+import { createFogSheetMaterial, createSkyMaterial, createWindowMaterial } from './shaders';
 import { makeBrushedTexture, makeNewspaperTexture, makeNoiseTexture } from './textures';
 
 /**
@@ -105,15 +107,16 @@ const PALETTES: Record<'night' | 'dawn', Palette> = {
     skyMid: '#8593ad',
     horizon: '#d7bc9d',
     glow: '#e39a5c',
-    fog: '#a9a4a0',
-    fogDensity: 0.0105,
+    // v5 leva 2: névoa mais fria e mais escura (antes a cidade sumia num branco leitoso).
+    fog: '#646d82',
+    fogDensity: 0.0068,
     hemiSky: '#c5cfe4',
     hemiGround: '#40342a',
-    hemi: 0.95,
+    hemi: 0.72,
     moon: '#ffd3a3',
     moonI: 1.15,
     ground: '#23262b',
-    sheet: '#d8d2cb',
+    sheet: '#b4b4ba',
     windowSky: [0.75, 0.72, 0.74],
     // De dia a luz já vem do céu claro: a rampa e o contorno só temperam.
     cool: [0.05, 0.07, 0.12],
@@ -148,6 +151,8 @@ export interface FrameState {
   heightPx: number;
   /** (dev) Congela a abertura neste tempo, para capturas de tela (window.__torreObraT). */
   seek?: number;
+  /** (dev) Congela o relógio ambiente (trem, holofotes, chuva…) neste tempo (window.__torreAmb). */
+  ambSeek?: number;
 }
 
 /**
@@ -193,23 +198,32 @@ export interface World {
   topY(): number;
   /** O kit glTF do Blender substituiu a geometria procedural. */
   usingKit(): boolean;
+  /** Os dois kits chegaram (ou não existem): compilar depois disso evita engasgo na abertura. */
+  kitsReady: Promise<void>;
+  /** Letreiro da cidade: [linha grande, linha pequena] dos dois avisos que se revezam. */
+  setSign(a: [string, string], b: [string, string]): void;
+  /** Um lobby lotou: onda de janelas na cidade, pombos levantam, o círculo pulsa. */
+  celebrate(): void;
   dispose(): void;
 }
 
 /* ───────── Materiais ───────── */
 
 function materials(q: Quality) {
+  setIllusDetail(q === 'high');
   const brushed = makeBrushedTexture();
   // Luz ilustrativa só nos materiais da torre e da cidade (ver illus.ts).
   const obsidian = illus(new THREE.MeshStandardMaterial({ color: '#06080b', roughness: 0.16, metalness: 0.35, envMapIntensity: 1.25 }), { edge: 0.55 });
   // Corpos dos andares: o mesmo material com o vazamento de luz pelo vão (uMat.w).
   const floorBody = illus(new THREE.MeshStandardMaterial({ color: '#06080b', roughness: 0.16, metalness: 0.35, envMapIntensity: 1.25 }), { edge: 0.55 });
-  const obsidianMatte = illus(new THREE.MeshStandardMaterial({ color: '#0b0e12', roughness: 0.42, metalness: 0.25 }), { edge: 0.4 });
-  const brass = illus(new THREE.MeshStandardMaterial({ color: '#b98d48', roughness: 0.34, metalness: 1, envMapIntensity: 1.3 }), { edge: 1.6, ramp: 0.6, rim: 0.6 });
-  const brassDark = illus(new THREE.MeshStandardMaterial({ color: '#7d5f30', roughness: 0.45, metalness: 1 }), { edge: 1.1, ramp: 0.6, rim: 0.6 });
-  const verdigris = illus(new THREE.MeshStandardMaterial({ color: '#3f7f6c', roughness: 0.6, metalness: 0.4 }), { edge: 0.8 });
-  const city = illus(new THREE.MeshStandardMaterial({ color: '#0a0d12', roughness: 0.92, metalness: 0 }), { edge: 0.12, ramp: 0.8, rim: 0.7 });
-  const stone = illus(new THREE.MeshStandardMaterial({ color: '#111419', roughness: 0.78, metalness: 0 }), { edge: 0.35, rim: 0.5 });
+  const obsidianMatte = illus(new THREE.MeshStandardMaterial({ color: '#0b0e12', roughness: 0.42, metalness: 0.25 }), { edge: 0.4, cls: CLS.obsidian_matte });
+  const brass = illus(new THREE.MeshStandardMaterial({ color: '#b98d48', roughness: 0.34, metalness: 1, envMapIntensity: 1.3 }), { edge: 1.6, ramp: 0.6, rim: 0.6, cls: CLS.brass });
+  const brassDark = illus(new THREE.MeshStandardMaterial({ color: '#7d5f30', roughness: 0.45, metalness: 1 }), { edge: 1.1, ramp: 0.6, rim: 0.6, cls: CLS.brass_dark });
+  const verdigris = illus(new THREE.MeshStandardMaterial({ color: '#3f7f6c', roughness: 0.6, metalness: 0.4 }), { edge: 0.8, cls: CLS.verdigris });
+  const city = illus(new THREE.MeshStandardMaterial({ color: '#0a0d12', roughness: 0.92, metalness: 0 }), { edge: 0.12, ramp: 0.8, rim: 0.7, cls: CLS.obsidian_matte });
+  const stone = illus(new THREE.MeshStandardMaterial({ color: '#111419', roughness: 0.78, metalness: 0 }), { edge: 0.35, rim: 0.5, cls: CLS.stone });
+  /** Material único dos kits do Blender (torre e cidade): tudo sai da tabela por classe (illus.ts). */
+  const kit = illus(new THREE.MeshStandardMaterial({ envMapIntensity: 1.2 }), { kit: true, edge: 0, ramp: 0.85, rim: 0.8 });
   const frieze = illus(new THREE.MeshBasicMaterial({ color: '#ffffff' }), { basic: true });
   const signMat = illus(new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 1.75, 0.55) }), { basic: true });
   return {
@@ -220,6 +234,7 @@ function materials(q: Quality) {
     brass: brass.mat,
     brassDark: brassDark.mat,
     verdigris: verdigris.mat,
+    kit: kit.mat,
     brassBrushed: new THREE.MeshStandardMaterial({
       color: '#c49a55',
       roughness: 0.42,
@@ -241,10 +256,6 @@ function materials(q: Quality) {
       depthWrite: false,
     }),
     sodium: new THREE.MeshBasicMaterial({ color: new THREE.Color(3.2, 1.75, 0.55) }),
-    /** Vidro do kit: lanterna da coroa e olhos das gárgulas em azul frio (o sobrenatural). */
-    coldGlow: illus(new THREE.MeshBasicMaterial({ color: new THREE.Color(0.45, 0.85, 2.6) }), { basic: true }).mat,
-    /** Vidro do kit no saguão: janelas do térreo acesas em âmbar (gente). */
-    warmGlow: illus(new THREE.MeshBasicMaterial({ color: new THREE.Color(1.5, 0.82, 0.36) }), { basic: true }).mat,
     sign: signMat.mat,
     sodiumDim: new THREE.MeshBasicMaterial({ color: new THREE.Color(0.32, 0.2, 0.08) }),
     warm: new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 0.95, 0.42) }),
@@ -430,13 +441,20 @@ interface Ghost {
   puffed?: boolean;
 }
 
-export function createWorld(quality: Quality, brand: string, modes: { slug?: string; motif: string; hue: number }[]): World {
+export function createWorld(quality: Quality, brand: string, modes: { slug?: string; motif: string; hue: number }[], opts: { still?: boolean } = {}): World {
   const scene = new THREE.Scene();
   const M: Mats = materials(quality);
   const high = quality === 'high';
+  const still = !!opts.still;
   const noise = makeNoiseTexture();
   let pal = PALETTES.night;
   let clock = 0;
+  /** Relógio ambiente (cidade, holofotes, trem, chuva, vapor): parado com movimento reduzido,
+   * num instante em que os fachos se cruzam e o trem está à vista. */
+  let amb = still ? 19.6 : 0;
+  let dawnOn = false;
+  /** Relâmpago distante (só no alto, sem movimento reduzido). */
+  const flash = { next: 18 + Math.random() * 20, at: -100, dir: 0 };
 
   const street = new THREE.Group();
   const reflection = new THREE.Group();
@@ -486,79 +504,27 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
   curb.position.set(0, 0.15, 10);
   street.add(curb);
 
-  /* Cidade apagada ao redor (sem janelas, para não confundir com vaga livre) */
-  const cityCount = high ? 90 : 56;
-  const city = inst(unitBox, M.city, cityCount);
-  const tanks = inst(new THREE.CylinderGeometry(0.9, 0.9, 1.6, 10), M.city, 24);
-  /** Telhados de onde saem as brasas (a cidade manda gente para a torre). */
-  const roofs: THREE.Vector3[] = [];
-  {
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    let n = 0;
-    let tk = 0;
-    for (let i = 0; i < cityCount; i++) {
-      const a = hash(i + 3) * Math.PI * 2;
-      const r = 46 + hash(i + 11) * 120;
-      const x = Math.cos(a) * r;
-      const z = Math.sin(a) * r - 10;
-      if (z > 6 && Math.abs(x) < 26) continue; // deixa a rua livre na frente da câmera
-      const w = 6 + hash(i + 5) * 10;
-      const d = 6 + hash(i + 7) * 10;
-      const h = 8 + hash(i + 9) * (r > 80 ? 46 : 26);
-      q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), hash(i + 1) * 0.6);
-      m.compose(new THREE.Vector3(x, h / 2, z), q, new THREE.Vector3(w, h, d));
-      city.setMatrixAt(n++, m);
-      if (r < 95) roofs.push(new THREE.Vector3(x, h + 0.5, z));
-      if (tk < 24 && hash(i + 13) > 0.55) {
-        m.compose(new THREE.Vector3(x + (hash(i) - 0.5) * w * 0.5, h + 1.4, z), q, new THREE.Vector3(1, 1, 1));
-        tanks.setMatrixAt(tk++, m);
-      }
-    }
-    city.count = n;
-    tanks.count = tk;
-  }
-  street.add(city, tanks);
-
-  /* Postes de luz de sódio. v5: nenhum cruza a fachada no hero (o da direita saiu da frente
-   * da torre e foi para a esquina da praça). */
-  const lampSpots = high
-    ? [new THREE.Vector3(-9.5, 0, 13.5), new THREE.Vector3(14.2, 0, 8.5), new THREE.Vector3(-17, 0, 27)]
-    : [new THREE.Vector3(-9.5, 0, 13.5), new THREE.Vector3(14.2, 0, 8.5)];
-  const coneMat = createConeMaterial(new THREE.Color(1.0, 0.62, 0.26), high ? 0.22 : 0.18);
+  /* Cidade em volta (city.ts): o kit do Blender quando existe; caixas escuras sem ele. As
+   * brasas da cidade saem dos telhados dela; os postes e as poças de sódio também moram lá. */
+  const city = createCity({
+    quality,
+    still,
+    unitBox,
+    boxMat: M.city,
+    kitMat: M.kit,
+    lampMats: { pole: M.obsidianMatte, arm: M.brassDark, bulb: M.sodium },
+    spark: (from, vel) => embers.emit(from, vel, clock, 0.6 + Math.random() * 0.4, EMBER.cold),
+  });
+  street.add(city.group);
+  reflection.add(city.refl);
+  const roofs = city.roofs;
+  const lampSpots = city.lights;
   /* Luzes pontuais num "banco" fixo: na rua são os postes e a porta; no porão as mesmas
    * luzes viram a luz do cofre, a do elevador e a rasante da placa. O número de luzes
    * nunca muda, então nenhum shader recompila na travessia. */
   const pool = Array.from({ length: lampSpots.length + 1 }, () => new THREE.PointLight('#ffae55', 0, 20, 1.6));
   scene.add(...pool);
-  const poleGeo = new THREE.CylinderGeometry(0.07, 0.1, 5.4, 8);
   const bulbGeo = new THREE.SphereGeometry(0.16, 12, 8);
-  const coneGeo = new THREE.ConeGeometry(2.3, 5.1, 24, 1, true);
-  coneGeo.translate(0, -2.55, 0);
-  for (const p of lampSpots) {
-    const g = new THREE.Group();
-    g.position.copy(p);
-    const pole = new THREE.Mesh(poleGeo, M.obsidianMatte);
-    pole.position.y = 2.7;
-    const arm = new THREE.Mesh(unitBox, M.brassDark);
-    arm.scale.set(0.9, 0.06, 0.06);
-    arm.position.set(0.4, 5.35, 0);
-    const head = new THREE.Mesh(unitBox, M.brassDark);
-    head.scale.set(0.55, 0.16, 0.36);
-    head.position.set(0.8, 5.32, 0);
-    const bulb = new THREE.Mesh(bulbGeo, M.sodium);
-    bulb.position.set(0.8, 5.18, 0);
-    bulb.scale.set(1.3, 0.55, 1);
-    const cone = new THREE.Mesh(coneGeo, coneMat);
-    cone.position.set(0.8, 5.2, 0);
-    g.add(pole, arm, head, bulb, cone);
-    street.add(g);
-    // reflexo no asfalto: o bulbo espelhado e esticado
-    const rb = new THREE.Mesh(bulbGeo, M.sodium);
-    rb.position.set(p.x + 0.8, 5.18, p.z);
-    rb.scale.set(0.7, 2.6, 0.7);
-    reflection.add(rb);
-  }
 
   /* Névoa baixa em lençóis */
   const sheets: THREE.Mesh[] = [];
@@ -640,6 +606,9 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
   crown.add(spire);
   tower.add(crown);
   const flame = createFlame();
+  // Sigilos safira orbitando devagar a coroa (acendem com o farol).
+  const sigils = createSigils();
+  crown.add(sigils.mesh);
   let crownY = PLINTH_H;
 
   // Constelação: fios de latão ligando andares do mesmo modo (se desenham com a separação)
@@ -685,43 +654,29 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
   }
   const kitSets = new Map<KitPiece, KitSet>();
   const kitMeshes: THREE.InstancedMesh[] = [];
-  /** Material do kit pelo nome (contrato). O vidro vira luz: âmbar no saguão (gente), azul no resto (o sobrenatural). */
-  const kitMat = (name: KitMaterial, piece: KitPiece): THREE.Material =>
-    name === 'glass'
-      ? piece === 'base'
-        ? M.warmGlow
-        : M.coldGlow
-      : { obsidian: M.obsidian, obsidian_matte: M.obsidianMatte, brass: M.brass, brass_dark: M.brassDark, verdigris: M.verdigris, stone: M.stone }[name];
-
-  /** Peças do kit como InstancedMesh (uma por material da peça), no grupo indicado. */
+  /** Peças do kit como UMA InstancedMesh cada (partes juntas, material único por classe). O vidro
+   * vira luz: âmbar no saguão (gente), azul no resto (o sobrenatural). */
   function kitSet(piece: KitPiece, cap: number, parent: THREE.Object3D) {
     const parts = kit?.parts.get(piece);
     if (!parts) return;
-    const meshes = parts.map((p) => {
-      const g = p.geometry.clone();
-      const melt = meltAttr(g, cap);
-      const m = inst(g, kitMat(p.material, piece), cap);
-      kitMeshes.push(m);
-      parent.add(m);
-      return { m, melt };
-    });
+    const g = mergeKit(parts, (m) => (m === 'glass' ? (piece === 'base' ? CLS.glassWarm : CLS.glassCold) : CLS[m]));
+    const melt = meltAttr(g, cap);
+    const mesh = inst(g, M.kit, cap);
+    kitMeshes.push(mesh);
+    parent.add(mesh);
     let n = 0;
     kitSets.set(piece, {
       begin: () => (n = 0),
-      put(mat, melt = 0) {
+      put(mat, m = 0) {
         if (n >= cap) return;
-        for (const { m, melt: a } of meshes) {
-          m.setMatrixAt(n, mat);
-          a.array[n] = melt;
-        }
+        mesh.setMatrixAt(n, mat);
+        melt.array[n] = m;
         n++;
       },
       end() {
-        for (const { m, melt: a } of meshes) {
-          m.count = n;
-          m.instanceMatrix.needsUpdate = true;
-          a.needsUpdate = true;
-        }
+        mesh.count = n;
+        mesh.instanceMatrix.needsUpdate = true;
+        melt.needsUpdate = true;
       },
     });
   }
@@ -746,14 +701,20 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
     buildCrown();
     lastExplode = -1;
   }
-  void loadKit().then((k) => {
-    if (k && !disposed) applyKit(k);
-  });
+  /** Os dois kits (torre e cidade) chegaram, ou não existem: a cena compila tudo de uma vez. */
+  const kitsReady = Promise.all([
+    loadKit().then((k) => {
+      if (k && !disposed) applyKit(k);
+    }),
+    loadCityKit().then((k) => {
+      if (k && !disposed) city.applyKit(k);
+    }),
+  ]).then(() => undefined);
 
   function buildCrown() {
     for (const g of [crown, spire]) {
       for (const o of [...g.children]) {
-        if (o === spire || kitMeshes.includes(o as THREE.InstancedMesh)) continue;
+        if (o === spire || o === sigils.mesh || kitMeshes.includes(o as THREE.InstancedMesh)) continue;
         const geo = (o as THREE.Mesh).geometry;
         if (geo && geo !== unitBox && geo !== bulbGeo && geo !== flame.mesh.geometry) geo.dispose();
         g.remove(o);
@@ -814,6 +775,8 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
       fins.scale.setScalar(1.01);
       spire.add(fins);
     }
+    sigils.mesh.position.y = kc && kit ? 4.5 * cs : 2.6;
+    sigils.mesh.scale.setScalar(kc && kit ? cs * 0.95 : Math.max(0.8, w / 4.2));
     const top2 = spireBase + spireH;
     if (!ks) box(spire, M.brass, 0.05, 3.2, 0.05, 0, top2 + 1.5, 0);
     // Farol: chama azul fria (o sobrenatural), não mais uma lâmpada de sódio.
@@ -865,6 +828,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
         ksun.end();
       }
       doorLightPos.set(0, 1.6, 2.5 * sz + 1.2);
+      city.setDoor(doorLightPos);
     } else {
       const n = Math.min(32, Math.floor(w / 0.9));
       for (let i = 0; i < n; i++) {
@@ -876,6 +840,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
     }
     pilasters.count = k;
     pilasters.instanceMatrix.needsUpdate = true;
+    if (!kb) city.setDoor(doorLightPos);
   }
 
   /**
@@ -973,6 +938,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
             lit++;
             soul(f, w, kind, clock, OBRA.FLY);
             pulse = 1;
+            circle.mat.uniforms.uWaveT!.value = clock + OBRA.FLY * 0.6;
           }
         }
         const i4 = wi * 4;
@@ -1467,6 +1433,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
 
   function setPalette(dawn: boolean, renderer?: THREE.WebGLRenderer) {
     pal = dawn ? PALETTES.dawn : PALETTES.night;
+    dawnOn = dawn;
     skyMat.uniforms.uTop!.value.set(pal.skyTop);
     skyMat.uniforms.uMid!.value.set(pal.skyMid);
     skyMat.uniforms.uHorizon!.value.set(pal.horizon);
@@ -1481,7 +1448,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
     moon.intensity = pal.moonI;
     groundMat.color.set(pal.ground);
     sheetMat.uniforms.uColor!.value.set(pal.sheet);
-    sheetMat.uniforms.uOpacity!.value = dawn ? 0.42 : 0.3;
+    sheetMat.uniforms.uOpacity!.value = dawn ? 0.2 : 0.3;
     for (const m of [winMat, winMatR]) m.uniforms.uSky!.value.setRGB(...pal.windowSky);
     IL.uCool.value.setRGB(...pal.cool);
     IL.uWarm.value.setRGB(...pal.warm);
@@ -1515,6 +1482,14 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
   }
 
   let lastTop = 0;
+  const nest = new THREE.Vector4();
+  const isFull = (fl: TowerFloor) => fl.lobby.players >= fl.lobby.slots && fl.lobby.status !== 'em-partida';
+  function celebrate() {
+    IL.uBurst.value.x = amb;
+    city.takeoff(amb);
+    pulse = 1;
+    circle.mat.uniforms.uWaveT!.value = clock;
+  }
   /** Andar já pousado (etiqueta e mira só aparecem depois). */
   const entered = (fl: TowerFloor) => clock >= (builds.get(fl.lobby.id)?.enterAt ?? 0) + OBRA.FALL;
   /** Seja o que for que se mexa (obra, andar novo, andar desfeito), o layout roda a cada quadro. */
@@ -1525,6 +1500,8 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
     setFloors(next, mode) {
       const change: FloorsChange = { lit: 0, added: [], removed: 0 };
       const prevIds = floors.map((f) => f.lobby.id);
+      const fullBefore = new Set(floors.filter(isFull).map((f) => f.lobby.id));
+      if (mode === 'live' && next.some((fl) => isFull(fl) && prevIds.includes(fl.lobby.id) && !fullBefore.has(fl.lobby.id))) celebrate();
       const structural = next.length !== floors.length || next.some((f, i) => f.lobby.id !== prevIds[i] || f.lobby.slots !== floors[i]?.lobby.slots);
       if (mode === 'live' && structural && floors.length) {
         // Quem sumiu vira fantasma (se desfaz); quem ficou desce ou sobe até o novo nível;
@@ -1634,14 +1611,39 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
         clock += f.dt;
       }
       const t = clock;
+      if (f.ambSeek !== undefined) amb = f.ambSeek;
+      else if (!still) amb += f.dt;
+      IL.uAmb.value = amb;
       winMat.uniforms.uTime!.value = t;
       winMatR.uniforms.uTime!.value = t;
+      winMat.uniforms.uAmb!.value = amb;
+      winMatR.uniforms.uAmb!.value = amb;
       sheetMat.uniforms.uTime!.value = f.time;
       embers.mat.uniforms.uClock!.value = t;
       embers.mat.uniforms.uPx!.value = f.heightPx * 0.9;
       circle.mat.uniforms.uClock!.value = t;
       flame.mat.uniforms.uClock!.value = t;
-      updateIllus(f.camera);
+      // A chama fria do farol ilumina a coroa (luz falsa no shader ilustrativo).
+      const ignite = flame.mat.uniforms.uIgnite!.value as number;
+      updateIllus(f.camera, flame.mesh.getWorldPosition(tmpA).setY(tmpA.y + 0.8), ignite * (2.4 + 0.5 * Math.sin(amb * 9.1) * Math.sin(amb * 5.3)) * (crown.visible ? 1 : 0));
+      sigils.mat.uniforms.uTime!.value = amb;
+      sigils.mat.uniforms.uI!.value = Math.min(1, ignite) * (dawnOn ? 0.35 : 0.55);
+
+      // Relâmpago distante: raro, sutil, duas batidas; recorta a cidade contra o céu.
+      let fe = 0;
+      if (high && !still && !dawnOn && !f.underground) {
+        if (amb > flash.next) {
+          flash.at = amb;
+          flash.next = amb + 25 + Math.random() * 35;
+          const a = (Math.random() - 0.5) * 2.2;
+          (skyMat.uniforms.uFlashDir!.value as THREE.Vector2).set(Math.sin(a), -Math.cos(a));
+        }
+        const ft = amb - flash.at;
+        if (ft >= 0 && ft < 1.6) fe = Math.exp(-ft * 10) + (ft > 0.16 ? 0.7 * Math.exp(-(ft - 0.16) * 7) : 0);
+      }
+      skyMat.uniforms.uFlash!.value = fe * 0.55;
+      IL.uFlash.value = fe * 0.3;
+      hemi.intensity = pal.hemi * (1 + fe * 0.7);
 
       // Abertura: círculo, fios, saguão, coroa, agulha e farol seguem o roteiro.
       const progress = Math.max(f.progress, obra ? 1 : 0);
@@ -1715,6 +1717,20 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
         lastExplode = f.explode;
       }
       if (!obra || obra.done) crown.position.y = crownY;
+
+      // Cidade viva: holofotes, trem, vapor, chuva, tirolesa e os pombos na beirada do último andar.
+      if (!f.underground) {
+        const n = floors.length;
+        const top = floors[n - 1];
+        const zf = Math.min(n - 1, Math.floor(n * 0.42));
+        const zfl = floors[zf];
+        let zipTo: THREE.Vector3 | null = null;
+        if (zfl && f.explode < 0.02 && entered(zfl)) {
+          zipTo = tmpB.set(floorW(zfl.lobby.slots) / 2, FLOOR_H * 0.85, floorD(zfl.lobby.slots) / 2 - 0.1).applyMatrix4(floorMats[zf]!);
+        }
+        if (top) nest.setFromMatrixPosition(floorMats[n - 1]!).setY(nest.y + FLOOR_H).setW(floorW(top.lobby.slots) / 2);
+        city.update({ amb, dt: f.dt, heightPx: f.heightPx, zipTo, nest, nestFront: top ? frontZ(floorD(top.lobby.slots)) : 1, dawn: dawnOn });
+      }
       embers.flush();
 
       // Vista explodida: os fios da constelação se desenham; a luz vaza pelo vão.
@@ -1764,7 +1780,7 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
       } else {
         lampSpots.forEach((p, i) => {
           const l = pool[i]!;
-          l.position.set(p.x + 0.8, 5.0, p.z);
+          l.position.set(p.x, p.y - 0.18, p.z);
           l.color.set('#ffae55');
           l.intensity = 26;
           l.distance = 20;
@@ -1839,8 +1855,12 @@ export function createWorld(quality: Quality, brand: string, modes: { slug?: str
     floorCount: () => floors.length,
     topY: () => lastTop,
     usingKit: () => kit !== null,
+    kitsReady,
+    setSign: (a, b) => city.setSign(a, b),
+    celebrate,
     dispose() {
       disposed = true;
+      city.dispose();
       scene.traverse((o) => {
         const m = o as THREE.Mesh;
         if (m.geometry) m.geometry.dispose();

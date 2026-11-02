@@ -235,6 +235,63 @@ Contra-plongée com a câmera quase no asfalto: a torre inteira ocupa ~65% da al
 
 Brasas: um `Points` só (uma chamada), animado no shader pelo relógio da obra. Círculo, fios, chama e primeiro plano: uma chamada cada.
 
+## Home v5, leva 2: a cidade viva
+
+Plano: `docs/design/diagnostico-assinatura.md` (itens 5 a 8 e "Vida ambiente"). Alvo de arte: `art/cidade-montada.png`. Kit: `public/models/cidade-kit.glb` (contrato na seção "Kit da cidade" de `docs/design/contrato-kit-torre.md`). A torre deixou de estar sozinha numa maquete: em volta dela há uma cidade que mexe, acende e responde ao dado.
+
+### O que entrou
+
+| Item | O que é | Onde |
+| --- | --- | --- |
+| Cidade do kit | As ~90 caixas pretas viraram prédios do Blender (cinco silhuetas, caixas d'água nos recuos, trilho elevado de ponta a ponta, postes, bueiros, torre de cabos), em fileiras: uma perto (atrás do trilho, emoldurando a torre), duas no meio e duas longe, cada vez mais altas e engolidas pela névoa. Ninguém fica atrás da agulha: ali é céu. Tudo que é parado vira **uma malha só** (uma chamada de desenho) | `three/city.ts` (`applyKit`, `bake`) |
+| Janelas da cidade | Azul frio (umas poucas quentes), cada vidraça com semente própria: algumas trocam de estado devagar, poucas tremem como televisão. **Lobby que lota** → uma onda âmbar sai da torre e acende janelas da cidade por um instante | `three/illus.ts` (classe 9 e 10 da tabela) |
+| Luz | Poças de sódio no asfalto molhado (com anéis de chuva), dois **holofotes do kit** varrendo o céu em fase oposta e se cruzando acima da agulha (cones aditivos com névoa em camadas), relâmpago distante raro (duas batidas, recorta a cidade contra o horizonte), e a chama fria do farol iluminando a coroa (luz falsa no shader, sem luz pontual nova) | `three/life.ts`, `three/city.ts`, `three/world.ts` |
+| Vida | Trem elevado de quatro vagões a cada 34 s (risca faísca fria no trilho), vapor dos bueiros e dos telhados, chuva fina (só no alto), pombos que levantam da beirada do último andar quando um lobby lota, tirolesa da torre de cabos até a torre com uma lanterna correndo | `three/life.ts`, `three/city.ts` |
+| Letreiro | Moldura do kit com lâmpadas que correm e texto **nosso** em canvas: "1.284 / JOGANDO AGORA" (o mesmo número do HUD, tiquetaqueando) alterna a cada 7 s com "EM CARTAZ / CÍRCULO PROFANO" (o modo do lobby em destaque). Troca com falha de lâmpada | `life.ts` (`createSign`), `towerBus` (`playersNow`, `featured`) |
+| Camada oculta | O círculo da praça solta uma onda a cada entrada; duas faixas de sigilos safira orbitam a coroa (acendem com o farol); brasas sobem da praça; fumaça baixa se enrola na base; **vela no peitoril** das janelas de lobby com convite | `life.ts`, `occult.ts`, `shaders.ts` |
+| Micro-detalhe (só no alto) | Sem textura: riscos verticais no latão, verdete juntando nas faces de cima e onde a chuva escorre, chuva escorrendo de baixo de cada ressalto, veios na obsidiana, fuligem perto do chão e desgaste nos chanfros do kit. Some com a distância (sem cintilar) | `illus.ts` (`FRAG_COLOR`) |
+
+### Material único do kit
+
+Cada peça do Blender (torre e cidade) virou **uma geometria** com a classe do material por vértice (`aCls`, ver `CLS` em `three/kit.ts`) e um material só, que tira cor, rugosidade, metal e luz própria de uma tabela (`KIT_TABLE` em `illus.ts`). As primitivas do glTF dividiam o buffer da malha inteira; agora só entram os vértices usados (≈7× menos). Resultado: a torre com kit caiu de ~30 chamadas para 12, nos dois níveis.
+
+### Correções da leva 1
+
+- **Esboço → 3D:** no primeiro quadro 3D a câmera assenta na pose de abertura e o esboço SVG desliza e escala até o círculo dele cair em cima do círculo da praça (diferença medida de ~13 px a 1440), enquanto some.
+- **Tema claro:** névoa mais fria e mais escura (`#646d82`, densidade 0,0068), lençóis de névoa a 0,2 e hemisfério mais baixo: a cidade virou silhuetas em camadas, não um branco leitoso.
+- **Título na abertura:** antes era só contorno (baixo contraste por ~4 s); agora fica preenchido a 45% com contorno de latão e acende no clímax.
+- **Kit no médio:** ver "Material único do kit".
+
+### Níveis e movimento
+
+| Nível | Cidade |
+| --- | --- |
+| Alto | 5 fileiras + laterais, chuva, relâmpago, micro-detalhe, 16 pombos, ~440 partículas |
+| Médio | 3 fileiras, sem laterais, sem chuva, sem relâmpago, sem micro-detalhe, fachos mais fracos (sem composição o cruzamento estoura), ~45% das partículas, 10 pombos |
+| Baixo | Inalterado (cidade SVG) |
+| Movimento reduzido | Relógio ambiente parado num instante bom (fachos cruzados, trem à vista à direita da torre): sem tremor de janela, sem relâmpago, sem pombos, sem chuva |
+
+Sem o kit (`?kit=0` ou arquivo ausente) a cidade volta às caixas escuras, com fachos, poças, chuva, vapor e pombos. Na travessia para o porão a rua inteira some (nada da cidade é desenhado lá embaixo); com a aba em segundo plano o navegador para o laço.
+
+### Ferramentas de revisão (dev)
+
+- `window.__torreAmb = 19.6` congela o relógio ambiente (trem, holofotes, chuva, vapor); `delete window.__torreAmb` solta.
+- `__torre.world.celebrate()` simula um lobby lotando (onda de janelas, pombos, pulso do círculo).
+
+### Desempenho (build de produção, v5 leva 2)
+
+| Parte | v5 leva 1 | v5 leva 2 |
+| --- | --- | --- |
+| JS da primeira pintura (gzip) | `index` 110,0 + `jsx-runtime` 13,7 | `index` 110,2 + `jsx-runtime` 13,7 (+0,3 KB: os dois campos novos do `towerBus`) |
+| Chunk 3D `TowerScene` (gzip) | 269,2 KB | **280,6 KB** (alvo da leva ≤ 285; `city.ts` + `life.ts` + tabela do kit) |
+| `GLTFLoader` (gzip, só com kit) | 13,5 KB | 13,5 KB (o mesmo chunk carrega os dois kits) |
+| Kits | `torre-kit.glb` 242 KB | + `cidade-kit.glb` 263 KB |
+| Hero, alto, com kits | 92 chamadas, ≈95 mil triângulos | **50 chamadas**, ≈158 mil triângulos |
+| Hero, médio, com kits | 86 chamadas, ≈67 mil triângulos | **46 chamadas**, ≈110 mil triângulos |
+| Hero, alto, `?kit=0` | 64 chamadas | 68 chamadas, ≈10 mil triângulos |
+
+Os triângulos subiram (a cidade agora tem forma), as chamadas caíram pela metade. A cidade parada é uma malha de ~124 mil vértices assada na carga; o que se mexe (trem, holofotes) é instanciado. A cena espera os dois kits por até 1,8 s antes de compilar os shaders, para nada engasgar no meio da abertura.
+
 ## Direção visual (v3): Cidade Acesa
 
 *A home v3 agora é o nível baixo da v4; o resto desta seção continua valendo para as outras telas.*

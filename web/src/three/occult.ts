@@ -33,6 +33,7 @@ uniform float uProg;
 uniform float uFlare;
 uniform float uIdle;
 uniform float uPulse;
+uniform float uWaveT;
 uniform vec3 uCol;
 uniform vec3 uHot;
 varying vec2 vP;
@@ -91,6 +92,9 @@ void main() {
   vec3 col = uCol * v * level * shimmer;
   // Faíscas âmbar onde o progresso "escreve" (a ponta do arco que está acendendo).
   col += uHot * line(r - 0.985, 0.012) * (1.0 - step(0.999, p0)) * step(0.0001, p0) * (1.0 - smoothstep(0.0, 0.03, abs(fract(0.25 - a / TAU) - p0)));
+  // Alguém entrou: uma onda sai do centro e corre o círculo até a borda.
+  float wt = uClock - uWaveT;
+  col += uCol * 1.6 * line(r - wt * 0.95, 0.012) * exp(-wt * 2.2) * step(0.0, wt) * step(r, 1.0);
   // Halo baixo no chão
   col += uCol * 0.05 * level * smoothstep(1.0, 0.5, r) * (1.0 - smoothstep(0.5, 0.0, r));
   gl_FragColor = vec4(col, 1.0);
@@ -107,6 +111,7 @@ export function createRitualCircle(radius: number) {
       uFlare: { value: 0 },
       uIdle: { value: 0.35 },
       uPulse: { value: 0 },
+      uWaveT: { value: -100 },
       uCol: { value: SAPPHIRE.clone() },
       uHot: { value: new THREE.Color(3.2, 1.6, 0.5) },
     },

@@ -22,9 +22,14 @@ export interface TowerState {
   phase: 'load' | 'floors' | 'souls' | 'done';
   /** Notícia da obra ao vivo para o HUD: andar conjurado (número) ou andar desfeito. O texto mora no HTML. */
   news: { raised: number } | { gone: true } | null;
+  /** Letreiro da cidade (v5 leva 2): gente jogando agora (o número do HUD) e o modo em cartaz. */
+  playersNow: number;
+  featured: string;
+  /** Onde o círculo da praça apareceu na tela no primeiro quadro 3D (o esboço SVG se alinha a ele). */
+  sketchFit: { x: number; y: number; w: number } | null;
 }
 
-let state: TowerState = { tier: 'low', progress: 0, ready: false, focusId: null, phase: 'load', news: null };
+let state: TowerState = { tier: 'low', progress: 0, ready: false, focusId: null, phase: 'load', news: null, playersNow: 0, featured: '', sketchFit: null };
 const listeners = new Set<() => void>();
 
 export const towerBus = {

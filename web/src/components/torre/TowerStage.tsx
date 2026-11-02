@@ -26,6 +26,8 @@ export function TowerStage({ floors, dawn, floorsSeen }: StageProps) {
   const tier = useTower((s) => s.tier);
   const progress = useTower((s) => s.progress);
   const ready = useTower((s) => s.ready);
+  const fit = useTower((s) => s.sketchFit);
+  const sketch = useRef<HTMLDivElement>(null);
   const [Scene, setScene] = useState<ComponentType<SceneProps> | null>(null);
   const downgraded = useRef(false);
   const firstTier = useRef(tier);
@@ -58,13 +60,28 @@ export function TowerStage({ floors, dawn, floorsSeen }: StageProps) {
     };
   }, [tier]);
 
+  // Troca esboço → 3D: o esboço desliza e escala até o círculo dele cair em cima do círculo
+  // da praça (projetado pela câmera de abertura) enquanto some. Mesmo desenho, ganhando corpo.
+  useEffect(() => {
+    const box = sketch.current;
+    const ring = box?.querySelector('.tr-rite');
+    if (!box || !ring || !fit) return;
+    const b = box.getBoundingClientRect();
+    const r = ring.getBoundingClientRect();
+    if (r.width < 1) return;
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    box.style.transformOrigin = `${(cx - b.left).toFixed(1)}px ${(cy - b.top).toFixed(1)}px`;
+    box.style.transform = `translate(${(fit.x - cx).toFixed(1)}px, ${(fit.y - cy).toFixed(1)}px) scale(${(fit.w / r.width).toFixed(3)})`;
+  }, [fit]);
+
   if (tier === 'low') return null;
   const quality = tier === 'high' ? 'high' : 'mid';
 
   return (
     <div className={`tr-stage${ready ? ' is-ready' : ''}`} aria-hidden="true">
       <div className="tr-sky" />
-      <div className="tr-sketch">
+      <div className="tr-sketch" ref={sketch}>
         <TowerSketch floors={floors} progress={progress} />
       </div>
       {Scene && (

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { BRAND_NAME } from '../config/brand';
 import { modes } from '../data/modes';
+import { formatNumber, t as i18n } from '../i18n';
 import { ramp } from '../lib/obra';
 import { play } from '../lib/sound';
 import { floorLabels, floorMarks, sceneCoord, towerBus } from '../lib/towerBus';
@@ -125,6 +126,18 @@ function pose(scene: number, local: number, wide: number, out: Pose): Pose {
   return out;
 }
 
+/** Onde o círculo da praça (raio 10,5) aparece na tela agora: centro e largura em px. */
+function fitCircle(camera: THREE.Camera, w: number, h: number) {
+  const px = (x: number, z: number) => {
+    tmpA.set(x, 0.15, z).project(camera);
+    return { x: (tmpA.x * 0.5 + 0.5) * w, y: (-tmpA.y * 0.5 + 0.5) * h };
+  };
+  const l = px(-10.5, 0);
+  const r = px(10.5, 0);
+  const c = px(0, 0);
+  return { x: c.x, y: c.y, w: Math.abs(r.x - l.x) };
+}
+
 const newPose = (): Pose => ({ pos: V(0, 0, 0), look: V(0, 0, 0), fov: 40, explode: 0, vaultRot: 0, needle: 0, doors: 0, plateLight: 0.5, shiftX: 0, shiftY: 0 });
 
 function Stage({ quality, floors, dawn, skipIntro }: Props) {
@@ -133,7 +146,9 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
   const size = useThree((s) => s.size);
   const viewport = useThree((s) => s.viewport);
 
-  const world = useMemo<World>(() => createWorld(quality, BRAND_NAME, modes), [quality]);
+  // Movimento reduzido (com ?tier= forçado): mundo parado, sem tremor, raio nem pombos.
+  const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const world = useMemo<World>(() => createWorld(quality, BRAND_NAME, modes, { still: reduced }), [quality, reduced]);
   const post = quality === 'high';
 
   const rt = useMemo(() => {
@@ -164,7 +179,7 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
   }, [rt, size, viewport.dpr, postScene]);
 
   // Movimento reduzido (com ?tier= forçado) ou remontagem: a torre aparece pronta, sem abertura.
-  const still = useMemo(() => !!skipIntro || window.matchMedia('(prefers-reduced-motion: reduce)').matches, [skipIntro]);
+  const still = !!skipIntro || reduced;
 
   const state = useRef({
     ready: false,
@@ -183,6 +198,9 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     perfStart: 0,
     labelsHidden: false,
     shift: new THREE.Vector2(),
+    signPlayers: -1,
+    fit: false,
+    signMode: '',
   });
   /** Largura de cada etiqueta (lida uma vez, não a cada quadro); zera quando a tela ou o texto muda. */
   const labelW = useMemo(() => new Map<HTMLElement, number>(), []);
@@ -208,7 +226,15 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
       state.current.compiled = true;
       towerBus.progress(94);
     };
-    gl.compileAsync(world.scene, camera).then(done, done);
+    // Espera os kits (torre e cidade) por até 1,8 s: compilar tudo junto evita engasgo e a
+    // cidade aparecer no meio da abertura. Rede lenta: segue sem eles (entram depois).
+    const kits = Promise.race([world.kitsReady, new Promise<void>((r) => window.setTimeout(r, 1800))]);
+    void kits.then(() => {
+      if (!alive) return;
+      towerBus.progress(86);
+      world.showAll();
+      gl.compileAsync(world.scene, camera).then(done, done);
+    });
     return () => {
       alive = false;
       world.dispose();
@@ -280,6 +306,10 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
         world.setFloors(floorsRef.current, 'hold');
         world.startOpening();
       }
+      // A câmera assenta na pose de abertura (o 3D ainda está invisível) e, depois de posta,
+      // o esboço SVG se alinha ao círculo da praça (ver abaixo).
+      s.first = true;
+      s.fit = true;
       towerBus.set({ ready: true, progress: 100 });
       s.perfStart = now + 5;
     }
@@ -348,6 +378,13 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
       camera.clearViewOffset();
     }
     s.camVel = Math.abs(camera.position.y - prevY) / Math.max(dt, 1e-3);
+    // O esboço SVG some em cima da cena 3D: alinha o círculo dele com o círculo da praça
+    // projetado agora, para a troca parecer o mesmo desenho ganhando corpo.
+    if (s.fit) {
+      s.fit = false;
+      camera.updateMatrixWorld();
+      towerBus.set({ sketchFit: fitCircle(camera, size.width, size.height) });
+    }
 
     // Vento da rolagem para as folhas da Gazeta.
     const sy = window.scrollY;
@@ -356,7 +393,14 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
     const windTarget = clamp01(speed / 1600);
     s.wind += (windTarget - s.wind) * (1 - Math.exp(-dt * (windTarget > s.wind ? 6 : 1.4)));
 
-    const focusId = towerBus.get().focusId;
+    // Letreiro da cidade: gente jogando agora (o mesmo número do HUD) e o modo em cartaz.
+    const bus = towerBus.get();
+    if (bus.playersNow !== s.signPlayers || bus.featured !== s.signMode) {
+      s.signPlayers = bus.playersNow;
+      s.signMode = bus.featured;
+      world.setSign([formatNumber(bus.playersNow), i18n.home.sign.playing], [i18n.home.sign.featured, bus.featured.toLocaleUpperCase('pt-BR')]);
+    }
+    const focusId = bus.focusId;
     const focus = focusId ? floorsRef.current.findIndex((f) => f.lobby.id === focusId) : -1;
     const underground = camera.position.y < 0;
 
@@ -378,6 +422,7 @@ function Stage({ quality, floors, dawn, skipIntro }: Props) {
       aspect,
       heightPx: size.height * viewport.dpr,
       seek: import.meta.env.DEV ? (window as unknown as { __torreObraT?: number }).__torreObraT : undefined,
+      ambSeek: import.meta.env.DEV ? (window as unknown as { __torreAmb?: number }).__torreAmb : undefined,
     });
 
     // Etiquetas dos andares: projeta e move no DOM (aria-hidden; a lista é o equivalente).

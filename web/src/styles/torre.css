@@ -82,7 +82,10 @@
   bottom: 0;
   width: 38vw;
   height: 86vh;
-  transition: opacity 700ms var(--ease-out);
+  /* v5 leva 2: na troca para o 3D o esboço se alinha ao círculo da praça (TowerStage). */
+  transition:
+    opacity 900ms var(--ease-out),
+    transform 900ms var(--ease-out);
 }
 
 .tr-stage.is-ready .tr-sketch {
@@ -1618,13 +1621,13 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
     linear-gradient(currentColor, currentColor) center / 100% 1px no-repeat;
 }
 
-/* Título "em obra": desenhado em fio (contorno), sem preenchimento, até o clímax da abertura;
- * aí acende como as janelas (pega, falha, firma). Movimento reduzido: aparece pronto. */
+/* Título "em obra": até o clímax da abertura ele está meio aceso (preenchimento a 45% com
+ * contorno de latão, legível desde o primeiro quadro); no clímax acende como as janelas
+ * (pega, falha, firma). Movimento reduzido: aparece pronto. */
 @media (prefers-reduced-motion: no-preference) {
   .tr:is(.tr-high, .tr-mid):not([data-obra='done']) .tr-title {
-    color: transparent;
-    -webkit-text-stroke: 1px var(--accent-line);
-    text-shadow: none;
+    color: color-mix(in srgb, var(--text) 45%, transparent);
+    -webkit-text-stroke: 1px var(--accent-text);
   }
   .tr:is(.tr-high, .tr-mid)[data-obra='done'] .tr-title-line {
     animation: tr-ignite 720ms var(--ease-flicker, ease-out) both;
@@ -1635,15 +1638,13 @@ html[data-cena]:not([data-cena='0']) .site-header.is-hud {
 }
 
 @keyframes tr-ignite {
-  0% {
-    color: transparent;
-    -webkit-text-stroke-color: var(--accent-line);
+  0%,
+  30% {
+    color: color-mix(in srgb, var(--text) 45%, transparent);
+    -webkit-text-stroke-color: var(--accent-text);
   }
   18% {
     color: var(--accent-text);
-  }
-  30% {
-    color: transparent;
   }
   46%,
   100% {

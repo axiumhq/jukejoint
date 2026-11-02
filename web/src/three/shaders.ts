@@ -55,6 +55,7 @@ const WINDOW_FRAG = /* glsl */ `
 uniform float uTime;
 uniform float uFocus;
 uniform float uReflect;
+uniform float uAmb;
 uniform vec3 uLit;
 uniform vec3 uFriend;
 uniform vec3 uSky;
@@ -150,6 +151,13 @@ void main() {
     float fold = 0.55 + 0.45 * sin(uv.x * 70.0);
     vec3 cloth = uLit * vec3(0.9, 0.42, 0.26) * 0.38 * fold * max(litNow, 0.15);
     col = mix(col, cloth, curtain);
+    // Lobby com convite: uma vela acesa no peitoril, atrás do vidro (a chama treme).
+    float fl = 0.85 + 0.15 * sin(uAmb * 13.0 + seed * 40.0) * sin(uAmb * 7.3 + seed * 9.0);
+    vec2 cv = (uv - vec2(0.445 + sin(uAmb * 3.1 + seed * 20.0) * 0.006, 0.27)) * vec2(1.0, 0.55);
+    float flame = 1.0 - smoothstep(0.012, 0.03, length(cv));
+    float wick = (1.0 - step(0.02, abs(uv.x - 0.445))) * step(0.08, uv.y) * (1.0 - step(0.2, uv.y));
+    col = mix(col, vec3(0.22, 0.2, 0.17), wick);
+    col += uLit * (flame * 1.6 + exp(-length(cv) * 9.0) * 0.35) * fl;
   }
 
   // Foco (linha da lista em hover/foco): o andar inteiro acende um pouco mais.
@@ -190,6 +198,7 @@ export function createWindowMaterial(reflect: boolean, winW: number, winH: numbe
       THREE.UniformsLib.fog,
       {
         uTime: { value: 0 },
+        uAmb: { value: 0 },
         uFocus: { value: -1 },
         uReflect: { value: reflect ? 1 : 0 },
         uWin: { value: new THREE.Vector2(winW, winH) },
@@ -226,6 +235,8 @@ uniform vec3 uTop;
 uniform vec3 uMid;
 uniform vec3 uHorizon;
 uniform vec3 uGlow;
+uniform float uFlash;
+uniform vec2 uFlashDir;
 varying vec3 vDir;
 float h2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 void main() {
@@ -235,6 +246,9 @@ void main() {
   // brilho baixo da cidade (sódio refletido na névoa), concentrado atrás da torre
   float az = 1.0 - smoothstep(0.0, 1.6, abs(atan(vDir.x, -vDir.z)));
   col += uGlow * (1.0 - smoothstep(-0.05, 0.16, h)) * (0.55 + 0.45 * az);
+  // Relâmpago distante: a névoa do horizonte acende de um lado e recorta a cidade.
+  float fa = pow(max(0.0, dot(normalize(vDir.xz + 1e-4), uFlashDir)), 3.0);
+  col += vec3(0.5, 0.6, 0.95) * uFlash * smoothstep(-0.05, 0.12, h) * (1.0 - smoothstep(0.12, 0.7, h)) * (0.25 + 0.75 * fa);
   // pontilhado azul contra faixas de gradiente (8 bits)
   col += (h2(gl_FragCoord.xy) - 0.5) / 255.0;
   gl_FragColor = vec4(col, 1.0);
@@ -250,6 +264,8 @@ export function createSkyMaterial() {
       uMid: { value: new THREE.Color() },
       uHorizon: { value: new THREE.Color() },
       uGlow: { value: new THREE.Color() },
+      uFlash: { value: 0 },
+      uFlashDir: { value: new THREE.Vector2(0, -1) },
     },
     vertexShader: SKY_VERT,
     fragmentShader: SKY_FRAG,
@@ -320,8 +336,12 @@ varying vec3 vN;
 varying vec3 vV;
 varying float vH;
 void main() {
-  vec4 world = modelMatrix * vec4(position, 1.0);
-  vN = normalize(mat3(modelMatrix) * normal);
+  mat4 m = modelMatrix;
+  #ifdef USE_INSTANCING
+    m = m * instanceMatrix;
+  #endif
+  vec4 world = m * vec4(position, 1.0);
+  vN = normalize(mat3(m) * normal);
   vV = normalize(cameraPosition - world.xyz);
   vH = uv.y;
   gl_Position = projectionMatrix * viewMatrix * world;
