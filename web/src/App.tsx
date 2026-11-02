@@ -5,6 +5,7 @@ import { Install } from './pages/Install';
 import { Lobbies } from './pages/Lobbies';
 import { ModePage, ModesIndex } from './pages/Mode';
 import { News } from './pages/News';
+import { QuickPlay } from './pages/QuickPlay';
 import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
 
@@ -16,6 +17,7 @@ export function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="lobbies" element={<Lobbies />} />
+            <Route path="jogar" element={<QuickPlay />} />
             <Route path="modos" element={<ModesIndex />} />
             <Route path="modos/:slug" element={<ModePage />} />
             <Route path="instalar" element={<Install />} />

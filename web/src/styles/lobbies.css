@@ -1,0 +1,1811 @@
+/*
+ * Lobbies v4 ("A Torre"). Importado pelos componentes de lobby (components/lobbyStyles.ts).
+ *
+ * Regras de cor que este arquivo respeita:
+ *  - Latão = gente e ação (janelas acesas, botão principal, "você está aqui").
+ *  - Verdete = ao vivo e amigos.
+ *  - Cor do modo (--mode-h) só no SELO, no FRISO de 3 px e na moldura da escolha de modo.
+ *    Nunca nas janelas (pips), nunca no círculo de vagas.
+ *  - A luz é material: calor = mais luz nas janelas, não brilho solto.
+ */
+
+:root {
+  --font-tech: 'Martian Mono Variable', var(--font-mono);
+  --rail-w: 3px;
+  --action-w: 11.25rem;
+  --stub-w: 15rem;
+}
+
+/* Matiz do modo com luminosidade fixa (OKLCH): o contraste não varia de um modo para outro. */
+.has-mode {
+  --mode-rail: oklch(0.72 0.075 var(--mode-h, 60));
+  --mode-plate: oklch(0.235 0.022 var(--mode-h, 60));
+  --mode-glyph: oklch(0.84 0.06 var(--mode-h, 60));
+}
+
+[data-theme='light'] .has-mode {
+  --mode-rail: oklch(0.5 0.085 var(--mode-h, 60));
+  --mode-plate: oklch(0.955 0.016 var(--mode-h, 60));
+  --mode-glyph: oklch(0.38 0.08 var(--mode-h, 60));
+}
+
+/* ───────── Selo do modo ───────── */
+
+.seal {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-xs);
+}
+
+.seal-sm {
+  width: 2rem;
+  height: 2rem;
+}
+
+.seal-lg {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.seal-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.seal-plate {
+  fill: var(--mode-plate);
+  stroke: var(--mode-rail);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  transition: fill var(--dur-2) ease;
+}
+
+.glyph-lines {
+  fill: none;
+  stroke: var(--mode-glyph);
+  stroke-width: 1;
+  stroke-linecap: round;
+}
+
+.glyph-lines * {
+  vector-effect: non-scaling-stroke;
+}
+
+.glyph-lines .faint {
+  opacity: 0.5;
+}
+
+.glyph-lines .solid {
+  fill: var(--mode-glyph);
+  stroke: none;
+}
+
+.glyph-lines .thick {
+  stroke-width: 1.75;
+}
+
+.seal-rule {
+  stroke: var(--mode-rail);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.55;
+}
+
+.seal-num {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 6.5px;
+  letter-spacing: 0.08em;
+  fill: var(--mode-glyph);
+  text-anchor: middle;
+}
+
+/* Cheio: o selo fica em tom pleno (a linha é que esmaece). */
+.seal.is-full .seal-plate {
+  fill: var(--mode-rail);
+}
+
+.seal.is-full .glyph-lines {
+  stroke: var(--mode-plate);
+}
+
+.seal.is-full .glyph-lines .solid,
+.seal.is-full .seal-num {
+  fill: var(--mode-plate);
+}
+
+.seal.is-full .seal-rule {
+  stroke: var(--mode-plate);
+}
+
+/* Em partida: contorno tracejado que gira devagar (parado com movimento reduzido). */
+.seal-orbit {
+  fill: none;
+  stroke: var(--live);
+  stroke-width: 1;
+  stroke-dasharray: 2.5 3.5;
+  vector-effect: non-scaling-stroke;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .seal-orbit {
+    animation: seal-orbit 9s linear infinite;
+  }
+}
+
+@keyframes seal-orbit {
+  to {
+    stroke-dashoffset: -60;
+  }
+}
+
+.seal-lock {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: var(--r-xs);
+  background: var(--surface);
+  color: var(--info);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.seal-link {
+  text-decoration: none;
+}
+
+.seal-link:hover .seal-plate {
+  fill: color-mix(in oklch, var(--mode-plate) 70%, var(--mode-rail));
+}
+
+.seal-link:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* ───────── Friso (3 px, cor do modo) ───────── */
+
+.lb-row,
+.lb-ticket,
+.featured,
+.session {
+  position: relative;
+}
+
+.lb-row::before,
+.lb-ticket::before,
+.featured::before,
+.session::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: var(--rail-w);
+  background: var(--mode-rail);
+  pointer-events: none;
+}
+
+/* ───────── Camada técnica ───────── */
+
+.tech-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-5);
+  margin-top: var(--sp-2);
+  font-family: var(--font-tech);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.tech-line > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.tech-line b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.lb-activity {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.lb-who {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.lb-who.is-friend {
+  color: var(--live);
+}
+
+/* ───────── Rótulos de estado e calor ───────── */
+
+.lb-state,
+.lb-heat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.lb-state-full {
+  color: var(--danger);
+}
+
+.lb-state-playing-open,
+.lb-state-playing-closed,
+.lb-state-invited {
+  color: var(--live);
+}
+
+.lb-state-private,
+.lb-state-knocking {
+  color: var(--info);
+}
+
+.lb-state-mine,
+.lb-state-joined {
+  color: var(--accent-text);
+}
+
+/* O calor é uma janela: mais quente, mais luz. Sem fogo, sem emoji. */
+.lb-heat::before {
+  content: '';
+  width: 6px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--win-lit);
+}
+
+.lb-heat-lotando,
+.lb-heat-esquentando {
+  color: var(--accent-text);
+}
+
+.lb-heat-lotando::before {
+  box-shadow: 0 0 7px 1px var(--win-glow);
+}
+
+.lb-heat-esquentando::before {
+  box-shadow: 0 0 4px var(--win-glow);
+}
+
+.lb-heat-recem {
+  color: var(--text);
+}
+
+.lb-heat-quieto {
+  color: var(--text-muted);
+}
+
+.lb-heat-quieto::before {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--win-free-line);
+}
+
+.lb-quorum {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+/* ───────── Janelas (pips) ───────── */
+
+.pip {
+  position: relative;
+}
+
+.pips[data-heat='3'] .pip-taken {
+  box-shadow: 0 0 6px var(--win-glow);
+}
+
+.pips[data-heat='2'] .pip-taken {
+  box-shadow: 0 0 3px var(--win-glow);
+}
+
+.pips[data-heat='0'] .pip-taken {
+  opacity: 0.6;
+}
+
+/* Abaixo do quórum: janelas vazadas, um marco de latão onde a partida começa. */
+.pips.is-hollow .pip-taken {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--pip-taken);
+  opacity: 1;
+}
+
+.pips.is-hollow .pip-friend {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--live);
+}
+
+.pip.is-quorum {
+  margin-right: 5px;
+}
+
+.pip.is-quorum::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  right: -5px;
+  width: 1.5px;
+  background: var(--accent);
+}
+
+.pip-you {
+  outline: 1px solid var(--text);
+  outline-offset: 1px;
+}
+
+/* O "plim": a janela de quem acabou de entrar acende com um clarão, uma vez. */
+@media (prefers-reduced-motion: no-preference) {
+  .pip.is-new {
+    animation: pip-plim 900ms var(--ease-flicker) both;
+  }
+}
+
+@keyframes pip-plim {
+  0% {
+    background: var(--win-lit);
+    box-shadow: 0 0 12px 3px var(--win-glow);
+    transform: scaleY(1.35);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.slots-lg .pips {
+  gap: 4px;
+}
+
+.slots-lg .pip {
+  width: 9px;
+  height: 16px;
+  border-radius: 1.5px;
+}
+
+.slots-lg .pip.is-quorum {
+  margin-right: 7px;
+}
+
+.slots-lg .pip.is-quorum::after {
+  right: -6px;
+  width: 2px;
+}
+
+html .ping .ms {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+}
+
+html .ping .region {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* ───────── Ação ───────── */
+
+.btn-pair {
+  display: flex;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.btn-pair .btn-join {
+  flex: 1;
+  min-width: 0;
+}
+
+.btn.btn-square {
+  flex: none;
+  width: 2.25rem;
+  padding: 0;
+}
+
+.btn.btn-lg + .btn-square,
+.btn-pair .btn-lg ~ .btn-square {
+  width: 3.25rem;
+}
+
+.btn-join.is-waiting {
+  cursor: default;
+  color: var(--info);
+  border-color: var(--line-strong);
+}
+
+.btn-join.is-inert {
+  pointer-events: none;
+}
+
+.knock-dots {
+  width: 6px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--info);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .knock-dots {
+    animation: knock 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes knock {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.verb-short {
+  display: none;
+}
+
+/* ───────── Lista (contêiner: as linhas leem a largura da lista, não da tela) ───────── */
+
+.lb-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  container: lblist / inline-size;
+}
+
+.lb-list.is-compact {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.lb-list.is-compact > .lb-row + .lb-row {
+  border-top: 1px solid var(--line);
+}
+
+.lb-list.is-tickets {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+/* ───────── Linha compacta ───────── */
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'seal main action'
+    'seal meta action';
+  align-items: center;
+  gap: 0.15rem var(--sp-3);
+  min-height: 3.5rem;
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) calc(var(--sp-3) + var(--rail-w));
+  transition: background-color var(--dur-1) ease;
+}
+
+.lb-row:hover {
+  background: var(--surface-2);
+}
+
+.lb-row.is-you {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.lb-row.is-dim .lb-main,
+.lb-row.is-dim .lb-slots,
+.lb-row.is-dim .lb-ping {
+  opacity: 0.62;
+}
+
+.lb-seal {
+  grid-area: seal;
+  align-self: center;
+}
+
+.lb-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.lb-name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+.lb-name-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-lock {
+  flex: none;
+  color: var(--info);
+}
+
+.lb-sub {
+  display: none;
+  align-items: baseline;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.lb-mode-name {
+  flex: none;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+/* Celular: pips, depois o estado, depois o ping; o que não cabe na linha fica de fora. */
+.lb-meta {
+  grid-area: meta;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.625rem;
+  height: 1.25rem;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.lb-meta > .lb-slots {
+  order: 1;
+}
+
+.lb-meta > .lb-signal {
+  order: 2;
+}
+
+.lb-meta > .lb-ping {
+  order: 3;
+}
+
+/* Calor é o menos essencial: vai por último (estado e ping ficam). */
+.lb-meta > .lb-signal:has(.lb-heat) {
+  order: 4;
+}
+
+.lb-signal:empty {
+  display: none;
+}
+
+.lb-signal {
+  grid-area: signal;
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.lb-slots {
+  grid-area: slots;
+}
+
+.lb-ping {
+  grid-area: ping;
+}
+
+.lb-ping .bars {
+  display: none;
+}
+
+.lb-action {
+  grid-area: action;
+  justify-self: end;
+}
+
+.lb-row .slots {
+  gap: var(--sp-2);
+}
+
+.lb-row .slots-count {
+  font-size: var(--fs-xs);
+}
+
+.lb-row .pips {
+  flex-wrap: nowrap;
+  gap: 2px;
+}
+
+.lb-row .pip {
+  width: 5px;
+  height: 10px;
+}
+
+.lb-row .pip.is-quorum {
+  margin-right: 4px;
+}
+
+.lb-row .pip.is-quorum::after {
+  right: -4px;
+}
+
+.lb-row .btn-join {
+  width: auto;
+  min-width: 0;
+}
+
+/* Linha estreita (celular, página do modo): ação curta, alvo de 44 px. */
+@container lblist (max-width: 31.99rem) {
+  .lb-row .seal {
+    width: 2rem;
+    height: 2rem;
+  }
+  .lb-row .slots-count {
+    font-size: 0.75rem;
+  }
+  .lb-row .pip {
+    width: 4px;
+  }
+  .lb-row .slots {
+    gap: 0.375rem;
+  }
+  .lb-row .ping {
+    gap: 0.35rem;
+  }
+  /* Seu lobby: o fundo de latão já diz "você está aqui"; o espaço vai para Convidar e Fechar. */
+  .lb-row[data-kind='mine'] .lb-signal {
+    display: none;
+  }
+}
+
+@container lblist (max-width: 49.99rem) {
+  .lb-row .btn-join {
+    min-height: 2.5rem;
+  }
+  .lb-row .btn.btn-square {
+    width: 2.5rem;
+    min-height: 2.5rem;
+  }
+  .lb-row .verb-long {
+    display: none;
+  }
+  .lb-row .verb-short {
+    display: inline;
+  }
+  .lb-row .btn-pair {
+    width: auto;
+  }
+}
+
+@container lblist (min-width: 32rem) {
+  .lb-sub {
+    display: flex;
+  }
+  .lb-meta {
+    display: contents;
+  }
+  .lb-signal:empty {
+    display: flex;
+  }
+  .lb-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto auto auto;
+    grid-template-areas: 'seal main signal slots action';
+    gap: 0.25rem var(--sp-3);
+  }
+  .lb-ping {
+    display: none;
+  }
+  .lb-signal {
+    justify-content: flex-end;
+  }
+}
+
+@container lblist (min-width: 50rem) {
+  .lb-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) 7.25rem 8.75rem 6.5rem var(--action-w);
+    grid-template-areas: 'seal main signal slots ping action';
+    gap: var(--sp-3) var(--sp-4);
+    padding: var(--sp-2) var(--sp-4) var(--sp-2) calc(var(--sp-4) + var(--rail-w));
+  }
+  .lb-ping {
+    display: block;
+  }
+  .lb-ping .bars {
+    display: inline-flex;
+  }
+  .lb-signal {
+    justify-content: flex-start;
+  }
+  .lb-action {
+    justify-self: stretch;
+  }
+  .lb-row .btn-join {
+    width: 100%;
+  }
+  .lb-row .btn-pair .btn-join {
+    width: auto;
+  }
+}
+
+/* Linha nova acende de leve (redundante com o texto "entrou agora"). */
+@media (prefers-reduced-motion: no-preference) {
+  .lb-row.is-fresh .lb-who {
+    animation: who-in 900ms var(--ease-out) both;
+  }
+}
+
+@keyframes who-in {
+  from {
+    color: var(--win-lit);
+    text-shadow: 0 0 8px var(--win-glow);
+  }
+}
+
+/* Home v3 (Enchendo agora) usa a mesma linha. */
+.lb-row.is-mini {
+  min-height: 3.25rem;
+}
+
+/* ───────── Ingresso ───────── */
+
+.lb-ticket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition: border-color var(--dur-1) ease;
+}
+
+.lb-ticket:hover {
+  border-color: var(--line-strong);
+}
+
+.lb-ticket::before {
+  border-radius: var(--r-md) 0 0 var(--r-md);
+}
+
+.tk-body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--rail-w));
+}
+
+.tk-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.tk-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.tk-sep {
+  width: 1px;
+  height: 0.75rem;
+  background: var(--line-strong);
+}
+
+.tk-name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: clamp(1.375rem, 0.6vw + 1.2rem, 1.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.012em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.tk-host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.tk-live {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+  margin-top: var(--sp-1);
+}
+
+.tk-stub {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    'count count'
+    'pips pips'
+    'action action';
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) calc(var(--sp-4) + var(--rail-w));
+  border-top: 1px dashed var(--line-strong);
+}
+
+/* Os dois recortes do picote: meio círculo no lugar onde a linha tracejada encontra a borda. */
+.tk-stub::before,
+.tk-stub::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+}
+
+.tk-stub::before {
+  left: -9px;
+  clip-path: inset(0 0 0 50%);
+}
+
+.tk-stub::after {
+  right: -9px;
+  clip-path: inset(0 50% 0 0);
+}
+
+.tk-stamp {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-4);
+  margin: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  color: var(--text-muted);
+  rotate: -3deg;
+}
+
+.tk-stamp > span {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border: 1.5px solid currentColor;
+  outline: 1px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tk-stamp-full {
+  color: var(--danger);
+}
+
+.tk-stamp-private,
+.tk-stamp-knocking {
+  color: var(--info);
+}
+
+.tk-stamp-invited,
+.tk-stamp-playing-open,
+.tk-stamp-playing-closed {
+  color: var(--live);
+}
+
+.tk-stamp-mine,
+.tk-stamp-joined {
+  color: var(--accent-text);
+}
+
+.tk-count {
+  grid-area: count;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.tk-num {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+
+.tk-of {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.tk-note {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+
+.lb-ticket .slots {
+  grid-area: pips;
+}
+
+.tk-action {
+  grid-area: action;
+}
+
+.tk-action .btn-join {
+  width: 100%;
+}
+
+.lb-ticket.is-you {
+  border-color: var(--accent-line);
+}
+
+.lb-ticket.is-you .tk-stub {
+  background: var(--accent-soft);
+}
+
+.lb-ticket.is-dim .tk-body {
+  opacity: 0.66;
+}
+
+/* Ingresso no celular: o canhoto vira uma faixa de uma linha (contagem, janelas, ação). */
+@container lblist (max-width: 39.99rem) {
+  .tk-stub {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'stamp stamp stamp'
+      'count pips action';
+    padding-block: var(--sp-3);
+  }
+  .tk-stamp {
+    position: static;
+    grid-area: stamp;
+    justify-self: start;
+  }
+  .tk-stub:not(:has(.tk-stamp)) {
+    grid-template-areas: 'count pips action';
+  }
+  .tk-num {
+    font-size: 1.625rem;
+  }
+  .lb-ticket .slots-lg .pips {
+    gap: 3px;
+    flex-wrap: nowrap;
+  }
+  .lb-ticket .slots-lg .pip {
+    width: 6px;
+    height: 12px;
+  }
+  .tk-action .btn-join {
+    width: auto;
+  }
+  .tk-body {
+    padding-block: var(--sp-4) var(--sp-3);
+  }
+}
+
+@container lblist (min-width: 40rem) {
+  .lb-ticket {
+    grid-template-columns: minmax(0, 1fr) var(--stub-w);
+  }
+  .tk-body {
+    padding: var(--sp-5) var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--rail-w));
+  }
+  .tk-stub {
+    align-content: center;
+    padding: var(--sp-4) var(--sp-5);
+    border-top: 0;
+    border-left: 1px dashed var(--line-strong);
+  }
+  .lb-ticket.is-you .tk-stub {
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+  }
+  .tk-stub::before,
+  .tk-stub::after {
+    left: -9px;
+    right: auto;
+  }
+  .tk-stub::before {
+    top: -9px;
+    clip-path: inset(50% 0 0 0);
+  }
+  .tk-stub::after {
+    top: auto;
+    bottom: -9px;
+    clip-path: inset(0 0 50% 0);
+  }
+}
+
+/* ───────── Em cartaz agora ───────── */
+
+.featured {
+  display: grid;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-7);
+  padding: var(--sp-4) var(--sp-4) var(--sp-5) calc(var(--sp-4) + var(--rail-w));
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  /* Fio duplo de latão: a moldura da carta, sem sombra larga. */
+  box-shadow:
+    inset 0 0 0 4px var(--surface),
+    inset 0 0 0 5px var(--line);
+}
+
+.featured::before {
+  border-radius: var(--r-md) 0 0 var(--r-md);
+}
+
+.featured-art {
+  position: relative;
+  margin-top: var(--sp-3);
+  padding: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+}
+
+.featured-art .mode-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 8;
+  border-radius: 2px;
+}
+
+/* No tema claro a arte do destaque vira papel de planta (traço do modo sobre a placa clara). */
+[data-theme='light'] .featured .art-bg {
+  fill: var(--mode-plate);
+}
+
+[data-theme='light'] .featured .art-lines {
+  stroke: var(--mode-glyph);
+}
+
+[data-theme='light'] .featured .art-lines .solid {
+  fill: var(--mode-glyph);
+}
+
+.featured-copy {
+  display: grid;
+  gap: var(--sp-2);
+  align-content: center;
+  min-width: 0;
+}
+
+.featured-kicker {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.1;
+  color: var(--accent-text);
+}
+
+.featured-swap {
+  color: var(--text);
+}
+
+.featured-mode {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.featured-name {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 800;
+  font-size: clamp(2rem, 1.8vw + 1.35rem, 3.25rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .featured-name {
+    animation: featured-in var(--dur-3) var(--ease-out);
+  }
+}
+
+@keyframes featured-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+    filter: blur(3px);
+  }
+}
+
+.featured-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.featured-why {
+  font-family: var(--font-tech);
+  font-size: 0.75rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.featured-activity {
+  display: block;
+}
+
+.featured-act {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-3) var(--sp-4);
+}
+
+.featured-ritual.ritual {
+  width: 7rem;
+  grid-row: span 3;
+}
+
+.featured-quorum {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--accent-text);
+}
+
+.featured-act .btn-join,
+.featured-act .btn-pair {
+  width: 100%;
+}
+
+.featured-criterion {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.featured.is-you {
+  border-color: var(--accent);
+}
+
+.featured.is-none .featured-act {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 60em) {
+  .featured {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr) 12.5rem;
+    align-items: center;
+    gap: var(--sp-6);
+    padding: var(--sp-5) var(--sp-5) var(--sp-5) calc(var(--sp-5) + var(--rail-w));
+  }
+  .featured-art {
+    margin-top: var(--sp-3);
+  }
+  .featured-art .mode-art {
+    aspect-ratio: 16 / 10;
+  }
+  .featured-act {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+  .featured-ritual.ritual {
+    width: 9.5rem;
+    grid-row: auto;
+  }
+}
+
+/* ───────── Página /lobbies ───────── */
+
+.lb-head .btn {
+  align-self: end;
+}
+
+.lb-toolbar .search {
+  flex: 1 1 16rem;
+}
+
+/* Celular: Filtros e a vista dividem a linha; a ordem fica embaixo. */
+@media (max-width: 59.99em) {
+  .lb-toolbar .filters-toggle {
+    order: 1;
+  }
+  .lb-toolbar .view-toggle {
+    order: 2;
+  }
+  .lb-toolbar .sort {
+    order: 3;
+    flex-basis: 100%;
+  }
+}
+
+.view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line-input);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.view-toggle .seg-btn {
+  min-height: 2.75rem;
+}
+
+.results > .results-count {
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0;
+}
+
+/* Filtro de modo: os seis selos como lista, cada um com quantos lobbies devolve. */
+.mode-filter {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.mode-opt {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 4px var(--sp-2) 4px 4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) ease,
+    color var(--dur-1) ease;
+}
+
+.mode-opt:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.mode-opt[aria-pressed='true'] {
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.mode-opt-all {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--r-xs);
+  background:
+    linear-gradient(var(--line-strong), var(--line-strong)) 50% 50% / 1px 60% no-repeat,
+    linear-gradient(var(--line-strong), var(--line-strong)) 50% 50% / 60% 1px no-repeat;
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.mode-opt-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mode-opt-count,
+.seg-count,
+.check-count {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.mode-opt[aria-pressed='true'] .mode-opt-count {
+  color: var(--accent-text);
+}
+
+.lb-regions {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+}
+
+.lb-regions .seg-btn {
+  gap: 0.35rem;
+  justify-content: center;
+  padding: 0 var(--sp-3);
+}
+
+@media (max-width: 59.99em) {
+  .lb-filters.is-open .mode-filter {
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  }
+}
+
+/* Vazio */
+.lb-empty h3 {
+  font-size: var(--fs-xl);
+}
+
+.lb-empty.is-inline {
+  justify-items: start;
+  padding: var(--sp-5);
+  text-align: left;
+}
+
+.lb-empty.is-inline .empty-actions {
+  justify-content: flex-start;
+}
+
+.suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.empty-seals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  max-width: 44rem;
+}
+
+.seal-shortcut {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-2);
+  width: 6.75rem;
+  padding: var(--sp-3) var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.seal-shortcut:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+/* ───────── Sessões do dia: quadro de partidas ───────── */
+
+.sessions {
+  display: grid;
+  gap: var(--sp-3);
+  margin-top: var(--sp-9);
+  align-content: start;
+}
+
+.sessions-title {
+  font-size: var(--fs-xl);
+  line-height: 1.1;
+}
+
+.sessions-lead {
+  max-width: 34rem;
+  color: var(--text-muted);
+}
+
+.sessions-board {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  display: grid;
+  border-top: 1px solid var(--line-strong);
+}
+
+.session {
+  display: grid;
+  grid-template-columns: 7rem auto minmax(0, 1fr);
+  grid-template-areas:
+    'time seal copy'
+    'time btn btn';
+  gap: var(--sp-2) var(--sp-3);
+  align-items: center;
+  padding: var(--sp-3) 0 var(--sp-3) calc(var(--sp-3) + var(--rail-w));
+  border-bottom: 1px solid var(--line);
+}
+
+.session-time {
+  grid-area: time;
+  display: grid;
+}
+
+.session-time time {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 2rem;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+.session-when {
+  white-space: nowrap;
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+.session.is-now .session-when {
+  color: var(--live);
+}
+
+.session .seal {
+  grid-area: seal;
+}
+
+.session-copy {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.session-mode {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.session-going {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.session-btn {
+  grid-area: btn;
+  justify-self: start;
+}
+
+.sessions-tz {
+  font-family: var(--font-tech);
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+}
+
+@media (min-width: 40em) {
+  .session {
+    grid-template-columns: 7.5rem auto minmax(0, 1fr) auto;
+    grid-template-areas: 'time seal copy btn';
+  }
+  .session-btn {
+    justify-self: end;
+  }
+}
+
+/* Na página do modo, as sessões ficam ao lado da lista: sempre empilhadas. */
+.mode-lobbies .session {
+  grid-template-columns: 7rem auto minmax(0, 1fr);
+  grid-template-areas:
+    'time seal copy'
+    'time btn btn';
+}
+
+.mode-lobbies .session-btn {
+  justify-self: start;
+}
+
+/* ───────── Página do modo ───────── */
+
+.mode-lobbies {
+  display: grid;
+  gap: var(--sp-7);
+  padding-top: var(--sp-8);
+}
+
+.mode-lobbies .sessions {
+  margin-top: 0;
+}
+
+.mode-lobbies-list {
+  min-width: 0;
+}
+
+.section-count {
+  font-family: var(--font-tech);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  vertical-align: middle;
+}
+
+@media (min-width: 60em) {
+  .mode-lobbies {
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    gap: var(--sp-8);
+    align-items: start;
+  }
+}
+
+/* ───────── Diálogos ───────── */
+
+/* Moldura de material (fio duplo), não sombra larga. */
+html .dialog {
+  box-shadow:
+    inset 0 0 0 4px var(--surface),
+    inset 0 0 0 5px var(--line),
+    0 30px 60px -30px rgb(2 6 5 / 0.6);
+}
+
+.dialog.is-wide {
+  width: min(44rem, calc(100vw - 2rem));
+}
+
+.join-copy {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.join-mode {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.join-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  overflow-wrap: anywhere;
+}
+
+.join-note {
+  font-family: var(--font-tech);
+  font-size: 0.75rem;
+  color: var(--accent-text);
+}
+
+.join-switch {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+}
+
+@media (min-width: 34em) {
+  html .join-ritual {
+    justify-items: stretch;
+  }
+}
+
+/* Criar lobby: mini-cartas de modo no lugar do <select>. */
+.mode-picks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+@media (min-width: 34em) {
+  .mode-picks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.mode-pick {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: var(--sp-3);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) ease,
+    background-color var(--dur-1) ease;
+}
+
+.mode-pick:hover {
+  border-color: var(--line-input);
+}
+
+.mode-pick .seal {
+  grid-row: 1 / 3;
+}
+
+.mode-pick input,
+.access-pick input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.mode-pick-name {
+  align-self: end;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.mode-pick-meta {
+  align-self: start;
+  font-family: var(--font-tech);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.mode-pick:has(input:checked) {
+  border-color: var(--mode-rail);
+  background: color-mix(in oklch, var(--mode-rail) 10%, transparent);
+  box-shadow: inset 0 0 0 1px var(--mode-rail);
+}
+
+.mode-pick:has(input:focus-visible),
+.access-pick:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.host-row {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+@media (min-width: 34em) {
+  .host-row {
+    grid-template-columns: auto 1fr 1fr;
+    align-items: end;
+  }
+}
+
+.host-quorum-hint {
+  margin-top: calc(var(--sp-3) * -1);
+}
+
+.access-picks {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+@media (min-width: 34em) {
+  .access-picks {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.access-pick {
+  position: relative;
+  display: grid;
+  gap: 0.15rem;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.access-pick:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.access-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+}
+
+.access-hint {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.host-preview {
+  display: grid;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+}
+
+.host-preview-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.lb-list.is-preview {
+  pointer-events: none;
+}
+
+/* Círculo de espera v4: sigilo do modo e quórum. */
+.ritual-glyph .glyph-lines {
+  stroke: var(--accent-line);
+}
+
+.ritual-glyph .glyph-lines .solid {
+  fill: var(--accent-line);
+}
+
+.ritual.is-hollow .ritual-seg.is-lit {
+  stroke-opacity: 0.35;
+  filter: none;
+}
+
+.ritual.is-hollow .ritual-seg.is-friend {
+  stroke-opacity: 0.4;
+  filter: none;
+}
+
+.ritual-seg.is-needed {
+  stroke: var(--line-strong);
+  stroke-dasharray: 2 3;
+  stroke-width: 11;
+}
+
+.ritual-quorum {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* O recorte do motivo nunca vaza do quadrado (o .ritual svg geral é overflow: visible). */
+svg.mode-glyph,
+.ritual svg.mode-glyph {
+  overflow: hidden;
+}
+
+/* Home v3 ("Enchendo agora") monta a linha numa lista antiga: mantém o fio entre linhas. */
+.lobby-list > .lb-row + .lb-row {
+  border-top: 1px solid var(--line);
+}

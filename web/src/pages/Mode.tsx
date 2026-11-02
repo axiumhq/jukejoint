@@ -8,7 +8,10 @@ import { getMode, modes } from '../data/modes';
 import { releases } from '../data/patches';
 import { useDocumentTitle, useReducedMotion } from '../hooks';
 import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
-import { bestLobbyForMode, isJoinable } from '../lib/lobbies';
+import { DaySessions, QuorumAsk } from '../components/DaySessions';
+import { LobbyRow } from '../components/LobbyRow';
+import { useNow } from '../hooks/useNow';
+import { EMPTY_FILTERS, filterLobbies, hasRoom, pickBestLobby } from '../lib/lobbies';
 import { markViewReady } from '../lib/viewTransition';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
@@ -18,7 +21,8 @@ export function ModePage() {
   const mode = getMode(slug);
   const reduced = useReducedMotion();
   const [paused, setPaused] = useState(false);
-  const { lobbies, requestJoin, openHost } = useSession();
+  const { lobbies, requestJoin, openHost, lobbyCtx, user } = useSession();
+  const now = useNow(5000);
   useDocumentTitle(mode ? t.meta.mode(mode.name) : t.meta.notFound);
   // Avisa a View Transition (se houver) que a página do modo já está no DOM.
   useLayoutEffect(() => {
@@ -27,8 +31,9 @@ export function ModePage() {
 
   if (!mode) return <NotFound title={t.modes.notFoundTitle} body={t.modes.notFoundBody} />;
 
-  const open = lobbies.filter((l) => l.modeSlug === mode.slug && isJoinable(l));
-  const best = bestLobbyForMode(lobbies, mode.slug);
+  const open = lobbies.filter((l) => l.modeSlug === mode.slug && hasRoom(l));
+  const best = pickBestLobby(lobbies, { mode: mode.slug, ctx: lobbyCtx, now });
+  const modeLobbies = filterLobbies(lobbies, { ...EMPTY_FILTERS, mode: mode.slug }, !!user, lobbyCtx, now).filter((l) => l.modeSlug === mode.slug);
   const recent = releases
     .flatMap((r) => r.changes.filter((c) => c.scope === mode.slug).map((c) => ({ ...c, version: r.version, date: r.date })))
     .slice(0, 4);
@@ -106,6 +111,37 @@ export function ModePage() {
             </Link>
           </p>
         </div>
+      </section>
+
+      <section className="mode-lobbies" aria-labelledby="mode-lobbies-title">
+        <div className="mode-lobbies-list">
+          <div className="section-head">
+            <h2 id="mode-lobbies-title">
+              {t.lobbies.modeListTitle} <span className="section-count num">{modeLobbies.length}</span>
+            </h2>
+            <Link to={`/lobbies?modo=${mode.slug}`} className="text-link">
+              {t.lobbies.modeListAll}
+            </Link>
+          </div>
+          {modeLobbies.length > 0 ? (
+            <ul className="lb-list is-compact">
+              {modeLobbies.map((l) => (
+                <LobbyRow key={l.id} lobby={l} now={now} />
+              ))}
+            </ul>
+          ) : (
+            <div className="empty lb-empty is-inline">
+              <p>{t.lobbies.modeListEmpty(mode.name)}</p>
+              <div className="empty-actions">
+                <button type="button" className="btn btn-outline" onClick={() => openHost(mode.slug)}>
+                  {t.modes.host}
+                </button>
+                <QuorumAsk mode={mode.slug} />
+              </div>
+            </div>
+          )}
+        </div>
+        <DaySessions mode={mode.slug} headingLevel={2} />
       </section>
 
       <div className="mode-columns">

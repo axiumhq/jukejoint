@@ -170,6 +170,50 @@ function Grid() {
 
 const motifs = { rings: Rings, rails: Rails, fog: Fog, clock: Clock, vault: Vault, grid: Grid };
 
+/** Recorte quadrado de cada motivo: o pedaço da carta que vira selo (ModeSeal) e sigilo (RitualCircle). */
+const glyphCrop: Record<Mode['motif'], string> = {
+  rings: '82 12 156 156',
+  rails: '76 40 168 140',
+  fog: '70 30 180 130',
+  clock: '82 12 156 156',
+  vault: '84 14 152 152',
+  grid: '78 40 168 140',
+};
+
+interface ModeGlyphProps {
+  motif: Mode['motif'];
+  className?: string;
+  /** Posição quando aninhado noutro SVG. */
+  x?: number;
+  y?: number;
+  size?: number;
+}
+
+/**
+ * O motivo da carta recortado em quadrado, com traço que não escala (fica nítido em 32 px).
+ * Estático: o selo é identidade, não animação.
+ */
+export function ModeGlyph({ motif, className, x, y, size }: ModeGlyphProps) {
+  const Motif = motifs[motif];
+  return (
+    <svg
+      className={className ? `mode-glyph ${className}` : 'mode-glyph'}
+      viewBox={glyphCrop[motif]}
+      preserveAspectRatio="xMidYMid slice"
+      x={x}
+      y={y}
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <g className="glyph-lines">
+        <Motif />
+      </g>
+    </svg>
+  );
+}
+
 export function ModeArt({ mode, playing = false, label, className }: ModeArtProps) {
   const Motif = motifs[mode.motif];
   const style = { '--art-h': mode.hue } as CSSProperties;
