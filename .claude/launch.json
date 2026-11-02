@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "web", "run", "dev", "--", "--port", "5173", "--strictPort"],
       "port": 5173
+    },
+    {
+      "name": "direcoes",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "4190", "--directory", "prototipos/direcoes"],
+      "port": 4190
     }
   ]
 }

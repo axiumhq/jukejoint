@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quatro direções de arte</title>
+<meta name="description" content="Galeria com as quatro direções de arte da home e da lista de lobbies.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..112,400..600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#111316;--card:#171A1E;--line:rgba(236,232,223,.10);--ink:#ECE8DF;--ink-2:#A6AAB0;--ink-3:#80868E;--accent:#F4A340;--m:clamp(18px,4vw,56px);color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Mona Sans",system-ui,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.wrap{max-width:1440px;margin:0 auto;padding:clamp(32px,5vw,72px) var(--m) 64px}
+h1{margin:0;font-weight:500;font-variation-settings:"wdth" 82;font-size:clamp(2.2rem,4vw,3.4rem);letter-spacing:-.03em;line-height:1}
+.intro{margin:14px 0 44px;color:var(--ink-2);max-width:60ch;font-size:17px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px;list-style:none;margin:0;padding:0}
+.card{display:block}
+.shot{position:relative;aspect-ratio:16/10;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:6px}
+.shot iframe{position:absolute;top:0;left:0;width:1440px;height:900px;border:0;transform-origin:0 0;pointer-events:none}
+.card:hover .shot{border-color:rgba(236,232,223,.3)}
+.meta{display:flex;justify-content:space-between;align-items:baseline;gap:16px;margin-top:14px}
+h2{margin:0;font-size:20px;font-weight:600;letter-spacing:-.01em}
+.fav{font-size:13px;color:var(--accent);white-space:nowrap}
+.card p{margin:6px 0 0;color:var(--ink-2);font-size:15px;max-width:58ch}
+@media (max-width:820px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <h1>Quatro direções para a home</h1>
+  <p class="intro">Mesmo conteúdo, quatro mundos. Cada página tem o primeiro bloco da home, a lista de lobbies e o rodapé. Abra uma e compare no desktop e no celular.</p>
+  <ol class="grid">
+    <li><a class="card" href="minimal.html">
+      <div class="shot"><iframe src="minimal.html" title="Prévia: Minimal e preciso" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe></div>
+      <div class="meta"><h2>1. Minimal e preciso</h2><span class="fav">A favorita até agora</span></div>
+      <p>Tipografia e grade, quase nada além disso. Cada jogador que entra faz um farol de sódio passar pelo título.</p>
+    </a></li>
+    <li><a class="card" href="cinematografico.html">
+      <div class="shot"><iframe src="cinematografico.html" title="Prévia: 3D cinematográfico" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe></div>
+      <div class="meta"><h2>2. 3D cinematográfico</h2></div>
+      <p>A arte renderizada ocupa a tela como a primeira tomada de um filme. O obturador abre em tela larga.</p>
+    </a></li>
+    <li><a class="card" href="ilustrado.html">
+      <div class="shot"><iframe src="ilustrado.html" title="Prévia: Ilustrado e pintado" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe></div>
+      <div class="meta"><h2>3. Ilustrado e pintado</h2></div>
+      <p>Cartaz impresso dos anos 1920 com espaço de hoje. Os lobbies viram o programa da noite.</p>
+    </a></li>
+    <li><a class="card" href="interface-jogo.html">
+      <div class="shot"><iframe src="interface-jogo.html" title="Prévia: Interface de jogo" loading="lazy" scrolling="no" tabindex="-1" aria-hidden="true"></iframe></div>
+      <div class="meta"><h2>4. Interface de jogo</h2></div>
+      <p>O menu principal de um launcher. Botão Jogar, modos no Q e E, lobbies ao vivo ao lado.</p>
+    </a></li>
+  </ol>
+</main>
+<script>
+  const fit = () => document.querySelectorAll('.shot').forEach(s => { s.querySelector('iframe').style.transform = `scale(${s.clientWidth / 1440})`; });
+  fit(); addEventListener('resize', fit);
+</script>
+</body>
+</html>
