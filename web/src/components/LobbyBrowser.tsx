@@ -4,6 +4,7 @@ import { getMode, type Region } from '../data/modes';
 import { useFavorites, useFriends, useLiveStats, usePref } from '../hooks';
 import { useLobbyFilters, type BrowseTab } from '../hooks/useFilters';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { filterLobbies, hasFriends, LOW_PING_MS, nearestAlternatives, REGIONS } from '../lib/lobbies';
 import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
@@ -50,7 +51,7 @@ const TABS: { id: BrowseTab; label: string }[] = [
 ];
 
 export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; now: number }) {
-  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx } = useSession();
+  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx, synced } = useSession();
   const friends = useFriends();
   const { f, tab, params, update, setTab, clearAll } = useLobbyFilters();
   const { favs, toggle } = useFavorites();
@@ -98,7 +99,14 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
 
   let empty: ReactNode = null;
   if (results.length === 0) {
-    if (pool.length === 0) {
+    if (!synced) {
+      // Ao vivo, antes da primeira lista: vazio ainda não quer dizer "0 lobbies".
+      empty = (
+        <div className="lb-empty lb-loading" aria-busy="true">
+          <p>{L.loadingLobbies}</p>
+        </div>
+      );
+    } else if (pool.length === 0) {
       empty = (
         <div className="lb-empty">
           <Icon name="lobbies" />

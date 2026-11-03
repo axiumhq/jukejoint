@@ -4,6 +4,7 @@
  */
 export const live = {
   connecting: 'Conectando ao servidor…',
+  loadingLobbies: 'Buscando os lobbies abertos…',
   offline: 'Sem conexão com o servidor. Tentando de novo…',
   offlineError: 'Sem conexão com o servidor agora. Tente de novo em instantes.',
   timeoutError: 'O servidor demorou para responder. Tente de novo.',
