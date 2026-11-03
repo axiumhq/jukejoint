@@ -509,6 +509,17 @@ export const ptBR = {
     install: `Instalar grátis (${MB} MB)`,
     /** "Código aberto" volta para esta lista quando o repositório estiver público. */
     trust: ['Grátis', 'Hash publicado para conferir o arquivo', 'Ajuda se o antivírus reclamar'],
+    // Celular e tablet: o app não roda aqui. Em vez de "Abrir o app", o link para abrir no PC.
+    phoneTitle: 'O app roda no PC (Windows)',
+    phoneBody: (lobby: string) => `Pelo celular dá para acompanhar "${lobby}". Para entrar, abra o link da sala no computador com o Deadlock.`,
+    phoneBotsBody: `O treino com bots abre pelo app ${BRAND_NAME}, que roda no PC (Windows). Abra o site no computador para treinar.`,
+    phoneRoomLink: 'Link da sala',
+    phoneSiteLink: 'Link do site',
+    copyRoomLink: 'Copiar link da sala',
+    copySiteLink: 'Copiar link do site',
+    linkCopied: 'Link copiado',
+    copyFailed: 'Não deu para copiar. O link ficou selecionado.',
+    viewRoom: 'Ver a sala',
     joiningToast: (lobby: string) => `Abrindo o Deadlock. Você entra em "${lobby}" em instantes.`,
     errorFull: 'Esse lobby encheu enquanto você clicava. Ligue o aviso de vaga ou escolha outro do mesmo modo.',
     live: 'ao vivo',
@@ -632,9 +643,12 @@ export const ptBR = {
     doesntTitle: 'O que o app não faz',
     affiliation: `O ${BRAND_NAME} é um projeto independente da comunidade, sem afiliação com a Valve. A Valve não revisa nem aprova este app.`,
     riskTitle: 'Anti-cheat e risco de banimento',
-    riskPending: 'Texto pendente',
-    riskPlaceholder:
-      'Esta seção ainda não tem texto. Ela precisa ser escrita por quem conhece o funcionamento real do app e não pode ser publicada vazia nem com texto inventado.',
+    /**
+     * O texto de anti-cheat e banimento é decisão de quem mantém o app: precisa ser escrito por quem
+     * conhece o funcionamento real e não pode sair inventado. Vazio, a seção e o link no índice
+     * ficam escondidos em /instalar; preenchido, os dois voltam sozinhos.
+     */
+    riskBody: '',
     uninstallTitle: 'Desinstalar',
     uninstallBody: `Em Configurações do Windows, Aplicativos, procure por ${BRAND_NAME} e clique em Desinstalar. Todas as pastas listadas acima são removidas, inclusive os modos baixados.`,
     // v8: passos, aviso do Windows, requisitos, perguntas e o índice do trilho.

@@ -21,7 +21,7 @@ import '../styles/live.css';
 
 /*
  * Casca v8 (estrutura da pele B): barra superior, coluna principal e trilho social fixo.
- * Breakpoints em styles/shell.css: 1240 (trilho 288), 960 (trilho vira folha), 760 (celular).
+ * Breakpoints em styles/shell.css: 1240 (trilho 288), 960 (trilho vira folha, navegação vira faixa), 760 (celular).
  */
 
 const NAV: { to: string; label: string; end?: boolean }[] = [
@@ -182,7 +182,7 @@ function Account() {
   );
 }
 
-/** A barra superior: marca, navegação, busca (Ctrl K), ao vivo ou pílula da sala, tema e conta. */
+/** A barra superior: marca, navegação, busca (Ctrl K), ao vivo ou pílula da sala, tema e conta. Mais a faixa de navegação (≤960 px). */
 export function TopBar({ inert }: { inert?: boolean }) {
   const { hereId, joiningId } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -191,33 +191,44 @@ export function TopBar({ inert }: { inert?: boolean }) {
   const inRoom = !!(joiningId ?? hereId);
 
   return (
-    <header className="tb" inert={inert}>
-      <Link to="/" className="brand" aria-label={t.a11y.home}>
-        <Wordmark />
-      </Link>
-      <nav className="nav" aria-label={t.a11y.mainNav}>
-        {NAV.map((n) => (
-          <NavLink key={n.to} to={n.to} end={n.end}>
-            {n.label}
-          </NavLink>
-        ))}
-      </nav>
-      <span className="tb-sp" />
-      <Search open={searchOpen} onOpenChange={setSearchOpen} />
-      {inRoom ? <RoomPill /> : <LiveCount />}
-      <button
-        type="button"
-        className="icon-btn only-phone"
-        data-search-toggle
-        aria-label={t.search.open}
-        aria-expanded={searchOpen}
-        onClick={() => setSearchOpen((v) => !v)}
-      >
-        <Icon name="search" />
-      </button>
-      <ThemeMenu />
-      <Account />
-    </header>
+    <>
+      <header className="tb" inert={inert}>
+        <Link to="/" className="brand" aria-label={t.a11y.home}>
+          <Wordmark />
+        </Link>
+        <NavLinks className="nav" />
+        <span className="tb-sp" />
+        <Search open={searchOpen} onOpenChange={setSearchOpen} />
+        {inRoom ? <RoomPill /> : <LiveCount />}
+        <button
+          type="button"
+          className="icon-btn only-phone"
+          data-search-toggle
+          aria-label={t.search.open}
+          aria-expanded={searchOpen}
+          onClick={() => setSearchOpen((v) => !v)}
+        >
+          <Icon name="search" />
+        </button>
+        <ThemeMenu />
+        <Account />
+      </header>
+      {/* Abaixo de 960 px a navegação desce para esta faixa fixa sob a barra; só uma das duas aparece. */}
+      <NavLinks className="tabs" inert={inert} />
+    </>
+  );
+}
+
+/** Jogar, Modos, Hoje e Instalar: na barra (largo) ou na faixa sob ela (tablet e celular). */
+function NavLinks({ className, inert }: { className: string; inert?: boolean }) {
+  return (
+    <nav className={className} aria-label={t.a11y.mainNav} inert={inert}>
+      {NAV.map((n) => (
+        <NavLink key={n.to} to={n.to} end={n.end}>
+          {n.label}
+        </NavLink>
+      ))}
+    </nav>
   );
 }
 

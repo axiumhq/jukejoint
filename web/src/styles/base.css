@@ -11,13 +11,13 @@ html {
   -webkit-text-size-adjust: 100%;
   scrollbar-color: var(--s4) transparent;
   scrollbar-width: thin;
-  scroll-padding-top: calc(var(--tb) + 16px);
+  scroll-padding-top: calc(var(--tb) + var(--tabs, 0px) + 16px);
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
-  font: 400 13px/1.45 var(--f-ui);
+  font: 400 0.8125rem/1.45 var(--f-ui);
   color: var(--tx);
   background:
     radial-gradient(1100px 620px at 12% -8%, var(--bg-tint), transparent 62%), radial-gradient(900px 640px at 104% 108%, var(--bg-tint-2), transparent 60%),
@@ -66,6 +66,11 @@ ul,
 ol {
   padding: 0;
   list-style: none;
+}
+
+/* o "smaller" do navegador desce de 12 px dentro de texto de 13 px: o piso vale aqui também */
+small {
+  font-size: max(0.8em, 0.75rem);
 }
 
 img,
@@ -145,9 +150,9 @@ main:focus {
   font-stretch: 75%;
   font-weight: 650;
   font-variation-settings: 'opsz' 12;
-  font-size: 10.5px;
+  font-size: 0.75rem;
   line-height: 1.2;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
@@ -161,9 +166,9 @@ main:focus {
 
 /* Rótulo de dado: Anfitrião, Vagas, "Lobby 07 · BR/SA · 18 ms". */
 .lbl {
-  font-size: 10.5px;
+  font-size: 0.75rem;
   font-weight: 550;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
@@ -209,7 +214,7 @@ main:focus {
 
 kbd,
 .kbd {
-  font: 500 10px/1 var(--f-mono);
+  font: 500 0.75rem/1 var(--f-mono);
   padding: 4px 6px;
   border-radius: var(--r-xs);
   background: var(--s3);
@@ -229,7 +234,7 @@ kbd,
   padding: 0 13px;
   border-radius: var(--r-sm);
   font-weight: 550;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1;
   white-space: nowrap;
   letter-spacing: -0.005em;
@@ -290,14 +295,14 @@ kbd,
 .btn-sm {
   --h: 26px;
   padding: 0 10px;
-  font-size: 12px;
+  font-size: 0.75rem;
   border-radius: 5px;
 }
 
 .btn-lg {
   --h: 40px;
   padding: 0 18px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
 }
 
 .btn-square {
@@ -365,7 +370,7 @@ kbd,
   align-items: center;
   gap: 6px;
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   padding: 6px 8px;
   border-radius: var(--r-sm);
@@ -391,7 +396,7 @@ kbd,
   border-radius: var(--r-sm);
   background: var(--s2);
   color: var(--tx-2);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -413,7 +418,7 @@ kbd,
 }
 
 .chip .c {
-  font: 500 11px var(--f-mono);
+  font: 500 0.75rem var(--f-mono);
   color: var(--tx-3);
 }
 
@@ -435,7 +440,7 @@ kbd,
   height: 20px;
   padding: 0 7px;
   border-radius: 5px;
-  font-size: 11px;
+  font-size: 0.75rem;
   font-weight: 550;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -473,13 +478,13 @@ kbd,
 }
 
 .badge {
-  min-width: 18px;
-  height: 17px;
+  min-width: 19px;
+  height: 18px;
   padding: 0 5px;
   border-radius: 5px;
   display: inline-grid;
   place-items: center;
-  font: 600 10.5px/1 var(--f-mono);
+  font: 600 0.75rem/1 var(--f-mono);
   background: var(--acc);
   color: var(--acc-ink);
 }
@@ -604,7 +609,7 @@ kbd,
   border-radius: 99px;
   display: inline-grid;
   place-items: center;
-  font: 600 10.5px var(--f-mono);
+  font: 600 0.75rem var(--f-mono);
   letter-spacing: -0.02em;
   background: var(--s4);
   color: var(--tx-2);
@@ -689,7 +694,7 @@ select {
   border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
   background: var(--bg);
-  font-size: 13px;
+  font-size: 0.8125rem;
   transition: border-color var(--t-mid) var(--e-out);
 }
 
@@ -720,7 +725,7 @@ input[type='radio'] {
 .copy-field code {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.6;
   color: var(--tx-2);
   overflow-wrap: anywhere;

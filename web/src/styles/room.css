@@ -61,7 +61,7 @@ body:has(.rbar) .toasts {
   height: 28px;
   padding: 0 10px 0 8px;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 550;
   color: var(--tx-2);
   background: hsl(0 0% 0% / 0.35);
@@ -78,7 +78,7 @@ body:has(.rbar) .toasts {
 .rh h1 {
   margin: auto 0 12px;
   max-width: 62%;
-  font-size: 54px;
+  font-size: 3.375rem;
   text-wrap: balance;
 }
 
@@ -97,7 +97,7 @@ body:has(.rbar) .toasts {
   flex-wrap: wrap;
   gap: 6px 12px;
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .rh-meta > i {
@@ -137,12 +137,12 @@ body:has(.rbar) .toasts {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 11px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
 .rphase-t .num {
-  font-size: 11px;
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -166,7 +166,7 @@ body:has(.rbar) .toasts {
 }
 
 .rphase-v {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -213,12 +213,12 @@ body:has(.rbar) .toasts {
 
 .rsheet .t b {
   display: block;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .rsheet .t span {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -318,7 +318,7 @@ body:has(.rbar) .toasts {
 
 .seat-n {
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -330,7 +330,7 @@ body:has(.rbar) .toasts {
   align-items: center;
   gap: 6px;
   margin-top: 2px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -384,13 +384,13 @@ button.seat.is-empty:hover {
 }
 
 .seat.is-empty b {
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 600;
   color: inherit;
 }
 
 .seat.is-empty small {
-  font-size: 10.5px;
+  font-size: 0.75rem;
   opacity: 0.8;
 }
 
@@ -433,7 +433,7 @@ button.seat.is-empty:hover {
 }
 
 .rb-n b {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -441,12 +441,12 @@ button.seat.is-empty:hover {
 
 .rb-n > span {
   color: var(--tx-2);
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .rb-n .rb-k {
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .rb-ticks {
@@ -495,7 +495,7 @@ button.seat.is-empty:hover {
   gap: 8px;
   min-width: 0;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 
@@ -516,7 +516,7 @@ button.seat.is-empty:hover {
 }
 
 .rb-cd {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -539,7 +539,7 @@ button.seat.is-empty:hover {
   min-width: 0;
   overflow: hidden;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .hstep {
@@ -567,7 +567,7 @@ button.seat.is-empty:hover {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 0 0 1px var(--line-2) inset;
   transition:
@@ -612,7 +612,7 @@ button.seat.is-empty:hover {
 
 .rb-help {
   flex: none;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
 }
@@ -640,13 +640,13 @@ button.seat.is-empty:hover {
   min-width: 196px;
   padding: 0 22px;
   border-radius: var(--r-md);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 650;
 }
 
 /* só o PRONTO em caixa alta ganha o espaçamento largo */
 .rb-ready.is-caps {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -696,7 +696,7 @@ button.seat.is-empty:hover {
   border-radius: var(--r-md);
   background: var(--s2);
   box-shadow: 0 0 0 1px var(--line) inset;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.4;
   text-wrap: pretty;
 }
@@ -731,7 +731,7 @@ button.seat.is-empty:hover {
 .rinv-link code {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-2);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -743,7 +743,7 @@ button.seat.is-empty:hover {
   gap: 10px;
   justify-items: start;
   color: var(--tx-3);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .ract-i {
@@ -751,7 +751,7 @@ button.seat.is-empty:hover {
   align-items: center;
   gap: 9px;
   padding: 6px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-2);
   animation: act-in var(--t-slow) var(--e-out);
 }
@@ -785,7 +785,7 @@ button.seat.is-empty:hover {
 .ract-i .t {
   margin-left: auto;
   flex: none;
-  font-size: 10.5px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
 }
@@ -812,12 +812,12 @@ button.seat.is-empty:hover {
 }
 
 .room-gone h1 {
-  font-size: 44px;
+  font-size: 2.75rem;
 }
 
 .room-gone p {
   color: var(--tx-2);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   max-width: 46ch;
 }
 
@@ -891,12 +891,12 @@ button.seat.is-empty:hover {
 
   .rh h1 {
     margin-bottom: 8px;
-    font-size: 38px;
+    font-size: 2.375rem;
   }
 
   .rh-meta {
     gap: 6px 8px;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .seats {
@@ -944,7 +944,7 @@ button.seat.is-empty:hover {
   }
 
   .rb-n b {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
 
   .rb-steps {
@@ -957,7 +957,7 @@ button.seat.is-empty:hover {
   }
 
   .room-gone h1 {
-    font-size: 34px;
+    font-size: 2.125rem;
   }
 }
 
@@ -1044,13 +1044,13 @@ a.lt-name:hover {
 }
 
 .qp-h h1 {
-  font-size: 48px;
+  font-size: 3rem;
 }
 
 .qp-steps {
   display: grid;
   gap: 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--tx-3);
 }
 
@@ -1068,7 +1068,7 @@ a.lt-name:hover {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 10.5px;
+  font-size: 0.75rem;
   font-weight: 600;
   box-shadow: 0 0 0 1px var(--line-2) inset;
   transition:
@@ -1122,7 +1122,7 @@ a.lt-name:hover {
 }
 
 .qp-found-t b {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 650;
   letter-spacing: -0.015em;
   overflow: hidden;
@@ -1135,7 +1135,7 @@ a.lt-name:hover {
   align-items: center;
   flex-wrap: wrap;
   gap: 2px 9px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-2);
 }
 
@@ -1167,13 +1167,13 @@ a.lt-name:hover {
 }
 
 .qp-none b {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .qp-none p {
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .qp-act {
@@ -1193,7 +1193,7 @@ a.lt-name:hover {
   }
 
   .qp-h h1 {
-    font-size: 38px;
+    font-size: 2.375rem;
   }
 
   .qp-found {

@@ -53,7 +53,7 @@
   font-stretch: 50%;
   font-weight: 700;
   font-variation-settings: 'opsz' 144;
-  font-size: 25px;
+  font-size: 1.5625rem;
   letter-spacing: -0.01em;
   line-height: 1;
 }
@@ -71,7 +71,7 @@
   border-radius: var(--r-sm);
   color: var(--tx-2);
   font-weight: 550;
-  font-size: 13px;
+  font-size: 0.8125rem;
   transition:
     color var(--t-fast),
     background var(--t-fast);
@@ -101,17 +101,22 @@
   flex: 1;
 }
 
+/* faixa de navegação: só abaixo de 960 px, quando a .nav sai da barra */
+.tabs {
+  display: none;
+}
+
 .live-count {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   white-space: nowrap;
 }
 
 .live-count b {
-  font: 600 13px var(--f-mono);
+  font: 600 0.8125rem var(--f-mono);
   color: var(--tx);
 }
 
@@ -127,7 +132,7 @@
   background: var(--acc-soft);
   box-shadow: 0 0 0 1px var(--acc-line) inset;
   color: var(--tx);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   white-space: nowrap;
   transition: background var(--t-fast);
@@ -146,7 +151,7 @@
 
 .room-pill .num {
   color: var(--acc-tx);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .room-pill.is-joining .num {
@@ -183,7 +188,7 @@
 
 .acct-name {
   font-weight: 600;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .acct > .ico {
@@ -255,14 +260,14 @@
 
 .theme-opt b {
   display: block;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 600;
 }
 
 .theme-opt small {
   display: block;
   color: var(--tx-3);
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 
 .theme-opt > .ico {
@@ -284,12 +289,12 @@
 
 .acct-menu p {
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .acct-menu b {
   display: block;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .only-phone {
@@ -317,8 +322,7 @@
   background: var(--s2);
   box-shadow: 0 0 0 1px var(--line) inset;
   padding: 0 66px 0 36px;
-  font-size: 12.5px;
-  outline: none;
+  font-size: 0.78125rem;
   transition:
     box-shadow var(--t-fast),
     background var(--t-fast);
@@ -332,10 +336,11 @@
   background: var(--s3);
 }
 
+/* o mesmo anel de 2 px do foco global */
 .search input:focus {
-  box-shadow:
-    0 0 0 1px var(--acc-line) inset,
-    0 0 0 3px var(--acc-soft);
+  outline: 2px solid var(--acc-tx);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px var(--acc-line) inset;
 }
 
 .search-field > .ico {
@@ -378,7 +383,7 @@
 .search-hint {
   padding: 12px 8px;
   color: var(--tx-3);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .sr-opt {
@@ -416,7 +421,7 @@
 .sr-t b {
   display: block;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -425,7 +430,7 @@
 .sr-t small {
   display: block;
   color: var(--tx-3);
-  font-size: 11.5px;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -441,7 +446,7 @@
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--rail);
-  min-height: calc(100dvh - var(--tb));
+  min-height: calc(100dvh - var(--tb) - var(--tabs));
 }
 
 .main {
@@ -480,7 +485,7 @@
   padding-top: 16px;
   border-top: 1px solid var(--line);
   color: var(--tx-3);
-  font-size: 11.5px;
+  font-size: 0.75rem;
 }
 
 /* seções */
@@ -497,7 +502,7 @@
 }
 
 .sec-h h2 {
-  font-size: 30px;
+  font-size: 1.875rem;
 }
 
 .sec-h .sp {
@@ -513,7 +518,7 @@
   margin-bottom: 14px;
   padding: 5px 5px 5px 14px;
   border-radius: var(--r-md);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-2);
   background: linear-gradient(90deg, var(--acc-soft), transparent 75%), var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -547,7 +552,7 @@
 }
 
 .fine {
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.5;
   color: var(--tx-3);
 }
@@ -593,7 +598,7 @@
 }
 
 .rail-h .link {
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 2px 4px;
 }
 
@@ -612,14 +617,14 @@
 
 .party b {
   display: block;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
 }
 
 .party small {
   display: block;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .party-slots {
@@ -682,7 +687,7 @@
 .invite-top small {
   display: block;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -717,14 +722,14 @@
 .fr-t b {
   display: block;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.25;
 }
 
 .fr-t small {
   display: block;
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -742,7 +747,7 @@
 
 .fr-state {
   color: var(--tx-3);
-  font-size: 11.5px;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
@@ -758,7 +763,7 @@
   margin-top: 6px;
   padding: 8px 0 2px;
   color: var(--tx-3);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   border-radius: var(--r-sm);
 }
 
@@ -785,23 +790,23 @@
 }
 
 .rail-signin b {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .rail-signin p {
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .rail-signin small {
   color: var(--tx-3);
-  font-size: 11.5px;
+  font-size: 0.75rem;
 }
 
 .rail-empty {
   color: var(--tx-3);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .scrim {
@@ -844,7 +849,7 @@
   box-shadow:
     0 0 0 1px var(--line-2),
     0 20px 40px -16px hsl(0 0% 0% / 0.8);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   pointer-events: auto;
   animation: toast-in var(--t-mid) var(--e-out);
 }
@@ -901,6 +906,59 @@
     display: none;
   }
 
+  /* as quatro seções numa faixa fixa sob a barra, mesma superfície dela */
+  .tabs {
+    position: sticky;
+    top: var(--tb);
+    z-index: 39;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: var(--tabs);
+    padding-inline: calc(var(--gut) - 12px);
+    background: hsl(from var(--bg) h s l / 0.82);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tabs a {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    color: var(--tx-2);
+    font-weight: 550;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    transition: color var(--t-fast);
+  }
+
+  .tabs a:hover {
+    color: var(--tx);
+  }
+
+  .tabs a:focus-visible {
+    outline-offset: -4px;
+  }
+
+  .tabs a[aria-current='page'] {
+    color: var(--tx);
+    font-weight: 600;
+  }
+
+  .tabs a[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -1px;
+    width: 28px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--acc-tx);
+    translate: -50% 0;
+  }
+
   .rail {
     position: fixed;
     top: auto;
@@ -951,7 +1009,7 @@
 
   .sheet-h b {
     font-weight: 600;
-    font-size: 14px;
+    font-size: 0.875rem;
   }
 }
 
@@ -1012,7 +1070,7 @@
 
   .live-count {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 0.75rem;
   }
 
   .main {
@@ -1024,7 +1082,7 @@
   }
 
   .sec-h h2 {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
 
   .room-pill .rp-name {

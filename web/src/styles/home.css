@@ -60,7 +60,7 @@
 
 .hero h1 {
   margin: 20px 0 16px;
-  font-size: 72px;
+  font-size: 4.5rem;
   line-height: 0.9;
   text-wrap: balance;
 }
@@ -75,7 +75,7 @@
   gap: 10px;
   flex-wrap: wrap;
   color: var(--tx-2);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
 }
 
 .hero-sub .hs-m {
@@ -139,18 +139,18 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .hg-big {
-  font: 600 17px/1 var(--f-mono);
+  font: 600 1.0625rem/1 var(--f-mono);
   letter-spacing: -0.02em;
 }
 
 .hg-big small {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   font-weight: 500;
 }
@@ -186,16 +186,16 @@
 }
 
 .falta {
-  font: 600 10.5px var(--f-mono);
+  font: 600 0.75rem var(--f-mono);
   color: var(--acc-tx);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
 .sub-mut {
   font-weight: 450;
   color: var(--tx-3);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .hg-act {
@@ -210,7 +210,7 @@
 .hg-act .btn {
   --h: 42px;
   padding: 0 16px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
 }
 
 .hg-act .btn-s {
@@ -230,7 +230,7 @@
 
 .hero-none p {
   color: var(--tx-2);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
 }
 
 /* ───────── Social no celular: cartão que abre a folha ───────── */
@@ -255,12 +255,12 @@
 
 .mfriends .t b {
   display: block;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .mfriends .t span {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -319,7 +319,7 @@
 }
 
 .mcard-n {
-  font-size: 20px;
+  font-size: 1.25rem;
   margin-bottom: 7px;
 }
 
@@ -328,7 +328,7 @@
   align-items: center;
   gap: 7px;
   color: var(--tx-2);
-  font-size: 11.5px;
+  font-size: 0.75rem;
 }
 
 .mcard-c .num {
@@ -378,7 +378,7 @@
 }
 
 .fe-n {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -386,7 +386,7 @@
 }
 
 .fe-l {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
   overflow: hidden;
@@ -403,7 +403,7 @@
 
 .fe > .num {
   color: var(--tx-3);
-  font-size: 10.5px;
+  font-size: 0.75rem;
   align-self: flex-start;
   margin-top: 2px;
 }
@@ -458,7 +458,7 @@
 
 .mbar-t b {
   display: block;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
@@ -466,7 +466,7 @@
 }
 
 .mbar-t span {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -479,7 +479,7 @@
 .mbar .btn {
   --h: 44px;
   padding: 0 16px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
 }
 
 /* ───────── Pontos de quebra ───────── */
@@ -492,7 +492,7 @@
 
 @media (max-width: 1240px) {
   .hero h1 {
-    font-size: 60px;
+    font-size: 3.75rem;
   }
 
   .hg {
@@ -573,7 +573,7 @@
   }
 
   .hero h1 {
-    font-size: 44px;
+    font-size: 2.75rem;
     margin: 12px 0 10px;
   }
 
@@ -660,7 +660,7 @@
 }
 
 .hero-none h1 {
-  font-size: 44px;
+  font-size: 2.75rem;
 }
 .mcard-n {
   display: block;
@@ -673,18 +673,18 @@
 
 .hero h1.is-long {
   max-width: 9em;
-  font-size: 52px;
+  font-size: 3.25rem;
 }
 
 @media (max-width: 1240px) {
   .hero h1.is-long {
-    font-size: 44px;
+    font-size: 2.75rem;
   }
 }
 
 @media (max-width: 760px) {
   .hero h1.is-long {
-    font-size: 36px;
+    font-size: 2.25rem;
   }
 
   .hg > div {

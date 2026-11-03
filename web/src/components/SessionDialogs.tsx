@@ -1,7 +1,8 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useLocation } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode, modes, type Region } from '../data/modes';
+import { useCannotRunApp } from '../hooks';
 import { t } from '../i18n';
 import { live as L } from '../i18n/live';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
@@ -79,21 +80,80 @@ function SignInBlock({ body }: { body: string }) {
 }
 
 /**
+ * Celular ou tablet: o app não roda aqui. Mostra o link (da sala ou do site) para abrir no PC,
+ * com o botão de copiar; se a área de transferência recusar, o link fica selecionado.
+ */
+function OpenOnPc({ lobby, onClose }: { lobby: Lobby | null; onClose: () => void }) {
+  const { pathname } = useLocation();
+  const [copy, setCopy] = useState<'idle' | 'done' | 'failed'>('idle');
+  const code = useRef<HTMLElement>(null);
+  const path = lobby ? `/sala/${encodeURIComponent(lobby.id)}` : '/';
+  const url = `${window.location.origin}${path}`;
+  const onRoom = pathname === path;
+
+  useEffect(() => {
+    if (copy !== 'done') return;
+    const id = window.setTimeout(() => setCopy('idle'), 2500);
+    return () => window.clearTimeout(id);
+  }, [copy]);
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopy('done');
+    } catch {
+      if (code.current) window.getSelection()?.selectAllChildren(code.current);
+      setCopy('failed');
+    }
+  }
+
+  return (
+    <>
+      <section className="dlg-opt is-main dlg-pc" aria-labelledby="join-pc">
+        <h3 className="cap" id="join-pc">
+          {lobby ? t.join.phoneRoomLink : t.join.phoneSiteLink}
+        </h3>
+        <code ref={code} className="dlg-link num">
+          {url.replace(/^https?:\/\//, '')}
+        </code>
+        <button type="button" className="btn btn-p btn-lg" onClick={copyLink}>
+          <Icon name={copy === 'done' ? 'check' : 'copy'} />
+          {copy === 'done' ? t.join.linkCopied : lobby ? t.join.copyRoomLink : t.join.copySiteLink}
+        </button>
+        <p className="dlg-hint" role="status">
+          {copy === 'failed' ? t.join.copyFailed : t.install.platformMeta}
+        </p>
+      </section>
+      {lobby && !onRoom && (
+        <div className="dlg-act">
+          <Link to={path} className="btn btn-s btn-lg" onClick={onClose}>
+            {t.join.viewRoom}
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
  * Entrar: mostra o lobby (ao vivo), avisa se a partida já começou ou se ainda falta gente para o quórum,
  * pede o app se ele não estiver aberto, e confirma a troca se você já está noutro lobby.
+ * No celular (lib/device.ts), diz que o app roda no PC e oferece o link para abrir lá.
  * O lobby com convite nunca chega aqui (vai para "Bater na porta").
  */
 export function JoinDialog() {
   const { joinTarget, closeJoin, confirmJoin, lobbies, appConnected, hereId } = useSession();
+  const phone = useCannotRunApp();
   // O lobby continua ao vivo enquanto o diálogo está aberto.
   const live = joinTarget?.kind === 'lobby' ? (lobbies.find((l) => l.id === joinTarget.lobby.id) ?? joinTarget.lobby) : null;
-  const here = hereId && live && hereId !== live.id ? lobbies.find((l) => l.id === hereId) : undefined;
-  const title = here ? t.join.switchTitle : appConnected ? t.join.titleConnected : t.join.title;
+  const here = !phone && hereId && live && hereId !== live.id ? lobbies.find((l) => l.id === hereId) : undefined;
+  const title = phone ? t.join.phoneTitle : here ? t.join.switchTitle : appConnected ? t.join.titleConnected : t.join.title;
+  const lead = phone ? (live ? t.join.phoneBody(live.name) : t.join.phoneBotsBody) : live ? t.join.body(live.name) : t.join.botsBody;
   const round = live?.status === 'em-partida' ? roundText(live) : null;
 
   return (
     <>
-      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title} lead={live ? t.join.body(live.name) : t.join.botsBody}>
+      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title} lead={lead}>
         {live && (
           <div className="dlg-stack">
             <LobbySummary lobby={live} />
@@ -106,7 +166,9 @@ export function JoinDialog() {
             )}
           </div>
         )}
-        {appConnected ? (
+        {phone ? (
+          <OpenOnPc lobby={live} onClose={closeJoin} />
+        ) : appConnected ? (
           <div className="dlg-act">
             <button type="button" className="btn btn-s btn-lg" onClick={closeJoin}>
               {t.join.switchCancel}

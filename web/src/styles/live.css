@@ -6,7 +6,7 @@
 /* aviso de conexão, logo abaixo da barra superior */
 .live-status {
   position: fixed;
-  top: calc(var(--tb) + 10px);
+  top: calc(var(--tb) + var(--tabs) + 10px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 45;
@@ -19,7 +19,7 @@
   background: var(--s2);
   box-shadow: 0 0 0 1px var(--line-2) inset;
   color: var(--tx-2);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.3;
 }
 .live-status > i {
@@ -62,7 +62,7 @@
   background: transparent;
   color: var(--tx-3);
   font: inherit;
-  font-size: 11.5px;
+  font-size: 0.75rem;
   cursor: pointer;
 }
 .seat-kick:hover,
