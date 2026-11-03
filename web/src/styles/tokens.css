@@ -177,6 +177,7 @@
   --r-lg: 10px;
   --r-xl: 12px;
   --tb: 58px; /* barra superior */
+  --tabs: 0px; /* faixa de navegação, só abaixo de 960 px */
   --rail: 320px; /* trilho social */
   --gut: 32px; /* margem do conteúdo */
   --e-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -189,6 +190,12 @@
   :root {
     --rail: 288px;
     --gut: 24px;
+  }
+}
+
+@media (max-width: 960px) {
+  :root {
+    --tabs: 44px;
   }
 }
 

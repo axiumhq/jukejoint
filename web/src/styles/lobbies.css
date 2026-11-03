@@ -22,7 +22,7 @@
   height: 28px;
   padding: 0 12px;
   border-radius: 6px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   color: var(--tx-3);
   display: flex;
@@ -43,7 +43,7 @@
 }
 
 .lb-tabs .c {
-  font: 500 10.5px var(--f-mono);
+  font: 500 0.75rem var(--f-mono);
   opacity: 0.7;
 }
 
@@ -182,7 +182,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-2);
 }
 
@@ -220,7 +220,7 @@
 .lc-n {
   display: block;
   margin-top: 4px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.2;
@@ -247,7 +247,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-3);
   min-width: 0;
 }
@@ -271,7 +271,7 @@
 }
 
 .lc-cnt {
-  font: 600 12.5px var(--f-mono);
+  font: 600 0.78125rem var(--f-mono);
   white-space: nowrap;
 }
 
@@ -368,7 +368,7 @@
 
 .lc-create small {
   color: var(--tx-3);
-  font-size: 12px;
+  font-size: 0.75rem;
   max-width: 24ch;
 }
 
@@ -421,7 +421,7 @@
 .lgrid.list .lc-n {
   margin: 0;
   -webkit-line-clamp: 1;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .lgrid.list .lc-m .fav {
@@ -484,7 +484,7 @@
 
 .lb-empty b {
   color: var(--tx);
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .lb-empty p {

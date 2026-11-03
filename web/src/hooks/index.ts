@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { cannotRunApp } from '../lib/device';
 import { friendsOnline, incomingInvite } from '../lib/friends';
 import { lobbyState } from '../lib/lobbies';
 import { readPref, writePref } from '../lib/store';
@@ -16,6 +17,16 @@ export function useMediaQuery(query: string) {
     return () => mq.removeEventListener('change', on);
   }, [query]);
   return match;
+}
+
+/** Celular ou tablet: o app (só Windows) não roda aqui. Regra em lib/device.ts. */
+export function useCannotRunApp() {
+  const coarse = useMediaQuery('(pointer: coarse)');
+  const narrow = useMediaQuery('(max-width: 760px)');
+  return useMemo(() => {
+    const nav = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
+    return cannotRunApp({ userAgent: nav.userAgent, uaMobile: nav.userAgentData?.mobile, coarse, narrow });
+  }, [coarse, narrow]);
 }
 
 export function useReducedMotion() {

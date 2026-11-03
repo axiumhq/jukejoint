@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
-import { CopyField, SectionTitle, Tag } from '../components/Common';
+import { CopyField, SectionTitle } from '../components/Common';
 import { Icon } from '../components/Icon';
 import { PageHead } from '../components/PageHead';
 import { Rail } from '../components/Rail';
@@ -14,14 +14,19 @@ import { useSession } from '../state/session';
 /**
  * /instalar no v8: página de confiança, precisa e calma. Ordem: o instalador (versão, tamanho,
  * data, SHA-256, código-fonte e o status do app), os três passos, o aviso do Windows, o antivírus
- * (#antivirus, link da sala), o que é instalado, o que faz e não faz, anti-cheat (texto pendente,
+ * (#antivirus, link da sala), o que é instalado, o que faz e não faz, anti-cheat (só com texto real,
  * decisão do usuário), desinstalar e perguntas. O trilho traz o índice da página e as notas do app.
  */
 
 /** Depois de um tempo esperando, o texto passa a ajudar em vez de só esperar. */
 const STATUS_TIMEOUT_MS = 20000;
 
-const TOC = ['baixar', 'passos', 'windows', 'antivirus', 'arquivos', 'faz', 'anticheat', 'desinstalar', 'perguntas'] as const;
+/** Anti-cheat só aparece (seção e índice) quando `t.install.riskBody` tiver texto de verdade. */
+const HAS_RISK_TEXT = t.install.riskBody.trim().length > 0;
+
+const TOC = (['baixar', 'passos', 'windows', 'antivirus', 'arquivos', 'faz', 'anticheat', 'desinstalar', 'perguntas'] as const).filter(
+  (id) => id !== 'anticheat' || HAS_RISK_TEXT,
+);
 
 function AppStatus() {
   const { appConnected, setAppConnected } = useSession();
@@ -366,15 +371,16 @@ export function Install() {
           </div>
         </section>
 
-        <section className="sec risk" id="anticheat" aria-labelledby="risk-title">
-          <div className="sec-h">
-            <h2 className="display" id="risk-title">
-              {t.install.riskTitle}
-            </h2>
-            <Tag tone="line">{t.install.riskPending}</Tag>
-          </div>
-          <p className="risk-box">{t.install.riskPlaceholder}</p>
-        </section>
+        {HAS_RISK_TEXT && (
+          <section className="sec risk" id="anticheat" aria-labelledby="risk-title">
+            <div className="sec-h">
+              <h2 className="display" id="risk-title">
+                {t.install.riskTitle}
+              </h2>
+            </div>
+            <p className="risk-box">{t.install.riskBody}</p>
+          </section>
+        )}
 
         <section className="sec" id="desinstalar" aria-labelledby="un-title">
           <div className="sec-h">

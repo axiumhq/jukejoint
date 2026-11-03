@@ -18,14 +18,14 @@
 }
 
 .ph h1 {
-  font-size: 54px;
+  font-size: 3.375rem;
   text-wrap: balance;
 }
 
 .ph-lead {
   margin-top: 14px;
   max-width: 72ch;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--tx-2);
   text-wrap: pretty;
@@ -69,19 +69,19 @@
 }
 
 .dc-big {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.02em;
 }
 
 .dc-sub {
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-3);
 }
 
 .dc-link {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   border-radius: var(--r-xs);
   transition: color var(--t-fast);
@@ -162,7 +162,7 @@
 }
 
 .mx-n {
-  font-size: 30px;
+  font-size: 1.875rem;
   text-wrap: balance;
 }
 
@@ -180,7 +180,7 @@
 
 .mx-l {
   color: var(--tx-2);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   line-height: 1.45;
   min-height: 2.9em;
 }
@@ -201,7 +201,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   white-space: nowrap;
   overflow: hidden;
@@ -209,7 +209,7 @@
 }
 
 .mx-d dd .num {
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 
 .mx-f {
@@ -231,7 +231,7 @@
 
 .mx-fmt {
   min-width: 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
   overflow: hidden;
@@ -291,7 +291,7 @@
   height: 28px;
   padding: 0 10px 0 8px;
   border-radius: var(--r-sm);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   color: var(--tx-2);
   background: hsl(from var(--k0) h s l / 0.55);
@@ -309,14 +309,14 @@
 
 .mh h1 {
   margin: 26px 0 12px;
-  font-size: 66px;
+  font-size: 4.125rem;
   line-height: 0.9;
   text-wrap: balance;
 }
 
 .mh-tag {
   max-width: 48ch;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
   color: var(--tx-2);
   text-wrap: pretty;
@@ -333,14 +333,14 @@
 .mh-chips .tag.line {
   height: 24px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx);
   background: hsl(from var(--k0) h s l / 0.45);
 }
 
 .mh-by {
   margin-left: 6px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -390,7 +390,7 @@
 
 .mh-hint {
   margin: 10px 28px 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   text-align: right;
 }
@@ -407,13 +407,13 @@
   display: grid;
   gap: 12px;
   max-width: 62ch;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
   color: var(--tx-2);
 }
 
 .mode-upd {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -427,7 +427,7 @@
   gap: 14px;
   padding: 12px 2px;
   border-bottom: 1px solid var(--line);
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   line-height: 1.5;
   color: var(--tx);
 }
@@ -463,7 +463,7 @@
   gap: 10px;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .mr-regions li:last-child {
@@ -479,7 +479,7 @@
 }
 
 .mr-regions .num {
-  font-size: 11.5px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -492,7 +492,7 @@
 .mr-rank {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .mr-rank th,
@@ -509,9 +509,9 @@
 
 .mr-rank thead th {
   padding-top: 0;
-  font-size: 10.5px;
+  font-size: 0.75rem;
   font-weight: 550;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
@@ -552,7 +552,7 @@
 }
 
 .mr-reg {
-  font-size: 10.5px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -563,14 +563,14 @@
 
 .mr-changes p {
   margin-top: 3px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.45;
   color: var(--tx-2);
 }
 
 .mr-more {
   margin: 10px 0 0 -8px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* ───────── /instalar ───────── */
@@ -596,7 +596,7 @@
 }
 
 .dl-file {
-  font-size: 34px;
+  font-size: 2.125rem;
   overflow-wrap: anywhere;
 }
 
@@ -611,7 +611,7 @@
 }
 
 .dl-meta dd {
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 550;
 }
 
@@ -628,7 +628,7 @@
 
 .dl-req {
   max-width: 52ch;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.5;
   color: var(--tx-3);
 }
@@ -659,14 +659,14 @@
 
 .dl-h,
 .ins-h {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.4;
   color: var(--tx);
 }
 
 .dl-note {
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.5;
   color: var(--tx-3);
 }
@@ -675,7 +675,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   color: var(--tx-2);
 }
@@ -708,7 +708,7 @@
 
 .dl .copy-field code,
 .ins .copy-field code {
-  font-size: 11.5px;
+  font-size: 0.75rem;
   line-height: 1.55;
   color: var(--tx-2);
 }
@@ -741,7 +741,7 @@
 }
 
 .ast-title {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -751,7 +751,7 @@
 
 .ast-help {
   margin-top: 2px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-3);
 }
 
@@ -764,7 +764,7 @@
 }
 
 .ast-act .link {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* três passos */
@@ -794,7 +794,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--acc-tx);
   background: var(--acc-soft);
@@ -808,14 +808,14 @@
 }
 
 .istep h3 {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.3;
   align-self: center;
 }
 
 .istep p {
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   line-height: 1.5;
   color: var(--tx-2);
 }
@@ -830,7 +830,7 @@
 
 .ins-text > p,
 .ins-p {
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   line-height: 1.6;
   color: var(--tx-2);
   max-width: 68ch;
@@ -847,7 +847,7 @@
   position: relative;
   padding: 9px 0 9px 36px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--tx);
   counter-increment: n;
@@ -867,7 +867,7 @@
   display: grid;
   place-items: center;
   border-radius: var(--r-xs);
-  font: 600 11px/1 var(--f-mono);
+  font: 600 0.75rem/1 var(--f-mono);
   color: var(--tx-2);
   background: var(--s3);
 }
@@ -909,12 +909,12 @@
   box-shadow:
     0 0 0 1px var(--line-2) inset,
     0 16px 30px -20px hsl(0 0% 0% / 0.7);
-  font-size: 11.5px;
+  font-size: 0.75rem;
   line-height: 1.35;
 }
 
 .ss-win b {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -949,7 +949,7 @@
   color: var(--tx-2);
 }
 
-.ss-app .num {
+.ss-app .num:not(.ss-mark) {
   color: var(--tx);
   overflow-wrap: anywhere;
 }
@@ -983,12 +983,12 @@
 }
 
 .ss-mark {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   display: inline-grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--acc-ink);
   background: var(--acc);
@@ -996,7 +996,7 @@
 }
 
 .ss figcaption {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -1032,7 +1032,7 @@
 .files {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .files th,
@@ -1050,9 +1050,9 @@
 
 .files thead th {
   padding-block: 10px;
-  font-size: 10.5px;
+  font-size: 0.75rem;
   font-weight: 550;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
@@ -1066,7 +1066,7 @@
   display: inline-block;
   padding: 2px 7px;
   border-radius: var(--r-xs);
-  font: 11.5px/1.55 var(--f-mono);
+  font: 0.75rem/1.55 var(--f-mono);
   color: var(--tx-2);
   background: var(--bg);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -1096,7 +1096,7 @@
 }
 
 .reqs dd {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 550;
 }
 
@@ -1122,7 +1122,7 @@
   align-items: baseline;
   padding: 8px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--tx);
 }
@@ -1156,7 +1156,7 @@
   padding: 16px 18px;
   border-radius: var(--r-lg);
   border: 1px dashed var(--line-2);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.55;
   color: var(--tx-2);
 }
@@ -1174,14 +1174,14 @@
 }
 
 .faq dt {
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
   line-height: 1.35;
 }
 
 .faq dd {
   margin-top: 5px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.55;
   color: var(--tx-2);
 }
@@ -1189,7 +1189,7 @@
 .ins-aff {
   margin-top: 34px;
   max-width: 68ch;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-3);
 }
 
@@ -1204,7 +1204,7 @@
   padding: 7px 10px;
   margin: 0 -10px;
   border-radius: var(--r-sm);
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--tx-2);
   transition:
     color var(--t-fast),
@@ -1245,7 +1245,7 @@
 }
 
 .nw-count .link {
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 /* seletor com cara de chip */
@@ -1262,7 +1262,7 @@
   padding: 0 30px 0 11px;
   border: 0;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--tx);
   background: var(--s2);
@@ -1310,11 +1310,11 @@
 }
 
 .tl-day {
-  font-size: 26px;
+  font-size: 1.625rem;
 }
 
 .tl-meta {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: var(--tx-3);
 }
 
@@ -1357,7 +1357,7 @@
 }
 
 .tl-title {
-  font-size: 30px;
+  font-size: 1.875rem;
   max-width: 22ch;
   text-wrap: balance;
 }
@@ -1368,7 +1368,7 @@
 
 .tl-tldr {
   max-width: 66ch;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.6;
   color: var(--tx-2);
   text-wrap: pretty;
@@ -1399,7 +1399,7 @@
   padding: 0 10px;
   margin-left: -10px;
   border-radius: var(--r-sm);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 550;
   color: var(--tx-2);
   cursor: pointer;
@@ -1440,7 +1440,7 @@
   align-items: baseline;
   padding: 11px 16px;
   border-bottom: 1px solid var(--line);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
 }
 
@@ -1450,7 +1450,7 @@
 
 .tl-scope {
   margin-left: 4px;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
 }
@@ -1460,7 +1460,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 12px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
 }
 
 .tl-sc {
@@ -1491,7 +1491,7 @@ a.tl-sc:hover {
 }
 
 .nw-empty h3 {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
@@ -1538,14 +1538,14 @@ a.tl-sc:hover {
 }
 
 .nf h1 {
-  font-size: 66px;
+  font-size: 4.125rem;
   line-height: 0.92;
   text-wrap: balance;
 }
 
 .nf-lead {
   max-width: 44ch;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.55;
   color: var(--tx-2);
 }
@@ -1563,7 +1563,7 @@ a.tl-sc:hover {
   align-items: center;
   gap: 4px 14px;
   margin-top: 10px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--tx-3);
 }
 
@@ -1586,7 +1586,7 @@ a.tl-sc:hover {
 
 @media (max-width: 1240px) {
   .mh h1 {
-    font-size: 56px;
+    font-size: 3.5rem;
   }
 
   .mh-body {
@@ -1653,11 +1653,11 @@ a.tl-sc:hover {
 
 @media (max-width: 760px) {
   .ph h1 {
-    font-size: 38px;
+    font-size: 2.375rem;
   }
 
   .ph-lead {
-    font-size: 13.5px;
+    font-size: 0.84375rem;
   }
 
   /* herói do modo empilha: capa, corpo, dados 2×2, ações */
@@ -1695,11 +1695,11 @@ a.tl-sc:hover {
 
   .mh h1 {
     margin: 0 0 10px;
-    font-size: 42px;
+    font-size: 2.625rem;
   }
 
   .mh-tag {
-    font-size: 13.5px;
+    font-size: 0.84375rem;
   }
 
   .mh-bar {
@@ -1743,7 +1743,7 @@ a.tl-sc:hover {
   }
 
   .mx-n {
-    font-size: 27px;
+    font-size: 1.6875rem;
   }
 
   .mode-others {
@@ -1807,7 +1807,7 @@ a.tl-sc:hover {
   }
 
   .tl-day {
-    font-size: 22px;
+    font-size: 1.375rem;
   }
 
   .tl-node {
@@ -1825,7 +1825,7 @@ a.tl-sc:hover {
   }
 
   .tl-title {
-    font-size: 25px;
+    font-size: 1.5625rem;
   }
 
   .tl-changes li {
@@ -1840,7 +1840,7 @@ a.tl-sc:hover {
   }
 
   .dl-file {
-    font-size: 26px;
+    font-size: 1.625rem;
   }
 
   .dl-btn {
@@ -1922,7 +1922,7 @@ a.tl-sc:hover {
   }
 
   .nf h1 {
-    font-size: 42px;
+    font-size: 2.625rem;
   }
 
   .nf-act .btn {
