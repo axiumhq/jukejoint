@@ -1,8 +1,9 @@
 /**
  * Capas dos modos (porte do v8.js): emblemas de oficina oculta em SVG, pintados SÓ com
  * variáveis do tema (`--k*` e `--m*`). Trocar o tema repinta a capa sem gerar nada de novo.
- * Cada capa tem `<defs>` próprios (a fumaça herda `--m`, o desvio de matiz do modo);
- * os quatro desfoques são globais e moram em `<CoverDefs />`, renderizado uma vez na casca.
+ * Cada modo (e versão larga) vira um sprite único em `<CoverDefs />`, com `<defs>` próprios
+ * (os gradientes herdam `--m`, o desvio de matiz do modo); os cartões só o referenciam com
+ * `<use>` (ver `coverSprite`). Os quatro desfoques são globais e moram no mesmo sprite.
  * Tudo aqui é puro e determinístico: a mesma capa sai igual a cada render.
  */
 
@@ -87,7 +88,18 @@ function embers(seed: string, n: number, area: [number, number, number, number])
   return o;
 }
 
-function coverDefs(u: string, seed: number) {
+/**
+ * Caixa visível de cada versão, no espaço do `<svg>` (o viewBox). Com `slice` o navegador só
+ * corta dentro dela, então a fumaça não precisa ser calculada fora: a região do filtro fica
+ * presa aqui (o ruído depende só da coordenada, então o que aparece é o mesmo de antes).
+ * As oitavas da fumaça (4 e 3, eram 5 e 4) param onde a seguinte já não se vê: cada uma tem
+ * metade da amplitude da anterior, e o custo do ruído cresce com o número delas.
+ */
+const VIEW = { card: [0, 0, 400, 240], wide: [-300, 0, 700, 240] } as const;
+
+function coverDefs(u: string, seed: number, wide: boolean) {
+  const [vx, vy, vw, vh] = wide ? VIEW.wide : VIEW.card;
+  const region = `filterUnits="userSpaceOnUse" x="${vx}" y="${vy}" width="${vw}" height="${vh}"`;
   return `<defs>
   <radialGradient id="${u}g" gradientUnits="userSpaceOnUse" cx="200" cy="118" r="260"><stop offset="0" ${S('stop-color', 'm2', 0.5)}/><stop offset=".34" ${S('stop-color', 'm1', 0.95)}/><stop offset=".78" ${S('stop-color', 'k0')}/><stop offset="1" ${S('stop-color', 'k0')}/></radialGradient>
   <linearGradient id="${u}mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".15"/><stop offset=".45" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="1"/></linearGradient>
@@ -99,12 +111,12 @@ function coverDefs(u: string, seed: number) {
   <linearGradient id="${u}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" ${S('stop-color', 'kc')}/><stop offset=".45" ${S('stop-color', 'kh')}/><stop offset="1" ${S('stop-color', 'kl')}/></linearGradient>
   <linearGradient id="${u}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" ${S('stop-color', 'm2', 0)}/><stop offset="1" ${S('stop-color', 'm2', 0.7)}/></linearGradient>
   <radialGradient id="${u}vg" cx="50%" cy="46%" r="70%"><stop offset=".55" ${S('stop-color', 'k0', 0)}/><stop offset="1" ${S('stop-color', 'k0', 0.92)}/></radialGradient>
-  <filter id="${u}s" filterUnits="userSpaceOnUse" x="-420" y="-20" width="1240" height="300">
-    <feTurbulence type="fractalNoise" baseFrequency=".0026 .017" numOctaves="5" seed="${seed}" result="n"/>
+  <filter id="${u}s" ${region}>
+    <feTurbulence type="fractalNoise" baseFrequency=".0026 .017" numOctaves="4" seed="${seed}" result="n"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  4.4 0 0 0 -2.02" result="a"/>
     <feFlood ${S('flood-color', 'ks')} result="c"/><feComposite in="c" in2="a" operator="in"/></filter>
-  <filter id="${u}s2" filterUnits="userSpaceOnUse" x="-420" y="-20" width="1240" height="300">
-    <feTurbulence type="fractalNoise" baseFrequency=".006 .045" numOctaves="4" seed="${seed + 40}" result="n"/>
+  <filter id="${u}s2" ${region}>
+    <feTurbulence type="fractalNoise" baseFrequency=".006 .045" numOctaves="3" seed="${seed + 40}" result="n"/>
     <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  5 0 0 0 -2.5" result="a"/>
     <feFlood ${S('flood-color', 'kh')} result="c"/><feComposite in="c" in2="a" operator="in"/></filter>
   </defs>`;
@@ -382,10 +394,16 @@ export interface CoverMarkup {
  * convivem). `wide` é a versão do herói: a mesma cena com mais campo dos lados.
  */
 export function coverMarkup(slug: string, uid: string, wide = false): CoverMarkup {
+  const { defs, body } = coverParts(slug, uid, wide);
+  return { viewBox: wide ? '-300 0 700 240' : '0 0 400 240', inner: defs + body };
+}
+
+/** Os `<defs>` (gradientes, máscaras e fumaça) e o desenho, separados. */
+function coverParts(slug: string, uid: string, wide: boolean) {
   const { key: k, seed } = coverSpec(slug);
   const u = uid.replace(/[^a-zA-Z0-9]/g, '') + '_';
   const sm = k === 'nb' ? '' : smoke(u, k === 'ub' ? 0.45 : 0.34);
-  const inner = `${coverDefs(u, seed)}
+  const body = `
   <rect x="-420" y="-40" width="1240" height="320" ${S('fill', 'k0')}/>
   <rect x="-420" y="-40" width="1240" height="320" fill="url(#${u}g)"/>
   ${sm}
@@ -393,5 +411,37 @@ export function coverMarkup(slug: string, uid: string, wide = false): CoverMarku
   ${k === 'nb' ? '' : smoke2(u, 0.1, 110, 170)}
   ${embers(k + (wide ? 'w' : ''), wide ? 34 : 20, wide ? [-260, 10, 640, 210] : [16, 12, 368, 214])}
   <rect x="-420" y="-40" width="1240" height="320" fill="url(#${u}vg)"/>`;
-  return { viewBox: wide ? '-300 0 700 240' : '0 0 400 240', inner };
+  return { defs: coverDefs(u, seed, wide), body };
 }
+
+export interface CoverSprite {
+  /** Id do desenho compartilhado (o alvo do `<use>`). */
+  id: string;
+  viewBox: string;
+  /** Desvio de matiz do modo (`--m`) para o contêiner dos `<defs>`. */
+  shift: number;
+  /** `<defs>` + `<g id>` com o desenho, para morar uma vez só no sprite de `<CoverDefs />`. */
+  markup: string;
+}
+
+const sprites = new Map<string, CoverSprite>();
+
+/**
+ * A capa como sprite: uma por modo e versão, gerada uma vez e memorizada. Cada cartão só
+ * aponta para ela com `<use>`, que herda `--m` e os tokens do tema de onde é usado; os
+ * gradientes e filtros moram no sprite, dentro de um contêiner com o mesmo `--m`.
+ */
+export function coverSprite(slug: string, wide = false): CoverSprite {
+  const { key, shift } = coverSpec(slug);
+  const id = `cv${key}${wide ? 'w' : ''}`;
+  let s = sprites.get(id);
+  if (!s) {
+    const { defs, body } = coverParts(slug, id, wide);
+    s = { id, viewBox: wide ? '-300 0 700 240' : '0 0 400 240', shift, markup: `${defs}<g id="${id}">${body}</g>` };
+    sprites.set(id, s);
+  }
+  return s;
+}
+
+/** Sprite já gerado, pelo id (para `<CoverDefs />`). */
+export const spriteById = (id: string) => sprites.get(id);
