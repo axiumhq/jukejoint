@@ -62,12 +62,13 @@ instalador: `--no-bundle` e `bundle.active: false`.
 
 ```powershell
 cd desktop\src-tauri
-cargo test                                   # 29 testes, sem o jogo e sem o CLI
+cargo test                                   # 30 testes, sem o jogo e sem o CLI
 ```
 
 Cobrem: argumentos de cada comando, validação (código de entrada, id do lobby, origem, pasta do
 projeto, deep link), leitura da saída (versão, `daemon status` real capturado, eventos `--json`,
-arquivo hosts), trava do daemon, SHA-256 e a regra de nunca executar um binário com hash errado.
+arquivo hosts), trava do daemon, SHA-256, a regra de nunca executar um binário com hash errado e
+o motor que some depois de visto (quarentena do antivírus, `binario_sumiu`).
 As fixtures de `host`/`join` seguem o esquema `modlock.cli.Event` embutido no binário v0.1.68
 (`host`/`join` não foram rodados contra o jogo); a de `daemon status` é uma captura real.
 
@@ -131,7 +132,9 @@ navegador abrindo o link) repassa o link para a janela que já está aberta e en
 ## Ao abrir e ao fechar
 
 - Abre a janela do site e um ícone na bandeja (Abrir, Instalação, Sair).
-- Faz um `engine_check` em segundo plano; se algo faltar, abre a tela Instalação.
+- Faz um `engine_check` em segundo plano; se algo faltar, abre a tela Instalação com
+  `window.__INSTALL_OPENED_BY__ = 'checagem'` (ou o evento `install://opened-by`, se a janela já
+  existia), e a tela diz no topo por que abriu.
 - Fechar a janela do site fecha o app: encerra a sessão e para o daemon **se foi o app que o subiu**.
 
 ## Integração com o site (a fazer em `web/`)
@@ -143,8 +146,11 @@ O app não muda nada em `web/`. Para o site usar o app:
    `appConnected` de `state/session.tsx` em vez do botão de simulação da `/instalar`.
 2. **Chamar o motor:** adicionar `@tauri-apps/api` (2.12.4) ao `web/` e usar
    `invoke('engine_check')`, `invoke('engine_join', { code })`, `invoke('engine_stop')`,
-   `listen('engine://event', …)`. Erros chegam como `{ code, message }`
-   (`jogo_aberto`, `origem_ausente`, `socket_travado`, `hash_diferente`…).
+   `listen('engine://event', …)`. Erros chegam como `{ code, message, detail? }`
+   (`jogo_aberto`, `origem_ausente`, `socket_travado`, `hash_diferente`, `binario_sumiu`…). O
+   `code` é estável; `message` é a frase para quem joga (o que houve e o que fazer, sem
+   variáveis nem jargão); `detail` é o técnico (variável, caminho, saída do Modlock), para mostrar
+   à parte e mais discreto.
 3. **Deep link sem recarregar:** hoje o app navega a janela para `/sala/<id>` (recarrega a
    página). Se o site ouvir `app://deep-link` e navegar pelo React Router, dá para trocar por só o
    evento.

@@ -44,22 +44,35 @@ pub trait EngineAdapter: Send + Sync {
     fn session(&self) -> Option<SessionInfo>;
 }
 
-/// Erro com código estável (para o site decidir o que mostrar) e mensagem em PT-BR.
+/// Erro com código estável (para o site decidir o que mostrar) e duas camadas de texto em PT-BR:
+/// `message` é para quem joga (o que houve e o que dá para fazer, sem jargão) e `detail` é o
+/// técnico (variável, caminho, comando, saída do Modlock), mostrado à parte e mais discreto.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct EngineError {
     pub code: &'static str,
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
 }
 
 impl EngineError {
     pub fn new(code: &'static str, message: impl Into<String>) -> Self {
-        Self { code, message: message.into() }
+        Self { code, message: message.into(), detail: None }
+    }
+
+    pub fn with_detail(mut self, detail: impl Into<String>) -> Self {
+        self.detail = Some(detail.into());
+        self
     }
 }
 
 impl std::fmt::Display for EngineError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.code, self.message)
+        write!(f, "{}: {}", self.code, self.message)?;
+        if let Some(d) = &self.detail {
+            write!(f, " ({d})")?;
+        }
+        Ok(())
     }
 }
 
@@ -73,6 +86,9 @@ pub struct CheckReport {
     pub game: GameCheck,
     pub hosts: HostsCheck,
     pub env: Vec<EnvEntry>,
+    /// `%LOCALAPPDATA%\modlock`, onde o Modlock baixa o servidor do jogo (o `ENGINE_STATE_DIR`
+    /// só troca o `APPDATA`, então esta pasta não muda). Entra nas exclusões do antivírus.
+    pub download_dir: Option<String>,
     /// Pronto para hospedar ou entrar (binário certo, origem definida, sem socket travado).
     pub ready: bool,
     pub problems: Vec<EngineError>,
@@ -84,7 +100,13 @@ pub struct BinaryCheck {
     pub path: Option<String>,
     /// De onde veio o caminho: `MODLOCK_BIN`, ao lado do app ou a pasta `tools` (só em dev).
     pub source: Option<String>,
+    /// Pasta onde o `modlock.exe` está (ou deveria estar): a do caminho achado ou, sem caminho,
+    /// a do executável do app. Entra nas exclusões do antivírus.
+    pub folder: Option<String>,
     pub exists: bool,
+    /// O arquivo existia (achado ao abrir o app ou já verificado nesta execução) e não existe mais.
+    /// Quase sempre é o antivírus colocando o motor em quarentena.
+    pub vanished: bool,
     pub size_bytes: Option<u64>,
     pub sha256: Option<String>,
     pub expected_sha256: &'static str,

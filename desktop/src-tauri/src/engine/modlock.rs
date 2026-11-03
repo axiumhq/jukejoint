@@ -52,6 +52,10 @@ pub struct EngineConfig {
     pub state_root: PathBuf,
     /// Definida quando `ENGINE_STATE_DIR` troca o `APPDATA` dos processos do Modlock.
     pub state_override: Option<PathBuf>,
+    /// Pasta do executável do app (onde o `modlock.exe` deve ficar sem `MODLOCK_BIN`).
+    pub exe_dir: Option<PathBuf>,
+    /// `%LOCALAPPDATA%\modlock`: downloads do Modlock (servidor do jogo).
+    pub download_dir: Option<PathBuf>,
 }
 
 impl EngineConfig {
@@ -88,7 +92,8 @@ impl EngineConfig {
             .clone()
             .or_else(|| set("APPDATA").map(PathBuf::from))
             .unwrap_or_else(std::env::temp_dir);
-        Self { bin, origin, state_root, state_override }
+        let download_dir = set("LOCALAPPDATA").map(|d| PathBuf::from(d).join("modlock"));
+        Self { bin, origin, state_root, state_override, exe_dir: exe_dir.map(Path::to_path_buf), download_dir }
     }
 
     /// `<APPDATA>\modlock\state`, onde ficam `daemon.lock` e `modlock.sock`.
@@ -145,6 +150,8 @@ pub struct ModlockCli {
     next_id: AtomicU64,
     hash_cache: Mutex<Option<HashCache>>,
     started_daemon: AtomicBool,
+    /// O `modlock.exe` já foi visto nesta execução (para saber se ele sumiu depois).
+    bin_seen: AtomicBool,
 }
 
 struct Captured {
@@ -162,6 +169,7 @@ impl ModlockCli {
             next_id: AtomicU64::new(1),
             hash_cache: Mutex::new(None),
             started_daemon: AtomicBool::new(false),
+            bin_seen: AtomicBool::new(false),
         }
     }
 
@@ -197,7 +205,7 @@ impl ModlockCli {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| EngineError::new("processo", format!("Não consegui rodar o modlock: {e}")))?;
+            .map_err(|e| blocked_process(format!("modlock {}: {e}", args.join(" "))))?;
         let out = read_all(child.stdout.take());
         let err = read_all(child.stderr.take());
         let start = Instant::now();
@@ -210,8 +218,9 @@ impl ModlockCli {
                     let _ = child.wait();
                     return Err(EngineError::new(
                         "tempo_esgotado",
-                        format!("modlock {} não respondeu em {}s", args.join(" "), timeout.as_secs()),
-                    ));
+                        "O motor demorou demais para responder. Tente de novo; se repetir, reinicie o PC.",
+                    )
+                    .with_detail(format!("modlock {} não respondeu em {} s", args.join(" "), timeout.as_secs())));
                 }
             }
         };
@@ -222,7 +231,9 @@ impl ModlockCli {
         let mut b = BinaryCheck {
             path: None,
             source: None,
+            folder: self.cfg.exe_dir.as_ref().map(|d| d.display().to_string()),
             exists: false,
+            vanished: false,
             size_bytes: None,
             sha256: None,
             expected_sha256: MODLOCK_SHA256,
@@ -234,11 +245,18 @@ impl ModlockCli {
         let Some((path, source)) = &self.cfg.bin else { return b };
         b.path = Some(path.display().to_string());
         b.source = Some(source.to_string());
-        let Ok(meta) = fs::metadata(path) else { return b };
-        b.exists = meta.is_file();
+        if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+            b.folder = Some(dir.display().to_string());
+        }
+        b.exists = fs::metadata(path).is_ok_and(|m| m.is_file());
         if !b.exists {
+            // Ao lado do app ou na pasta tools, o caminho só é aceito se o arquivo existia ao abrir;
+            // com MODLOCK_BIN, só se já foi visto nesta execução.
+            b.vanished = *source != ENV_BIN || self.bin_seen.load(Ordering::SeqCst);
             return b;
         }
+        self.bin_seen.store(true, Ordering::SeqCst);
+        let Ok(meta) = fs::metadata(path) else { return b };
         b.size_bytes = Some(meta.len());
         b.sha256 = self.cached_hash(path, meta.len(), meta.modified().ok());
         b.hash_ok = b.sha256.as_deref() == Some(MODLOCK_SHA256);
@@ -264,23 +282,66 @@ impl ModlockCli {
         Some(sha256)
     }
 
+    /// O problema do binário, se houver (o mesmo texto na checagem e ao tentar rodar o motor).
+    fn binary_problem(&self, b: &BinaryCheck) -> Option<EngineError> {
+        if b.vanished {
+            let path = b.path.as_deref().unwrap_or("modlock.exe");
+            return Some(
+                EngineError::new(
+                    "binario_sumiu",
+                    "O motor do app (modlock.exe) sumiu da pasta; o mais provável é o antivírus ter colocado o arquivo em quarentena. Restaure o arquivo e adicione as exclusões do antivírus.",
+                )
+                .with_detail(format!("Arquivo verificado antes não existe mais: {path}")),
+            );
+        }
+        if !b.exists {
+            let detail = match (&b.path, &b.folder) {
+                (Some(p), _) => format!("{ENV_BIN} aponta para um arquivo que não existe: {p}"),
+                (None, Some(dir)) => format!(
+                    "{ENV_BIN} não definida e sem modlock.exe em {dir}. Defina {ENV_BIN} com o caminho do modlock.exe {MODLOCK_VERSION}."
+                ),
+                (None, None) => format!("{ENV_BIN} não definida. Defina com o caminho do modlock.exe {MODLOCK_VERSION}."),
+            };
+            return Some(
+                EngineError::new(
+                    "binario_ausente",
+                    "O motor do app (modlock.exe) não está neste PC. Ainda não há instalador: peça o arquivo a quem te passou o app, coloque na pasta do app e abra o app de novo.",
+                )
+                .with_detail(detail),
+            );
+        }
+        if !b.hash_ok {
+            return Some(
+                EngineError::new(
+                    "hash_diferente",
+                    "O arquivo do motor não é o original, então o app não vai rodar ele. Não use este arquivo: peça o modlock.exe de novo a quem te passou o app.",
+                )
+                .with_detail(format!(
+                    "SHA-256 {} diferente do fixado para {MODLOCK_VERSION} ({MODLOCK_SHA256}). Em desenvolvimento, scripts/install-modlock.ps1 baixa e confere.",
+                    b.sha256.as_deref().unwrap_or("ilegível")
+                )),
+            );
+        }
+        if !b.version_ok {
+            return Some(
+                EngineError::new(
+                    "versao_errada",
+                    "O motor respondeu uma versão diferente da que este app usa. Peça o modlock.exe de novo a quem te passou o app.",
+                )
+                .with_detail(format!(
+                    "modlock --version: {}; esperada {MODLOCK_VERSION}.",
+                    b.version.as_deref().unwrap_or("sem resposta")
+                )),
+            );
+        }
+        None
+    }
+
     /// Binário presente, com o hash e a versão fixados. Sem isso o app não roda o motor.
     fn verified_bin(&self) -> Result<PathBuf, EngineError> {
         let b = self.binary_check();
-        if !b.exists {
-            return Err(EngineError::new(
-                "binario_ausente",
-                format!("modlock.exe não encontrado. Defina {ENV_BIN} com o caminho do binário {MODLOCK_VERSION}."),
-            ));
-        }
-        if !b.hash_ok {
-            return Err(EngineError::new(
-                "hash_diferente",
-                "O SHA-256 do modlock.exe não é o da versão fixada. Baixe de novo com scripts/install-modlock.ps1.",
-            ));
-        }
-        if !b.version_ok {
-            return Err(EngineError::new("versao_errada", format!("O modlock.exe não respondeu {MODLOCK_VERSION}.")));
+        if let Some(e) = self.binary_problem(&b) {
+            return Err(e);
         }
         Ok(self.cfg.bin.as_ref().unwrap().0.clone())
     }
@@ -290,8 +351,11 @@ impl ModlockCli {
             Ok(Some(o)) => Ok(o.clone()),
             Ok(None) => Err(EngineError::new(
                 "origem_ausente",
-                format!("Defina {ENV_ORIGIN} com o endereço do nosso servidor de sinalização (por exemplo http://192.168.0.10:8080)."),
-            )),
+                "Esta cópia do app não sabe qual servidor usar para ligar os PCs. Não é algo que dá para ajustar aqui: avise quem te passou o app.",
+            )
+            .with_detail(format!(
+                "{ENV_ORIGIN} não definida. Defina com a origem do servidor de sinalização, por exemplo http://192.168.0.10:8080."
+            ))),
             Err(e) => Err(e.clone()),
         }
     }
@@ -351,12 +415,16 @@ impl ModlockCli {
         if self.daemon_state() != DaemonState::Rodando {
             return Ok(());
         }
+        const STOP_MSG: &str = "O serviço do motor não parou. Tente de novo em alguns segundos; não encerre o processo pelo Gerenciador de Tarefas, isso trava o serviço até reiniciar o PC.";
         let c = self.run(&bin, &args::daemon_stop(), Duration::from_secs(30))?;
         if !c.ok {
-            return Err(EngineError::new("daemon_stop", format!("modlock daemon stop falhou: {}", c.stderr.trim())));
+            let why = c.stderr.trim();
+            return Err(EngineError::new("daemon_stop", STOP_MSG)
+                .with_detail(format!("modlock daemon stop falhou: {}", if why.is_empty() { "sem saída no stderr" } else { why })));
         }
         if !self.wait_state(|s| s != DaemonState::Rodando, Duration::from_secs(15)) {
-            return Err(EngineError::new("daemon_stop", "O daemon recebeu o pedido de parar mas continua de pé."));
+            return Err(EngineError::new("daemon_stop", STOP_MSG)
+                .with_detail("modlock daemon stop respondeu, mas o daemon.lock continua ocupado depois de 15 s."));
         }
         self.started_daemon.store(false, Ordering::SeqCst);
         Ok(())
@@ -364,14 +432,21 @@ impl ModlockCli {
 
     fn spawn_daemon(&self, bin: &Path, origin: &str) -> Result<(), EngineError> {
         let dir = self.cfg.state_dir();
-        fs::create_dir_all(&dir).map_err(|e| EngineError::new("processo", format!("Não consegui criar {}: {e}", dir.display())))?;
+        let no_folder = |what: String| {
+            EngineError::new(
+                "processo",
+                "O app não conseguiu gravar na pasta de dados do motor. Feche e abra o app de novo; se repetir, reinicie o PC.",
+            )
+            .with_detail(what)
+        };
+        fs::create_dir_all(&dir).map_err(|e| no_folder(format!("Não deu para criar {}: {e}", dir.display())))?;
         let log_path = dir.join(DAEMON_LOG);
         let log = OpenOptions::new()
             .create(true)
             .append(true)
             .open(&log_path)
-            .map_err(|e| EngineError::new("processo", format!("Não consegui abrir {}: {e}", log_path.display())))?;
-        let log_err = log.try_clone().map_err(|e| EngineError::new("processo", e.to_string()))?;
+            .map_err(|e| no_folder(format!("Não deu para abrir {}: {e}", log_path.display())))?;
+        let log_err = log.try_clone().map_err(|e| no_folder(format!("{}: {e}", log_path.display())))?;
         // O daemon fica rodando sozinho; o handle do processo é solto (não encerra nada).
         let mut child = self
             .command(bin, &args::daemon_start(origin))
@@ -380,7 +455,7 @@ impl ModlockCli {
             .stdout(log)
             .stderr(log_err)
             .spawn()
-            .map_err(|e| EngineError::new("processo", format!("Não consegui subir o daemon: {e}")))?;
+            .map_err(|e| blocked_process(format!("modlock daemon: {e}")))?;
         self.started_daemon.store(true, Ordering::SeqCst);
         let sock = self.socket_path();
         let start = Instant::now();
@@ -394,18 +469,49 @@ impl ModlockCli {
             thread::sleep(Duration::from_millis(200));
         }
         self.started_daemon.store(false, Ordering::SeqCst);
-        Err(EngineError::new("daemon_nao_subiu", format!("O daemon não ficou pronto. Veja o log em {}.", log_path.display())))
+        Err(EngineError::new(
+            "daemon_nao_subiu",
+            "O serviço do motor não ligou. Tente de novo; se repetir, o antivírus pode estar bloqueando o motor.",
+        )
+        .with_detail(format!("O daemon não ficou pronto em 20 s. Log: {}", log_path.display())))
     }
 
     fn active_session_guard(&self) -> Result<(), EngineError> {
         let mut s = self.session.lock().unwrap();
         if let Some(sess) = s.as_ref() {
-            if sess.info().running {
-                return Err(EngineError::new("sessao_ativa", "Já há uma sessão rodando. Pare a atual antes."));
+            let info = sess.info();
+            if info.running {
+                return Err(EngineError::new(
+                    "sessao_ativa",
+                    "Já há uma partida em andamento. Encerre a atual antes de começar outra.",
+                )
+                .with_detail(format!("Sessão {:?} rodando, PID {}.", info.kind, info.pid)));
             }
             *s = None;
         }
         Ok(())
+    }
+
+    fn stuck_socket(&self) -> EngineError {
+        EngineError::new(
+            "socket_travado",
+            "O serviço do motor foi fechado à força e deixou um arquivo preso que só o Windows libera. Reinicie o PC e abra o app de novo.",
+        )
+        .with_detail(format!(
+            "modlock.sock sobrando em {} com o daemon.lock livre. Sem reiniciar: {ENV_STATE_DIR} com outra pasta curta.",
+            self.cfg.state_dir().display()
+        ))
+    }
+
+    fn long_socket(&self) -> EngineError {
+        EngineError::new(
+            "socket_caminho_longo",
+            "A pasta de dados do motor fica num caminho longo demais para o Windows, e o serviço não consegue ligar. Avise quem te passou o app.",
+        )
+        .with_detail(format!(
+            "{} tem mais de {SOCKET_PATH_MAX} caracteres (limite do socket AF_UNIX). Use {ENV_STATE_DIR} com uma pasta curta, como C:\\Users\\<nome>\\.ml.",
+            self.socket_path().display()
+        ))
     }
 
     fn game_check(&self) -> GameCheck {
@@ -414,10 +520,11 @@ impl ModlockCli {
     }
 
     fn refuse_if_game_open(&self) -> Result<(), EngineError> {
-        if self.game_check().running {
-            return Err(EngineError::new(
-                "jogo_aberto",
-                "Feche o Deadlock para carregar o modo: com o jogo aberto o gameinfo.gi fica travado e o conteúdo não monta.",
+        let game = self.game_check();
+        if game.running {
+            return Err(game_open(
+                "Feche o Deadlock para carregar o modo: com o jogo aberto, o gameinfo.gi fica travado e o conteúdo não monta.",
+                &game,
             ));
         }
         Ok(())
@@ -432,7 +539,7 @@ impl ModlockCli {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| EngineError::new("processo", format!("Não consegui iniciar o modlock: {e}")))?;
+            .map_err(|e| blocked_process(format!("modlock {}: {e}", args.join(" "))))?;
         let id = self.next_id.fetch_add(1, Ordering::SeqCst);
         let pid = child.id();
         let stdin = child.stdin.take();
@@ -517,36 +624,36 @@ impl EngineAdapter for ModlockCli {
         let hosts = HostsCheck { path: hosts_path.display().to_string(), host: BLOCKED_HOST, readable, entries };
 
         let mut problems = Vec::new();
-        if !binary.exists {
-            problems.push(EngineError::new("binario_ausente", format!("modlock.exe não encontrado. Defina {ENV_BIN}.")));
-        } else if !binary.hash_ok {
-            problems.push(EngineError::new("hash_diferente", "O SHA-256 do modlock.exe não é o da versão fixada."));
-        } else if !binary.version_ok {
-            problems.push(EngineError::new("versao_errada", format!("O modlock.exe não respondeu {MODLOCK_VERSION}.")));
+        if let Some(e) = self.binary_problem(&binary) {
+            problems.push(e);
         }
         if let Err(e) = self.origin() {
             problems.push(e);
         }
         if daemon.state == DaemonState::SocketTravado {
-            problems.push(EngineError::new(
-                "socket_travado",
-                "Há um modlock.sock travado (daemon encerrado à força). Reinicie o PC ou use outra pasta em ENGINE_STATE_DIR.",
-            ));
+            problems.push(self.stuck_socket());
         }
         if daemon.socket_path_too_long {
-            problems.push(EngineError::new(
-                "socket_caminho_longo",
-                "O caminho do socket do daemon passa do limite do Windows. Use uma pasta mais curta em ENGINE_STATE_DIR.",
-            ));
+            problems.push(self.long_socket());
         }
         if daemon.state == DaemonState::Rodando && daemon.expected_origin.is_some() && !daemon.origin_ok {
-            problems.push(EngineError::new(
-                "daemon_outra_origem",
-                "O daemon de pé usa outra origem. O app para e sobe de novo com a nossa ao hospedar ou entrar.",
-            ));
+            problems.push(
+                EngineError::new(
+                    "daemon_outra_origem",
+                    "O serviço do motor está ligado em outro servidor. Nada a fazer: o app troca para o nosso ao hospedar ou entrar.",
+                )
+                .with_detail(format!(
+                    "daemon status: origem {}; esperada {}.",
+                    daemon.status.as_ref().and_then(|s| s.origin.as_deref()).unwrap_or("desconhecida"),
+                    daemon.expected_origin.as_deref().unwrap_or("-")
+                )),
+            );
         }
         if game.running {
-            problems.push(EngineError::new("jogo_aberto", "O Deadlock está aberto. Feche antes de hospedar ou entrar."));
+            problems.push(game_open(
+                "O Deadlock está aberto. Feche o jogo antes de hospedar ou entrar: com ele aberto, o gameinfo.gi fica travado e o modo não carrega.",
+                &game,
+            ));
         }
         let ready = binary.hash_ok
             && binary.version_ok
@@ -580,14 +687,15 @@ impl EngineAdapter for ModlockCli {
                 purpose: "Definida pelo app em todo processo do Modlock: a versão é fixada, sem checagem de update.",
             },
         ];
-        CheckReport { binary, daemon, game, hosts, env, ready, problems }
+        let download_dir = self.cfg.download_dir.as_ref().map(|d| d.display().to_string());
+        CheckReport { binary, daemon, game, hosts, env, download_dir, ready, problems }
     }
 
     fn start_daemon(&self) -> Result<DaemonInfo, EngineError> {
         let bin = self.verified_bin()?;
         let origin = self.origin()?;
         if self.socket_path().as_os_str().len() > SOCKET_PATH_MAX {
-            return Err(EngineError::new("socket_caminho_longo", "Caminho do socket longo demais. Use uma pasta mais curta em ENGINE_STATE_DIR."));
+            return Err(self.long_socket());
         }
         match self.daemon_state() {
             DaemonState::Rodando => {
@@ -598,15 +706,7 @@ impl EngineAdapter for ModlockCli {
                 // Daemon em outra origem (o que sobe sozinho vai para o hyperline.gg): parar e subir o nosso.
                 self.daemon_stop_inner()?;
             }
-            DaemonState::SocketTravado => {
-                return Err(EngineError::new(
-                    "socket_travado",
-                    format!(
-                        "Há um modlock.sock travado em {} (daemon encerrado à força). Reinicie o PC ou use outra pasta em {ENV_STATE_DIR}.",
-                        self.cfg.state_dir().display()
-                    ),
-                ))
-            }
+            DaemonState::SocketTravado => return Err(self.stuck_socket()),
             DaemonState::Parado => {}
         }
         self.spawn_daemon(&bin, &origin)?;
@@ -614,8 +714,12 @@ impl EngineAdapter for ModlockCli {
     }
 
     fn stop_daemon(&self) -> Result<DaemonInfo, EngineError> {
-        if self.session().is_some_and(|s| s.running) {
-            return Err(EngineError::new("sessao_ativa", "Pare a sessão antes de parar o daemon."));
+        if let Some(s) = self.session().filter(|s| s.running) {
+            return Err(EngineError::new(
+                "sessao_ativa",
+                "Há uma partida em andamento. Encerre a partida no site antes de parar o serviço do motor.",
+            )
+            .with_detail(format!("Sessão {:?} rodando, PID {}.", s.kind, s.pid)));
         }
         self.daemon_stop_inner()?;
         Ok(self.daemon_info(false))
@@ -653,6 +757,20 @@ impl EngineAdapter for ModlockCli {
     fn session(&self) -> Option<SessionInfo> {
         self.session.lock().unwrap().as_ref().map(Session::info)
     }
+}
+
+/// O Windows recusou abrir o `modlock.exe` (quase sempre antivírus ou arquivo sumido).
+fn blocked_process(detail: String) -> EngineError {
+    EngineError::new(
+        "processo",
+        "O Windows não deixou o app abrir o motor. Se o antivírus bloqueou o modlock.exe, restaure o arquivo e adicione as exclusões do antivírus.",
+    )
+    .with_detail(detail)
+}
+
+fn game_open(message: &str, game: &GameCheck) -> EngineError {
+    let pids: Vec<String> = game.pids.iter().map(u32::to_string).collect();
+    EngineError::new("jogo_aberto", message).with_detail(format!("{} aberto, PID {}.", game.exe, pids.join(", ")))
 }
 
 fn read_all<R: Read + Send + 'static>(r: Option<R>) -> thread::JoinHandle<String> {
@@ -775,6 +893,34 @@ mod tests {
         assert!(b.exists && !b.hash_ok);
         assert_eq!(b.version, None, "a versão só é lida de um binário com hash certo");
         assert_eq!(engine.start_daemon().unwrap_err().code, "hash_diferente");
+        fs::remove_dir_all(&d).unwrap();
+    }
+
+    #[test]
+    fn binary_gone_after_seen_is_quarantine() {
+        let d = std::env::temp_dir().join(format!("engine-gone-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(&d).unwrap();
+        let bin = d.join("modlock.exe");
+        fs::write(&bin, "qualquer").unwrap();
+        let env = env_of(&[("APPDATA", d.to_str().unwrap()), ("LOCALAPPDATA", r"C:\Users\x\AppData\Local")]);
+        // Ao lado do app: o caminho só é aceito se o arquivo existia ao abrir.
+        let engine = ModlockCli::new(EngineConfig::resolve(&env, Some(&d), None), Arc::new(|_| {}));
+        assert!(engine.check().binary.exists);
+        fs::remove_file(&bin).unwrap();
+        let r = engine.check();
+        assert!(!r.binary.exists && r.binary.vanished);
+        assert_eq!(r.binary.folder.as_deref(), Some(d.display().to_string().as_str()));
+        assert_eq!(r.download_dir.as_deref(), Some(r"C:\Users\x\AppData\Local\modlock"));
+        assert!(r.problems.iter().any(|p| p.code == "binario_sumiu" && p.detail.is_some()));
+        assert!(!r.problems.iter().any(|p| p.code == "binario_ausente"));
+        assert_eq!(engine.start_daemon().unwrap_err().code, "binario_sumiu");
+
+        // Com MODLOCK_BIN nunca visto, é só "não encontrado".
+        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, bin.to_str().unwrap())]), None, None);
+        let fresh = ModlockCli::new(cfg, Arc::new(|_| {}));
+        let b = fresh.check().binary;
+        assert!(!b.vanished);
         fs::remove_dir_all(&d).unwrap();
     }
 }

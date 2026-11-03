@@ -34,6 +34,11 @@ pub const ENV_REGISTER_SCHEME: &str = "APP_REGISTER_SCHEME";
 pub const EV_ENGINE: &str = "engine://event";
 pub const EV_CHECK: &str = "engine://check";
 pub const EV_DEEP_LINK: &str = "app://deep-link";
+/// Para a tela Instalação dizer por que abriu sozinha (`window.__INSTALL_OPENED_BY__` ou este evento,
+/// se a janela já existia).
+pub const EV_INSTALL_OPENED_BY: &str = "install://opened-by";
+/// A primeira checagem ao abrir o app encontrou algo que impede hospedar ou entrar.
+pub const OPENED_BY_CHECK: &str = "checagem";
 
 pub struct AppState {
     pub engine: Arc<ModlockCli>,
@@ -71,7 +76,7 @@ pub fn run() {
             std::thread::spawn(move || {
                 let report = engine.check();
                 if !report.ready {
-                    let _ = open_install_window(&h);
+                    let _ = open_install_window_for(&h, Some(OPENED_BY_CHECK));
                 }
                 let _ = h.emit(EV_CHECK, &report);
             });
@@ -132,7 +137,15 @@ fn create_main_window(app: &AppHandle, path: &str) -> tauri::Result<()> {
 }
 
 pub fn open_install_window(app: &AppHandle) -> tauri::Result<()> {
+    open_install_window_for(app, None)
+}
+
+/// Abre a tela Instalação; com `reason`, a tela diz no topo por que abriu sem ninguém pedir.
+pub fn open_install_window_for(app: &AppHandle, reason: Option<&'static str>) -> tauri::Result<()> {
     if let Some(w) = app.get_webview_window(INSTALL) {
+        if let Some(r) = reason {
+            let _ = app.emit_to(INSTALL, EV_INSTALL_OPENED_BY, r);
+        }
         let _ = w.unminimize();
         w.show()?;
         return w.set_focus();
@@ -142,13 +155,19 @@ pub fn open_install_window(app: &AppHandle) -> tauri::Result<()> {
     } else {
         WebviewUrl::App("_app/index.html".into())
     };
-    WebviewWindowBuilder::new(app, INSTALL, url)
+    let mut b = WebviewWindowBuilder::new(app, INSTALL, url)
         .title(format!("Instalação · {BRAND_NAME}"))
         .inner_size(1080.0, 800.0)
         .min_inner_size(720.0, 560.0)
         .background_color(tauri::window::Color(10, 15, 14, 255))
-        .initialization_script(init_script())
-        .build()?;
+        .initialization_script(init_script());
+    if let Some(r) = reason {
+        let v = serde_json::Value::from(r);
+        b = b.initialization_script(format!(
+            "Object.defineProperty(window,'__INSTALL_OPENED_BY__',{{value:{v},writable:false,configurable:false}});"
+        ));
+    }
+    b.build()?;
     Ok(())
 }
 

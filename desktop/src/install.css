@@ -127,12 +127,93 @@
   font-weight: 600;
 }
 
+.sum-sig.is-wait {
+  background: var(--tx-3);
+  box-shadow: 0 0 0 3px hsl(from var(--tx-3) h s l / 0.16);
+}
+
+.sum-b {
+  min-width: 0;
+  flex: 1;
+}
+
 .sum-l {
-  margin: 8px 0 0;
+  margin: 10px 0 0;
   padding-left: 16px;
   color: var(--tx-2);
   display: grid;
+  gap: 10px;
+}
+
+.sum-l li::marker {
+  color: var(--tx-3);
+}
+
+.sum-act {
+  margin-top: 10px;
+}
+
+.sum-kind {
+  margin: 0;
+  font-size: 13px;
+  color: var(--warn);
+}
+
+/* Mensagem de problema: a frase para quem joga e, fechado, o técnico */
+.pb {
+  display: grid;
   gap: 4px;
+  max-width: 72ch;
+}
+
+.pb-m {
+  margin: 0;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.pb-tag {
+  margin-right: 8px;
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.pb a,
+.sum-kind a,
+.bad a,
+.steps a {
+  color: var(--acc-tx);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tech summary {
+  width: fit-content;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.tech summary:hover {
+  color: var(--tx-2);
+}
+
+.tech p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--tx-3);
+  overflow-wrap: anywhere;
+}
+
+.tech-code {
+  color: var(--tx-2);
+}
+
+.ins-why {
+  max-width: 72ch;
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--tx-2);
 }
 
 /* ───────── Seções ───────── */
@@ -284,14 +365,47 @@ code {
   background: var(--warn);
 }
 
-.callout {
+.callout,
+.act-err {
   margin: 12px 0 0;
   padding: 12px 14px;
   border-radius: var(--r-md);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--tx-2);
   background: hsl(from var(--warn) h s l / 0.08);
   box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
+}
+
+.callout p {
+  margin: 0;
+}
+
+.callout .tech {
+  margin-top: 8px;
+}
+
+.act-err {
+  margin: 0 0 12px;
+}
+
+.act-err-t {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+/* Motivo + botão do serviço: quebram de linha juntos, nunca separados */
+.svc-act {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.svc-why {
+  max-width: 34ch;
+  text-align: right;
 }
 
 /* Tabela de variáveis */
@@ -331,7 +445,7 @@ code {
 
 .envt code {
   font-size: 12px;
-  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 /* Listas */
@@ -368,6 +482,35 @@ code {
   font-weight: 550;
 }
 
+.steps p {
+  margin: 0;
+}
+
+.steps li > * + * {
+  margin-top: 6px;
+}
+
+.av-paths {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.av-paths dt {
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.av-paths dd {
+  margin: 2px 0 0;
+  min-width: 0;
+}
+
+/* Motor fora do disco: a recuperação sobe para o topo, com o mesmo tom calmo do aviso */
+.isec.is-first .steps {
+  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
+}
+
 .ins-session {
   margin-top: 40px;
 }
@@ -376,6 +519,10 @@ code {
   .row {
     grid-template-columns: 1fr;
     gap: 6px;
+  }
+
+  .svc-why {
+    text-align: left;
   }
 
   .envt td:first-child {
