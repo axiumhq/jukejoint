@@ -1,0 +1,6 @@
+  pid      72128
+  release  v0.1.68
+  since    2026-11-03 13:09:53
+  clients  1
+  peer     12D3KooWJgFBUDpUMHnrLnuYhT3VMBagjQzmKdA7seKk61BfYgrS
+  signaling signed out; modlock login signs in to http://127.0.0.1:9

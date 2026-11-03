@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Janela principal (o site). Só o que o botão Entrar precisa: checar, entrar, hospedar, parar e ouvir os eventos da sessão.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-app-info",
+    "allow-open-install-window",
+    "allow-engine-check",
+    "allow-engine-host",
+    "allow-engine-join",
+    "allow-engine-stop",
+    "allow-engine-session"
+  ]
+}

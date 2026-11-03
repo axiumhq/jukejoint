@@ -1,0 +1,384 @@
+/*
+ * Tela Instalação do app. Lê só os tokens do site (web/src/styles/tokens.css) e usa a base
+ * (botões, .lbl, .display, .mono). Mesma linguagem do /instalar: precisa e calma.
+ */
+
+.ins {
+  min-height: 100dvh;
+}
+
+.ins-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: var(--tb);
+  padding: 0 var(--gut);
+  background: hsl(from var(--bg) h s l / 0.86);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.ins-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.ins-mark {
+  align-self: center;
+  width: 8px;
+  height: 16px;
+  background: var(--acc);
+  border-radius: 1px;
+}
+
+.ins-word {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.ins-act {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.fine {
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.ins-main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 40px var(--gut) 72px;
+}
+
+.ins-title {
+  font-size: var(--fs-h1);
+  margin: 0 0 12px;
+}
+
+.ins-lead {
+  max-width: 62ch;
+  font-size: var(--fs-lead);
+  color: var(--tx-2);
+  margin: 0 0 8px;
+}
+
+.ins-note {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  color: var(--acc-tx);
+  background: var(--acc-soft);
+  box-shadow: 0 0 0 1px var(--acc-line) inset;
+}
+
+.ins-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 28px 0 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.ins-toc a:hover {
+  color: var(--tx);
+}
+
+/* ───────── Resumo ───────── */
+
+.sum {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border-radius: var(--r-lg);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+
+.sum-sig {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+  box-shadow: 0 0 0 3px hsl(from var(--warn) h s l / 0.16);
+}
+
+.sum.is-ok .sum-sig {
+  background: var(--live);
+  box-shadow: 0 0 0 3px hsl(from var(--live) h s l / 0.16);
+}
+
+.sum-t {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sum-l {
+  margin: 8px 0 0;
+  padding-left: 16px;
+  color: var(--tx-2);
+  display: grid;
+  gap: 4px;
+}
+
+/* ───────── Seções ───────── */
+
+.isec {
+  padding: 36px 0 4px;
+  scroll-margin-top: calc(var(--tb) + 12px);
+}
+
+.isec-h {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 14px;
+}
+
+.isec-h h2 {
+  font-size: var(--fs-h2);
+  margin: 0;
+}
+
+.isec-h .sp {
+  flex: 1;
+}
+
+.isec > .fine {
+  max-width: 72ch;
+  margin: 12px 0 0;
+}
+
+.rows {
+  margin: 0;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 176px 1fr;
+  gap: 16px;
+  padding: 12px 16px;
+  align-items: baseline;
+}
+
+.row + .row {
+  border-top: 1px solid var(--line);
+}
+
+.row dd {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.code {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.code code {
+  font-size: 12px;
+  color: var(--tx);
+  word-break: break-all;
+  user-select: all;
+}
+
+.code-cp {
+  flex: none;
+}
+
+code {
+  font-family: var(--f-mono);
+  font-size: 0.95em;
+}
+
+.bad {
+  color: var(--warn);
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.mark::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.mark.is-ok {
+  color: var(--live);
+}
+
+.mark.is-bad {
+  color: var(--warn);
+}
+
+.mark.is-soft {
+  color: var(--tx-3);
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 11.5px;
+  font-weight: 550;
+  background: var(--s3);
+  color: var(--tx-2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+
+.state::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tx-3);
+}
+
+.state-rodando {
+  color: var(--tx);
+}
+
+.state-rodando::before {
+  background: var(--live);
+}
+
+.state-socketTravado {
+  color: var(--warn);
+}
+
+.state-socketTravado::before {
+  background: var(--warn);
+}
+
+.callout {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  font-size: 12.5px;
+  color: var(--tx-2);
+  background: hsl(from var(--warn) h s l / 0.08);
+  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
+}
+
+/* Tabela de variáveis */
+.envt {
+  width: 100%;
+  border-collapse: collapse;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  overflow: hidden;
+}
+
+.envt th {
+  text-align: left;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.envt td {
+  padding: 12px 16px;
+  vertical-align: baseline;
+  border-top: 1px solid var(--line);
+}
+
+.envt tbody tr:first-child td {
+  border-top: 0;
+}
+
+.envt td:first-child {
+  width: 230px;
+}
+
+.envt td:first-child .fine {
+  display: block;
+  margin-top: 4px;
+}
+
+.envt code {
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* Listas */
+.steps,
+.nots {
+  margin: 0;
+  padding: 14px 18px 14px 34px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  display: grid;
+  gap: 8px;
+  color: var(--tx-2);
+  font-size: 13px;
+}
+
+.steps {
+  list-style: decimal;
+}
+
+.nots {
+  list-style: disc;
+}
+
+.steps li::marker,
+.nots li::marker {
+  color: var(--tx-3);
+  font-family: var(--f-mono);
+  font-size: 12px;
+}
+
+.steps b {
+  color: var(--tx);
+  font-weight: 550;
+}
+
+.ins-session {
+  margin-top: 40px;
+}
+
+@media (max-width: 760px) {
+  .row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .envt td:first-child {
+    width: auto;
+  }
+}
