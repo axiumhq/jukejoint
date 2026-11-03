@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 // Mesmas fontes, tokens e base do site (importados de web/src, sem cópia).
 import '@fontsource-variable/geist/index.css';
 import '@fontsource-variable/geist-mono/index.css';
-import '@fontsource-variable/roboto-serif/standard.css';
+import '@web/fonts/display.css';
 import '@web/styles/tokens.css';
 import '@web/styles/base.css';
 import { BRAND_NAME } from '@web/config/brand';

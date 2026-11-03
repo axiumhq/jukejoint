@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { Layout } from './components/Shell';
 import { t } from './i18n';
@@ -7,15 +7,81 @@ import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
 import { ThemeProvider } from './state/theme';
 
-// A home pinta primeiro; as outras telas viram chunks próprios (menos JS na primeira visita).
-const ModesIndex = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModesIndex })));
-const ModePage = lazy(() => import('./pages/Mode').then((m) => ({ default: m.ModePage })));
-const Install = lazy(() => import('./pages/Install').then((m) => ({ default: m.Install })));
-const News = lazy(() => import('./pages/News').then((m) => ({ default: m.News })));
-const Room = lazy(() => import('./pages/Room').then((m) => ({ default: m.Room })));
-const QuickPlay = lazy(() => import('./pages/QuickPlay').then((m) => ({ default: m.QuickPlay })));
+/**
+ * Uma tela em chunk próprio, com pré-carga. Depois que o chunk chegou, o `lazy` resolve na
+ * hora (o thenable chama de volta síncrono) e o Suspense nem mostra o fallback: a tela entra
+ * inteira, sem o rodapé pular de lugar. `preloadRoute` cobre a carga direta (main.tsx espera
+ * o chunk da URL antes do primeiro render) e a navegação (hover/foco num link).
+ */
+function lazyRoute<M extends Record<K, ComponentType>, K extends keyof M & string>(load: () => Promise<M>, ...names: K[]) {
+  let mod: M | undefined;
+  let pending: Promise<M> | undefined;
+  const preload = () =>
+    (pending ??= load().then(
+      (m) => (mod = m),
+      (e: unknown) => {
+        pending = undefined; // deixa tentar de novo (rede caiu, deploy novo)
+        throw e;
+      },
+    ));
+  const views = Object.fromEntries(
+    names.map((n) => [
+      n,
+      lazy(() => {
+        if (mod) {
+          const m = mod;
+          return { then: (ok: (v: { default: ComponentType }) => void) => ok({ default: m[n] }) } as unknown as Promise<{ default: ComponentType }>;
+        }
+        return preload().then((m) => ({ default: m[n] }));
+      }),
+    ]),
+  ) as unknown as Record<K, ComponentType>;
+  return { preload, views };
+}
 
-/** Enquanto a tela carrega: nada nos primeiros 300 ms; depois, uma linha discreta. */
+// A home pinta primeiro; as outras telas viram chunks próprios (menos JS na primeira visita).
+const modeRoute = lazyRoute(() => import('./pages/Mode'), 'ModesIndex', 'ModePage');
+const installRoute = lazyRoute(() => import('./pages/Install'), 'Install');
+const newsRoute = lazyRoute(() => import('./pages/News'), 'News');
+const roomRoute = lazyRoute(() => import('./pages/Room'), 'Room');
+const quickRoute = lazyRoute(() => import('./pages/QuickPlay'), 'QuickPlay');
+const { ModesIndex, ModePage } = modeRoute.views;
+const { Install } = installRoute.views;
+const { News } = newsRoute.views;
+const { Room } = roomRoute.views;
+const { QuickPlay } = quickRoute.views;
+
+/** Primeiro segmento do caminho → chunk da tela (o mesmo mapa das <Route> abaixo). */
+const CHUNKS: Record<string, () => Promise<unknown>> = {
+  sala: roomRoute.preload,
+  jogar: quickRoute.preload,
+  modos: modeRoute.preload,
+  instalar: installRoute.preload,
+  novidades: newsRoute.preload,
+};
+
+/** Baixa o chunk da tela de `pathname`, se ela tiver um. Nunca rejeita. */
+export function preloadRoute(pathname: string): Promise<unknown> {
+  const load = CHUNKS[pathname.split('/')[1] ?? ''];
+  return load ? load().catch(() => undefined) : Promise.resolve();
+}
+
+/** Pré-carga na intenção: o ponteiro sobre um link interno ou o foco nele. */
+function preloadOnIntent(e: Event) {
+  const a = e.target instanceof Element ? e.target.closest('a[href]') : null;
+  if (!(a instanceof HTMLAnchorElement) || a.origin !== window.location.origin) return;
+  void preloadRoute(a.pathname);
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('pointerover', preloadOnIntent, { passive: true });
+  document.addEventListener('focusin', preloadOnIntent);
+}
+
+/**
+ * Enquanto a tela carrega (só numa navegação sem pré-carga): nada nos primeiros 300 ms;
+ * depois, uma linha discreta. Ocupa a altura da janela, para o rodapé não aparecer no meio
+ * e depois descer quando a tela chega.
+ */
 function RouteWait() {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -23,7 +89,7 @@ function RouteWait() {
     return () => window.clearTimeout(id);
   }, []);
   return (
-    <div className="page route-wait" aria-busy="true">
+    <div className="page route-wait" aria-busy="true" style={{ minHeight: '100svh' }}>
       <div className="wrap">{show && <p className="fine">{t.common.opening}</p>}</div>
     </div>
   );
