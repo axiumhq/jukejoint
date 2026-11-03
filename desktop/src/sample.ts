@@ -4,13 +4,13 @@
  */
 import type { AppInfo, CheckReport } from './api';
 
-export const SAMPLE_APP: AppInfo = { name: 'Lobby', scheme: 'lobby', version: '0.1.0', modlockVersion: 'v0.1.68', dev: true };
+export const SAMPLE_APP: AppInfo = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.68', dev: true };
 
 export const SAMPLE_CHECK: CheckReport = {
   binary: {
-    path: 'C:\\Users\\voce\\AppData\\Local\\Lobby\\modlock.exe',
+    path: 'C:\\Users\\voce\\AppData\\Local\\Jukejoint\\modlock.exe',
     source: 'ao lado do app',
-    folder: 'C:\\Users\\voce\\AppData\\Local\\Lobby',
+    folder: 'C:\\Users\\voce\\AppData\\Local\\Jukejoint',
     exists: true,
     vanished: false,
     sizeBytes: 85_352_448,

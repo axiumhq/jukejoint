@@ -27,7 +27,7 @@ impl LinkError {
     }
 }
 
-/// Lê `lobby://join/l01` (barra final opcional) e devolve o id validado.
+/// Lê `jukejoint://join/l01` (barra final opcional) e devolve o id validado.
 pub fn parse_join(url: &str, scheme: &str) -> Result<LobbyId, LinkError> {
     if url.len() > MAX_LEN || !url.is_ascii() || url.bytes().any(|b| b.is_ascii_control() || b == b' ') {
         return Err(LinkError::Format);

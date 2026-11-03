@@ -71,7 +71,7 @@ fn brand_name(src: &str) -> Option<String> {
     Some(rest[start..start + len].to_string())
 }
 
-/// Nome da marca em minúsculas só com [a-z0-9]: "Lobby" vira "lobby".
+/// Nome da marca em minúsculas só com [a-z0-9]: "Jukejoint" vira "jukejoint".
 fn slug(name: &str) -> String {
     name.chars()
         .filter(|c| c.is_ascii_alphanumeric())

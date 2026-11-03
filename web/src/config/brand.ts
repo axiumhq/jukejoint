@@ -1,9 +1,9 @@
 /**
- * Nome provisório da plataforma. O nome ainda NÃO foi decidido ("Lobby" é o do protótipo v8):
- * troque aqui e o site inteiro acompanha (wordmark, títulos, textos).
+ * Nome da plataforma (decidido em 03/11/2026). Troque aqui e o site inteiro acompanha (wordmark,
+ * títulos, textos); o app desktop deriva dele o esquema do link (`jukejoint://`).
  * O <title> inicial em index.html também usa o nome; troque lá se quiser.
  */
-export const BRAND_NAME = 'Lobby';
+export const BRAND_NAME = 'Jukejoint';
 
 /** Dados do app de desktop (mock). */
 export const APP_RELEASE = {

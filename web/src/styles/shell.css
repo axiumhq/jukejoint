@@ -1210,6 +1210,35 @@
   .room-pill .stack {
     display: none;
   }
+
+  /* o nome da marca é longo: a palavra encolhe um pouco e o contador sai do topo
+     (a home repete "N jogando" em "Modos ao vivo"), para o Login caber até 320 px */
+  .brand {
+    gap: 7px;
+  }
+
+  .brand b {
+    font-size: 1.375rem;
+  }
+
+  .tb .live-count {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .tb {
+    gap: 6px;
+    padding-inline: 12px;
+  }
+
+  .brand {
+    margin-right: 0;
+  }
+
+  .brand b {
+    font-size: 1.25rem;
+  }
 }
 
 /* "Login com a Steam" encolhe para "Login" no celular */

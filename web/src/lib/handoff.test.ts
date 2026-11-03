@@ -92,7 +92,7 @@ describe('ponte com o app', () => {
   it('detecta o app pelo objeto injetado ou pelo Tauri', () => {
     expect(desktopInfo(undefined)).toBeNull();
     expect(desktopInfo({} as Window)).toBeNull();
-    const app = { name: 'Lobby', scheme: 'lobby', version: '0.1.0', modlockVersion: 'v0.1.68' };
+    const app = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.68' };
     expect(desktopInfo({ __DESKTOP_APP__: app } as unknown as Window)).toEqual(app);
     expect(desktopInfo({ __TAURI_INTERNALS__: {} } as unknown as Window)?.version).toBe('');
   });

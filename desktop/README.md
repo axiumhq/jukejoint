@@ -98,7 +98,7 @@ cargo test --test real_cli -- --ignored --nocapture
 ## Configuração
 
 O nome do app e o esquema do link vêm de **um lugar só**: `BRAND_NAME` em
-`web/src/config/brand.ts` (hoje `'Lobby'`, nome provisório). O `build.rs` deriva o esquema
+`web/src/config/brand.ts` (hoje `'Jukejoint'`). O `build.rs` deriva o esquema
 (`lobby`) e para o build se o `tauri.conf.json` não repetir os mesmos valores em `productName` e
 `plugins.deep-link.desktop.schemes`. Trocou o nome: ajuste esses dois campos e pronto.
 
@@ -171,7 +171,7 @@ o processo terminou antes da etapa 3. O `detail` traz as últimas linhas da sess
 
 ## Deep link e instância única
 
-`lobby://join/<id>` (barra final opcional). O id segue `[A-Za-z0-9][A-Za-z0-9_-]{0,63}`; qualquer
+`jukejoint://join/<id>` (barra final opcional). O id segue `[A-Za-z0-9][A-Za-z0-9_-]{0,63}`; qualquer
 outra coisa (consulta, fragmento, `%`, porta, usuário, caminho extra) é recusada. Com o app já
 aberto, o link traz a janela para frente e manda `app://deep-link`; o site navega até
 `/sala/<id>` pelo React Router, sem recarregar. A frio, a janela já abre em `/sala/<id>`. Uma
