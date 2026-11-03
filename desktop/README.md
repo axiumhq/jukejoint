@@ -14,6 +14,7 @@ desktop/
     capabilities/       o que cada janela pode chamar
     src/engine/         EngineAdapter: args, parse, validate, system, modlock
     src/deeplink.rs     <esquema>://join/<id>
+    src/notice.rs       aviso nativo para quem joga (link de convite inválido)
     tests/              fixtures e o teste com o CLI real (ignorado por padrão)
 ```
 
@@ -45,7 +46,17 @@ a tela Instalação em `http://localhost:5281`. Como essa segunda porta é "remo
 dev o app libera para ela, e só para ela, as mesmas permissões da capability `instalacao`.
 
 Para mexer só no visual da tela Instalação: `npx vite` em `desktop/` e abrir
-`http://localhost:5281`. Fora do app ela mostra dados de exemplo (com um aviso).
+`http://localhost:5281`. Fora do app ela mostra dados de exemplo (com um aviso). Os dados de
+exemplo ficam em `src/sample.ts` e só entram em dev: no build de produção o módulo não é incluído
+e, fora do app, a tela diz que só funciona dentro dele.
+
+Tema: o mesmo do site (chave `lobby.theme` no localStorage, ou `?theme=`), aplicado por um script
+inline no `<head>` de `index.html` antes da primeira pintura (o Tauri põe o hash dele na CSP). Se o
+tema mudar no site com a tela Instalação aberta, ela troca junto pelo evento `storage` (mesma
+origem no app; em dev as portas são outras e a troca só aparece ao reabrir). A cor nativa das
+janelas (`WINDOW_BG` em `lib.rs`) é fixa na do Deadlock: o tema salvo mora no localStorage do
+WebView, que o Rust não lê antes de criar a janela, e o script inline já pinta o primeiro quadro no
+tema certo, então essa cor só aparece por um instante.
 
 ## Build
 
@@ -62,7 +73,7 @@ instalador: `--no-bundle` e `bundle.active: false`.
 
 ```powershell
 cd desktop\src-tauri
-cargo test                                   # 30 testes, sem o jogo e sem o CLI
+cargo test                                   # 31 testes, sem o jogo e sem o CLI
 ```
 
 Cobrem: argumentos de cada comando, validação (código de entrada, id do lobby, origem, pasta do
@@ -116,7 +127,9 @@ bater.
 
 Eventos: `engine://event` (cada linha da sessão, já lida: `note`, `hosting`, `host` com
 `ready`/`joined`/`failed`…, `building`, `built`, `update`, `text`; e `fim` com o código de saída),
-`engine://check` (a primeira checagem ao abrir) e `app://deep-link` (id do lobby).
+`engine://check` (a primeira checagem ao abrir), `app://deep-link` (id do lobby) e
+`app://deep-link-invalido` (um link recusado; o payload é o motivo: `formato`, `esquema`, `acao` ou
+`id`).
 
 Regras do adaptador: processos só por `std::process::Command` com argumentos em lista, sem shell e
 sem WMI; o daemon só para com `modlock daemon stop`; `daemon status` só roda com a trava do daemon
@@ -125,17 +138,27 @@ ocupada (sem daemon, ele subiria um apontando para o hyperline.gg).
 ## Deep link e instância única
 
 `lobby://join/<id>` (barra final opcional). O id segue `[A-Za-z0-9][A-Za-z0-9_-]{0,63}`; qualquer
-outra coisa (consulta, fragmento, `%`, porta, usuário, caminho extra) é ignorada. Com o link, o
+outra coisa (consulta, fragmento, `%`, porta, usuário, caminho extra) é recusada. Com o link, o
 app traz a janela para frente e abre `/sala/<id>` no site. Uma segunda execução (por exemplo, o
 navegador abrindo o link) repassa o link para a janela que já está aberta e encerra.
 
+Link recusado não some em silêncio: o app traz a janela do site para frente e mostra um aviso
+nativo do Windows sobre ela ("Este link de convite não abriu…", `src/notice.rs`, um aviso por vez),
+manda `app://deep-link-invalido` para o site e continua na página em que estava (a frio, abre a
+inicial). O aviso é nativo porque o site ainda não sabe o que fazer com o evento; quando souber,
+dá para trocar a caixa por uma mensagem no próprio site.
+
 ## Ao abrir e ao fechar
 
-- Abre a janela do site e um ícone na bandeja (Abrir, Instalação, Sair).
+- Abre a janela do site e um ícone na bandeja (Abrir, Instalação, Fechar o app). O ícone é só um
+  atalho enquanto a janela do site está aberta (é o caminho para a tela Instalação até o site
+  chamar `open_install_window`); ele **não** mantém o app em segundo plano e some quando a janela
+  fecha. A dica do ícone diz isso, e a tela Instalação também ("O que o app não faz").
 - Faz um `engine_check` em segundo plano; se algo faltar, abre a tela Instalação com
   `window.__INSTALL_OPENED_BY__ = 'checagem'` (ou o evento `install://opened-by`, se a janela já
   existia), e a tela diz no topo por que abriu.
 - Fechar a janela do site fecha o app: encerra a sessão e para o daemon **se foi o app que o subiu**.
+  Fechar só a tela Instalação não fecha o app.
 
 ## Integração com o site (a fazer em `web/`)
 

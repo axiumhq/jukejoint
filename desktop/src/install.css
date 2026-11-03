@@ -81,22 +81,45 @@
   box-shadow: 0 0 0 1px var(--acc-line) inset;
 }
 
+/* Navegação: mesma ordem das seções (problemas primeiro). Alvo de 28 px, letra de 13 px. */
 .ins-toc {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 18px;
-  margin: 28px 0 20px;
-  padding-bottom: 14px;
+  gap: 2px 18px;
+  margin: 24px 0 4px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
+}
+
+.ins-toc a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  font-size: 13px;
+  color: var(--tx-3);
 }
 
 .ins-toc a:hover {
   color: var(--tx);
 }
 
+.ins-toc a.is-pb {
+  color: var(--tx-2);
+}
+
+.ins-toc a.is-pb::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warn);
+}
+
 /* ───────── Resumo ───────── */
 
 .sum {
+  margin-top: 28px;
   display: flex;
   gap: 14px;
   align-items: flex-start;
@@ -219,7 +242,7 @@
 /* ───────── Seções ───────── */
 
 .isec {
-  padding: 36px 0 4px;
+  padding: 32px 0 4px;
   scroll-margin-top: calc(var(--tb) + 12px);
 }
 
@@ -240,9 +263,72 @@
   flex: 1;
 }
 
-.isec > .fine {
+.isec > .fine,
+.more-b > .fine {
   max-width: 72ch;
   margin: 12px 0 0;
+}
+
+/* Frase de uma linha das seções recolhidas */
+.isec-say {
+  max-width: 72ch;
+  margin: 0;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+/* "Ver detalhes": o <details> nativo, com alvo de 28 px e uma seta desenhada (sem glifo) */
+.more {
+  margin-top: 8px;
+}
+
+.isec > .rows + .more {
+  margin-top: 10px;
+}
+
+.more > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding-right: 4px;
+  list-style: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.more > summary::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  margin: 0 2px 0 1px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.more[open] > summary::before {
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.more > summary:hover {
+  color: var(--tx);
+}
+
+.more-b {
+  padding-top: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more > summary::before {
+    transition: none;
+  }
 }
 
 .rows {
@@ -280,11 +366,22 @@
   max-width: 100%;
 }
 
+/* Comandos e caminhos quebram nos espaços e nos <wbr> depois das barras; "anywhere" só se uma
+   parte sozinha não couber. Hash não tem onde quebrar: só ele usa break-all. */
 .code code {
   font-size: 12px;
   color: var(--tx);
-  word-break: break-all;
+  overflow-wrap: anywhere;
   user-select: all;
+}
+
+.code code.is-hash {
+  word-break: break-all;
+}
+
+/* Uma parte de comando sem barra ("-Algorithm", "Get-FileHash") não quebra no hífen */
+.nb {
+  white-space: nowrap;
 }
 
 .code-cp {
@@ -334,8 +431,9 @@ code {
   height: 22px;
   padding: 0 8px;
   border-radius: 5px;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 550;
+  white-space: nowrap;
   background: var(--s3);
   color: var(--tx-2);
   box-shadow: 0 0 0 1px var(--line-2) inset;
@@ -349,20 +447,27 @@ code {
   background: var(--tx-3);
 }
 
-.state-rodando {
+/* Chip de estado de cada seção: em ordem (verde), precisa de atenção (âmbar) ou neutro */
+.state.is-ok {
   color: var(--tx);
 }
 
-.state-rodando::before {
+.state.is-ok::before {
   background: var(--live);
 }
 
-.state-socketTravado {
+.state.is-warn {
   color: var(--warn);
+  background: hsl(from var(--warn) h s l / 0.08);
+  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
 }
 
-.state-socketTravado::before {
+.state.is-warn::before {
   background: var(--warn);
+}
+
+.isec-h .state {
+  align-self: center;
 }
 
 .callout,
@@ -384,7 +489,8 @@ code {
   margin-top: 8px;
 }
 
-.act-err {
+.act-err,
+.isec-h + .callout {
   margin: 0 0 12px;
 }
 

@@ -102,12 +102,23 @@ export function errorOf(e: unknown): EngineError {
 }
 
 export const api = {
-  appInfo: () => (inApp ? invoke<AppInfo>('app_info') : Promise.resolve(SAMPLE_APP)),
-  check: () => (inApp ? invoke<CheckReport>('engine_check') : delay(SAMPLE_CHECK)),
-  daemonStart: () => (inApp ? invoke<DaemonInfo>('engine_daemon_start') : delay(SAMPLE_CHECK.daemon)),
-  daemonStop: () => (inApp ? invoke<DaemonInfo>('engine_daemon_stop') : delay(SAMPLE_CHECK.daemon)),
+  appInfo: () => (inApp ? invoke<AppInfo>('app_info') : preview((s) => s.SAMPLE_APP, 0)),
+  check: () => (inApp ? invoke<CheckReport>('engine_check') : preview((s) => s.SAMPLE_CHECK)),
+  daemonStart: () => (inApp ? invoke<DaemonInfo>('engine_daemon_start') : preview((s) => s.SAMPLE_CHECK.daemon)),
+  daemonStop: () => (inApp ? invoke<DaemonInfo>('engine_daemon_stop') : preview((s) => s.SAMPLE_CHECK.daemon)),
   session: () => (inApp ? invoke<SessionInfo | null>('engine_session') : Promise.resolve(null)),
 };
+
+/**
+ * Fora do app: em dev, os dados de exemplo de `sample.ts`; no build de produção o
+ * `import.meta.env.DEV` vira `false`, o ramo some e o módulo de exemplo não entra no bundle.
+ */
+function preview<T>(pick: (s: typeof import('./sample')) => T, ms = 250): Promise<T> {
+  if (!import.meta.env.DEV) {
+    return Promise.reject({ code: 'fora_do_app', message: 'Esta tela só funciona dentro do app.' } satisfies EngineError);
+  }
+  return import('./sample').then((s) => delay(pick(s), ms));
+}
 
 /** Escuta um evento do app; fora do app não faz nada. */
 export function on<T>(name: string, fn: (payload: T) => void): Promise<UnlistenFn> {
@@ -115,67 +126,6 @@ export function on<T>(name: string, fn: (payload: T) => void): Promise<UnlistenF
   return listen<T>(name, (e) => fn(e.payload));
 }
 
-function delay<T>(v: T): Promise<T> {
-  return new Promise((r) => window.setTimeout(() => r(v), 250));
+function delay<T>(v: T, ms: number): Promise<T> {
+  return new Promise((r) => window.setTimeout(() => r(v), ms));
 }
-
-/* ───────── Dados de exemplo (só fora do app, para revisar o layout no navegador) ───────── */
-
-const SAMPLE_APP: AppInfo = { name: 'Lobby', scheme: 'lobby', version: '0.1.0', modlockVersion: 'v0.1.68', dev: true };
-
-const SAMPLE_CHECK: CheckReport = {
-  binary: {
-    path: 'C:\\Users\\voce\\AppData\\Local\\Lobby\\modlock.exe',
-    source: 'ao lado do app',
-    folder: 'C:\\Users\\voce\\AppData\\Local\\Lobby',
-    exists: true,
-    vanished: false,
-    sizeBytes: 85_352_448,
-    sha256: '4148c2fb2a5e5ac39fef61d7766e7854c3ad6e3c5985bc89433c5914742e3381',
-    expectedSha256: '4148c2fb2a5e5ac39fef61d7766e7854c3ad6e3c5985bc89433c5914742e3381',
-    hashOk: true,
-    version: 'v0.1.68',
-    expectedVersion: 'v0.1.68',
-    versionOk: true,
-  },
-  daemon: {
-    state: 'rodando',
-    stateDir: 'C:\\Users\\voce\\AppData\\Roaming\\modlock\\state',
-    socketPath: 'C:\\Users\\voce\\AppData\\Roaming\\modlock\\state\\modlock.sock',
-    socketPathTooLong: false,
-    status: {
-      pid: 72128,
-      release: 'v0.1.68',
-      since: '2026-11-03 13:09:53',
-      clients: 1,
-      peer: '12D3KooWJgFBUDpUMHnrLnuYhT3VMBagjQzmKdA7seKk61BfYgrS',
-      signaling: 'signed out; modlock login signs in to http://192.168.0.10:8080',
-      origin: 'http://192.168.0.10:8080',
-    },
-    expectedOrigin: 'http://192.168.0.10:8080',
-    originOk: true,
-    startedByApp: true,
-    logPath: 'C:\\Users\\voce\\AppData\\Roaming\\modlock\\state\\daemon-app.log',
-  },
-  game: { exe: 'deadlock.exe', running: false, pids: [] },
-  hosts: { path: 'C:\\Windows\\System32\\drivers\\etc\\hosts', host: 'hyperline.gg', readable: true, blocked: false, lines: [] },
-  env: [
-    { name: 'MODLOCK_BIN', value: null, scope: 'app', purpose: 'Caminho do modlock.exe fixado. Sem ela, o app procura ao lado do próprio executável.' },
-    {
-      name: 'ENGINE_ORIGIN',
-      value: 'http://192.168.0.10:8080',
-      scope: 'app',
-      purpose: 'Servidor de sinalização passado ao daemon em --origin. O hyperline.gg é recusado.',
-    },
-    { name: 'ENGINE_STATE_DIR', value: null, scope: 'app', purpose: 'Outra pasta de estado do Modlock (troca o APPDATA só dos processos do Modlock).' },
-    {
-      name: 'MODLOCK_NO_UPDATE_CHECK',
-      value: '1',
-      scope: 'modlock',
-      purpose: 'Definida pelo app em todo processo do Modlock: a versão é fixada, sem checagem de update.',
-    },
-  ],
-  downloadDir: 'C:\\Users\\voce\\AppData\\Local\\modlock',
-  ready: true,
-  problems: [],
-};

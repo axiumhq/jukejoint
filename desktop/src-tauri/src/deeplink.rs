@@ -15,6 +15,18 @@ pub enum LinkError {
     LobbyId,
 }
 
+impl LinkError {
+    /// Código estável do motivo, mandado ao site no evento `app://deep-link-invalido`.
+    pub fn reason(&self) -> &'static str {
+        match self {
+            LinkError::Format => "formato",
+            LinkError::Scheme => "esquema",
+            LinkError::Action => "acao",
+            LinkError::LobbyId => "id",
+        }
+    }
+}
+
 /// Lê `lobby://join/l01` (barra final opcional) e devolve o id validado.
 pub fn parse_join(url: &str, scheme: &str) -> Result<LobbyId, LinkError> {
     if url.len() > MAX_LEN || !url.is_ascii() || url.bytes().any(|b| b.is_ascii_control() || b == b' ') {
@@ -85,6 +97,15 @@ mod tests {
         assert_eq!(parse_join(&long, "lobby").unwrap_err(), LinkError::Format);
         let id65 = format!("lobby://join/{}", "a".repeat(65));
         assert_eq!(parse_join(&id65, "lobby").unwrap_err(), LinkError::LobbyId);
+    }
+
+    #[test]
+    fn invalid_link_reasons_are_stable() {
+        let got: Vec<_> = ["lobby:x", "outro://join/l01", "lobby://host/l01", "lobby://join/%zz"]
+            .iter()
+            .map(|u| parse_join(u, "lobby").unwrap_err().reason())
+            .collect();
+        assert_eq!(got, ["formato", "esquema", "acao", "id"]);
     }
 
     #[test]

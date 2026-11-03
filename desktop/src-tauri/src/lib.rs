@@ -4,6 +4,7 @@
 mod commands;
 pub mod deeplink;
 pub mod engine;
+mod notice;
 
 use std::sync::Arc;
 
@@ -34,6 +35,9 @@ pub const ENV_REGISTER_SCHEME: &str = "APP_REGISTER_SCHEME";
 pub const EV_ENGINE: &str = "engine://event";
 pub const EV_CHECK: &str = "engine://check";
 pub const EV_DEEP_LINK: &str = "app://deep-link";
+/// Um link `<esquema>://join/...` chegou e foi recusado; o payload é o motivo (`formato`,
+/// `esquema`, `acao`, `id`). Quem joga já vê um aviso nativo; o evento é para o site, se quiser.
+pub const EV_DEEP_LINK_INVALID: &str = "app://deep-link-invalido";
 /// Para a tela Instalação dizer por que abriu sozinha (`window.__INSTALL_OPENED_BY__` ou este evento,
 /// se a janela já existia).
 pub const EV_INSTALL_OPENED_BY: &str = "install://opened-by";
@@ -63,10 +67,17 @@ pub fn run() {
             }
 
             // Link de quando o app foi aberto por ele (partida a frio): a janela já abre na sala.
-            let first = deeplink::find_in_args(std::env::args().skip(1), SLUG)
-                .and_then(|u| deeplink::parse_join(&u, SLUG).ok());
-            let start = first.map(|id| format!("sala/{}", id.as_str())).unwrap_or_default();
+            // Link inválido: abre na página inicial e avisa por quê.
+            let first = deeplink::find_in_args(std::env::args().skip(1), SLUG).map(|u| (deeplink::parse_join(&u, SLUG), u));
+            let start = match &first {
+                Some((Ok(id), _)) => format!("sala/{}", id.as_str()),
+                _ => String::new(),
+            };
             create_main_window(app.handle(), &start)?;
+            if let Some((Err(e), url)) = &first {
+                eprintln!("deep link ignorado ({e:?}): {url:.80}");
+                notice::invalid_link(app.handle());
+            }
 
             setup_deep_link(app)?;
             setup_tray(app)?;
@@ -83,7 +94,8 @@ pub fn run() {
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Fechar a janela do site fecha o app (nada fica em segundo plano).
+            // Fechar a janela do site fecha o app (nada fica em segundo plano; o ícone na bandeja
+            // é só um atalho enquanto ela está aberta e some junto).
             if window.label() == MAIN {
                 if let WindowEvent::CloseRequested { .. } = event {
                     window.app_handle().exit(0);
@@ -125,12 +137,18 @@ fn init_script() -> String {
     )
 }
 
+/// Cor da janela antes da primeira pintura: a do tema Deadlock (`--bg`, hsl(170 16% 7%)). O tema
+/// salvo fica no localStorage do WebView, que o Rust não lê antes de a janela existir; o script
+/// inline do `<head>` (site e tela Instalação) já pinta o primeiro quadro no tema certo, então esta
+/// cor só aparece num instante antes disso.
+const WINDOW_BG: tauri::window::Color = tauri::window::Color(10, 15, 14, 255);
+
 fn create_main_window(app: &AppHandle, path: &str) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App(path.into()))
         .title(BRAND_NAME)
         .inner_size(1360.0, 860.0)
         .min_inner_size(960.0, 640.0)
-        .background_color(tauri::window::Color(10, 15, 14, 255))
+        .background_color(WINDOW_BG)
         .initialization_script(init_script())
         .build()?;
     Ok(())
@@ -159,7 +177,7 @@ pub fn open_install_window_for(app: &AppHandle, reason: Option<&'static str>) ->
         .title(format!("Instalação · {BRAND_NAME}"))
         .inner_size(1080.0, 800.0)
         .min_inner_size(720.0, 560.0)
-        .background_color(tauri::window::Color(10, 15, 14, 255))
+        .background_color(WINDOW_BG)
         .initialization_script(init_script());
     if let Some(r) = reason {
         let v = serde_json::Value::from(r);
@@ -195,7 +213,8 @@ fn show_main(app: &AppHandle) {
     }
 }
 
-/// Link validado: traz a janela para frente e abre a sala `/sala/<id>` do site.
+/// Link validado: traz a janela para frente e abre a sala `/sala/<id>` do site. Link inválido:
+/// traz a janela e mostra um aviso nativo.
 fn handle_link(app: &AppHandle, url: &str) {
     match deeplink::parse_join(url, SLUG) {
         Ok(id) => {
@@ -210,7 +229,13 @@ fn handle_link(app: &AppHandle, url: &str) {
             }
             let _ = app.emit_to(MAIN, EV_DEEP_LINK, id.as_str());
         }
-        Err(e) => eprintln!("deep link ignorado ({e:?}): {url:.80}"),
+        Err(e) => {
+            // Nada de sumir em silêncio: traz a janela, avisa quem joga e conta ao site.
+            eprintln!("deep link ignorado ({e:?}): {url:.80}");
+            show_main(app);
+            let _ = app.emit_to(MAIN, EV_DEEP_LINK_INVALID, e.reason());
+            notice::invalid_link(app);
+        }
     }
 }
 
@@ -231,10 +256,11 @@ fn setup_deep_link(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
 fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "abrir", format!("Abrir {BRAND_NAME}"), true, None::<&str>)?;
     let install = MenuItem::with_id(app, "instalacao", "Instalação", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "sair", "Sair", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "sair", "Fechar o app", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &install, &quit])?;
     let mut tray = TrayIconBuilder::with_id("principal")
-        .tooltip(BRAND_NAME)
+        // O ícone não quer dizer que o app fica em segundo plano: ele some quando a janela fecha.
+        .tooltip(format!("{BRAND_NAME}: fechar a janela fecha o app"))
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, e| match e.id.as_ref() {
