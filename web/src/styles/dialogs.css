@@ -1,0 +1,547 @@
+/*
+ * Diálogos v8 (components/Dialog.tsx e SessionDialogs.tsx): entrar / abrir o app, trocar de lobby,
+ * bater na porta e criar lobby. Superfície s2 com fio, cantos de 12, título em serifa condensada,
+ * rótulos .cap e os botões v8. Um acento: a escolha marcada e a ação primária.
+ */
+
+.dlg {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xl);
+  background: var(--s2);
+  color: var(--tx);
+  box-shadow:
+    0 0 0 1px var(--line-2) inset,
+    0 40px 90px -30px hsl(0 0% 0% / 0.85);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.dlg.is-wide {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.dlg::backdrop {
+  background: hsl(from var(--bg) h s l / 0.78);
+}
+
+.dlg[open] {
+  animation: dlg-in var(--t-slow) var(--e-out);
+}
+
+.dlg[open]::backdrop {
+  animation: dlg-fade var(--t-slow) var(--e-out);
+}
+
+@keyframes dlg-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+}
+
+@keyframes dlg-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.dlg-in {
+  display: grid;
+  gap: 18px;
+  padding: 22px 24px 24px;
+}
+
+.dlg-h {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.dlg-ht {
+  flex: 1;
+  min-width: 0;
+}
+
+.dlg-h h2 {
+  font-size: 34px;
+  text-wrap: balance;
+}
+
+.dlg-lead {
+  margin-top: 10px;
+  max-width: 56ch;
+  color: var(--tx-2);
+  font-size: 13px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.dlg-x {
+  margin: -4px -8px 0 0;
+}
+
+.dlg-stack {
+  display: grid;
+  gap: 8px;
+}
+
+/* ───────── Resumo do lobby ───────── */
+
+.dlg-lobby {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px 10px 10px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.dlg-cv {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex: none;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--line-2);
+}
+
+.dlg-lt {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dlg-lt b {
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dlg-lm {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 9px;
+  font-size: 12px;
+  color: var(--tx-2);
+}
+
+.dlg-lm > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tx-3);
+}
+
+.dlg-live {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--tx-3);
+}
+
+.dlg-tag {
+  align-self: flex-start;
+  backdrop-filter: none;
+  background: var(--s3);
+}
+
+.dlg-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: hsl(from var(--s1) h s l / 0.6);
+  color: var(--tx);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.dlg-note > .ico {
+  margin-top: 1px;
+  color: var(--acc-tx);
+}
+
+.dlg-note.is-warn {
+  background: hsl(from var(--warn) h s l / 0.08);
+  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.28) inset;
+}
+
+.dlg-note.is-warn > .ico {
+  color: var(--warn);
+}
+
+/* ───────── Ações e opções ───────── */
+
+.dlg-act {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.dlg-opts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  gap: 10px;
+}
+
+.dlg-opt {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.dlg-opt.is-main {
+  background: linear-gradient(180deg, var(--acc-soft), transparent 70%), var(--s1);
+  box-shadow: 0 0 0 1px var(--acc-line) inset;
+}
+
+.dlg-opt .btn {
+  width: 100%;
+}
+
+.dlg-trust {
+  display: grid;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--tx-2);
+}
+
+.dlg-trust li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dlg-trust .ico {
+  width: 14px;
+  height: 14px;
+  color: var(--acc-tx);
+}
+
+.dlg-signin {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.dlg-signin p {
+  color: var(--tx-2);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dlg-signin small {
+  color: var(--tx-3);
+  font-size: 11.5px;
+}
+
+/* ───────── Formulário ───────── */
+
+.dlg-form {
+  display: grid;
+  gap: 18px;
+}
+
+.dlg-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.dlg-field > legend {
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.dlg-hint {
+  margin-top: -8px;
+  color: var(--tx-3);
+  font-size: 12px;
+}
+
+.dlg-field .dlg-hint {
+  margin-top: 0;
+}
+
+.dlg-input,
+.dlg-select select {
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--s1);
+  color: var(--tx);
+  font-size: 13px;
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  transition:
+    box-shadow var(--t-fast),
+    background var(--t-fast);
+}
+
+.dlg-input:hover,
+.dlg-select select:hover {
+  background: var(--s3);
+}
+
+.dlg-input:focus,
+.dlg-select select:focus {
+  outline: none;
+  background: var(--s1);
+  box-shadow:
+    0 0 0 1px var(--acc-line) inset,
+    0 0 0 3px var(--acc-soft);
+}
+
+.dlg-select {
+  position: relative;
+  display: block;
+}
+
+.dlg-select select {
+  appearance: none;
+  padding-right: 34px;
+  font-family: var(--f-mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.dlg-select select option {
+  background: var(--s2);
+  color: var(--tx);
+}
+
+.dlg-select > .ico {
+  position: absolute;
+  right: 11px;
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--tx-3);
+  pointer-events: none;
+}
+
+.dlg-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+}
+
+/* região: controle segmentado */
+.dlg-seg {
+  display: flex;
+  height: 38px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+
+.dlg-seg label {
+  position: relative;
+  flex: 1;
+  display: flex;
+}
+
+.dlg-seg input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dlg-seg span {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--tx-2);
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
+}
+
+.dlg-seg label:hover span {
+  color: var(--tx);
+}
+
+.dlg-seg input:checked + span {
+  background: var(--s4);
+  color: var(--tx);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+
+.dlg-seg input:focus-visible + span {
+  outline: 2px solid var(--acc-tx);
+  outline-offset: 1px;
+}
+
+/* escolhas em cartão (modo e acesso) */
+.dlg-picks {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.dlg-picks.is-modes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dlg-pick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+.dlg-pick:hover {
+  background: var(--s3);
+}
+
+.dlg-pick input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.dlg-pick:has(input:checked) {
+  background: var(--acc-soft);
+  box-shadow: 0 0 0 1px var(--acc-line) inset;
+}
+
+.dlg-pick:has(input:focus-visible) {
+  outline: 2px solid var(--acc-tx);
+  outline-offset: 2px;
+}
+
+.dlg-pick-cv {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: none;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.dlg-pick-ico {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--s3);
+  color: var(--tx-2);
+}
+
+.dlg-pick:has(input:checked) .dlg-pick-ico {
+  background: var(--acc-soft);
+  color: var(--acc-tx);
+}
+
+.dlg-pick-t {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dlg-pick-t b {
+  font-size: 12.5px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dlg-pick:has(input:checked) .dlg-pick-t b {
+  color: var(--acc-tx);
+}
+
+.dlg-pick-t small {
+  font-size: 11px;
+  color: var(--tx-3);
+  line-height: 1.35;
+}
+
+.dlg-pick.is-row {
+  align-items: flex-start;
+  padding: 10px;
+}
+
+/* ───────── Celular ───────── */
+
+@media (max-width: 600px) {
+  .dlg-in {
+    padding: 18px 16px 18px;
+    gap: 16px;
+  }
+
+  .dlg-h h2 {
+    font-size: 28px;
+  }
+
+  .dlg-opts,
+  .dlg-picks,
+  .dlg-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dlg-picks.is-modes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dlg-act .btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dlg[open],
+  .dlg[open]::backdrop {
+    animation: none;
+  }
+}

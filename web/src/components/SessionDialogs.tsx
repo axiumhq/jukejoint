@@ -5,36 +5,77 @@ import { getMode, modes, type Region } from '../data/modes';
 import { t } from '../i18n';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
 import { useSession } from '../state/session';
+import { LiveDot, Tag } from './Common';
 import { Dialog } from './Dialog';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
+import { ModeCover } from './ModeCover';
 
-/** Cabeçalho comum dos diálogos de lobby: modo, nome e a contagem ao vivo. */
-function LobbySummary({ lobby, children }: { lobby: Lobby; children?: ReactNode }) {
+/** Cabeçalho comum dos diálogos de lobby: capa do modo, nome e a contagem ao vivo. */
+function LobbySummary({ lobby }: { lobby: Lobby }) {
   const mode = getMode(lobby.modeSlug);
   return (
     <div className="dlg-lobby">
-      <p className="dlg-mode">{mode?.name}</p>
-      <p className="dlg-name">{lobby.name}</p>
-      <p className="dlg-meta">
-        <span>
-          <span className="num">
-            {lobby.players}/{lobby.slots}
-          </span>{' '}
-          {t.join.seatsUnit}
+      <span className="dlg-cv" aria-hidden="true">
+        <ModeCover slug={lobby.modeSlug} />
+      </span>
+      <div className="dlg-lt">
+        <span className="lbl">{mode?.name}</span>
+        <b>{lobby.name}</b>
+        <span className="dlg-lm">
+          <span>
+            <span className="num">
+              {lobby.players}/{lobby.slots}
+            </span>{' '}
+            {t.join.seatsUnit}
+          </span>
+          <i aria-hidden="true" />
+          <span>
+            {t.regions[lobby.region]} · <span className="num">{t.lobbies.ping(lobby.ping)}</span>
+          </span>
         </span>
-        <span>
-          {t.regions[lobby.region]} <span className="num">{t.lobbies.ping(lobby.ping)}</span>
+      </div>
+      {lobby.locked ? (
+        <Tag tone="lock" className="dlg-tag">
+          {t.lobbies.locked}
+        </Tag>
+      ) : (
+        <span className="dlg-live">
+          <LiveDot small />
+          {t.join.live}
         </span>
-      </p>
-      {children}
+      )}
+    </div>
+  );
+}
+
+/** Aviso curto dentro do diálogo (partida em andamento, quórum, troca de lobby). */
+function Note({ icon = 'info', tone, children }: { icon?: IconName; tone?: 'warn'; children: ReactNode }) {
+  return (
+    <p className={tone ? `dlg-note is-${tone}` : 'dlg-note'} role={tone ? 'note' : undefined}>
+      <Icon name={icon} />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+function SignInBlock({ body }: { body: string }) {
+  const { signIn } = useSession();
+  return (
+    <div className="dlg-signin">
+      <p>{body}</p>
+      <button type="button" className="btn btn-p btn-lg" onClick={signIn}>
+        <Icon name="user" />
+        {t.account.signIn}
+      </button>
+      <small>{t.account.mockNote}</small>
     </div>
   );
 }
 
 /**
- * Entrar: mostra o lobby (ao vivo, o círculo acende quem chega), avisa se a partida já começou
- * ou se ainda falta gente para o quórum, pede o app se ele não estiver aberto, e confirma a troca
- * se você já está noutro lobby. O lobby com convite nunca chega aqui (vai para "Bater na porta").
+ * Entrar: mostra o lobby (ao vivo), avisa se a partida já começou ou se ainda falta gente para o quórum,
+ * pede o app se ele não estiver aberto, e confirma a troca se você já está noutro lobby.
+ * O lobby com convite nunca chega aqui (vai para "Bater na porta").
  */
 export function JoinDialog() {
   const { joinTarget, closeJoin, confirmJoin, lobbies, appConnected, hereId } = useSession();
@@ -46,47 +87,52 @@ export function JoinDialog() {
 
   return (
     <>
-      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title}>
-        {live ? (
-          <LobbySummary lobby={live}>
-            <p className="dialog-lead">{t.join.body(live.name)}</p>
-            {round && <p className="join-note">{t.join.midMatch(round)}</p>}
-            {belowQuorum(live) && <p className="join-note">{t.join.quorum(live.minPlayers, live.minPlayers - live.players)}</p>}
-          </LobbySummary>
-        ) : (
-          <p className="dialog-lead">{t.join.botsBody}</p>
-        )}
-        {here && (
-          <p className="join-switch" role="note">
-            {here.mine ? t.join.switchHostBody(here.name, live?.name ?? '') : t.join.switchBody(here.name, live?.name ?? '')}
-          </p>
+      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title} lead={live ? t.join.body(live.name) : t.join.botsBody}>
+        {live && (
+          <div className="dlg-stack">
+            <LobbySummary lobby={live} />
+            {round && <Note icon="enterMid">{t.join.midMatch(round)}</Note>}
+            {belowQuorum(live) && <Note icon="users">{t.join.quorum(live.minPlayers, live.minPlayers - live.players)}</Note>}
+            {here && (
+              <Note icon="exit" tone="warn">
+                {here.mine ? t.join.switchHostBody(here.name, live.name) : t.join.switchBody(here.name, live.name)}
+              </Note>
+            )}
+          </div>
         )}
         {appConnected ? (
-          <div className="dialog-actions">
-            <button type="button" className="btn btn-line" onClick={closeJoin}>
+          <div className="dlg-act">
+            <button type="button" className="btn btn-s btn-lg" onClick={closeJoin}>
               {t.join.switchCancel}
             </button>
-            <button type="button" className="btn btn-primary" onClick={confirmJoin}>
-              {t.join.switchConfirm}
+            <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
+              {here ? t.join.switchConfirm : t.lobbyState.join}
+              <Icon name="arrow" />
             </button>
           </div>
         ) : (
-          <div className="join-options">
-            <section className="join-option">
-              <h3>{t.join.haveApp}</h3>
-              <button type="button" className="btn btn-primary" onClick={confirmJoin}>
+          <div className="dlg-opts">
+            <section className="dlg-opt is-main" aria-labelledby="join-have">
+              <h3 className="cap" id="join-have">
+                {t.join.haveApp}
+              </h3>
+              <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
                 {t.join.openApp}
+                <Icon name="arrow" />
               </button>
             </section>
-            <section className="join-option">
-              <h3>{t.join.noApp}</h3>
-              <Link to="/instalar" className="btn btn-line" onClick={closeJoin}>
+            <section className="dlg-opt" aria-labelledby="join-none">
+              <h3 className="cap" id="join-none">
+                {t.join.noApp}
+              </h3>
+              <Link to="/instalar" className="btn btn-s btn-lg" onClick={closeJoin}>
+                <Icon name="download" />
                 {t.join.install}
               </Link>
-              <ul className="check-list">
+              <ul className="dlg-trust">
                 {t.join.trust.map((item) => (
                   <li key={item}>
-                    <Icon name="check" size={14} />
+                    <Icon name="check" />
                     {item}
                   </li>
                 ))}
@@ -101,11 +147,11 @@ export function JoinDialog() {
 }
 
 /**
- * Bater na porta: o pedido de entrada num lobby com convite. O anfitrião vê seu nome e decide.
+ * Bater na porta: o pedido de entrada num lobby com convite. Quem abriu vê seu nome e decide.
  * Privado mostra só a contagem (sem nomes de quem está dentro).
  */
 export function KnockDialog() {
-  const { knockTarget, closeKnock, sendKnock, lobbies, user, signIn } = useSession();
+  const { knockTarget, closeKnock, sendKnock, lobbies, user } = useSession();
   const [message, setMessage] = useState('');
   const live = knockTarget ? (lobbies.find((l) => l.id === knockTarget.id) ?? knockTarget) : null;
 
@@ -119,32 +165,37 @@ export function KnockDialog() {
   }
 
   return (
-    <Dialog open={live !== null} onClose={closeKnock} title={t.knock.title}>
+    <Dialog open={live !== null} onClose={closeKnock} title={t.knock.title} lead={live ? t.knock.body(live.host) : undefined}>
       {live && (
-        <LobbySummary lobby={live}>
-          <p className="dialog-lead">{t.knock.body(live.host)}</p>
-          <p className="join-note">{t.knock.privacy}</p>
-        </LobbySummary>
+        <div className="dlg-stack">
+          <LobbySummary lobby={live} />
+          <Note icon="lock">{t.knock.privacy}</Note>
+        </div>
       )}
       {!user ? (
-        <div className="host-signin">
-          <p className="dialog-lead">{t.knock.signIn}</p>
-          <button type="button" className="btn btn-primary" onClick={signIn}>
-            {t.account.signIn}
-          </button>
-          <p className="fine">{t.account.mockNote}</p>
-        </div>
+        <SignInBlock body={t.knock.signIn} />
       ) : (
-        <form className="form" onSubmit={submit}>
-          <div className="field">
-            <label htmlFor="knock-msg">{t.knock.message}</label>
-            <input id="knock-msg" type="text" maxLength={80} value={message} placeholder={t.knock.messagePlaceholder} onChange={(e) => setMessage(e.target.value)} />
+        <form className="dlg-form" onSubmit={submit}>
+          <div className="dlg-field">
+            <label className="cap" htmlFor="knock-msg">
+              {t.knock.message}
+            </label>
+            <input
+              id="knock-msg"
+              className="dlg-input"
+              type="text"
+              maxLength={80}
+              value={message}
+              placeholder={t.knock.messagePlaceholder}
+              onChange={(e) => setMessage(e.target.value)}
+            />
           </div>
-          <div className="dialog-actions">
-            <button type="button" className="btn btn-line" onClick={closeKnock}>
+          <div className="dlg-act">
+            <button type="button" className="btn btn-s btn-lg" onClick={closeKnock}>
               {t.knock.cancel}
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-p btn-lg">
+              <Icon name="knock" />
               {t.knock.send}
             </button>
           </div>
@@ -155,7 +206,7 @@ export function KnockDialog() {
 }
 
 export function HostDialog() {
-  const { hostDialog, closeHost, createLobby, user, signIn } = useSession();
+  const { hostDialog, closeHost, createLobby, user } = useSession();
   const [modeSlug, setModeSlug] = useState(modes[0]!.slug);
   const [name, setName] = useState('');
   const [region, setRegion] = useState<Region>('BR');
@@ -197,33 +248,43 @@ export function HostDialog() {
   }
 
   return (
-    <Dialog open={hostDialog.open} onClose={closeHost} title={t.host.title} className="is-wide">
+    <Dialog open={hostDialog.open} onClose={closeHost} title={t.host.title} size="wide">
       {!user ? (
-        <div className="host-signin">
-          <p className="dialog-lead">{t.host.needSignIn}</p>
-          <button type="button" className="btn btn-primary" onClick={signIn}>
-            {t.account.signIn}
-          </button>
-          <p className="fine">{t.account.mockNote}</p>
-        </div>
+        <SignInBlock body={t.host.needSignIn} />
       ) : (
-        <form className="form" onSubmit={submit}>
-          <fieldset className="field">
-            <legend>{t.host.mode}</legend>
-            <div className="mode-picks">
+        <form className="dlg-form" onSubmit={submit}>
+          <fieldset className="dlg-field">
+            <legend className="cap">{t.host.mode}</legend>
+            <div className="dlg-picks is-modes">
               {modes.map((m) => (
-                <label key={m.slug} className="mode-pick">
-                  <input type="radio" name="host-mode" value={m.slug} checked={modeSlug === m.slug} onChange={() => pickMode(m.slug)} />
-                  <span className="mode-pick-name">{m.name}</span>
-                  <span className="mode-pick-meta">{t.host.modePlayers(m.minPlayers, m.maxPlayers)}</span>
+                <label key={m.slug} className="dlg-pick">
+                  <input
+                    type="radio"
+                    name="host-mode"
+                    value={m.slug}
+                    checked={modeSlug === m.slug}
+                    aria-label={t.host.modeLabel(m.name, m.minPlayers, m.maxPlayers)}
+                    onChange={() => pickMode(m.slug)}
+                  />
+                  <span className="dlg-pick-cv" aria-hidden="true">
+                    <ModeCover slug={m.slug} />
+                  </span>
+                  <span className="dlg-pick-t" aria-hidden="true">
+                    <b>{m.name}</b>
+                    <small className="num">{t.host.modePlayers(m.minPlayers, m.maxPlayers)}</small>
+                  </span>
                 </label>
               ))}
             </div>
           </fieldset>
-          <div className="field">
-            <label htmlFor="host-name">{t.host.name}</label>
+
+          <div className="dlg-field">
+            <label className="cap" htmlFor="host-name">
+              {t.host.name}
+            </label>
             <input
               id="host-name"
+              className="dlg-input"
               type="text"
               value={name}
               placeholder={placeholder}
@@ -231,78 +292,99 @@ export function HostDialog() {
               aria-describedby="host-name-hint"
               onChange={(e) => setName(e.target.value)}
             />
-            <p id="host-name-hint" className="hint">
+            <p id="host-name-hint" className="dlg-hint">
               {t.host.nameHint}
             </p>
           </div>
-          <div className="host-row">
-            <fieldset className="field">
-              <legend>{t.host.region}</legend>
-              <div className="segmented">
+
+          <div className="dlg-row">
+            <fieldset className="dlg-field">
+              <legend className="cap">{t.host.region}</legend>
+              <div className="dlg-seg">
                 {REGIONS.map((r) => (
-                  <label key={r} className="seg">
+                  <label key={r}>
                     <input type="radio" name="host-region" value={r} checked={region === r} onChange={() => setRegion(r)} />
                     <span>{t.regions[r]}</span>
                   </label>
                 ))}
               </div>
             </fieldset>
-            <div className="field">
-              <label htmlFor="host-slots">{t.host.slots}</label>
-              <select
-                id="host-slots"
-                value={total}
-                onChange={(e) => {
-                  const n = Number(e.target.value);
-                  setSlots(n);
-                  if (quorum > n) setQuorum(n);
-                }}
-              >
-                {slotOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+            <div className="dlg-field">
+              <label className="cap" htmlFor="host-slots">
+                {t.host.slots}
+              </label>
+              <span className="dlg-select">
+                <select
+                  id="host-slots"
+                  value={total}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setSlots(n);
+                    if (quorum > n) setQuorum(n);
+                  }}
+                >
+                  {slotOptions.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <Icon name="chev" />
+              </span>
             </div>
-            <div className="field">
-              <label htmlFor="host-quorum">{t.host.quorum}</label>
-              <select id="host-quorum" value={minNeeded} aria-describedby="host-quorum-hint" onChange={(e) => setQuorum(Number(e.target.value))}>
-                {quorumOptions.map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+            <div className="dlg-field">
+              <label className="cap" htmlFor="host-quorum">
+                {t.host.quorum}
+              </label>
+              <span className="dlg-select">
+                <select id="host-quorum" value={minNeeded} aria-describedby="host-quorum-hint" onChange={(e) => setQuorum(Number(e.target.value))}>
+                  {quorumOptions.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+                <Icon name="chev" />
+              </span>
             </div>
           </div>
-          <p id="host-quorum-hint" className="hint host-quorum-hint">
+          <p id="host-quorum-hint" className="dlg-hint">
             {t.host.quorumHint}
           </p>
-          <fieldset className="field">
-            <legend>{t.host.access}</legend>
-            <div className="access-picks">
-              <label className="access-pick">
+
+          <fieldset className="dlg-field">
+            <legend className="cap">{t.host.access}</legend>
+            <div className="dlg-picks">
+              <label className="dlg-pick is-row">
                 <input type="radio" name="host-access" checked={!locked} onChange={() => setLocked(false)} />
-                <span className="access-name">{t.host.accessOpen}</span>
-                <span className="access-hint">{t.host.accessOpenHint}</span>
-              </label>
-              <label className="access-pick">
-                <input type="radio" name="host-access" checked={locked} onChange={() => setLocked(true)} />
-                <span className="access-name">
-                  <Icon name="lock" size={13} />
-                  {t.host.accessInvite}
+                <span className="dlg-pick-ico" aria-hidden="true">
+                  <Icon name="users" />
                 </span>
-                <span className="access-hint">{t.host.accessInviteHint}</span>
+                <span className="dlg-pick-t">
+                  <b>{t.host.accessOpen}</b>
+                  <small>{t.host.accessOpenHint}</small>
+                </span>
+              </label>
+              <label className="dlg-pick is-row">
+                <input type="radio" name="host-access" checked={locked} onChange={() => setLocked(true)} />
+                <span className="dlg-pick-ico" aria-hidden="true">
+                  <Icon name="lock" />
+                </span>
+                <span className="dlg-pick-t">
+                  <b>{t.host.accessInvite}</b>
+                  <small>{t.host.accessInviteHint}</small>
+                </span>
               </label>
             </div>
           </fieldset>
-          <div className="dialog-actions">
-            <button type="button" className="btn btn-line" onClick={closeHost}>
+
+          <div className="dlg-act">
+            <button type="button" className="btn btn-s btn-lg" onClick={closeHost}>
               {t.host.cancel}
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-p btn-lg">
               {t.host.submit}
+              <Icon name="arrow" />
             </button>
           </div>
         </form>
@@ -319,7 +401,7 @@ export function Toasts() {
         <div key={toast.id} className="toast">
           <span>{toast.message}</span>
           <button type="button" className="btn-icon" onClick={() => dismissToast(toast.id)} aria-label={t.common.close}>
-            <Icon name="close" size={14} />
+            <Icon name="x" />
           </button>
         </div>
       ))}

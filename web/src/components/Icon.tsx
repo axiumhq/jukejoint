@@ -40,6 +40,12 @@ const paths = {
   info: '<circle cx="8" cy="8" r="6"/><path d="M8 7.2v3.8M8 5v.2"/>',
   pause: '<path d="M5.6 3.8v8.4M10.4 3.8v8.4"/>',
   copy: '<rect x="5.2" y="5.2" width="8.3" height="8.3" rx="1.6"/><path d="M10.8 5.2V3.8c0-.7-.6-1.3-1.3-1.3H3.8c-.7 0-1.3.6-1.3 1.3v5.7c0 .7.6 1.3 1.3 1.3h1.4"/>',
+  /* regras do modo e atividade da sala (fase 2) */
+  swords: '<path d="m2.5 2.5 7 7M2.5 2.5h3M2.5 2.5v3M13.5 2.5l-7 7M13.5 2.5h-3M13.5 2.5v3M5 11l-2 2M11 11l2 2M4 9.5 6.5 12M12 9.5 9.5 12"/>',
+  shrink: '<circle cx="8" cy="8" r="5.6"/><circle cx="8" cy="8" r="2.6"/><path d="M8 .9v1.6M8 13.5v1.6M.9 8h1.6M13.5 8h1.6"/>',
+  dice: '<rect x="2.6" y="2.6" width="10.8" height="10.8" rx="2.4"/><circle cx="5.7" cy="5.7" r=".7" fill="currentColor"/><circle cx="10.3" cy="10.3" r=".7" fill="currentColor"/><circle cx="8" cy="8" r=".7" fill="currentColor"/>',
+  clock: '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>',
+  pad: '<path d="M4.8 4.6h6.4a3 3 0 0 1 2.9 2.3l.7 3.1a1.8 1.8 0 0 1-3.1 1.6l-1.2-1.3H5.5l-1.2 1.3a1.8 1.8 0 0 1-3.1-1.6l.7-3.1a3 3 0 0 1 2.9-2.3Z"/><path d="M5.4 6.6v2M4.4 7.6h2"/><circle cx="10.6" cy="7.6" r=".6" fill="currentColor"/>',
   gear: '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M3.6 12.4l1.2-1.2M11.2 4.8l1.2-1.2"/><circle cx="8" cy="8" r="4.6"/>',
 } as const;
 

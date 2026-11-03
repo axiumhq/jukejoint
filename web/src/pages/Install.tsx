@@ -1,15 +1,27 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
-import { CopyField } from '../components/Common';
+import { CopyField, SectionTitle, Tag } from '../components/Common';
 import { Icon } from '../components/Icon';
+import { PageHead } from '../components/PageHead';
+import { Rail } from '../components/Rail';
 import { APP_RELEASE } from '../config/brand';
 import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
+import { PLATFORM_SCOPE, releases } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
-import { formatDate, t } from '../i18n';
+import { formatDate, formatShortDate, t } from '../i18n';
 import { useSession } from '../state/session';
+
+/**
+ * /instalar no v8: página de confiança, precisa e calma. Ordem: o instalador (versão, tamanho,
+ * data, SHA-256, código-fonte e o status do app), os três passos, o aviso do Windows, o antivírus
+ * (#antivirus, link da sala), o que é instalado, o que faz e não faz, anti-cheat (texto pendente,
+ * decisão do usuário), desinstalar e perguntas. O trilho traz o índice da página e as notas do app.
+ */
 
 /** Depois de um tempo esperando, o texto passa a ajudar em vez de só esperar. */
 const STATUS_TIMEOUT_MS = 20000;
+
+const TOC = ['baixar', 'passos', 'windows', 'antivirus', 'arquivos', 'faz', 'anticheat', 'desinstalar', 'perguntas'] as const;
 
 function AppStatus() {
   const { appConnected, setAppConnected } = useSession();
@@ -21,25 +33,142 @@ function AppStatus() {
     return () => window.clearTimeout(id);
   }, [appConnected]);
   return (
-    <div className={`app-status${appConnected ? ' is-connected' : ''}`}>
-      <div className="app-status-row" role="status" aria-live="polite">
-        <span className="app-status-signal" aria-hidden="true" />
-        <p className="app-status-title">{appConnected ? t.install.statusConnected(APP_RELEASE.version) : t.install.statusWaiting}</p>
+    <div className={appConnected ? 'ast is-on' : 'ast'}>
+      <span className="ast-sig" aria-hidden="true" />
+      <div className="ast-t">
+        <p className="ast-title" role="status" aria-live="polite">
+          {appConnected ? t.install.statusConnected(APP_RELEASE.version) : t.install.statusWaiting}
+        </p>
+        <p className="ast-help">{appConnected ? t.install.statusConnectedHelp : timedOut ? t.install.statusTimeout : t.install.statusWaitingHelp}</p>
       </div>
-      <p className="app-status-help">
-        {appConnected ? t.install.statusConnectedHelp : timedOut ? t.install.statusTimeout : t.install.statusWaitingHelp}
-      </p>
-      <div className="app-status-actions">
+      <div className="ast-act">
         {appConnected && (
-          <Link to="/#lobbies" className="btn btn-line btn-sm">
+          <Link to="/#lobbies" className="btn btn-s btn-sm">
             {t.install.goLobbies}
           </Link>
         )}
-        <button type="button" className="link-quiet" onClick={() => setAppConnected(!appConnected)}>
+        <button type="button" className="link" onClick={() => setAppConnected(!appConnected)}>
           {appConnected ? t.install.simulateOff : t.install.simulate} ({t.common.prototype})
         </button>
       </div>
     </div>
+  );
+}
+
+function DownloadCard() {
+  const { pushToast } = useSession();
+  return (
+    <section className="dl" id="baixar" aria-labelledby="dl-title">
+      <div className="dl-main">
+        <h2 className="sr-only" id="dl-title">
+          {t.install.downloadTitle}
+        </h2>
+        <p className="dl-file display">{APP_RELEASE.fileName}</p>
+        <dl className="dl-meta">
+          <div>
+            <dt className="lbl">{t.install.version}</dt>
+            <dd className="num">{APP_RELEASE.version}</dd>
+          </div>
+          <div>
+            <dt className="lbl">{t.install.size}</dt>
+            <dd>
+              <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB
+            </dd>
+          </div>
+          <div>
+            <dt className="lbl">{t.install.date}</dt>
+            <dd>
+              <time dateTime={APP_RELEASE.releasedAt}>{formatDate(APP_RELEASE.releasedAt)}</time>
+            </dd>
+          </div>
+        </dl>
+        <button type="button" className="btn btn-p btn-lg dl-btn" onClick={() => pushToast(t.install.downloadToast)}>
+          <Icon name="download" />
+          <span className="dl-btn-t">{t.install.download(APP_RELEASE.fileName)}</span>
+        </button>
+        <p className="dl-req">{t.install.requirements}</p>
+        <p className="dl-req mobile-note">{t.install.mobileNote}</p>
+      </div>
+      <div className="dl-side">
+        <div className="dl-hash" id="hash">
+          <h3 className="dl-h">{t.install.hashTitle}</h3>
+          <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
+          <p className="dl-note">{t.install.hashHelp}</p>
+        </div>
+        <p className="dl-src">
+          <Icon name="link" />
+          {t.install.source} <span>({t.install.sourceNote})</span>
+        </p>
+      </div>
+      <div className="dl-status">
+        <AppStatus />
+      </div>
+    </section>
+  );
+}
+
+function Steps() {
+  const { appConnected } = useSession();
+  return (
+    <section className="sec" id="passos" aria-labelledby="steps-title">
+      <SectionTitle id="steps-title" words={t.install.stepsWords} />
+      <ol className="isteps">
+        {t.install.steps.map((s, i) => (
+          <li key={s.title} className={appConnected ? 'istep is-done' : 'istep'}>
+            <span className="istep-n num" aria-hidden="true">
+              {appConnected ? <Icon name="check" /> : i + 1}
+            </span>
+            <h3>
+              {s.title}
+              {appConnected && <span className="sr-only">, {t.install.stepDone}</span>}
+            </h3>
+            <p>{s.body}</p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/** As duas telas do SmartScreen, desenhadas (sem captura nem marca da Microsoft), com os cliques marcados. */
+function SmartScreenFigure() {
+  const m = t.install.smartMock;
+  return (
+    <figure className="ss">
+      <div className="ss-panes" aria-hidden="true">
+        <div className="ss-pane">
+          <span className="ss-k lbl">{m.before}</span>
+          <div className="ss-win">
+            <b>{m.title}</b>
+            <i className="ss-ln" />
+            <i className="ss-ln s" />
+            <span className="ss-more">
+              {m.more}
+              <span className="ss-mark num">1</span>
+            </span>
+          </div>
+        </div>
+        <div className="ss-pane">
+          <span className="ss-k lbl">{m.after}</span>
+          <div className="ss-win">
+            <b>{m.title}</b>
+            <i className="ss-ln" />
+            <span className="ss-app">
+              {m.app} <span className="num">{APP_RELEASE.fileName}</span>
+              <span className="ss-mark num">2</span>
+            </span>
+            <span className="ss-btns">
+              <span className="ss-run">
+                {m.run}
+                <span className="ss-mark num">3</span>
+              </span>
+              <span className="ss-no">{m.dont}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <figcaption>{t.install.smartFigure}</figcaption>
+    </figure>
   );
 }
 
@@ -59,8 +188,8 @@ function AvTabs() {
     tabs.current[next]?.focus();
   }
   return (
-    <div className="tabs">
-      <div role="tablist" aria-label={t.install.avTabs} className="tablist" onKeyDown={onKey}>
+    <div className="av-tabs">
+      <div role="tablist" aria-label={t.install.avTabs} className="lb-tabs" onKeyDown={onKey}>
         {avGuides.map((g, i) => (
           <button
             key={g.id}
@@ -73,7 +202,6 @@ function AvTabs() {
             aria-selected={active === i}
             aria-controls={`panel-${g.id}`}
             tabIndex={active === i ? 0 : -1}
-            className="tab"
             onClick={() => setActive(i)}
           >
             {g.name}
@@ -81,8 +209,8 @@ function AvTabs() {
         ))}
       </div>
       {avGuides.map((g, i) => (
-        <div key={g.id} role="tabpanel" id={`panel-${g.id}`} aria-labelledby={`tab-${g.id}`} hidden={active !== i} className="tabpanel" tabIndex={0}>
-          <ol className="av-steps">
+        <div key={g.id} role="tabpanel" id={`panel-${g.id}`} aria-labelledby={`tab-${g.id}`} hidden={active !== i} className="av-panel" tabIndex={0}>
+          <ol className="nlist">
             {g.steps.map((s) => (
               <li key={s}>{s}</li>
             ))}
@@ -93,136 +221,188 @@ function AvTabs() {
   );
 }
 
+function InstallRail() {
+  const appChanges = releases
+    .flatMap((r) => r.changes.filter((c) => c.scope === PLATFORM_SCOPE).map((c) => ({ ...c, version: r.version, date: r.date })))
+    .slice(0, 4);
+  return (
+    <>
+      <nav className="rail-sec" aria-labelledby="ir-toc">
+        <div className="rail-h">
+          <h3 className="cap" id="ir-toc">
+            {t.install.toc}
+          </h3>
+        </div>
+        <ol className="toc">
+          {TOC.map((id) => (
+            <li key={id}>
+              <a href={`#${id}`}>{t.install.tocItems[id]}</a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+      <section className="rail-sec" aria-labelledby="ir-changes">
+        <div className="rail-h">
+          <h3 className="cap" id="ir-changes">
+            {t.install.railChanges}
+          </h3>
+        </div>
+        <ul className="mr-changes">
+          {appChanges.map((c) => (
+            <li key={c.text}>
+              <span className="lbl">
+                {t.categories[c.category]} · <span className="num">{c.version}</span> ·{' '}
+                <time dateTime={c.date} className="num">
+                  {formatShortDate(c.date)}
+                </time>
+              </span>
+              <p>{c.text}</p>
+            </li>
+          ))}
+        </ul>
+        <Link to={`/novidades?modo=${PLATFORM_SCOPE}`} className="link mr-more">
+          {t.install.railChangesLink}
+          <Icon name="arrow" />
+        </Link>
+      </section>
+    </>
+  );
+}
+
 export function Install() {
   useDocumentTitle(t.meta.install);
-  const { pushToast } = useSession();
 
   return (
-    <div className="page install-page">
-      <div className="wrap">
-      <header className="page-head">
-        <div>
-          <h1>{t.install.title}</h1>
-          <p className="lead">{t.install.lead}</p>
-        </div>
-      </header>
+    <>
+      <PageHead words={t.install.titleWords} meta={t.install.platformMeta} lead={t.install.lead} />
+      <DownloadCard />
+      <Steps />
 
-      <div className="install-layout">
-        <aside className="install-side" aria-label={t.install.title}>
-          <div className="download-panel">
-            <dl className="download-meta">
-              <div>
-                <dt>{t.install.version}</dt>
-                <dd className="num">{APP_RELEASE.version}</dd>
-              </div>
-              <div>
-                <dt>{t.install.size}</dt>
-                <dd>
-                  <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB
-                </dd>
-              </div>
-              <div>
-                <dt>{t.install.date}</dt>
-                <dd>
-                  <time dateTime={APP_RELEASE.releasedAt}>{formatDate(APP_RELEASE.releasedAt)}</time>
-                </dd>
-              </div>
-            </dl>
-            <button type="button" className="btn btn-primary btn-lg btn-block" onClick={() => pushToast(t.install.downloadToast)}>
-              <span className="btn-file">{t.install.download(APP_RELEASE.fileName)}</span>
-            </button>
-            <p className="fine">{t.install.requirements}</p>
-            <p className="fine mobile-note">{t.install.mobileNote}</p>
-
-            <div className="hash" id="hash">
-              <h2 className="h-side">{t.install.hashTitle}</h2>
-              <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
-              <p className="fine">{t.install.hashHelp}</p>
+      <div className="ins">
+        <section className="sec" id="windows" aria-labelledby="ss-title">
+          <SectionTitle id="ss-title" words={t.install.smartWords} />
+          <div className="ss-wrap">
+            <div className="ins-text">
+              <p>{t.install.smartWhy}</p>
+              <ol className="nlist">
+                {t.install.smartSteps(APP_RELEASE.fileName).map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ol>
             </div>
-
-            <p className="source-link">
-              {t.install.source} <span className="fine">({t.install.sourceNote})</span>
-            </p>
+            <SmartScreenFigure />
           </div>
-          <AppStatus />
-        </aside>
+        </section>
 
-        <div className="install-main">
-          <section id="antivirus" className="install-section av" aria-labelledby="av-title">
-            <h2 id="av-title">{t.install.avTitle}</h2>
+        <section className="sec" id="antivirus" aria-labelledby="av-title">
+          <SectionTitle id="av-title" words={t.install.avWords} />
+          <div className="ins-text">
             <p>{t.install.avWhy}</p>
             <AvTabs />
-            <h3 className="h-side">{t.install.avVerify}</h3>
+            <h3 className="ins-h">{t.install.avVerify}</h3>
             <CopyField value={hashCommand} label={t.install.avVerify} copyLabel={t.install.copyCommand} />
-          </section>
+          </div>
+        </section>
 
-          <section className="install-section" aria-labelledby="what-title">
-            <h2 id="what-title">{t.install.whatTitle}</h2>
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th scope="col">{t.install.whatCols.item}</th>
-                    <th scope="col">{t.install.whatCols.path}</th>
-                    <th scope="col">{t.install.whatCols.size}</th>
+        <section className="sec" id="arquivos" aria-labelledby="what-title">
+          <SectionTitle id="what-title" words={t.install.whatWords} />
+          <div className="ins-table">
+            <table className="files">
+              <thead>
+                <tr>
+                  <th scope="col">{t.install.whatCols.item}</th>
+                  <th scope="col">{t.install.whatCols.path}</th>
+                  <th scope="col">{t.install.whatCols.size}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {installedItems.map((it) => (
+                  <tr key={it.item}>
+                    <th scope="row">{it.item}</th>
+                    <td>
+                      <code className="path">{it.path}</code>
+                    </td>
+                    <td className="files-sz">{it.size}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {installedItems.map((it) => (
-                    <tr key={it.item}>
-                      <th scope="row">{it.item}</th>
-                      <td>
-                        <code className="path num">{it.path}</code>
-                      </td>
-                      <td className="nowrap">{it.size}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <dl className="reqs" aria-label={t.install.reqTitle}>
+            {t.install.reqs.map((r) => (
+              <div key={r.k}>
+                <dt className="lbl">{r.k}</dt>
+                <dd>{r.v}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
 
-          <section className="install-section does" aria-label={`${t.install.doesTitle} / ${t.install.doesntTitle}`}>
+        <section className="sec" id="faz" aria-labelledby="does-title">
+          <SectionTitle id="does-title" words={t.install.doesWords} />
+          <div className="does">
             <div>
-              <h2>{t.install.doesTitle}</h2>
-              <ul className="check-list">
+              <h3 className="ins-h">{t.install.doesTitle}</h3>
+              <ul className="ticks-list">
                 {appDoes.map((x) => (
                   <li key={x}>
-                    <Icon name="check" size={14} />
+                    <Icon name="check" />
                     {x}
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h2>{t.install.doesntTitle}</h2>
-              <ul className="check-list is-negative">
+              <h3 className="ins-h">{t.install.doesntTitle}</h3>
+              <ul className="ticks-list is-no">
                 {appDoesnt.map((x) => (
                   <li key={x}>
-                    <Icon name="close" size={14} />
+                    <Icon name="x" />
                     {x}
                   </li>
                 ))}
               </ul>
             </div>
-          </section>
+          </div>
+        </section>
 
-          <section className="install-section risk-pending" aria-labelledby="risk-title">
-            <h2 id="risk-title">
-              {t.install.riskTitle} <span className="pending-tag">{t.install.riskPending}</span>
+        <section className="sec risk" id="anticheat" aria-labelledby="risk-title">
+          <div className="sec-h">
+            <h2 className="display" id="risk-title">
+              {t.install.riskTitle}
             </h2>
-            <p>{t.install.riskPlaceholder}</p>
-          </section>
+            <Tag tone="line">{t.install.riskPending}</Tag>
+          </div>
+          <p className="risk-box">{t.install.riskPlaceholder}</p>
+        </section>
 
-          <section className="install-section" aria-labelledby="un-title">
-            <h2 id="un-title">{t.install.uninstallTitle}</h2>
-            <p>{t.install.uninstallBody}</p>
-          </section>
+        <section className="sec" id="desinstalar" aria-labelledby="un-title">
+          <div className="sec-h">
+            <h2 className="display" id="un-title">
+              {t.install.uninstallTitle}
+            </h2>
+          </div>
+          <p className="ins-p">{t.install.uninstallBody}</p>
+        </section>
 
-          <p className="install-affiliation">{t.install.affiliation}</p>
-        </div>
+        <section className="sec" id="perguntas" aria-labelledby="faq-title">
+          <SectionTitle id="faq-title" words={t.install.faqWords} />
+          <dl className="faq">
+            {t.install.faq.map((f) => (
+              <div key={f.q}>
+                <dt>{f.q}</dt>
+                <dd>{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+
+        <p className="ins-aff">{t.install.affiliation}</p>
       </div>
-      </div>
-    </div>
+
+      <Rail title={t.install.sheet}>
+        <InstallRail />
+      </Rail>
+    </>
   );
 }

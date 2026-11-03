@@ -1,428 +1,986 @@
 /*
- * A barra "Jogar agora" e a sala do lobby (/sala/:id).
- * Vagas como as janelinhas da tabela, maiores: âmbar cheio = pronto, contorno = ainda não,
- * tracejado = vaga livre. Verdete só para amigo. Um botão principal por fase, no painel.
+ * A sala do lobby (/sala/:id), v8 (prototipos/v8/sala.html).
+ * Cabeçalho com a capa larga e a fase, grade de vagas, barra PRONTO fixa e o trilho da sala.
+ * Um acento só: --acc para agir (PRONTO, etapa feita), --acc-tx para estado (Confirmou, fase).
+ * Movimento só como estado: a vaga estala ao confirmar, a etapa ativa pulsa só durante ela.
  */
 
-/* ───────── Barra "Jogar agora" ───────── */
-
-.dock {
-  display: flex;
-  align-items: center;
-  gap: var(--s-2);
+/* a barra PRONTO é fixa: o fim da coluna precisa de folga para o rodapé não ficar embaixo dela */
+.main:has(.room-page) {
+  padding-bottom: 132px;
 }
 
-.dock-play {
-  white-space: nowrap;
+/* a barra fixa mora dentro da sala: a sala fica acima do rodapé da coluna para a barra não ir para baixo dele */
+.main > .room-page {
+  z-index: 2;
 }
 
-.dock-state {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 36px;
-  max-width: 260px;
-  padding: 0 12px;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius);
-  font-size: var(--fs-xs);
-  color: var(--ink);
-  transition:
-    border-color var(--t) var(--ease),
-    background-color var(--t) var(--ease);
+/* os avisos sobem para não cobrir a barra */
+body:has(.rbar) .toasts {
+  bottom: 112px;
 }
 
-.dock-state:hover {
-  border-color: var(--ink-2);
-  background: var(--raise);
-}
+/* ───────── Cabeçalho ───────── */
 
-.dock-state[aria-current='page'] {
-  border-color: var(--sodium);
-}
-
-.dock-win {
-  flex: none;
-  width: 7px;
-  height: 11px;
-  background: var(--sodium);
-}
-
-.dock-win.is-joining {
-  background: none;
-  border: 1px solid var(--sodium);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .dock-win.is-joining {
-    animation: dock-blink 1.2s steps(2, jump-none) infinite;
-  }
-}
-
-@keyframes dock-blink {
-  50% {
-    background: var(--sodium);
-  }
-}
-
-.dock-label {
-  min-width: 0;
+.rh {
+  position: relative;
+  height: 236px;
+  border-radius: var(--r-xl);
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  font-weight: 500;
+  background: var(--k0);
+  box-shadow: 0 0 0 1px var(--line) inset;
 }
 
-.dock-meta {
-  flex: none;
-  color: var(--ink-2);
+.rh > .cover {
+  z-index: 0;
 }
 
-/* Entre 900 e 1180 px o cabeçalho aperta: o "jogando" vira só o número. */
-@media (max-width: 1180px) {
-  .live-pill-label {
-    display: none;
-  }
-
-  .dock-state {
-    max-width: 220px;
-  }
+.rh-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(90deg, hsl(from var(--k0) h s l / 0.95) 0, hsl(from var(--k0) h s l / 0.7) 40%, transparent 72%),
+    linear-gradient(0deg, hsl(from var(--k0) h s l / 0.7), transparent 50%);
 }
 
-/* Celular: fixa embaixo, ao alcance do polegar. O corpo ganha o espaço para nada ficar coberto. */
-.dock--bottom {
-  position: fixed;
-  inset: auto 0 0;
-  z-index: 25;
-  justify-content: space-between;
-  min-height: 64px;
-  padding: 10px var(--m) calc(10px + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--rule-strong);
-  background: var(--bg);
+.rh-body {
+  position: absolute;
+  z-index: 2;
+  inset: 18px 26px 22px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.dock--bottom .dock-play {
-  flex: 1;
-  justify-content: space-between;
-  --h: 44px;
-  font-size: var(--fs-sm);
-}
-
-.dock--bottom .dock-state {
-  flex: 1;
-  max-width: none;
-  min-height: 44px;
-  border: 0;
-  padding: 0;
-  font-size: var(--fs-sm);
-}
-
-@media (max-width: 900px) {
-  body {
-    padding-bottom: 64px;
-  }
-
-  /* Os avisos sobem para cima da barra. */
-  .toasts {
-    bottom: calc(64px + env(safe-area-inset-bottom) + var(--s-2));
-  }
-
-  /* O "Jogar agora" do herói seria o segundo na mesma tela: fica só o da barra. */
-  .hero-ctas {
-    display: none;
-  }
-}
-
-/* ───────── Sala do lobby ───────── */
-
-.room-page {
-  padding-top: var(--s-3);
-}
-
-.room-back {
+.rh-back {
+  align-self: flex-start;
   display: inline-flex;
-  min-height: 44px;
   align-items: center;
-  font-size: var(--fs-sm);
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--tx-2);
+  background: hsl(0 0% 0% / 0.35);
+  transition:
+    color var(--t-fast),
+    background var(--t-fast);
 }
 
-.room-head {
-  padding: var(--s-2) 0 var(--s-4);
+.rh-back:hover {
+  color: var(--tx);
+  background: hsl(0 0% 0% / 0.55);
 }
 
-.room-head h1 {
+.rh h1 {
+  margin: auto 0 12px;
+  max-width: 62%;
+  font-size: 54px;
+  text-wrap: balance;
+}
+
+.rh-lock {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  margin-left: 12px;
+  vertical-align: 0.12em;
+  color: var(--tx-2);
+}
+
+.rh-meta {
   display: flex;
   align-items: center;
-  gap: 14px;
-  font-size: clamp(2.25rem, 3.6vw, 3.25rem);
-}
-
-.room-lock {
-  color: var(--ink-3);
-}
-
-.room-meta {
-  display: flex;
   flex-wrap: wrap;
-  gap: 4px var(--s-3);
-  margin-top: var(--s-2);
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
+  gap: 6px 12px;
+  color: var(--tx-2);
+  font-size: 12.5px;
 }
 
-.room-meta .num {
-  color: var(--ink);
-  margin-left: 4px;
+.rh-meta > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tx-3);
 }
 
-.room-live {
-  color: var(--sodium);
-}
-
-.room-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--s-5);
-  align-items: start;
-}
-
-.room-sec-head {
+.rh-meta .who {
   display: flex;
-  align-items: baseline;
+  align-items: center;
+  gap: 7px;
+  color: var(--tx);
+  font-weight: 550;
+}
+
+.rh-meta .tag.line {
+  color: var(--tx-2);
+}
+
+/* a fase: canto superior direito, vidro só aqui (fica sobre a capa) */
+.rphase {
+  position: absolute;
+  z-index: 2;
+  right: 18px;
+  top: 18px;
+  width: 296px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: hsl(from var(--k0) h s l / 0.62);
+  backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.07) inset;
+}
+
+.rphase-t {
+  display: flex;
   justify-content: space-between;
-  gap: var(--s-2);
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--rule-strong);
+  align-items: baseline;
+  font-size: 11px;
+  color: var(--tx-3);
 }
 
-.room-sec-head h2 {
-  font-family: var(--sans);
-  font-size: var(--fs-sm);
+.rphase-t .num {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rphase-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin: 10px 0 9px;
+}
+
+.rphase-bar i {
+  height: 3px;
+  border-radius: 3px;
+  background: hsl(0 0% 100% / 0.12);
+  transition: background var(--t-slow) var(--e-out);
+}
+
+.rphase-bar i.on {
+  background: var(--acc-tx);
+}
+
+.rphase-v {
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0;
 }
 
-.room-sec-head p {
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
+.rphase-v span {
+  color: var(--tx-3);
+  font-weight: 450;
 }
 
-.room-sec-head .num {
-  font-size: var(--fs-sm);
-  color: var(--ink);
+/* ───────── Botão da folha (celular) ───────── */
+
+.rsheet {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-xl);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  text-align: left;
+  transition: background var(--t-fast);
 }
 
-/* As vagas em duas colunas, cada uma uma linha de 52 px. */
+.rsheet:hover {
+  background: var(--s3);
+}
+
+.rsheet .ri {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: var(--r-md);
+  background: var(--acc-soft);
+  color: var(--acc-tx);
+}
+
+.rsheet .t {
+  flex: 1;
+  min-width: 0;
+}
+
+.rsheet .t b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rsheet .t span {
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.rsheet > .ico {
+  color: var(--tx-3);
+}
+
+/* ───────── Vagas ───────── */
+
 .seats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: var(--s-4);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seat-li {
+  display: flex;
+  min-width: 0;
 }
 
 .seat {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 112px;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition:
+    box-shadow var(--t-mid) var(--e-out),
+    background var(--t-mid);
+}
+
+.seat:hover {
+  background: var(--s3);
+}
+
+.seat.is-ok {
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  background: linear-gradient(180deg, hsl(from var(--acc) h s l / 0.07), transparent 62%), var(--s2);
+}
+
+/* fio de acento no topo de quem confirmou */
+.seat.is-ok::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--acc-tx), transparent);
+  opacity: 0.8;
+}
+
+.seat.is-me {
+  box-shadow:
+    0 0 0 1px var(--line-2) inset,
+    0 0 0 1px var(--tx-3);
+}
+
+.seat.is-me.is-ok {
+  box-shadow:
+    0 0 0 1px var(--acc-tx) inset,
+    0 12px 30px -18px hsl(0 0% 0% / 0.6);
+}
+
+/* estala ao confirmar */
+.seat.is-pop {
+  animation: seat-pop var(--t-slow) var(--e-out);
+}
+
+@keyframes seat-pop {
+  40% {
+    transform: scale(1.03);
+  }
+}
+
+.seat-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.seat-top .pres > i {
+  box-shadow: 0 0 0 2.5px var(--s2);
+}
+
+.seat-top .tag {
+  backdrop-filter: none;
+}
+
+.seat-t {
+  margin-top: auto;
+  min-width: 0;
+}
+
+.seat-n {
+  font-weight: 600;
+  font-size: 13.5px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-s {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--tx-3);
+}
+
+.seat-s .ico {
+  width: 14px;
+  height: 14px;
+}
+
+.seat.is-ok .seat-s {
+  color: var(--acc-tx);
+  font-weight: 550;
+}
+
+.seat-s .ring {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.4px currentColor inset;
+}
+
+.seat.is-me:not(.is-ok) .seat-s {
+  color: var(--tx);
+  font-weight: 550;
+}
+
+/* vaga livre: tracejado; vira acento no hover porque convida */
+.seat.is-empty {
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  background: transparent;
+  box-shadow: none;
+  border: 1px dashed var(--line-2);
+  color: var(--tx-3);
+  transition:
+    border-color var(--t-fast),
+    color var(--t-fast),
+    background var(--t-fast);
+}
+
+button.seat.is-empty:hover {
+  border-color: var(--acc-line);
+  color: var(--acc-tx);
+  background: var(--acc-soft);
+}
+
+.seat.is-empty.is-static:hover {
+  background: transparent;
+}
+
+.seat.is-empty b {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: inherit;
+}
+
+.seat.is-empty small {
+  font-size: 10.5px;
+  opacity: 0.8;
+}
+
+.seat.is-empty .plus {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px currentColor inset;
+  opacity: 0.8;
+}
+
+/* ───────── Barra PRONTO ───────── */
+
+.rbar {
+  position: fixed;
+  z-index: 30;
+  left: var(--gut);
+  right: calc(var(--rail) + var(--gut));
+  bottom: 16px;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  min-height: 52px;
-  border-bottom: 1px solid var(--rule);
+  gap: 22px;
+  padding: 12px 12px 12px 20px;
+  border-radius: var(--r-xl);
+  background: hsl(from var(--s2) h s l / 0.97);
+  backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    0 0 0 1px var(--line-2) inset,
+    0 24px 50px -20px hsl(0 0% 0% / 0.8);
 }
 
-.seat-win {
-  display: block;
-  width: 10px;
-  height: 16px;
-  border: 1px solid rgb(236 231 220 / 0.35);
+.rb-n {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
 }
 
-.seat.is-ready .seat-win {
-  background: var(--sodium);
-  border-color: var(--sodium);
+.rb-n b {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
 }
 
-.seat.is-free .seat-win {
-  border-style: dashed;
-  border-color: var(--rule-strong);
+.rb-n > span {
+  color: var(--tx-2);
+  font-size: 13px;
 }
 
-.seat-name {
+.rb-n .rb-k {
+  color: var(--tx-3);
+  font-size: 12px;
+}
+
+.rb-ticks {
+  display: flex;
+  gap: 3px;
+  margin-top: 9px;
+}
+
+.rb-ticks i {
+  position: relative;
+  width: 16px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--s4);
+  transition: background var(--t-mid);
+}
+
+.rb-ticks i.on {
+  background: var(--acc-tx);
+}
+
+/* vaga que ainda nem foi ocupada (o mínimo é maior que quem está na sala) */
+.rb-ticks i.gap {
+  background: transparent;
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+}
+
+/* o traço do mínimo: "começa com K" */
+.rb-ticks i.th::after {
+  content: '';
+  position: absolute;
+  right: -2.5px;
+  top: -4px;
+  width: 1px;
+  height: 11px;
+  background: var(--tx-2);
+}
+
+.rb-mid {
+  min-width: 0;
+}
+
+.rb-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--tx-3);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.rb-hint > span {
   min-width: 0;
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
-  font-size: var(--fs-sm);
-  font-weight: 550;
+  white-space: nowrap;
 }
 
-.seat-name.is-friend {
-  color: var(--verdigris);
+.rb-hint.is-count {
+  gap: 12px;
+  color: var(--tx-2);
 }
 
-.seat.is-free .seat-name {
-  font-weight: 400;
-  color: var(--ink-3);
+.rb-hint.is-count > span {
+  white-space: normal;
 }
 
-.seat-tag {
-  margin-left: 8px;
-  font-size: var(--fs-xs);
-  font-weight: 400;
-  color: var(--ink-3);
-}
-
-.seat-state {
-  font-size: var(--fs-xs);
-  color: var(--ink-3);
-}
-
-.seat.is-ready .seat-state {
-  color: var(--ink-2);
-}
-
-.seat.is-you {
-  background: linear-gradient(90deg, var(--raise), transparent);
-}
-
-.seat-invite {
-  font-size: var(--fs-xs);
-}
-
-.room-mode {
-  margin-top: var(--s-6);
-  display: grid;
-  gap: var(--s-2);
-  justify-items: start;
-}
-
-.room-mode .room-sec-head {
-  justify-self: stretch;
-}
-
-.room-mode-line {
-  max-width: 60ch;
-  color: var(--ink);
-}
-
-.room-rules {
-  display: grid;
-  gap: 6px;
-  max-width: 64ch;
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
-}
-
-.room-rules li::before {
-  content: '— ';
-  color: var(--ink-3);
-}
-
-/* O painel: a ação da fase. Fica à vista enquanto a lista de vagas rola. */
-.panel {
-  position: sticky;
-  top: calc(var(--header-h) + var(--s-3));
-  display: grid;
-  gap: var(--s-2);
-  padding: var(--s-3);
-  background: var(--raise);
-  border: 1px solid var(--rule);
-  border-radius: var(--radius);
-}
-
-.panel-title {
-  font-family: var(--sans);
-  font-size: var(--fs-sm);
+.rb-cd {
+  font-size: 26px;
   font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--acc-tx);
+  min-width: 1ch;
+}
+
+/* etapas do app (entrada e handoff) */
+.rb-steps {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.hsteps {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tx-3);
+  font-size: 12px;
+}
+
+.hstep {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  transition: color var(--t-mid);
+}
+
+.hstep + .hstep::before {
+  content: '';
+  flex: 0 1 22px;
+  width: 22px;
+  min-width: 8px;
+  height: 1px;
+  margin-right: 1px;
+  background: var(--line-2);
+}
+
+.hstep .n {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  transition:
+    background var(--t-mid),
+    color var(--t-mid),
+    box-shadow var(--t-mid);
+}
+
+.hstep .n .ico {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
+}
+
+.hstep.is-on {
+  color: var(--tx);
+}
+
+.hstep.is-on .n {
+  color: var(--acc-tx);
+  box-shadow: 0 0 0 1.5px var(--acc-tx) inset;
+  animation: step-pulse 1s var(--e-out) infinite alternate;
+}
+
+@keyframes step-pulse {
+  to {
+    box-shadow:
+      0 0 0 1.5px var(--acc-tx) inset,
+      0 0 0 4px var(--acc-soft);
+  }
+}
+
+.hstep.is-done {
+  color: var(--tx-2);
+}
+
+.hstep.is-done .n {
+  background: var(--acc);
+  color: var(--acc-ink);
+  box-shadow: none;
+}
+
+.rb-help {
+  flex: none;
+  font-size: 12px;
+  color: var(--tx-3);
+  white-space: nowrap;
+}
+
+.rb-help u {
+  color: var(--tx-2);
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+
+.rb-help:hover u {
+  color: var(--tx);
+  text-decoration-color: currentColor;
+}
+
+.rb-act {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rb-ready,
+.rb-go .btn {
+  --h: 50px;
+  min-width: 196px;
+  padding: 0 22px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+/* só o PRONTO em caixa alta ganha o espaçamento largo */
+.rb-ready.is-caps {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.rb-ready .kbd {
   letter-spacing: 0;
 }
 
-.panel-note {
-  font-size: var(--fs-sm);
-  color: var(--ink-2);
+.rb-ready.is-on {
+  background: var(--s4);
+  color: var(--acc-tx);
+  box-shadow: 0 0 0 1.5px var(--acc-tx) inset;
+}
+
+.rb-ready.is-on:hover {
+  background: var(--s3);
+}
+
+.rb-ready.btn-p:disabled {
+  background: var(--s3);
+  color: var(--tx-3);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  opacity: 1;
+}
+
+.rb-ready[aria-disabled='true'] {
+  color: var(--tx-3);
+  opacity: 1;
+}
+
+.rb-go {
+  display: contents;
+}
+
+/* ───────── Trilho da sala ───────── */
+
+.rrules {
+  display: grid;
+  gap: 6px;
+}
+
+.rrule {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line) inset;
+  font-size: 12.5px;
+  line-height: 1.4;
   text-wrap: pretty;
 }
 
-.panel .btn-act {
-  max-width: none;
-}
-
-.panel-more {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s-1);
-  padding-top: var(--s-2);
-  margin-top: var(--s-1);
-  border-top: 1px solid var(--rule);
-}
-
-.btn[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.steps {
+.rrule .ri {
+  width: 30px;
+  height: 30px;
+  flex: none;
   display: grid;
-  gap: 2px;
+  place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--acc-soft);
+  color: var(--acc-tx);
 }
 
-.step {
+.rrule > span:last-child {
+  align-self: center;
+}
+
+.rinv-link {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 36px;
-  font-size: var(--fs-sm);
-  color: var(--ink-3);
+  gap: 6px;
+  height: 36px;
+  margin-bottom: 10px;
+  padding: 0 4px 0 12px;
+  border-radius: var(--r-md);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
 }
 
-.step-n {
-  display: inline-grid;
+.rinv-link code {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tx-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rinv-out {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  color: var(--tx-3);
+  font-size: 12.5px;
+}
+
+.ract-i {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--tx-2);
+  animation: act-in var(--t-slow) var(--e-out);
+}
+
+.ract-t {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ract-i b {
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.ract-ico {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  display: grid;
   place-items: center;
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--rule-strong);
-  font-size: var(--fs-xs);
+  color: var(--tx-3);
 }
 
-.step.is-done {
-  color: var(--ink-2);
+.ract-ico .ico {
+  width: 14px;
+  height: 14px;
 }
 
-.step.is-done .step-n {
-  border-color: var(--ink-3);
+.ract-i .t {
+  margin-left: auto;
+  flex: none;
+  font-size: 10.5px;
+  color: var(--tx-3);
+  white-space: nowrap;
 }
 
-.step.is-now {
-  color: var(--ink);
-  font-weight: 550;
+@keyframes act-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
 }
 
-.step.is-now .step-n {
-  border-color: var(--sodium);
-  color: var(--sodium);
-}
+/* ───────── Sala fechada ───────── */
 
 .room-gone {
-  font-size: var(--fs-h2);
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  max-width: 560px;
+  margin: 48px 0 24px;
+  padding: 28px;
+  border-radius: var(--r-xl);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.room-gone h1 {
+  font-size: 44px;
+}
+
+.room-gone p {
+  color: var(--tx-2);
+  font-size: 13.5px;
+  max-width: 46ch;
+}
+
+.room-gone .btn {
+  margin-top: 6px;
+}
+
+/* ───────── Pontos de quebra ───────── */
+
+@media (max-width: 1500px) {
+  .hsteps .hstep:not(.is-cur) .sl {
+    display: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .seats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rphase {
+    display: none;
+  }
+
+  .rh h1 {
+    max-width: none;
+  }
 }
 
 @media (max-width: 960px) {
-  .room-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .rbar {
+    right: var(--gut);
   }
 
-  /* No celular o painel vem antes das vagas: a ação da fase é o que importa primeiro. */
-  .panel {
-    position: static;
-    order: -1;
+  .rsheet {
+    display: flex;
+  }
+
+  .rh-meta .hide-md {
+    display: none;
+  }
+
+  .rh-meta .vh-md {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
+  .main:has(.room-page) {
+    padding-bottom: 176px;
+  }
+
+  body:has(.rbar) .toasts {
+    bottom: 150px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rh {
+    height: 196px;
+  }
+
+  .rh-body {
+    inset: 12px 16px 14px;
+  }
+
+  .rh h1 {
+    margin-bottom: 8px;
+    font-size: 38px;
+  }
+
+  .rh-meta {
+    gap: 6px 8px;
+    font-size: 12px;
+  }
+
   .seats {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .seat {
+    min-height: 96px;
+    padding: 12px;
+  }
+
+  .rbar {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 16px 16px 0 0;
+  }
+
+  .rb-mid {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .rb-hint > span {
+    white-space: normal;
+  }
+
+  .rb-act .btn-g {
+    display: none;
+  }
+
+  .rb-ready,
+  .rb-go .btn {
+    --h: 48px;
+    min-width: 132px;
+    padding: 0 16px;
+  }
+
+  .rb-ticks i {
+    width: 11px;
+  }
+
+  .rb-n b {
+    font-size: 22px;
+  }
+
+  .rb-steps {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .room-gone {
+    padding: 20px;
+  }
+
+  .room-gone h1 {
+    font-size: 34px;
   }
 }
 
-/* O nome do lobby na tabela leva para a sala. */
+@media (max-width: 400px) {
+  .rb-n .rb-k {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hstep.is-on .n {
+    animation: none;
+    box-shadow:
+      0 0 0 1.5px var(--acc-tx) inset,
+      0 0 0 4px var(--acc-soft);
+  }
+}
+
+/* O nome do lobby na tabela leva para a sala (LobbyTable, ainda usada na página do modo). */
 a.lt-name {
   text-decoration: underline;
   text-decoration-color: transparent;
@@ -432,4 +990,231 @@ a.lt-name {
 
 a.lt-name:hover {
   text-decoration-color: var(--ink-2);
+}
+
+/* ───────── Jogar agora (/jogar): o cartão de busca que leva à sala ───────── */
+
+.qp-page {
+  display: grid;
+  justify-items: center;
+  padding-top: 32px;
+}
+
+.qp {
+  position: relative;
+  width: min(640px, 100%);
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  background: var(--s2);
+  box-shadow: 0 30px 60px -30px hsl(0 0% 0% / 0.7);
+}
+
+/* o fio do cartão por cima da capa (senão a capa o cobre no topo) */
+.qp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  pointer-events: none;
+}
+
+.qp-cv {
+  position: relative;
+  height: 148px;
+  background: var(--k0);
+}
+
+.qp-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(0deg, var(--s2) 0, hsl(from var(--s2) h s l / 0.4) 45%, transparent 75%);
+}
+
+.qp-body {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 18px;
+  margin-top: -44px;
+  padding: 0 24px 22px;
+}
+
+.qp-h {
+  display: grid;
+  gap: 8px;
+}
+
+.qp-h h1 {
+  font-size: 48px;
+}
+
+.qp-steps {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+.qp-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: color var(--t-mid);
+}
+
+.qp-step .n {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 10.5px;
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  transition:
+    background var(--t-mid),
+    color var(--t-mid),
+    box-shadow var(--t-mid);
+}
+
+.qp-step .n .ico {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
+}
+
+.qp-step.is-on {
+  color: var(--tx);
+}
+
+.qp-step.is-on .n {
+  color: var(--acc-tx);
+  box-shadow: 0 0 0 1.5px var(--acc-tx) inset;
+  animation: step-pulse 1s var(--e-out) infinite alternate;
+}
+
+.qp-step.is-done {
+  color: var(--tx-2);
+}
+
+.qp-step.is-done .n {
+  background: var(--acc);
+  color: var(--acc-ink);
+  box-shadow: none;
+}
+
+.qp-found {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--acc-soft), transparent 80%), var(--s1);
+  box-shadow: 0 0 0 1px var(--acc-line) inset;
+  animation: act-in var(--t-slow) var(--e-out);
+}
+
+.qp-found-t {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.qp-found-t b {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qp-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 9px;
+  font-size: 12px;
+  color: var(--tx-2);
+}
+
+.qp-meta > i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--tx-3);
+}
+
+.qp-why {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.qp-why .tag {
+  backdrop-filter: none;
+}
+
+.qp-none {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--s1);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+
+.qp-none b {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.qp-none p {
+  color: var(--tx-2);
+  font-size: 12.5px;
+}
+
+.qp-act {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .qp-cv {
+    height: 120px;
+  }
+
+  .qp-body {
+    padding: 0 16px 18px;
+  }
+
+  .qp-h h1 {
+    font-size: 38px;
+  }
+
+  .qp-found {
+    align-items: flex-start;
+  }
+
+  .qp-found .stack {
+    display: none;
+  }
+
+  .qp-act .btn {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .qp-step.is-on .n {
+    animation: none;
+  }
 }

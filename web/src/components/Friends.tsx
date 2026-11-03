@@ -29,7 +29,7 @@ function where(f: FriendPresence, lobby: Lobby | undefined, hereId: string | nul
 }
 
 /** O próximo passo com um amigo: entrar onde ele está (estado real do lobby) ou chamar. */
-function FriendStep({ friend, called, onCall }: { friend: FriendPresence; called: boolean; onCall: () => void }) {
+export function FriendStep({ friend, called, onCall }: { friend: FriendPresence; called: boolean; onCall: () => void }) {
   const { lobbies, lobbyCtx, requestJoin, openKnock } = useSession();
   const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
   if (!lobby) {

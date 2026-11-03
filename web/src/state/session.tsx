@@ -3,7 +3,9 @@ import { lobbies as seedLobbies, passersby, type Lobby } from '../data/lobbies';
 import { getMode, type Region } from '../data/modes';
 import { t } from '../i18n';
 import { useNavigate } from 'react-router';
+import { friendsIn, friendsOnline } from '../lib/friends';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
+import { nextToConfirm, readyCount, roster, type Seat } from '../lib/room';
 import { dayPeriod } from '../lib/time';
 
 /**
@@ -52,6 +54,14 @@ interface SessionValue {
   toggleReady: () => void;
   /** Só o anfitrião, com o mínimo de jogadores: começa a partida. */
   startMatch: () => void;
+  /** As vagas da sala em que você está (mesma conta que decide a contagem). Vazio fora de sala. */
+  seatsHere: Seat[];
+  /** Quem confirmou depois de você, com a hora (simulado; alimenta a atividade da sala). */
+  confirmedAt: ReadonlyMap<string, number>;
+  /** Fim da contagem de 5 s (epoch ms) na sala em que você está; `null` sem contagem. Desmarcar pronto cancela. */
+  countdownEndsAt: number | null;
+  /** Etapa do app depois que a partida começa (índice em HANDOFF_STEPS); 3 = dentro do lobby. `null` sem handoff. */
+  handoffStep: number | null;
   joiningId: string | null;
   /** Etapa simulada da entrada (índice em t.lobbies.joinSteps). */
   joiningStep: number;
@@ -89,8 +99,15 @@ const MOCK_USER: MockUser = { name: 'Corvo_Noturno', friendsOnline: 4 };
 const LIVE_TICK_MS = 3800;
 /** Quanto o anfitrião simulado leva para abrir a porta. */
 const KNOCK_ANSWER_MS = 6000;
-/** Na sala dos outros: com você pronto e o mínimo atingido, o anfitrião simulado começa depois disto. */
-const HOST_START_MS = 7000;
+/**
+ * Na sala dos outros: com você pronto e o mínimo de confirmados, o anfitrião simulado começa depois disto.
+ * É a contagem de 5 s da barra PRONTO; desmarcar pronto (ou alguém desmarcar) cancela.
+ */
+export const HOST_START_MS = 5000;
+/** Depois que você marca pronto, quem faltava vai confirmando, um a cada intervalo. */
+const CONFIRM_MS = 2600;
+/** Handoff para o jogo: quanto cada etapa dura (Baixando o modo, Abrindo o Deadlock, Entrando no lobby). */
+export const HANDOFF_MS = [900, 1700, 1500] as const;
 
 /**
  * Um tique do ao vivo simulado. Na maioria das vezes alguém entra num lobby com vaga
@@ -143,8 +160,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   hereRef.current = hereId;
   const lobbiesRef = useRef(lobbies);
   lobbiesRef.current = lobbies;
-  // Trocou de sala (ou saiu): o "pronto" não vai junto.
-  useEffect(() => setReady(false), [hereId]);
+  const [clock, setClock] = useState(() => Date.now());
+  const [confirmedAt, setConfirmedAt] = useState<ReadonlyMap<string, number>>(() => new Map());
+  const [countdownEndsAt, setCountdownEndsAt] = useState<number | null>(null);
+  const [handoff, setHandoff] = useState<{ id: string; step: number } | null>(null);
+  const handoffTimers = useRef<number[]>([]);
+  // Trocou de sala (ou saiu): o "pronto", as confirmações e o handoff não vão junto.
+  useEffect(() => {
+    setReady(false);
+    setConfirmedAt(new Map());
+    handoffTimers.current.forEach((id) => window.clearTimeout(id));
+    handoffTimers.current = [];
+    setHandoff(null);
+  }, [hereId]);
   const joiningRef = useRef(joiningId);
   joiningRef.current = joiningId;
 
@@ -166,6 +194,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const id = window.setInterval(() => {
       if (document.hidden) return;
       setLobbies((list) => liveTick(list, hereRef.current, Date.now(), joiningRef.current));
+      setClock(Date.now());
     }, LIVE_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
@@ -334,16 +363,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [pushToast],
   );
 
-  /** Começa a partida do lobby `id` (anfitrião) e avisa. */
+  /**
+   * Handoff simulado: depois que a partida começa, o app baixa o modo, abre o Deadlock e entra no lobby.
+   * No produto, cada troca de etapa vem de um evento do app.
+   */
+  const startHandoff = useCallback((id: string) => {
+    handoffTimers.current.forEach((x) => window.clearTimeout(x));
+    setHandoff({ id, step: 0 });
+    let at = 0;
+    handoffTimers.current = HANDOFF_MS.map((ms, i) => {
+      at += ms;
+      return window.setTimeout(() => setHandoff((h) => (h?.id === id ? { id, step: i + 1 } : h)), at);
+    });
+  }, []);
+
+  /** Começa a partida do lobby `id` (anfitrião) e avisa. Na sala em que você está, abre o handoff. */
   const begin = useCallback(
     (id: string, toast: (l: Lobby) => string) => {
       const l = lobbiesRef.current.find((x) => x.id === id);
       if (!l || l.status === 'em-partida' || l.players < l.minPlayers) return;
       const now = Date.now();
       setLobbies((list) => list.map((x) => (x.id === id ? { ...x, status: 'em-partida', round: { current: 1, startedAt: now }, fullSince: undefined } : x)));
+      if (hereRef.current === id) startHandoff(id);
       pushToast(toast(l));
     },
-    [pushToast],
+    [pushToast, startHandoff],
   );
 
   const startMatch = useCallback(() => {
@@ -354,14 +398,53 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const toggleReady = useCallback(() => setReady((v) => !v), []);
 
-  // Na sala dos outros, o anfitrião simulado começa quando você está pronto e já dá o mínimo.
+  // As vagas da sala em que você está: a mesma conta da barra PRONTO decide a contagem.
   const here = lobbies.find((l) => l.id === hereId);
-  const hostCanStart = !!here && !here.mine && ready && here.status !== 'em-partida' && here.players >= here.minPlayers;
+  const seatsHere = useMemo(
+    () =>
+      here
+        ? roster(here, {
+            you: user?.name ?? t.lobbies.you,
+            youHere: true,
+            youReady: ready,
+            signedIn: !!user,
+            now: clock,
+            friends: user ? friendsIn(friendsOnline(lobbies), here.id) : [],
+            confirmed: confirmedAt,
+          })
+        : [],
+    [here, user, ready, clock, lobbies, confirmedAt],
+  );
+  const seatsRef = useRef(seatsHere);
+  seatsRef.current = seatsHere;
+  const readyHere = readyCount(seatsHere);
+  const playingHere = here?.status === 'em-partida';
+
+  // Com você pronto (ou sendo o anfitrião), quem faltava vai confirmando, um por vez.
+  const confirming = !!here && (ready || !!here.mine) && !playingHere;
   useEffect(() => {
-    if (!hostCanStart || !hereId) return;
+    if (!confirming) return;
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      const name = nextToConfirm(seatsRef.current);
+      if (name) setConfirmedAt((m) => new Map(m).set(name, Date.now()));
+    }, CONFIRM_MS);
+    return () => window.clearInterval(id);
+  }, [confirming]);
+
+  // Na sala dos outros, o anfitrião simulado começa quando você está pronto e já há o mínimo de confirmados:
+  // uma contagem de HOST_START_MS, cancelada se o pronto cair abaixo do mínimo.
+  const hostCanStart = !!here && !here.mine && ready && !playingHere && here.players >= here.minPlayers && readyHere >= here.minPlayers;
+  useEffect(() => {
+    if (!hostCanStart || !hereId) {
+      setCountdownEndsAt(null);
+      return;
+    }
+    setCountdownEndsAt(Date.now() + HOST_START_MS);
     const id = window.setTimeout(() => begin(hereId, (x) => t.room.hostStartedToast(x.host)), HOST_START_MS);
     return () => window.clearTimeout(id);
   }, [hostCanStart, hereId, begin]);
+  const handoffStep = handoff && handoff.id === hereId ? handoff.step : null;
 
   const sendKnock = useCallback(
     (_message: string) => {
@@ -412,6 +495,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ready,
       toggleReady,
       startMatch,
+      seatsHere,
+      confirmedAt,
+      countdownEndsAt,
+      handoffStep,
       joiningId,
       joiningStep,
       requestJoin,
@@ -450,6 +537,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ready,
       toggleReady,
       startMatch,
+      seatsHere,
+      confirmedAt,
+      countdownEndsAt,
+      handoffStep,
       joiningId,
       joiningStep,
       requestJoin,

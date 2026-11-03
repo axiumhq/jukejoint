@@ -15,6 +15,7 @@ import './styles/home.css';
 import './styles/lobbies.css';
 import './styles/pages.css';
 import './styles/room.css';
+import './styles/dialogs.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

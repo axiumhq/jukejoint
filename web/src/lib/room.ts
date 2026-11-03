@@ -26,6 +26,8 @@ export interface RosterOptions {
   now: number;
   /** Nomes dos seus amigos nesta sala (lib/friends.ts `friendsIn`). */
   friends?: string[];
+  /** Quem já confirmou nesta sala depois de você (simulado): fica pronto de vez. Chave = nome. */
+  confirmed?: { has(name: string): boolean };
 }
 
 /** Quem entrou há menos que isto ainda não marcou "pronto". */
@@ -49,8 +51,9 @@ export function roster(l: Lobby, o: RosterOptions): Seat[] {
     const at = joinedAt.get(name);
     const settled = at === undefined || o.now - at > SETTLE_MS;
     const friend = friends.has(name);
+    const forced = o.confirmed?.has(name) ?? false;
     // Três em cada quatro já marcaram pronto; o anfitrião está sempre pronto.
-    seats.push({ name, host, friend, ready: playing || host || (settled && hash(`${l.id}:${name}`) % 4 !== 0) });
+    seats.push({ name, host, friend, ready: playing || host || forced || (settled && hash(`${l.id}:${name}`) % 4 !== 0) });
   };
 
   if (l.mine) seats.push({ name: o.you, you: true, host: true, ready: true });
@@ -60,7 +63,13 @@ export function roster(l: Lobby, o: RosterOptions): Seat[] {
   }
 
   // Amigos primeiro, depois os que entraram por último (da lista "entrou agora"), depois gente da cidade.
-  const pool = [...friends, ...l.joins.filter((j) => !j.you).map((j) => j.name).reverse()];
+  const pool = [
+    ...friends,
+    ...l.joins
+      .filter((j) => !j.you)
+      .map((j) => j.name)
+      .reverse(),
+  ];
   const start = hash(l.id) % passersby.length;
   for (let i = 0; i < passersby.length; i++) pool.push(passersby[(start + i) % passersby.length]!);
   for (const name of pool) {
@@ -80,4 +89,51 @@ export function roster(l: Lobby, o: RosterOptions): Seat[] {
 /** Quantos faltam para o mínimo da partida (0 quando já dá para começar). */
 export function missingForQuorum(l: Lobby) {
   return Math.max(0, l.minPlayers - l.players);
+}
+
+/** Quantos já confirmaram (vagas ocupadas e prontas, você incluído). */
+export function readyCount(seats: Seat[]) {
+  return seats.filter((s) => s.name && s.ready).length;
+}
+
+/** Quem confirma em seguida na simulação: a primeira vaga ocupada que ainda não marcou pronto (você não conta). */
+export function nextToConfirm(seats: Seat[]): string | null {
+  return seats.find((s) => s.name && !s.you && !s.ready)?.name ?? null;
+}
+
+/**
+ * As quatro fases da sala: 1 Juntando gente (falta gente para o mínimo), 2 Esperando prontos,
+ * 3 Contagem (cancelável) e 4 Abrindo o jogo (etapas do app). Partida rolando também é a fase 4.
+ */
+export type RoomPhaseKey = 'gathering' | 'waiting' | 'countdown' | 'opening' | 'playing';
+
+export interface PhaseInput {
+  players: number;
+  minPlayers: number;
+  playing: boolean;
+  countdown: boolean;
+  handoff: boolean;
+}
+
+export function roomPhase(o: PhaseInput): { step: 1 | 2 | 3 | 4; key: RoomPhaseKey } {
+  if (o.handoff) return { step: 4, key: 'opening' };
+  if (o.playing) return { step: 4, key: 'playing' };
+  if (o.countdown) return { step: 3, key: 'countdown' };
+  if (o.players < o.minPlayers) return { step: 1, key: 'gathering' };
+  return { step: 2, key: 'waiting' };
+}
+
+/** Ícone de uma regra do modo, pelo assunto da frase (sorteio, tempo, área, combate, gente). */
+export type RuleIcon = 'dice' | 'clock' | 'shrink' | 'swords' | 'users' | 'info';
+
+const RULE_ICONS: [RegExp, RuleIcon][] = [
+  [/aleat|sortead|sorteio/i, 'dice'],
+  [/círculo|encolhe|visão|metros/i, 'shrink'],
+  [/contra|abate|ataque|atacante|defens|caçador|times de/i, 'swords'],
+  [/segundo|minuto|relógio|rodada/i, 'clock'],
+  [/jogador|fila|pessoa/i, 'users'],
+];
+
+export function ruleIcon(rule: string): RuleIcon {
+  return RULE_ICONS.find(([re]) => re.test(rule))?.[1] ?? 'info';
 }
