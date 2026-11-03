@@ -466,6 +466,20 @@ function RoomView({ lobby }: { lobby: Lobby }) {
   }, [readyKey]);
   useEffect(() => () => window.clearTimeout(popTimer.current), []);
 
+  /* a barra cresce com erros e etapas: os avisos sobem junto com ela (--rbar-h no root) */
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const root = document.documentElement.style;
+    const ro = new ResizeObserver(() => root.setProperty('--rbar-h', `${Math.ceil(el.getBoundingClientRect().height)}px`));
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.removeProperty('--rbar-h');
+    };
+  }, []);
+
   /* vaga vazia: abre o convite (folha no celular, trilho no desktop) */
   const focusInvite = useCallback(
     (from: HTMLElement) => {
@@ -790,7 +804,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         </ul>
       </section>
 
-      <div className="rbar" role="region" aria-label={t.dock.label}>
+      <div className="rbar" role="region" aria-label={t.dock.label} ref={barRef}>
         <div className="rb-count">
           <p className="rb-n" aria-hidden="true">
             <b className="num">{readyN}</b>

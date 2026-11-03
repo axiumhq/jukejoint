@@ -15,9 +15,9 @@
   z-index: 2;
 }
 
-/* os avisos sobem para não cobrir a barra */
+/* os avisos sobem para não cobrir a barra; --rbar-h vem da altura medida dela (Room.tsx) */
 body:has(.rbar) .toasts {
-  bottom: 112px;
+  bottom: calc(var(--rbar-h, 80px) + 32px);
 }
 
 /* ───────── Cabeçalho ───────── */
@@ -868,7 +868,7 @@ button.seat.is-empty:hover {
   }
 
   body:has(.rbar) .toasts {
-    bottom: 150px;
+    bottom: calc(var(--rbar-h, 118px) + 32px);
   }
 }
 
