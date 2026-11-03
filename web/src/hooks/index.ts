@@ -36,18 +36,20 @@ export function useLiveStats() {
 
 /** Amigos online (só para quem entrou com a Steam). Mesma fonte da tabela e da sala. */
 export function useFriends() {
-  const { lobbies, user } = useSession();
-  return useMemo(() => (user ? friendsOnline(lobbies) : []), [lobbies, user]);
+  const { lobbies, user, presence } = useSession();
+  // Ao vivo, a presença vem do servidor; simulado, sai dos próprios lobbies.
+  return useMemo(() => presence ?? (user ? friendsOnline(lobbies) : []), [presence, lobbies, user]);
 }
 
 /** O convite recebido que o trilho mostra (lib/friends.ts `incomingInvite`), já sem os recusados. */
 export function useIncomingInvite() {
-  const { lobbies, user, lobbyCtx, declinedInvites } = useSession();
+  const { lobbies, user, lobbyCtx, declinedInvites, incoming } = useSession();
   const friends = useFriends();
-  return useMemo(
-    () => (user ? incomingInvite(friends, lobbies, (l) => l.id !== lobbyCtx.hereId && lobbyState(l, lobbyCtx).canJoin, declinedInvites) : null),
-    [user, friends, lobbies, lobbyCtx, declinedInvites],
-  );
+  return useMemo(() => {
+    // Ao vivo: o convite de verdade, vindo do servidor.
+    if (incoming !== undefined) return incoming;
+    return user ? incomingInvite(friends, lobbies, (l) => l.id !== lobbyCtx.hereId && lobbyState(l, lobbyCtx).canJoin, declinedInvites) : null;
+  }, [incoming, user, friends, lobbies, lobbyCtx, declinedInvites]);
 }
 
 /** Lobbies favoritos, salvos neste navegador (`lobby.favs`). */

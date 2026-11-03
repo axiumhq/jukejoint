@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { useFriends, useIncomingInvite } from '../hooks';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { OFFLINE_FRIENDS, type FriendPresence } from '../lib/friends';
 import { lobbyState } from '../lib/lobbies';
 import { useSession } from '../state/session';
@@ -80,7 +81,7 @@ export function FriendRow({ friend, children }: { friend: FriendPresence; childr
 }
 
 function SignInPrompt() {
-  const { signIn } = useSession();
+  const { signIn, live, devLogin, signInDev } = useSession();
   return (
     <div className="card rail-signin">
       <b>{t.social.signInTitle}</b>
@@ -89,7 +90,12 @@ function SignInPrompt() {
         <Icon name="user" />
         {t.account.signIn}
       </button>
-      <small>{t.social.signInNote}</small>
+      {devLogin && (
+        <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
+          {L.devSignIn}
+        </button>
+      )}
+      <small>{live ? L.steamNote : t.social.signInNote}</small>
     </div>
   );
 }
@@ -187,7 +193,7 @@ function Invite() {
 
 function Online() {
   const friends = useFriends();
-  const { pushToast } = useSession();
+  const { live, callFriend } = useSession();
   const [called, setCalled] = useState<ReadonlySet<string>>(() => new Set());
   const [showOff, setShowOff] = useState(false);
   const offId = useId();
@@ -210,31 +216,37 @@ function Online() {
                 friend={f}
                 called={called.has(f.name)}
                 onCall={() => {
-                  setCalled((s) => new Set(s).add(f.name));
-                  pushToast(t.social.calledToast(f.name));
+                  // Ao vivo o convite vai pelo servidor; simulado, só o aviso.
+                  void callFriend(f).then((ok) => ok && setCalled((s) => new Set(s).add(f.name)));
                 }}
               />
             </FriendRow>
           ))}
         </ul>
       )}
-      <button type="button" className="offline" aria-expanded={showOff} aria-controls={offId} onClick={() => setShowOff((v) => !v)}>
-        <span>
-          {t.social.offline} · <span className="num">{OFFLINE_FRIENDS.length}</span>
-        </span>
-        <Icon name="chev" />
-      </button>
-      <ul id={offId} className="offline-list" hidden={!showOff}>
-        {OFFLINE_FRIENDS.map((n) => (
-          <li key={n} className="fr is-off">
-            <Presence name={n} size={28} status="offline" />
-            <div className="fr-t">
-              <b>{n}</b>
-              <small>{t.social.offlineState}</small>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {live ? (
+        <p className="rail-empty">{L.friendsNote}</p>
+      ) : (
+        <>
+          <button type="button" className="offline" aria-expanded={showOff} aria-controls={offId} onClick={() => setShowOff((v) => !v)}>
+            <span>
+              {t.social.offline} · <span className="num">{OFFLINE_FRIENDS.length}</span>
+            </span>
+            <Icon name="chev" />
+          </button>
+          <ul id={offId} className="offline-list" hidden={!showOff}>
+            {OFFLINE_FRIENDS.map((n) => (
+              <li key={n} className="fr is-off">
+                <Presence name={n} size={28} status="offline" />
+                <div className="fr-t">
+                  <b>{n}</b>
+                  <small>{t.social.offlineState}</small>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </section>
   );
 }
@@ -279,7 +291,7 @@ export function SocialRail() {
  * com você, com Convidar; `join` é o bloco de amigos online do trilho.
  */
 export function FriendsBlock({ mode = 'join', exclude }: { mode?: 'join' | 'invite'; exclude?: string }) {
-  const { user, pushToast } = useSession();
+  const { user, pushToast, live, callFriend } = useSession();
   const friends = useFriends();
   const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
   if (mode === 'join') return user ? <Online /> : <SignInPrompt />;
@@ -305,6 +317,10 @@ export function FriendsBlock({ mode = 'join', exclude }: { mode?: 'join' | 'invi
                 disabled={invited.has(f.name)}
                 aria-label={t.friends.inviteLabel(f.name)}
                 onClick={() => {
+                  if (live) {
+                    void callFriend(f).then((ok) => ok && setInvited((s) => new Set(s).add(f.name)));
+                    return;
+                  }
                   setInvited((s) => new Set(s).add(f.name));
                   pushToast(t.friends.invitedToast(f.name));
                 }}
