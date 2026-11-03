@@ -58,7 +58,13 @@ fn is_token(s: &str, min: usize, max: usize) -> bool {
 /// sem usuário, caminho, consulta ou fragmento, e recusa o hyperline.gg: a plataforma nunca deve
 /// cair na origem padrão do Modlock.
 pub fn origin(raw: &str) -> Result<String, EngineError> {
-    let bad = |why: &str| EngineError::new("origem_invalida", format!("ENGINE_ORIGIN inválida ({why}): {raw}"));
+    let bad = |why: &str| {
+        EngineError::new(
+            "origem_invalida",
+            "O endereço do servidor que liga os PCs está errado nesta cópia do app. Não é algo que dá para ajustar aqui: avise quem te passou o app.",
+        )
+        .with_detail(format!("ENGINE_ORIGIN inválida ({why}): {raw}"))
+    };
     let s = raw.trim().trim_end_matches('/');
     if s.len() > 200 || s.chars().any(|c| c.is_whitespace() || c.is_control()) {
         return Err(bad("tamanho ou espaços"));

@@ -5,15 +5,21 @@ import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 export type DaemonState = 'rodando' | 'parado' | 'socketTravado';
 
+/** `message` é para quem joga (o que houve e o que fazer); `detail` é o técnico (variável, caminho, saída). */
 export interface EngineError {
   code: string;
   message: string;
+  detail?: string;
 }
 
 export interface BinaryCheck {
   path: string | null;
   source: string | null;
+  /** Pasta onde o modlock.exe está ou deveria estar (a do app, sem caminho). */
+  folder: string | null;
   exists: boolean;
+  /** Existia e sumiu: quase sempre o antivírus em quarentena. */
+  vanished: boolean;
   sizeBytes: number | null;
   sha256: string | null;
   expectedSha256: string;
@@ -51,6 +57,8 @@ export interface CheckReport {
   game: { exe: string; running: boolean; pids: number[] };
   hosts: { path: string; host: string; readable: boolean; blocked: boolean; lines: string[] };
   env: { name: string; value: string | null; scope: 'app' | 'modlock'; purpose: string }[];
+  /** %LOCALAPPDATA%\modlock, onde o Modlock baixa o servidor do jogo. */
+  downloadDir: string | null;
   ready: boolean;
   problems: EngineError[];
 }
@@ -77,12 +85,20 @@ export interface AppInfo {
 /** Dentro do app (Tauri) ou numa aba comum do navegador (prévia com dados de exemplo). */
 export const inApp = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+/** Por que a janela abriu sozinha (`checagem`: a primeira checagem ao abrir o app achou problema). */
+export const openedBy: string | null =
+  typeof window !== 'undefined' ? (((window as { __INSTALL_OPENED_BY__?: unknown }).__INSTALL_OPENED_BY__ as string | undefined) ?? null) : null;
+
 export function errorOf(e: unknown): EngineError {
   if (e && typeof e === 'object' && 'message' in e) {
-    const o = e as { code?: unknown; message: unknown };
-    return { code: typeof o.code === 'string' ? o.code : 'erro', message: String(o.message) };
+    const o = e as { code?: unknown; message: unknown; detail?: unknown };
+    return {
+      code: typeof o.code === 'string' ? o.code : 'erro',
+      message: String(o.message),
+      ...(typeof o.detail === 'string' ? { detail: o.detail } : {}),
+    };
   }
-  return { code: 'erro', message: String(e) };
+  return { code: 'erro', message: 'O app não conseguiu falar com o motor. Feche e abra o app de novo.', detail: String(e) };
 }
 
 export const api = {
@@ -111,7 +127,9 @@ const SAMPLE_CHECK: CheckReport = {
   binary: {
     path: 'C:\\Users\\voce\\AppData\\Local\\Lobby\\modlock.exe',
     source: 'ao lado do app',
+    folder: 'C:\\Users\\voce\\AppData\\Local\\Lobby',
     exists: true,
+    vanished: false,
     sizeBytes: 85_352_448,
     sha256: '4148c2fb2a5e5ac39fef61d7766e7854c3ad6e3c5985bc89433c5914742e3381',
     expectedSha256: '4148c2fb2a5e5ac39fef61d7766e7854c3ad6e3c5985bc89433c5914742e3381',
@@ -143,10 +161,21 @@ const SAMPLE_CHECK: CheckReport = {
   hosts: { path: 'C:\\Windows\\System32\\drivers\\etc\\hosts', host: 'hyperline.gg', readable: true, blocked: false, lines: [] },
   env: [
     { name: 'MODLOCK_BIN', value: null, scope: 'app', purpose: 'Caminho do modlock.exe fixado. Sem ela, o app procura ao lado do próprio executável.' },
-    { name: 'ENGINE_ORIGIN', value: 'http://192.168.0.10:8080', scope: 'app', purpose: 'Servidor de sinalização passado ao daemon em --origin. O hyperline.gg é recusado.' },
+    {
+      name: 'ENGINE_ORIGIN',
+      value: 'http://192.168.0.10:8080',
+      scope: 'app',
+      purpose: 'Servidor de sinalização passado ao daemon em --origin. O hyperline.gg é recusado.',
+    },
     { name: 'ENGINE_STATE_DIR', value: null, scope: 'app', purpose: 'Outra pasta de estado do Modlock (troca o APPDATA só dos processos do Modlock).' },
-    { name: 'MODLOCK_NO_UPDATE_CHECK', value: '1', scope: 'modlock', purpose: 'Definida pelo app em todo processo do Modlock: a versão é fixada, sem checagem de update.' },
+    {
+      name: 'MODLOCK_NO_UPDATE_CHECK',
+      value: '1',
+      scope: 'modlock',
+      purpose: 'Definida pelo app em todo processo do Modlock: a versão é fixada, sem checagem de update.',
+    },
   ],
+  downloadDir: 'C:\\Users\\voce\\AppData\\Local\\modlock',
   ready: true,
   problems: [],
 };
