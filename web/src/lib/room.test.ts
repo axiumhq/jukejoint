@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { lobbies } from '../data/lobbies';
-import { missingForQuorum, nextToConfirm, readyCount, roomPhase, roster, ruleIcon } from './room';
+import { handoffState, missingForQuorum, nextToConfirm, readyCount, roomPhase, roster, ruleIcon } from './room';
 
 const base = { you: 'Corvo', youHere: false, youReady: false, signedIn: false, now: Date.now() + 60_000 };
 
@@ -71,13 +71,34 @@ describe('confirmações simuladas', () => {
 });
 
 describe('roomPhase', () => {
-  const p = { players: 10, minPlayers: 8, playing: false, countdown: false, handoff: false };
+  const p = { players: 10, minPlayers: 8, ready: 5, playing: false, countdown: false, handoff: false };
   it('segue as quatro fases', () => {
     expect(roomPhase({ ...p, players: 5 })).toEqual({ step: 1, key: 'gathering' });
     expect(roomPhase(p)).toEqual({ step: 2, key: 'waiting' });
     expect(roomPhase({ ...p, countdown: true })).toEqual({ step: 3, key: 'countdown' });
     expect(roomPhase({ ...p, playing: true, handoff: true })).toEqual({ step: 4, key: 'opening' });
     expect(roomPhase({ ...p, playing: true })).toEqual({ step: 4, key: 'playing' });
+  });
+
+  it('com o mínimo confirmado, não diz que começa: espera quem abriu', () => {
+    expect(roomPhase({ ...p, ready: 8 })).toEqual({ step: 2, key: 'quorum' });
+    expect(roomPhase({ ...p, ready: 9 })).toEqual({ step: 2, key: 'quorum' });
+    // gente de menos ganha de confirmados (o mínimo é de jogadores na sala)
+    expect(roomPhase({ ...p, players: 7, ready: 7, minPlayers: 8 })).toEqual({ step: 1, key: 'gathering' });
+  });
+
+  it('não diz "em partida" enquanto o app ainda abre o jogo', () => {
+    // a sala já está em partida no servidor, mas você ainda está no handoff
+    expect(roomPhase({ ...p, playing: true, handoff: true }).key).toBe('opening');
+  });
+});
+
+describe('handoffState', () => {
+  it('abrindo até a última etapa, dentro depois', () => {
+    expect(handoffState(null, 3)).toBeNull();
+    expect(handoffState(0, 3)).toBe('opening');
+    expect(handoffState(2, 3)).toBe('opening');
+    expect(handoffState(3, 3)).toBe('inside');
   });
 });
 

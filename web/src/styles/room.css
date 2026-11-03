@@ -5,8 +5,8 @@
  * Movimento só como estado: a vaga estala ao confirmar, a etapa ativa pulsa só durante ela.
  */
 
-/* a barra PRONTO é fixa: o fim da coluna precisa de folga para o rodapé não ficar embaixo dela */
-.main:has(.room-page) {
+/* a barra PRONTO é fixa: o rodapé da coluna precisa de folga para não ficar embaixo dela */
+.app:has(.room-page) > .foot {
   padding-bottom: 132px;
 }
 
@@ -524,72 +524,38 @@ button.seat.is-empty:hover {
   min-width: 1ch;
 }
 
-/* etapas do app (entrada e handoff) */
-.rb-steps {
+/* o app trabalhando (entrada e handoff): só a etapa atual, em texto; o progresso numerado é o do cabeçalho */
+.rb-work {
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
 }
 
-.hsteps {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--tx-3);
-  font-size: 0.75rem;
+.rb-hint.is-work {
+  color: var(--tx-2);
 }
 
-.hstep {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-  transition: color var(--t-mid);
-}
-
-.hstep + .hstep::before {
-  content: '';
-  flex: 0 1 22px;
-  width: 22px;
-  min-width: 8px;
-  height: 1px;
-  margin-right: 1px;
-  background: var(--line-2);
-}
-
-.hstep .n {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-weight: 600;
-  box-shadow: 0 0 0 1px var(--line-2) inset;
-  transition:
-    background var(--t-mid),
-    color var(--t-mid),
-    box-shadow var(--t-mid);
-}
-
-.hstep .n .ico {
-  width: 12px;
-  height: 12px;
-  stroke-width: 1.8;
-}
-
-.hstep.is-on {
+.rb-hint.is-work b {
   color: var(--tx);
+  font-weight: 600;
 }
 
-.hstep.is-on .n {
-  color: var(--acc-tx);
-  box-shadow: 0 0 0 1.5px var(--acc-tx) inset;
-  animation: step-pulse 1s var(--e-out) infinite alternate;
+/* o anel da etapa ativa: gira só enquanto o app trabalha */
+.rb-spin {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 1.5px solid var(--line-2);
+  border-top-color: var(--acc-tx);
+  animation: rb-spin 0.9s linear infinite;
+}
+
+@keyframes rb-spin {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 @keyframes step-pulse {
@@ -600,18 +566,12 @@ button.seat.is-empty:hover {
   }
 }
 
-.hstep.is-done {
-  color: var(--tx-2);
-}
-
-.hstep.is-done .n {
-  background: var(--acc);
-  color: var(--acc-ink);
-  box-shadow: none;
-}
-
 .rb-help {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  min-height: 24px;
   font-size: 0.75rem;
   color: var(--tx-3);
   white-space: nowrap;
@@ -827,12 +787,6 @@ button.seat.is-empty:hover {
 
 /* ───────── Pontos de quebra ───────── */
 
-@media (max-width: 1500px) {
-  .hsteps .hstep:not(.is-cur) .sl {
-    display: none;
-  }
-}
-
 @media (max-width: 1100px) {
   .seats {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -871,7 +825,7 @@ button.seat.is-empty:hover {
 }
 
 @media (max-width: 760px) {
-  .main:has(.room-page) {
+  .app:has(.room-page) > .foot {
     padding-bottom: 176px;
   }
 
@@ -947,7 +901,7 @@ button.seat.is-empty:hover {
     font-size: 1.375rem;
   }
 
-  .rb-steps {
+  .rb-work {
     flex-wrap: wrap;
     gap: 6px 12px;
   }
@@ -968,24 +922,10 @@ button.seat.is-empty:hover {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hstep.is-on .n {
+  .rb-spin {
     animation: none;
-    box-shadow:
-      0 0 0 1.5px var(--acc-tx) inset,
-      0 0 0 4px var(--acc-soft);
+    border-color: var(--acc-tx);
   }
-}
-
-/* O nome do lobby na tabela leva para a sala (LobbyTable, ainda usada na página do modo). */
-a.lt-name {
-  text-decoration: underline;
-  text-decoration-color: transparent;
-  text-underline-offset: 4px;
-  transition: text-decoration-color var(--t) var(--ease);
-}
-
-a.lt-name:hover {
-  text-decoration-color: var(--ink-2);
 }
 
 /* ───────── Jogar agora (/jogar): o cartão de busca que leva à sala ───────── */

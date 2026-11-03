@@ -79,7 +79,8 @@ export function ThemeMenu() {
               className="theme-opt"
               onClick={() => setTheme(th.id)}
             >
-              <span className="sw" style={{ background: `linear-gradient(135deg, ${th.swatch[0]} 0 55%, ${th.swatch[1]} 55%)` }} aria-hidden="true" />
+              {/* data-theme no próprio elemento: a amostra lê --s1 e --acc do bloco desse tema em tokens.css */}
+              <span className="sw" data-theme={th.id} aria-hidden="true" />
               <span>
                 <b>{th.name}</b>
                 <small>{th.note}</small>

@@ -192,6 +192,7 @@
 }
 
 .fav {
+  position: relative;
   margin-left: auto;
   width: 26px;
   height: 26px;
@@ -202,6 +203,13 @@
   transition:
     color var(--t-fast),
     background var(--t-fast);
+}
+
+/* a estrela fica pequena; a área de toque, não */
+.fav::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
 }
 
 .fav:hover {
@@ -217,8 +225,10 @@
   fill: currentColor;
 }
 
+/* min-height: o nome de uma linha ainda é um alvo de 24 px (o 2º corte de linha não vaza) */
 .lc-n {
   display: block;
+  min-height: 24px;
   margin-top: 4px;
   font-size: 1.0625rem;
   font-weight: 600;
@@ -514,6 +524,23 @@
 @media (max-width: 1080px) {
   .lgrid.list .lc-f {
     width: auto;
+  }
+}
+
+/* toque: abas, chips e a troca de visão chegam a 40 px; a estrela ganha área de 44 px */
+@media (pointer: coarse) {
+  .lb-tabs button,
+  .fchips .chip {
+    height: 40px;
+  }
+
+  .vt button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .fav::after {
+    inset: -9px;
   }
 }
 

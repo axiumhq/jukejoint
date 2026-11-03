@@ -35,6 +35,14 @@ export function Search({ open, onOpenChange }: SearchProps) {
   const [active, setActive] = useState(0);
   const input = useRef<HTMLInputElement>(null);
   const wrap = useRef<HTMLDivElement>(null);
+  /** Onde o foco estava antes do Ctrl K (ou da lupa): Esc devolve para lá. */
+  const back = useRef<HTMLElement | null>(null);
+  /** O foco agendado pelo Ctrl K: Esc antes do próximo quadro não pode ser desfeito por ele. */
+  const raf = useRef(0);
+  const remember = () => {
+    const a = document.activeElement as HTMLElement | null;
+    if (a && a !== input.current && a !== document.body) back.current = a;
+  };
   const listId = useId();
   const optId = (i: number) => `${listId}-o${i}`;
 
@@ -50,8 +58,10 @@ export function Search({ open, onOpenChange }: SearchProps) {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        remember();
         onOpenChange(true);
-        requestAnimationFrame(() => {
+        cancelAnimationFrame(raf.current);
+        raf.current = requestAnimationFrame(() => {
           input.current?.focus();
           input.current?.select();
         });
@@ -62,7 +72,9 @@ export function Search({ open, onOpenChange }: SearchProps) {
   }, [onOpenChange]);
 
   useEffect(() => {
-    if (open) input.current?.focus();
+    if (!open) return;
+    remember();
+    input.current?.focus();
   }, [open]);
 
   // Clique fora fecha o painel do celular.
@@ -75,10 +87,14 @@ export function Search({ open, onOpenChange }: SearchProps) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open, onOpenChange]);
 
-  const close = () => {
+  const close = (restore = false) => {
+    cancelAnimationFrame(raf.current);
     setQ('');
     onOpenChange(false);
-    input.current?.blur();
+    const to = back.current;
+    back.current = null;
+    if (restore && to?.isConnected) to.focus();
+    else input.current?.blur();
   };
 
   const go = (h: SearchHit) => {
@@ -100,7 +116,7 @@ export function Search({ open, onOpenChange }: SearchProps) {
       go(hits[active]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      close();
+      close(true);
     }
   };
 

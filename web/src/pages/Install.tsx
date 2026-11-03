@@ -234,9 +234,9 @@ function InstallRail() {
     <>
       <nav className="rail-sec" aria-labelledby="ir-toc">
         <div className="rail-h">
-          <h3 className="cap" id="ir-toc">
+          <h2 className="cap" id="ir-toc">
             {t.install.toc}
-          </h3>
+          </h2>
         </div>
         <ol className="toc">
           {TOC.map((id) => (
@@ -248,9 +248,9 @@ function InstallRail() {
       </nav>
       <section className="rail-sec" aria-labelledby="ir-changes">
         <div className="rail-h">
-          <h3 className="cap" id="ir-changes">
+          <h2 className="cap" id="ir-changes">
             {t.install.railChanges}
-          </h3>
+          </h2>
         </div>
         <ul className="mr-changes">
           {appChanges.map((c) => (
@@ -402,8 +402,6 @@ export function Install() {
             ))}
           </dl>
         </section>
-
-        <p className="ins-aff">{t.install.affiliation}</p>
       </div>
 
       <Rail title={t.install.sheet}>

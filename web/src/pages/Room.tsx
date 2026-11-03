@@ -6,7 +6,7 @@ import { FriendRow } from '../components/Friends';
 import { Icon, type IconName } from '../components/Icon';
 import { LobbyAction } from '../components/LobbyAction';
 import { ModeCover } from '../components/ModeCover';
-import { Rail, useRail } from '../components/Rail';
+import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Mode } from '../data/modes';
 import { useDocumentTitle, useFriends, useMediaQuery, useReducedMotion } from '../hooks';
@@ -15,19 +15,20 @@ import { t } from '../i18n';
 import { live as L } from '../i18n/live';
 import { friendsIn } from '../lib/friends';
 import { lobbyState, roundText } from '../lib/lobbies';
-import { readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
+import { handoffState, readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
 import { useSession } from '../state/session';
 
 /**
  * A sala do lobby (/sala/:id), v8 (prototipos/v8/sala.html): cabeçalho com a capa do modo e a fase,
  * a grade de vagas, a barra PRONTO fixa embaixo e o trilho da sala (regras, convite, atividade).
- * A barra tem um botão principal por estado: Entrar (de fora), etapas (entrando), PRONTO com F,
- * Cancelar (contagem de 5 s), etapas do handoff, Iniciar partida (anfitrião) e Voltar para o Deadlock.
- * Quem decide a contagem e o handoff é a sessão (state/session.tsx); a tela só mostra e pede.
+ * A barra tem um botão principal por estado: Entrar (de fora), o app trabalhando (entrando), PRONTO com F,
+ * Cancelar (contagem de 5 s), o app abrindo o jogo, Iniciar partida (anfitrião) e Voltar para o Deadlock.
+ * O progresso da sala é um só (lib/room.ts `roomPhase`), no cabeçalho; a barra diz o que o app faz agora,
+ * sem contador próprio. Quem decide a contagem e o handoff é a sessão (state/session.tsx); a tela só mostra e pede.
  */
 
-/** As quatro etapas do app: as três da entrada e "Dentro do lobby". */
-const STEPS = [...t.lobbies.joinSteps.map((s) => s.replace('…', '')), t.room.inside];
+/** O que o app faz em cada etapa (entrada e handoff têm as mesmas três). */
+const APP_STEPS = t.lobbies.joinSteps;
 
 type FeedKind = 'joined' | 'confirmed' | 'countStart' | 'countCancel' | 'started';
 interface FeedItem {
@@ -40,23 +41,22 @@ interface FeedItem {
 
 const FEED_ICON: Partial<Record<FeedKind, IconName>> = { countStart: 'play', countCancel: 'x', started: 'pad' };
 
-/* ───────── Etapas (entrada e handoff) ───────── */
+/* ───────── O app trabalhando (entrada e handoff) ───────── */
 
-function Steps({ active, done }: { active: number; done: number }) {
+/** Só a etapa atual, em texto: o progresso numerado da sala já está no cabeçalho. */
+function AppWorking({ step }: { step: number }) {
   return (
-    <ol className="hsteps" aria-label={t.room.stepsLabel}>
-      {STEPS.map((s, i) => {
-        const st = i < done ? 'done' : i === active ? 'on' : 'next';
-        return (
-          <li key={s} className={`hstep is-${st}${i === active ? ' is-cur' : ''}`} aria-current={i === active ? 'step' : undefined}>
-            <span className="n num" aria-hidden="true">
-              {st === 'done' ? <Icon name="check" /> : i + 1}
-            </span>
-            <span className="sl">{s}</span>
-          </li>
-        );
-      })}
-    </ol>
+    <div className="rb-work">
+      <p className="rb-hint is-work">
+        <span className="rb-spin" aria-hidden="true" />
+        <span>
+          <b>{APP_STEPS[step] ?? APP_STEPS[0]}</b> {t.room.keepOpen}
+        </span>
+      </p>
+      <Link to="/instalar#antivirus" className="rb-help">
+        {t.room.stuck} <u>{t.room.help}</u>
+      </Link>
+    </div>
   );
 }
 
@@ -166,6 +166,8 @@ function InviteFriends({ lobby }: { lobby: Lobby }) {
   const { user, signIn, pushToast, live, callFriend } = useSession();
   const friends = useFriends();
   const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
+  // sem login, o convite mostra o botão de login: a barra superior não repete (só vale quando não há conta)
+  useRailSignIn();
   if (!user) {
     return (
       <div className="rinv-out">
@@ -217,9 +219,9 @@ function Knocks() {
   return (
     <section className="rail-sec" aria-labelledby="room-knocks">
       <div className="rail-h">
-        <h3 className="cap" id="room-knocks">
+        <h2 className="cap" id="room-knocks">
           {L.knocksTitle} · <b className="num">{knocksHere.length}</b>
-        </h3>
+        </h2>
       </div>
       <ul className="rknocks">
         {knocksHere.map((k) => (
@@ -252,9 +254,9 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
       {mode && (
         <section className="rail-sec" aria-labelledby="room-rules">
           <div className="rail-h">
-            <h3 className="cap" id="room-rules">
+            <h2 className="cap" id="room-rules">
               {t.room.rules}
-            </h3>
+            </h2>
             <Link to={`/modos/${mode.slug}`} className="link" aria-label={t.room.modeLink(mode.name)}>
               {mode.name}
             </Link>
@@ -274,9 +276,9 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
 
       <section className="rail-sec" id="room-invite" aria-labelledby="room-invite-h">
         <div className="rail-h">
-          <h3 className="cap" id="room-invite-h">
+          <h2 className="cap" id="room-invite-h">
             {t.room.inviteTitle}
-          </h3>
+          </h2>
           <span className="lbl">{t.room.freeN(free)}</span>
         </div>
         <div className="rinv-link">
@@ -293,9 +295,9 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
 
       <section className="rail-sec" aria-labelledby="room-activity">
         <div className="rail-h">
-          <h3 className="cap" id="room-activity">
+          <h2 className="cap" id="room-activity">
             {t.room.activity}
-          </h3>
+          </h2>
         </div>
         {feed.length === 0 ? (
           <p className="rail-empty">{t.room.activityEmpty}</p>
@@ -342,7 +344,13 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
   const here = hereId === lobby.id;
   const joining = joiningId === lobby.id;
+  // Ao vivo e na simulação a sala vira "em-partida" quando o handoff começa; para você ela só está
+  // em partida depois que o app terminou de abrir o jogo.
+  const hs = here ? handoffState(handoffStep, APP_STEPS.length) : null;
+  const handoff = hs === 'opening';
+  const inside = hs === 'inside';
   const playing = lobby.status === 'em-partida';
+  const inMatch = playing && !handoff;
   const outsideSeats = useMemo(
     () => roster(lobby, { you: user?.name ?? t.lobbies.you, youHere: false, youReady: false, signedIn: !!user, now, friends: friendsIn(friends, lobby.id) }),
     [lobby, user, now, friends],
@@ -352,9 +360,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
   const readyN = readyCount(seats);
   const k = lobby.minPlayers;
   const countdown = here && countdownEndsAt !== null;
-  const handoff = here && handoffStep !== null && handoffStep < STEPS.length - 1;
-  const inside = here && handoffStep !== null && handoffStep >= STEPS.length - 1;
-  const phase = roomPhase({ players: lobby.players, minPlayers: k, playing, countdown, handoff });
+  const phase = roomPhase({ players: lobby.players, minPlayers: k, ready: readyN, playing, countdown, handoff });
 
   /* contagem regressiva visível (o fim vem da sessão) */
   const [tick, setTick] = useState(() => Date.now());
@@ -402,11 +408,11 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
   useEffect(() => {
     if (handoffStep === null || !here) return;
-    setAnnounce(handoffStep >= STEPS.length - 1 ? t.room.insideLive : t.room.stepLive(STEPS[handoffStep]!, handoffStep + 1, STEPS.length));
+    setAnnounce(handoffStep >= APP_STEPS.length ? t.room.insideLive : (APP_STEPS[handoffStep] ?? ''));
   }, [handoffStep, here]);
 
   useEffect(() => {
-    if (joining) setAnnounce(t.room.stepLive(STEPS[joiningStep] ?? STEPS[0]!, joiningStep + 1, STEPS.length));
+    if (joining) setAnnounce(APP_STEPS[joiningStep] ?? APP_STEPS[0]!);
   }, [joining, joiningStep]);
 
   const feed = useMemo(() => {
@@ -484,12 +490,14 @@ function RoomView({ lobby }: { lobby: Lobby }) {
       case 'gathering':
         return D.missingPlayers(k - lobby.players);
       case 'waiting':
-        if (readyN < k) return here && !ready && !lobby.mine && k - readyN === 1 ? D.you : D.missingReady(k - readyN);
-        return lobby.mine ? D.host : here && !ready ? D.you : D.any;
+        return D.missingReady(k - readyN);
+      case 'quorum':
+        return lobby.mine ? D.host : D.any;
       case 'countdown':
         return D.startsIn(secs);
       case 'opening':
-        return D.keepOpen;
+        // a etapa do app está na barra, logo abaixo; aqui fica só a fase
+        return '';
       case 'playing':
         return inside ? D.inside : (round ?? '');
     }
@@ -500,14 +508,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
   let mid;
   let act;
   if (joining) {
-    mid = (
-      <div className="rb-steps">
-        <Steps active={joiningStep} done={joiningStep} />
-        <Link to="/instalar#antivirus" className="rb-help">
-          {t.room.stuck} <u>{t.room.help}</u>
-        </Link>
-      </div>
-    );
+    mid = <AppWorking step={joiningStep} />;
     act = (
       <button type="button" className="btn btn-s rb-ready" aria-disabled="true">
         {t.room.joiningBtn}
@@ -525,20 +526,9 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         <LobbyAction lobby={lobby} state={st} primary />
       </div>
     );
-  } else if (handoff || inside) {
-    mid = <Steps active={handoff ? handoffStep! : STEPS.length - 1} done={handoff ? handoffStep! : STEPS.length} />;
-    act = inside ? (
-      <>
-        <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
-          <Icon name="exit" />
-          {t.room.leave}
-        </button>
-        <button type="button" className="btn btn-p rb-ready" onClick={() => pushToast(t.room.reopenToast)}>
-          {t.room.backToGame}
-          <Icon name="arrow" />
-        </button>
-      </>
-    ) : (
+  } else if (handoff) {
+    mid = <AppWorking step={handoffStep!} />;
+    act = (
       <button type="button" className="btn btn-s rb-ready" aria-disabled="true">
         {t.room.opening}
       </button>
@@ -618,7 +608,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     ) : (
       <p className="rb-hint">
         <Icon name="info" />
-        <span>{ready ? t.room.hintWaiting(Math.max(0, k - readyN)) : t.room.hint(k)}</span>
+        <span>{ready ? t.room.hintWaiting(k - readyN) : readyN >= k ? t.room.hintQuorum : t.room.hint(k)}</span>
       </p>
     );
     act = (
@@ -685,21 +675,21 @@ function RoomView({ lobby }: { lobby: Lobby }) {
             </span>
             <i className="hide-md" aria-hidden="true" />
             <span className="hide-md">
-              {t.room.startsWith} <span className="num">{k}</span>
+              {t.room.minimum} <span className="num">{k}</span>
             </span>
             <i className="hide-md" aria-hidden="true" />
             <span className="hide-md">
               {t.regions[lobby.region]} · <span className="num">{t.lobbies.ping(lobby.ping)}</span>
             </span>
-            {playing && (
+            {inMatch && (
               <Tag tone="warn" className="rh-live">
                 {t.lobbyState.playing(round)}
               </Tag>
             )}
           </p>
         </div>
-        <div className="rphase">
-          <div className="rphase-t">
+        <div className="rphase" role="group" aria-label={`${t.room.phase} ${t.room.phaseOf(phase.step)}`}>
+          <div className="rphase-t" aria-hidden="true">
             <span className="cap">{t.room.phase}</span>
             <span className="num">{t.room.phaseOf(phase.step)}</span>
           </div>
@@ -740,7 +730,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
               seat={seat}
               index={i}
               pop={!!seat.name && pops.has(seat.name)}
-              playing={playing}
+              playing={inMatch}
               visitor={!here && !lobby.mine}
               signedIn={!!user}
               onInvite={focusInvite}
@@ -756,7 +746,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
             <b className="num">{readyN}</b>
             <span>{t.room.readyOf(taken)}</span>
             <span className="rb-k">
-              · {t.room.startsWith} <span className="num">{k}</span>
+              · {t.room.minimum} <span className="num">{k}</span>
             </span>
           </p>
           <span className="rb-ticks" role="img" aria-label={t.room.ticksLabel(readyN, k)}>

@@ -342,8 +342,9 @@ kbd,
 }
 
 .icon-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  flex: none;
   display: inline-grid;
   place-items: center;
   border-radius: var(--r-sm);

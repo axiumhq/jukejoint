@@ -207,45 +207,11 @@
 }
 
 /*
- * Compatibilidade v6: as telas da fase 2 (sala, modos, instalar, hoje) ainda leem os nomes antigos.
- * Apontam para os tokens v8, então já trocam de tema. Saem quando essas telas forem refeitas.
+ * Escala de títulos que o app desktop ainda lê (desktop/src/install.css importa este arquivo).
+ * O resto da compatibilidade v6 saiu: o site só lê os tokens v8 acima.
  */
 :root {
-  --raise: var(--s2);
-  --raise-2: var(--s3);
-  --rule: var(--line);
-  --rule-strong: var(--line-2);
-  --ink: var(--tx);
-  --ink-2: var(--tx-2);
-  --ink-3: var(--tx-3);
-  --sodium: var(--acc);
-  --sodium-hi: var(--acc-hi);
-  --sodium-ink: var(--acc-ink);
-  --verdigris: var(--live);
-  --display: var(--f-display);
-  --sans: var(--f-ui);
-  --mono: var(--f-mono);
-  --fs-hero: clamp(2.75rem, 4.7vw, 4.9rem);
   --fs-h1: clamp(2.25rem, 3.6vw, 3.375rem);
   --fs-h2: clamp(1.5rem, 2.2vw, 1.875rem);
-  --fs-h3: 1.25rem;
   --fs-lead: 0.9375rem;
-  --fs-body: 0.8125rem;
-  --fs-sm: 0.8125rem;
-  --fs-xs: 0.75rem;
-  --m: var(--gut);
-  --max: 1440px;
-  --s-1: 8px;
-  --s-2: 16px;
-  --s-3: 24px;
-  --s-4: 32px;
-  --s-5: 48px;
-  --s-6: 64px;
-  --s-7: 96px;
-  --s-8: 144px;
-  --section: 96px;
-  --radius: var(--r-sm);
-  --ease: var(--e-out);
-  --t: var(--t-mid);
-  --header-h: var(--tb);
 }

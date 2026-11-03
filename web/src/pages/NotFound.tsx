@@ -5,7 +5,8 @@ import { useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
 
 /**
- * 404 no v8: a capa da bússola na neblina, o título e o caminho de volta para os lobbies.
+ * 404 no v8: a capa da bússola na neblina, o título e um caminho de volta (os lobbies, que são a home).
+ * Os outros destinos ficam na linha "Ou vá para"; nada de dois botões para o mesmo lugar.
  * `toModes` serve ao "modo que saiu de cartaz": o primeiro passo vira a lista de modos.
  */
 export function NotFound({ title = t.notFound.title, body = t.notFound.body, toModes = false }: { title?: string; body?: string; toModes?: boolean }) {
@@ -34,9 +35,6 @@ export function NotFound({ title = t.notFound.title, body = t.notFound.body, toM
               <Icon name="arrow" />
             </Link>
           )}
-          <Link to="/" className="btn btn-s btn-lg">
-            {t.notFound.back}
-          </Link>
         </div>
         <nav className="nf-else" aria-label={t.notFound.elsewhere}>
           <span>{t.notFound.elsewhere}</span>

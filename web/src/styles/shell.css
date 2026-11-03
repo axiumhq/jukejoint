@@ -110,6 +110,10 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 32px;
+  padding: 0 6px;
+  margin: 0 -6px;
+  border-radius: var(--r-sm);
   color: var(--tx-2);
   font-size: 0.78125rem;
   white-space: nowrap;
@@ -250,11 +254,13 @@
   background: var(--s4);
 }
 
+/* a amostra tem data-theme do próprio tema: as cores saem dos tokens dele */
 .theme-opt .sw {
   width: 34px;
   height: 24px;
   border-radius: 5px;
   flex: none;
+  background: linear-gradient(135deg, var(--s1) 0 55%, var(--acc) 55%);
   box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.08) inset;
 }
 
@@ -323,6 +329,7 @@
   box-shadow: 0 0 0 1px var(--line) inset;
   padding: 0 66px 0 36px;
   font-size: 0.78125rem;
+  text-overflow: ellipsis;
   transition:
     box-shadow var(--t-fast),
     background var(--t-fast);
@@ -442,18 +449,36 @@
 
 /* ───────── Casca: conteúdo + trilho ───────── */
 
+/* coluna: conteúdo em cima, rodapé (landmark) embaixo; o trilho ocupa as duas linhas à direita */
 .app {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--rail);
+  grid-template-rows: 1fr auto;
   min-height: calc(100dvh - var(--tb) - var(--tabs));
 }
 
 .main {
   position: relative;
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
-  padding: 22px var(--gut) 40px;
+  padding: 22px var(--gut) 0;
   overflow-x: clip;
+}
+
+.foot {
+  position: relative;
+  z-index: 1;
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  padding: 0 var(--gut) 40px;
+}
+
+.app > .rail {
+  grid-column: 2;
+  grid-row: 1 / 3;
 }
 
 .main > * {
@@ -892,6 +917,15 @@
     display: none;
   }
 
+  /* campo estreito: o atalho sai para o texto de exemplo caber inteiro */
+  .search-field > kbd {
+    display: none;
+  }
+
+  .search input {
+    padding-right: 12px;
+  }
+
   .room-pill .rp-name {
     max-width: 140px;
   }
@@ -900,6 +934,11 @@
 @media (max-width: 960px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app > .rail {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .nav {
@@ -1074,7 +1113,12 @@
   }
 
   .main {
-    padding: 14px 16px 116px;
+    padding: 14px 16px 0;
+  }
+
+  /* folga para a barra fixa "Jogar agora" */
+  .foot {
+    padding: 0 16px 116px;
   }
 
   .sec {
@@ -1112,19 +1156,63 @@
   }
 }
 
-/* Toque: alvos maiores nos controles pequenos. */
+/*
+ * Toque: alvos maiores. O piso é 24 px em tudo; os controles principais do celular chegam a 44 px.
+ * Onde o desenho é pequeno de propósito (estrela, nome do lobby), cresce a área de toque, não o visual.
+ */
 @media (pointer: coarse) {
+  .icon-btn,
+  .live-count,
+  .room-pill {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
   .icon-btn {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
+  }
+
+  .btn {
+    --h: 40px;
+  }
+
+  .btn-p,
+  .btn-lg {
+    --h: 44px;
   }
 
   .btn-sm {
     --h: 34px;
   }
+
+  .link {
+    min-height: 36px;
+  }
+
+  .rail-h .link {
+    padding: 8px;
+    margin: -6px -4px;
+  }
+
+  .nav a {
+    height: 40px;
+  }
 }
 
-/* "Entrar com a Steam" encolhe para "Entrar" no celular */
+/* celular estreito: a pílula da sala fica só com a contagem (os rostos empurravam a lupa por cima dela) */
+@media (max-width: 480px) {
+  .room-pill {
+    flex: none;
+    padding: 0 12px;
+  }
+
+  .room-pill .stack {
+    display: none;
+  }
+}
+
+/* "Login com a Steam" encolhe para "Login" no celular */
 .btn-steam .t-short {
   display: none;
 }

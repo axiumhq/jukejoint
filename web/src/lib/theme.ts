@@ -3,6 +3,8 @@
  * O Deadlock é o padrão: abre sem nada salvo e é o primeiro da lista.
  * Para adicionar um tema: o bloco em tokens.css com os mesmos 28 tokens, uma linha aqui
  * e o id na lista do script inline de index.html.
+ * A amostra do menu não tem cor própria: o elemento leva `data-theme` e lê `--s1` e `--acc` do bloco
+ * do tema (ThemeMenu e `.theme-opt .sw` em shell.css). Mudou o token, mudou a amostra.
  */
 export type ThemeId = 'deadlock' | 'carmim' | 'pergaminho' | 'gelo' | 'grafite';
 
@@ -10,16 +12,14 @@ export interface ThemeInfo {
   id: ThemeId;
   name: string;
   note: string;
-  /** Amostra do menu: [fundo, acento]. */
-  swatch: [string, string];
 }
 
 export const THEMES: ThemeInfo[] = [
-  { id: 'deadlock', name: 'Deadlock', note: 'Verde-fumaça, pergaminho e âmbar. Padrão.', swatch: ['hsl(170 16% 7%)', 'hsl(35 85% 56%)'] },
-  { id: 'carmim', name: 'Carmim', note: 'Vinho e carmim.', swatch: ['hsl(345 30% 6%)', 'hsl(350 76% 49%)'] },
-  { id: 'pergaminho', name: 'Pergaminho', note: 'Quase preto quente e creme.', swatch: ['hsl(20 10% 7%)', 'hsl(42 60% 84%)'] },
-  { id: 'gelo', name: 'Gelo', note: 'Frio, herdeiro da pele B.', swatch: ['hsl(218 30% 6%)', 'hsl(190 92% 70%)'] },
-  { id: 'grafite', name: 'Grafite', note: 'Neutro e calmo, para longas sessões.', swatch: ['hsl(225 6% 11%)', 'hsl(20 50% 64%)'] },
+  { id: 'deadlock', name: 'Deadlock', note: 'Verde-fumaça, pergaminho e âmbar. Padrão.' },
+  { id: 'carmim', name: 'Carmim', note: 'Vinho e carmim.' },
+  { id: 'pergaminho', name: 'Pergaminho', note: 'Quase preto quente e creme.' },
+  { id: 'gelo', name: 'Gelo', note: 'Azul-noite e ciano, frio e nítido.' },
+  { id: 'grafite', name: 'Grafite', note: 'Neutro e calmo, para longas sessões.' },
 ];
 
 export const DEFAULT_THEME: ThemeId = 'deadlock';
