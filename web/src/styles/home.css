@@ -551,6 +551,9 @@
     inset: auto;
     height: 206px;
     flex: none;
+    /* a capa se dissolve no cartão: o rótulo e o título sobem por cima dela */
+    -webkit-mask: linear-gradient(180deg, #000 52%, #0000 96%);
+    mask: linear-gradient(180deg, #000 52%, #0000 96%);
   }
 
   .hero-shade {

@@ -67,11 +67,10 @@ web/
     config/brand.ts        BRAND_NAME (nome provisório, ainda não decidido) e dados do instalador
     i18n/pt-BR.ts          todas as strings de interface; i18n/index.ts: idioma ativo e formatação
     styles/tokens.css      os cinco temas + tokens fixos (+ aliases v6 para as telas da fase 2)
-    styles/base.css        reset, tipo, botões, chips, etiquetas, avatares, capas, line-art
-    styles/shell.css       barra superior, busca, menus, trilho/folha, aviso, toasts
+    styles/base.css        reset, tipo, botões, chips, etiquetas, avatares, capas, line-art, formulários
+    styles/shell.css       barra superior, busca, menus, trilho/folha, aviso, toasts, espera de rota
     styles/home.css        recomendado, modos ao vivo, chegando agora, barra móvel
     styles/lobbies.css     abas, chips, cartões e lista compacta
-    styles/legacy.css      v6 que a fase 2 ainda usa (páginas internas, diálogos); some com ela
     styles/pages.css, room.css   telas da fase 2
     lib/                   lobbies, room, friends, stats, theme, avatar, cover, search, lobbyCard (+ testes)
     state/                 session.tsx (sessão simulada), theme.tsx (tema e menu)

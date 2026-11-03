@@ -187,15 +187,19 @@ const f1=n=>n.toFixed(1);
 
 function emblem(k,u){
   const B=`url(#${u}b)`;
-  if(k==='cp'){ // anel ritual que encolhe
-    const C=[200,120]; let ticks='', arcs='', star='', nodes='';
+  if(k==='cp'){ // anel que fecha: diafragma de sete lâminas, pinos no aro
+    const C=[200,120]; let ticks='', arcs='', nodes='', blades='', edges='';
     for(let i=0;i<120;i++){const a=i/120*Math.PI*2, L=i%10?4:8, [x1,y1]=polar(...C,90,a), [x2,y2]=polar(...C,90-L,a);
       ticks+=`<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" ${S('stroke','kh',i%10?.32:.7)} stroke-width="${i%10?.6:1}"/>`;}
-    const P=[]; for(let i=0;i<7;i++){P.push(polar(...C,58,-Math.PI/2+i/7*Math.PI*2));}
+    const th=i=>-Math.PI/2+i/7*Math.PI*2, V=i=>polar(...C,21,th(i)), Q=i=>polar(...C,45,th(i)+.3), O=i=>polar(...C,61,th(i)+1.3), pt=p=>p.map(f1).join(' ');
+    const open='M'+[0,1,2,3,4,5,6].map(i=>pt(V(i))).join('L')+'Z';
+    for(let i=0;i<7;i++){const j=(i+1)%7;
+      blades+=`<path d="M${pt(V(i))}L${pt(V(j))}Q${pt(Q(j))} ${pt(O(j))}A61 61 0 0 0 ${pt(O(i))}Q${pt(Q(i))} ${pt(V(i))}Z" ${S('fill',i%2?'kl':'k1',.92)}/>`;
+      edges+=`M${pt(V(i))}Q${pt(Q(i))} ${pt(O(i))}`;}
+    const P=[0,1,2,3,4,5,6].map(O);
     for(let i=0;i<7;i++){const a0=-Math.PI/2+i/7*Math.PI*2+.12, a1=a0+Math.PI*2/7-.24, [x0,y0]=polar(...C,58,a0),[x1,y1]=polar(...C,58,a1);
       arcs+=`M${f1(x0)} ${f1(y0)}A58 58 0 0 1 ${f1(x1)} ${f1(y1)}`;}
-    star='M'+[0,3,6,2,5,1,4,0].map(i=>P[i].map(f1).join(' ')).join('L');
-    P.forEach(([x,y])=>nodes+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="2.6" ${S('fill','kc')}/><circle cx="${f1(x)}" cy="${f1(y)}" r="7" ${S('fill','m2',.6)} filter="url(#fb2)"/>`);
+    P.forEach(([x,y])=>nodes+=`<circle cx="${f1(x)}" cy="${f1(y)}" r="7" ${S('fill','m2',.6)} filter="url(#fb2)"/><circle cx="${f1(x)}" cy="${f1(y)}" r="2.6" ${S('fill','kc')}/>`);
     return `
     <rect x="194" y="-40" width="12" height="320" ${S('fill','m2',.35)} filter="url(#fb3)"/>
     <ellipse cx="200" cy="218" rx="170" ry="16" ${S('fill','m2',.35)} filter="url(#fb3)"/>
@@ -208,12 +212,17 @@ function emblem(k,u){
     <circle cx="200" cy="120" r="76" fill="none" stroke="${B}" stroke-width="7"/>
     <circle cx="200" cy="120" r="72.2" fill="none" ${S('stroke','k0',.6)} stroke-width="1"/>
     <path d="M131 92A76 76 0 0 1 228 49" fill="none" ${S('stroke','kc',.9)} stroke-width="1.6" stroke-linecap="round" filter="url(#fb1)"/>
-    <path d="${star}" fill="none" ${S('stroke','kh',.55)} stroke-width=".8"/>
+    <circle cx="200" cy="120" r="30" ${S('fill','kc',.5)} filter="url(#fb3)"/>
+    ${blades}
+    <path d="${edges}" fill="none" ${S('stroke','k0',.7)} stroke-width="2.4"/>
+    <path d="${edges}" fill="none" stroke="${B}" stroke-width="1.3"/>
+    <path d="${edges}" fill="none" ${S('stroke','kc',.5)} stroke-width=".5" transform="translate(-.7 -.7)"/>
+    <path d="${open}" fill="none" ${S('stroke','kc',.85)} stroke-width="1" stroke-linejoin="round"/>
     <path d="${arcs}" fill="none" ${S('stroke','m2')} stroke-width="6" opacity=".7" filter="url(#fb2)"/>
     <path d="${arcs}" fill="none" ${S('stroke','kh')} stroke-width="1.8" stroke-linecap="round"/>
     ${nodes}
-    <circle cx="200" cy="120" r="14" ${S('fill','kc',.55)} filter="url(#fb3)"/>
-    <circle cx="200" cy="120" r="4" ${S('fill','kc')}/>`;
+    <circle cx="200" cy="120" r="11" ${S('fill','kc',.6)} filter="url(#fb2)"/>
+    <circle cx="200" cy="120" r="3.4" ${S('fill','kc')}/>`;
   }
   if(k==='ub'){ // trilho, catenária e farol no ponto de fuga
     const V=[200,106]; let sl='', masts='';

@@ -92,6 +92,9 @@ function coverDefs(u: string, seed: number) {
   <radialGradient id="${u}g" gradientUnits="userSpaceOnUse" cx="200" cy="118" r="260"><stop offset="0" ${S('stop-color', 'm2', 0.5)}/><stop offset=".34" ${S('stop-color', 'm1', 0.95)}/><stop offset=".78" ${S('stop-color', 'k0')}/><stop offset="1" ${S('stop-color', 'k0')}/></radialGradient>
   <linearGradient id="${u}mg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".15"/><stop offset=".45" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="1"/></linearGradient>
   <mask id="${u}mk" maskUnits="userSpaceOnUse" x="-420" y="-40" width="1240" height="320"><rect x="-420" y="-40" width="1240" height="320" fill="url(#${u}mg)"/></mask>
+  <linearGradient id="${u}ng" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="0" y2="240"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".3" stop-color="#fff" stop-opacity="1"/><stop offset=".55" stop-color="#fff" stop-opacity=".85"/><stop offset=".76" stop-color="#fff" stop-opacity=".3"/><stop offset="1" stop-color="#fff" stop-opacity=".12"/></linearGradient>
+  <linearGradient id="${u}nh" gradientUnits="userSpaceOnUse" x1="-60" y1="0" x2="110" y2="0"><stop offset="0" stop-opacity=".75"/><stop offset="1" stop-opacity="0"/></linearGradient>
+  <mask id="${u}nk" maskUnits="userSpaceOnUse" x="-420" y="-40" width="1240" height="320"><rect x="-420" y="-40" width="1240" height="320" fill="url(#${u}ng)"/><rect x="-420" y="-40" width="1240" height="320" fill="url(#${u}nh)"/></mask>
   <linearGradient id="${u}b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" ${S('stop-color', 'kh')}/><stop offset=".26" ${S('stop-color', 'kl')}/><stop offset=".48" ${S('stop-color', 'kh', 0.95)}/><stop offset=".7" ${S('stop-color', 'kl')}/><stop offset="1" ${S('stop-color', 'm2')}/></linearGradient>
   <linearGradient id="${u}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" ${S('stop-color', 'kc')}/><stop offset=".45" ${S('stop-color', 'kh')}/><stop offset="1" ${S('stop-color', 'kl')}/></linearGradient>
   <linearGradient id="${u}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" ${S('stop-color', 'm2', 0)}/><stop offset="1" ${S('stop-color', 'm2', 0.7)}/></linearGradient>
@@ -116,11 +119,13 @@ const smoke2 = (u: string, op = 0.18, y = -20, h = 300) => `<rect x="-420" y="${
 function emblem(k: CoverKey, u: string) {
   const B = `url(#${u}b)`;
   if (k === 'cp') {
-    // anel ritual que encolhe
+    // anel que fecha: um diafragma de sete lâminas, com pinos no aro
     const C: [number, number] = [200, 120];
     let ticks = '';
     let arcs = '';
     let nodes = '';
+    let blades = '';
+    let edges = '';
     for (let i = 0; i < 120; i++) {
       const a = (i / 120) * Math.PI * 2;
       const L = i % 10 ? 4 : 8;
@@ -128,8 +133,19 @@ function emblem(k: CoverKey, u: string) {
       const [x2, y2] = polar(...C, 90 - L, a);
       ticks += `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" ${S('stroke', 'kh', i % 10 ? 0.32 : 0.7)} stroke-width="${i % 10 ? 0.6 : 1}"/>`;
     }
-    const P: [number, number][] = [];
-    for (let i = 0; i < 7; i++) P.push(polar(...C, 58, -Math.PI / 2 + (i / 7) * Math.PI * 2));
+    // Lâmina i: do vértice V da abertura (heptágono) sai uma curva até o pino O no aro.
+    const th = (i: number) => -Math.PI / 2 + (i / 7) * Math.PI * 2;
+    const V = (i: number) => polar(...C, 21, th(i));
+    const Q = (i: number) => polar(...C, 45, th(i) + 0.3);
+    const O = (i: number) => polar(...C, 61, th(i) + 1.3);
+    const pt = (p: [number, number]) => p.map(f1).join(' ');
+    const open = 'M' + [0, 1, 2, 3, 4, 5, 6].map((i) => pt(V(i))).join('L') + 'Z';
+    for (let i = 0; i < 7; i++) {
+      const j = (i + 1) % 7;
+      blades += `<path d="M${pt(V(i))}L${pt(V(j))}Q${pt(Q(j))} ${pt(O(j))}A61 61 0 0 0 ${pt(O(i))}Q${pt(Q(i))} ${pt(V(i))}Z" ${S('fill', i % 2 ? 'kl' : 'k1', 0.92)}/>`;
+      edges += `M${pt(V(i))}Q${pt(Q(i))} ${pt(O(i))}`;
+    }
+    const P = [0, 1, 2, 3, 4, 5, 6].map(O);
     for (let i = 0; i < 7; i++) {
       const a0 = -Math.PI / 2 + (i / 7) * Math.PI * 2 + 0.12;
       const a1 = a0 + (Math.PI * 2) / 7 - 0.24;
@@ -137,9 +153,8 @@ function emblem(k: CoverKey, u: string) {
       const [x1, y1] = polar(...C, 58, a1);
       arcs += `M${f1(x0)} ${f1(y0)}A58 58 0 0 1 ${f1(x1)} ${f1(y1)}`;
     }
-    const star = 'M' + [0, 3, 6, 2, 5, 1, 4, 0].map((i) => P[i]!.map(f1).join(' ')).join('L');
     for (const [x, y] of P)
-      nodes += `<circle cx="${f1(x)}" cy="${f1(y)}" r="2.6" ${S('fill', 'kc')}/><circle cx="${f1(x)}" cy="${f1(y)}" r="7" ${S('fill', 'm2', 0.6)} ${fb(2)}/>`;
+      nodes += `<circle cx="${f1(x)}" cy="${f1(y)}" r="7" ${S('fill', 'm2', 0.6)} ${fb(2)}/><circle cx="${f1(x)}" cy="${f1(y)}" r="2.6" ${S('fill', 'kc')}/>`;
     return `
     <rect x="194" y="-40" width="12" height="320" ${S('fill', 'm2', 0.35)} ${fb(3)}/>
     <ellipse cx="200" cy="218" rx="170" ry="16" ${S('fill', 'm2', 0.35)} ${fb(3)}/>
@@ -152,12 +167,17 @@ function emblem(k: CoverKey, u: string) {
     <circle cx="200" cy="120" r="76" fill="none" stroke="${B}" stroke-width="7"/>
     <circle cx="200" cy="120" r="72.2" fill="none" ${S('stroke', 'k0', 0.6)} stroke-width="1"/>
     <path d="M131 92A76 76 0 0 1 228 49" fill="none" ${S('stroke', 'kc', 0.9)} stroke-width="1.6" stroke-linecap="round" ${fb(1)}/>
-    <path d="${star}" fill="none" ${S('stroke', 'kh', 0.55)} stroke-width=".8"/>
+    <circle cx="200" cy="120" r="30" ${S('fill', 'kc', 0.5)} ${fb(3)}/>
+    ${blades}
+    <path d="${edges}" fill="none" ${S('stroke', 'k0', 0.7)} stroke-width="2.4"/>
+    <path d="${edges}" fill="none" stroke="${B}" stroke-width="1.3"/>
+    <path d="${edges}" fill="none" ${S('stroke', 'kc', 0.5)} stroke-width=".5" transform="translate(-.7 -.7)"/>
+    <path d="${open}" fill="none" ${S('stroke', 'kc', 0.85)} stroke-width="1" stroke-linejoin="round"/>
     <path d="${arcs}" fill="none" ${S('stroke', 'm2')} stroke-width="6" opacity=".7" ${fb(2)}/>
     <path d="${arcs}" fill="none" ${S('stroke', 'kh')} stroke-width="1.8" stroke-linecap="round"/>
     ${nodes}
-    <circle cx="200" cy="120" r="14" ${S('fill', 'kc', 0.55)} ${fb(3)}/>
-    <circle cx="200" cy="120" r="4" ${S('fill', 'kc')}/>`;
+    <circle cx="200" cy="120" r="11" ${S('fill', 'kc', 0.6)} ${fb(2)}/>
+    <circle cx="200" cy="120" r="3.4" ${S('fill', 'kc')}/>`;
   }
   if (k === 'ub') {
     // trilho, catenária e farol no ponto de fuga
@@ -214,9 +234,13 @@ function emblem(k: CoverKey, u: string) {
       const [x2, y2] = polar(...C, i % 4 ? 66 : 62, a);
       ring += `<line x1="${f1(x1)}" y1="${f1(y1)}" x2="${f1(x2)}" y2="${f1(y2)}" ${S('stroke', 'kh', 0.5)} stroke-width=".7"/>`;
     }
+    // A neblina é um banco na altura da bússola e se abre embaixo, onde mora o título
+    // (cartões e herói no celular) — senão o texto claro afunda na névoa clara.
     return `
-    <polygon points="140,-30 166,-30 330,260 -40,260" ${S('fill', 'm2', 0.3)} ${fb(3)}/>
-    ${smoke(u, 0.55, 20, 260)}
+    <g mask="url(#${u}nk)">
+    <polygon points="146,-30 166,-30 300,260 40,260" ${S('fill', 'm2', 0.26)} ${fb(3)}/>
+    ${smoke(u, 0.5, 20, 260)}
+    </g>
     <circle cx="200" cy="116" r="70" fill="none" ${S('stroke', 'kh', 0.55)} stroke-width="1.1"/>
     <circle cx="200" cy="116" r="74" fill="none" ${S('stroke', 'kh', 0.22)} stroke-width=".6" stroke-dasharray="2 4"/>
     ${ring}${rays}
@@ -225,8 +249,10 @@ function emblem(k: CoverKey, u: string) {
     <circle cx="200" cy="116" r="28" ${S('fill', 'm2', 0.6)} ${fb(3)}/>
     <circle cx="200" cy="116" r="3" ${S('fill', 'kc')}/>
     <circle cx="153" cy="40" r="5" ${S('fill', 'kc', 0.9)} ${fb(2)}/>
-    <ellipse cx="200" cy="200" rx="320" ry="40" ${S('fill', 'ks', 0.16)} ${fb(4)}/>
-    ${smoke(u, 0.42, 90, 190)}${smoke2(u, 0.14, 60, 200)}`;
+    <g mask="url(#${u}nk)">
+    <ellipse cx="200" cy="142" rx="300" ry="30" ${S('fill', 'ks', 0.13)} ${fb(4)}/>
+    ${smoke(u, 0.4, 70, 170)}${smoke2(u, 0.12, 50, 170)}
+    </g>`;
   }
   if (k === 'cc') {
     // roda de cofre com treliça

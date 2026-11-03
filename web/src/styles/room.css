@@ -307,10 +307,6 @@ body:has(.rbar) .toasts {
   gap: 8px;
 }
 
-.seat-top .pres > i {
-  box-shadow: 0 0 0 2.5px var(--s2);
-}
-
 .seat-top .tag {
   backdrop-filter: none;
 }
