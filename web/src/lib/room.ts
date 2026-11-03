@@ -112,16 +112,20 @@ export function nextToConfirm(seats: Seat[]): string | null {
 }
 
 /**
- * As quatro fases da sala: 1 Juntando gente (falta gente para o mínimo), 2 Esperando prontos,
- * 3 Contagem (cancelável) e 4 Abrindo o jogo (etapas do app). Partida rolando também é a fase 4.
+ * O único modelo de progresso da sala, em quatro fases: 1 Juntando gente (falta gente para o mínimo),
+ * 2 Confirmando (ou Mínimo confirmado: aí quem abriu a sala é quem começa), 3 Contagem (cancelável)
+ * e 4 Abrindo o jogo (o app trabalhando). "Em partida" é o fim da fase 4: só depois do handoff.
  */
-export type RoomPhaseKey = 'gathering' | 'waiting' | 'countdown' | 'opening' | 'playing';
+export type RoomPhaseKey = 'gathering' | 'waiting' | 'quorum' | 'countdown' | 'opening' | 'playing';
 
 export interface PhaseInput {
   players: number;
   minPlayers: number;
+  /** Quantos confirmaram (`readyCount`). */
+  ready: number;
   playing: boolean;
   countdown: boolean;
+  /** O app ainda está abrindo o jogo para você (etapas do handoff). */
   handoff: boolean;
 }
 
@@ -130,7 +134,13 @@ export function roomPhase(o: PhaseInput): { step: 1 | 2 | 3 | 4; key: RoomPhaseK
   if (o.playing) return { step: 4, key: 'playing' };
   if (o.countdown) return { step: 3, key: 'countdown' };
   if (o.players < o.minPlayers) return { step: 1, key: 'gathering' };
-  return { step: 2, key: 'waiting' };
+  return { step: 2, key: o.ready >= o.minPlayers ? 'quorum' : 'waiting' };
+}
+
+/** Em que pé está o handoff de quem está na sala: ainda abrindo, já dentro, ou nenhum. */
+export function handoffState(step: number | null, steps: number): 'opening' | 'inside' | null {
+  if (step === null) return null;
+  return step < steps ? 'opening' : 'inside';
 }
 
 /** Ícone de uma regra do modo, pelo assunto da frase (sorteio, tempo, área, combate, gente). */

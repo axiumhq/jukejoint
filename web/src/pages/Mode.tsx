@@ -7,7 +7,7 @@ import { Icon } from '../components/Icon';
 import { CreateCard, LobbyCard, orderLobbies, type CardEnv } from '../components/LobbyCard';
 import { ModeCover } from '../components/ModeCover';
 import { PageHead } from '../components/PageHead';
-import { Rail, useRail } from '../components/Rail';
+import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
 import { getMode, modes, type Mode, type Region } from '../data/modes';
 import { releases } from '../data/patches';
@@ -44,9 +44,9 @@ function RegionsNow({ list }: { list: Lobby[] }) {
   return (
     <section className="rail-sec" aria-labelledby="mr-regions">
       <div className="rail-h">
-        <h3 className="cap" id="mr-regions">
+        <h2 className="cap" id="mr-regions">
           {t.modes.regionsTitle}
-        </h3>
+        </h2>
       </div>
       {rows.length ? (
         <ul className="mr-regions">
@@ -68,12 +68,14 @@ function RegionsNow({ list }: { list: Lobby[] }) {
 function FriendsHere({ mode, list }: { mode: Mode; list: Lobby[] }) {
   const { user, signIn } = useSession();
   const friends = useFriends();
+  // sem login, este bloco mostra o botão: a barra superior não repete (só vale quando não há conta)
+  useRailSignIn();
   const ids = new Set(list.map((l) => l.id));
   const here = friends.filter((f) => f.lobbyId && ids.has(f.lobbyId));
   return (
     <section className="rail-sec" aria-labelledby="mr-friends">
       <div className="rail-h">
-        <h3 className="cap" id="mr-friends">
+        <h2 className="cap" id="mr-friends">
           {t.modes.friendsTitle}
           {user && (
             <>
@@ -81,7 +83,7 @@ function FriendsHere({ mode, list }: { mode: Mode; list: Lobby[] }) {
               · <b>{here.length}</b>
             </>
           )}
-        </h3>
+        </h2>
       </div>
       {!user ? (
         <div className="mr-out">
@@ -111,9 +113,9 @@ function Leaderboard({ mode }: { mode: Mode }) {
   return (
     <section className="rail-sec" aria-labelledby="mr-rank">
       <div className="rail-h">
-        <h3 className="cap" id="mr-rank">
+        <h2 className="cap" id="mr-rank">
           {t.modes.leaderboard}
-        </h3>
+        </h2>
       </div>
       <table className="mr-rank">
         <thead>
@@ -154,9 +156,9 @@ function RecentChanges({ mode }: { mode: Mode }) {
   return (
     <section className="rail-sec" aria-labelledby="mr-changes">
       <div className="rail-h">
-        <h3 className="cap" id="mr-changes">
+        <h2 className="cap" id="mr-changes">
           {t.modes.changelog}
-        </h3>
+        </h2>
       </div>
       {recent.length ? (
         <ul className="mr-changes">
@@ -422,10 +424,10 @@ export function ModesIndex() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="lbl">{t.modes.facts.withRoom}</dt>
+                    <dt className="lbl">{t.modes.facts.lobbies}</dt>
                     <dd>
                       <span className={c.withRoom ? 'num mx-free' : 'num'}>{formatNumber(c.withRoom)}</span>
-                      <span className="mx-of">{t.modes.ofLobbies(c.lobbies)}</span>
+                      <span className="mx-of">{t.modes.withRoomUnit}</span>
                     </dd>
                   </div>
                   <div>

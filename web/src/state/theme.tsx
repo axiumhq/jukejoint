@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DEFAULT_THEME, isThemeId, THEMES, type ThemeId, type ThemeInfo } from '../lib/theme';
 import { writePref } from '../lib/store';
 
@@ -35,6 +35,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openMenu = useCallback(() => setMenuOpen(true), []);
+
+  // A barra do navegador no celular acompanha o fundo do tema: lê --bg do próprio token, sem cor repetida.
+  useEffect(() => {
+    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim();
+    if (meta && bg) meta.content = bg;
+  }, [theme]);
 
   const value = useMemo(() => ({ theme, themes: THEMES, setTheme, menuOpen, setMenuOpen, openMenu }), [theme, setTheme, menuOpen, openMenu]);
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;

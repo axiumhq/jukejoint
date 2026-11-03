@@ -5,7 +5,7 @@ import { useFriends, useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
 import { live as L } from '../i18n/live';
 import { friendsIn } from '../lib/friends';
-import { roster } from '../lib/room';
+import { handoffState, roster } from '../lib/room';
 import { useSession } from '../state/session';
 import { AvatarStack, Presence } from './Avatar';
 import { LiveDot } from './Common';
@@ -43,10 +43,10 @@ export function Wordmark() {
 
 /**
  * A pílula "Na sala": substitui a contagem ao vivo quando você está numa sala.
- * Estados do antigo PlayDock: entrando (etapa i/n), na sala (vagas) e em partida. Leva para a sala.
+ * Estados: entrando, na sala, abrindo o jogo e em partida, sempre com as vagas. Leva para a sala.
  */
 function RoomPill() {
-  const { lobbies, hereId, joiningId, joiningStep, user } = useSession();
+  const { lobbies, hereId, joiningId, joiningStep, handoffStep, user } = useSession();
   const friends = useFriends();
   const id = joiningId ?? hereId;
   const lobby = id ? lobbies.find((l) => l.id === id) : undefined;
@@ -62,17 +62,22 @@ function RoomPill() {
 
   const joining = joiningId === lobby.id;
   const steps = t.lobbies.joinSteps.length;
+  // "Em partida" só depois que o app terminou de abrir o jogo (o mesmo corte da sala).
+  const opening = !joining && hereId === lobby.id && handoffState(handoffStep, steps) === 'opening';
   const state = joining
     ? t.header.roomPill.joining(lobby.name)
-    : lobby.status === 'em-partida'
-      ? t.header.roomPill.playing(lobby.name)
-      : t.header.roomPill.here(lobby.name);
-  const meta = joining ? t.dock.step(joiningStep + 1, steps) : `${lobby.players}/${lobby.slots}`;
+    : opening
+      ? t.header.roomPill.opening(lobby.name)
+      : lobby.status === 'em-partida'
+        ? t.header.roomPill.playing(lobby.name)
+        : t.header.roomPill.here(lobby.name);
+  // Sem contador de etapas aqui: a etapa do app vai no nome acessível; o progresso numerado é só o da sala.
+  const meta = `${lobby.players}/${lobby.slots}`;
 
   return (
     <Link
       to={`/sala/${encodeURIComponent(lobby.id)}`}
-      className={joining ? 'room-pill is-joining' : 'room-pill'}
+      className={joining || opening ? 'room-pill is-joining' : 'room-pill'}
       aria-label={joining ? `${state}, ${t.lobbies.joinSteps[joiningStep] ?? ''}` : t.header.roomPill.label(state, lobby.players, lobby.slots)}
     >
       <AvatarStack names={faces} size={22} max={3} />
@@ -101,6 +106,8 @@ function LiveCount() {
 function Account() {
   const { user, signIn, signOut, live, devLogin, signInDev } = useSession();
   const friends = useFriends();
+  const { signInShown } = useRail();
+  const sheet = useMediaQuery('(max-width: 960px)');
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -125,6 +132,8 @@ function Account() {
   }, [open]);
 
   if (!user) {
+    // O trilho já mostra o convite de login (desktop): a barra não repete o botão.
+    if (signInShown && !sheet) return null;
     return (
       <>
         {devLogin && (
@@ -132,11 +141,12 @@ function Account() {
             {L.devSignIn}
           </button>
         )}
-        <button type="button" className="btn btn-p btn-steam" onClick={signIn} aria-label={t.account.signIn}>
+        {/* Secundário e "Login", nunca "Entrar": o acento e o verbo "Entrar" são do lobby. */}
+        <button type="button" className="btn btn-s btn-steam" onClick={signIn} aria-label={t.account.signIn}>
           <Icon name="user" />
           <span className="t">{t.account.signIn}</span>
           <span className="t-short" aria-hidden="true">
-            {t.friends.join}
+            {t.account.signInShort}
           </span>
         </button>
       </>
@@ -221,13 +231,22 @@ export function TopBar({ inert }: { inert?: boolean }) {
 
 /** Jogar, Modos, Hoje e Instalar: na barra (largo) ou na faixa sob ela (tablet e celular). */
 function NavLinks({ className, inert }: { className: string; inert?: boolean }) {
+  const { pathname } = useLocation();
+  // "Jogar" cobre o caminho todo de jogar: a home, o /jogar e a sala.
+  const play = pathname === '/' || pathname.startsWith('/jogar') || pathname.startsWith('/sala/');
   return (
     <nav className={className} aria-label={t.a11y.mainNav} inert={inert}>
-      {NAV.map((n) => (
-        <NavLink key={n.to} to={n.to} end={n.end}>
-          {n.label}
-        </NavLink>
-      ))}
+      {NAV.map((n) =>
+        n.to === '/' ? (
+          <Link key={n.to} to={n.to} aria-current={play ? 'page' : undefined}>
+            {n.label}
+          </Link>
+        ) : (
+          <NavLink key={n.to} to={n.to} end={n.end}>
+            {n.label}
+          </NavLink>
+        ),
+      )}
     </nav>
   );
 }
@@ -305,9 +324,12 @@ function Frame() {
     if (el) el.scrollIntoView({ block: 'start' });
   }, [pathname, hash]);
 
+  // /instalar tem o aviso de afiliação mais completo; o rodapé usa esse lá, para não repetir.
+  const about = pathname.startsWith('/instalar') ? t.install.affiliation : t.footer.about;
+
   return (
     <>
-      <a href="#main" className="skip-link">
+      <a href="#main" className="skip-link" inert={modal}>
         {t.a11y.skip}
       </a>
       <CoverDefs />
@@ -318,10 +340,12 @@ function Frame() {
           <LineArt />
           <LineArt className="b" />
           <Outlet />
-          <p className="fineprint">
-            {t.footer.about} {live ? null : t.footer.prototype}
-          </p>
         </main>
+        <footer className="foot" inert={modal}>
+          <p className="fineprint">
+            {about} {live ? null : t.footer.prototype}
+          </p>
+        </footer>
         <RailAside sheet={sheet} />
       </div>
       <JoinDialog />

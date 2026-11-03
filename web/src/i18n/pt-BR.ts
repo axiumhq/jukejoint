@@ -17,6 +17,7 @@ export const ptBR = {
     modes: `Modos | ${BRAND_NAME}`,
     install: `Instalar o app | ${BRAND_NAME}`,
     news: `Novidades | ${BRAND_NAME}`,
+    quickPlay: `Jogar agora | ${BRAND_NAME}`,
     notFound: `Página não encontrada | ${BRAND_NAME}`,
     mode: (name: string) => `${name} | ${BRAND_NAME}`,
   },
@@ -37,7 +38,9 @@ export const ptBR = {
     install: 'Instalar',
   },
   account: {
-    signIn: 'Entrar com a Steam',
+    /** Login, nunca "Entrar": "Entrar" é entrar num lobby. */
+    signIn: 'Login com a Steam',
+    signInShort: 'Login',
     signOut: 'Sair',
     menu: (name: string) => `Conta de ${name}`,
     friendsOnline: (n: number) => (n === 1 ? '1 amigo online' : `${n} amigos online`),
@@ -65,6 +68,7 @@ export const ptBR = {
     roomPill: {
       here: (name: string) => `Na sala · ${name}`,
       joining: (name: string) => `Entrando · ${name}`,
+      opening: (name: string) => `Abrindo o jogo · ${name}`,
       playing: (name: string) => `Em partida · ${name}`,
       label: (state: string, n: number, max: number) => `${state}, ${n} de ${max}. Abrir a sala`,
     },
@@ -153,7 +157,7 @@ export const ptBR = {
     favEmptyTitle: 'Nenhum favorito ainda',
     favEmptyBody: 'Toque na estrela de um lobby para guardar aqui. Fica salvo neste navegador.',
     friendsOutTitle: 'Seus amigos aparecem aqui',
-    friendsOutBody: 'Entre com a Steam para ver em que lobby a sua lista está.',
+    friendsOutBody: 'Faça login com a Steam para ver em que lobby a sua lista está.',
     friendsEmptyTitle: 'Ninguém da sua lista em lobby agora',
     friendsEmptyBody: 'Chame alguém pelo trilho ao lado ou abra um lobby e mande o convite.',
     filteredBody: 'Tire um filtro ou abra o seu: quem estiver procurando vê na hora.',
@@ -198,17 +202,17 @@ export const ptBR = {
     mobileSub: (inLobbies: number, invites: number) =>
       `${inLobbies} em lobbies · ${invites === 0 ? 'sem convites' : invites === 1 ? '1 convite' : `${invites} convites`}`,
     mobileOutTitle: 'Amigos',
-    mobileOutSub: 'Entre com a Steam para ver quem está online',
+    mobileOutSub: 'Faça login com a Steam para ver quem está online',
     signInTitle: 'Jogue com a sua lista',
-    signInBody: 'Entre com a Steam para ver onde seus amigos estão e entrar junto com um toque.',
+    signInBody: 'Faça login com a Steam para ver onde seus amigos estão e entrar junto com um toque.',
     signInNote: 'Protótipo: login simulado, nada é enviado.',
   },
   /** Trilho de amigos: só quem está online, cada um com o próximo passo. */
   friends: {
     title: 'Amigos',
     online: (n: number) => (n === 1 ? '1 online' : `${n} online`),
-    signedOut: 'Entre com a Steam para ver em que lobby seus amigos estão.',
-    signIn: 'Entrar com a Steam',
+    signedOut: 'Faça login com a Steam para ver em que lobby seus amigos estão.',
+    signIn: 'Login com a Steam',
     none: 'Nenhum amigo online agora.',
     inLobby: (lobby: string) => `em ${lobby}`,
     hosting: (lobby: string) => `abriu ${lobby}`,
@@ -231,7 +235,6 @@ export const ptBR = {
     here: (lobby: string) => `Na sala ${lobby}`,
     playing: (lobby: string) => `Em partida: ${lobby}`,
     open: 'Abrir a sala',
-    step: (i: number, n: number) => `${i}/${n}`,
   },
   /** A sala do lobby (/sala/:id), v8: cabeçalho com capa, vagas, barra PRONTO fixa e trilho da sala. */
   room: {
@@ -240,7 +243,8 @@ export const ptBR = {
     railTitle: 'Sala',
     opened: 'abriu a sala',
     playersWord: 'jogadores',
-    startsWith: 'começa com',
+    /** O mínimo de confirmados. Não é "começa com": quem começa é quem abriu a sala. */
+    minimum: 'mínimo de',
     title: ['Na', 'sala'] as const,
     seatsMeta: (taken: number, slots: number) => {
       const free = slots - taken;
@@ -258,32 +262,40 @@ export const ptBR = {
     seatN: (n: number) => `vaga ${n}`,
     inviteSeat: (n: number) => `Convidar alguém para a vaga ${n}`,
     free: 'Vaga livre',
-    /** Fases da sala (lib/room.ts `roomPhase`). */
+    /**
+     * O progresso da sala (lib/room.ts `roomPhase`): quatro fases, mostradas uma vez, no cabeçalho.
+     * "Em partida" é o fim da fase 4 e só aparece depois que o app terminou de abrir o jogo.
+     */
     phase: 'Fase',
     phaseOf: (i: number) => `${i} de 4`,
     phases: {
       gathering: 'Juntando gente',
-      waiting: 'Esperando confirmações',
+      waiting: 'Confirmando',
+      quorum: 'Mínimo confirmado',
       countdown: 'Contagem',
       opening: 'Abrindo o jogo',
       playing: 'Em partida',
     },
     detail: {
       missingPlayers: (n: number) => (n === 1 ? 'falta 1 jogador' : `faltam ${n} jogadores`),
-      missingReady: (n: number) => (n === 1 ? 'falta 1' : `faltam ${n}`),
-      you: 'falta você',
+      missingReady: (n: number) => (n === 1 ? 'falta 1 confirmar' : `faltam ${n} confirmarem`),
       host: 'você pode iniciar',
-      any: 'pode começar',
+      any: 'quem abriu começa',
       startsIn: (s: number) => `começa em ${s} s`,
-      keepOpen: 'não feche o app',
-      inside: 'dentro',
+      inside: 'você está dentro',
     },
     /** Barra PRONTO. "confirmaram" no lugar de "prontos": neutro em gênero. */
     readyOf: (total: number) => `de ${total} confirmaram`,
-    readyLive: (n: number, total: number, k: number) => `${n} de ${total} confirmaram. Começa com ${k}.`,
+    readyLive: (n: number, total: number, k: number) => `${n} de ${total} confirmaram. Mínimo de ${k}.`,
     ticksLabel: (n: number, k: number) => `${n} confirmados, mínimo de ${k}`,
-    hint: (k: number) => `Com ${k} confirmados, o app abre o Deadlock e põe você na partida.`,
-    hintWaiting: (n: number) => (n === 1 ? 'Você confirmou. Falta 1 para a contagem começar.' : `Você confirmou. Faltam ${n} para a contagem começar.`),
+    hint: (k: number) => `Marque PRONTO. Com ${k} confirmados, quem abriu a sala pode começar a partida.`,
+    hintQuorum: 'O mínimo já confirmou. Marque PRONTO para jogar esta rodada.',
+    hintWaiting: (n: number) =>
+      n <= 0
+        ? 'Você confirmou. Agora é com quem abriu a sala: a partida começa quando der o início.'
+        : n === 1
+          ? 'Você confirmou. Falta 1 confirmar para quem abriu poder começar.'
+          : `Você confirmou. Faltam ${n} confirmarem para quem abriu poder começar.`,
     hostWaiting: (n: number) => (n === 1 ? 'Falta 1 confirmar para você poder iniciar.' : `Faltam ${n} confirmarem para você poder iniciar.`),
     hostGathering: (n: number) => (n === 1 ? 'Falta 1 jogador para o mínimo. Mande o convite.' : `Faltam ${n} jogadores para o mínimo. Mande o convite.`),
     hostReady: 'Já dá para começar. O app abre o Deadlock de todo mundo.',
@@ -310,10 +322,8 @@ export const ptBR = {
     leaveLabel: (name: string) => `Sair de ${name}`,
     close: 'Fechar',
     closeLabel: (name: string) => `Fechar o lobby ${name}`,
-    entering: 'Entrando no jogo',
-    inside: 'Dentro do lobby',
-    stepsLabel: 'Etapas para entrar no jogo',
-    stepLive: (step: string, i: number, n: number) => `Etapa ${i} de ${n}: ${step}.`,
+    /** O app trabalhando (entrada e handoff): só o que ele faz agora, sem contador próprio. */
+    keepOpen: 'Deixe o app aberto.',
     insideLive: 'Você está dentro do lobby. Bom jogo.',
     stuck: 'Não abriu?',
     help: 'Ver a ajuda',
@@ -326,7 +336,7 @@ export const ptBR = {
     inviteLink: 'Link do convite',
     copy: 'Copiar',
     inviteNone: 'Todo mundo da sua lista que está online já está aqui.',
-    inviteSignIn: 'Entre com a Steam para chamar a sua lista.',
+    inviteSignIn: 'Faça login com a Steam para chamar a sua lista.',
     inviteOutside: 'Entre na sala para chamar a sua lista. O link já dá para mandar.',
     activity: 'Na sala agora',
     act: {
@@ -355,7 +365,7 @@ export const ptBR = {
     region: 'Região',
     slotsOnly: 'Só com vaga',
     friendsOnly: 'Só amigos',
-    friendsSignIn: 'entre com a Steam',
+    friendsSignIn: 'faça login com a Steam',
     clear: 'Limpar filtros',
     resultsUnit: (n: number) => (n === 1 ? 'lobby' : 'lobbies'),
     create: 'Criar lobby',
@@ -461,7 +471,6 @@ export const ptBR = {
   },
   /** /jogar: o cartão de busca do Jogar agora (pages/QuickPlay.tsx). */
   quickPlay: {
-    title: 'Jogar agora',
     words: ['Jogar', 'agora'] as const,
     searching: 'Procurando o melhor lobby…',
     steps: ['Lendo os lobbies abertos', 'Pesando ping, vagas e a sua lista', 'Lobby escolhido'],
@@ -486,7 +495,7 @@ export const ptBR = {
     messagePlaceholder: 'Ex.: jogo de suporte, tenho call',
     send: 'Bater na porta',
     cancel: 'Agora não',
-    signIn: 'Para bater na porta, entre com a Steam: quem abriu o lobby precisa saber quem é você.',
+    signIn: 'Para bater na porta, faça login com a Steam: quem abriu o lobby precisa saber quem é você.',
     sentToast: (host: string) => `Pedido enviado. ${host} vê seu nome e decide.`,
     acceptedToast: (host: string, name: string) => `${host} abriu a porta de "${name}". Já dá para entrar.`,
   },
@@ -526,7 +535,7 @@ export const ptBR = {
   },
   host: {
     title: 'Criar lobby',
-    needSignIn: 'Para criar um lobby, entre com a Steam. Assim quem entra sabe quem abriu.',
+    needSignIn: 'Para criar um lobby, faça login com a Steam. Assim quem entra sabe quem abriu.',
     name: 'Nome do lobby',
     namePlaceholder: (user: string) => `Lobby de ${user}`,
     nameHint: 'Ex.: Círculo da madrugada, Neblina para iniciantes, x1 sem choro',
@@ -559,16 +568,16 @@ export const ptBR = {
       format: 'Formato',
       duration: 'Duração',
       bestPing: 'Menor ping',
-      withRoom: 'Com vaga',
       playing: 'Jogando',
       updated: 'Atualizado em',
     },
-    ofLobbies: (n: number) => `de ${n}`,
     durationValue: (min: number) => (min === 0 ? 'Sem relógio' : `${min} min`),
     sizeValue: (min: number, max: number) => `${min} a ${max} jogadores`,
     rangeShort: (min: number, max: number) => `${min} a ${max}`,
     lobbiesCount: (n: number) => (n === 1 ? '1 lobby' : `${n} lobbies`),
     withRoom: (n: number) => (n === 1 ? '1 com vaga' : `${n} com vaga`),
+    /** /modos: "5 com vaga", o número antes (a dica "Lobbies" fica no rótulo). */
+    withRoomUnit: 'com vaga',
     noPing: 'sem lobby',
     seeLobbies: 'Ver lobbies',
     seeLobbiesLabel: (name: string) => `Ver lobbies de ${name}`,
@@ -599,7 +608,7 @@ export const ptBR = {
     regionsEmpty: 'Nenhum lobby aberto neste modo agora.',
     friendsTitle: 'Da sua lista neste modo',
     friendsEmpty: (name: string) => `Ninguém da sua lista está em ${name} agora.`,
-    friendsOut: 'Entre com a Steam para ver quem da sua lista está jogando este modo.',
+    friendsOut: 'Faça login com a Steam para ver quem da sua lista está jogando este modo.',
     notFoundTitle: 'Esse modo saiu de cartaz',
     notFoundBody: 'Ele pode ter sido renomeado ou retirado. Os modos em cartaz estão aqui.',
     seeAll: 'Ver todos os modos',
@@ -763,13 +772,14 @@ export const ptBR = {
   notFound: {
     title: 'Essa rua não está no mapa',
     body: 'O endereço pode estar errado ou a página mudou de lugar.',
-    back: 'Voltar ao início',
     lobbies: 'Ver lobbies abertos',
     code: 'Erro 404',
     elsewhere: 'Ou vá para',
   },
   common: {
     close: 'Fechar',
+    /** Espera de rota (App.tsx `RouteWait`). */
+    opening: 'Abrindo…',
     prototype: 'protótipo',
   },
 };

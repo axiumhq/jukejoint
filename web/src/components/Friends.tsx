@@ -10,7 +10,7 @@ import { useSession } from '../state/session';
 import { useTheme } from '../state/theme';
 import { Presence } from './Avatar';
 import { Icon } from './Icon';
-import { useRail } from './Rail';
+import { useRail, useRailSignIn } from './Rail';
 
 /**
  * O trilho social da home (e o padrão de qualquer tela que não traga o seu):
@@ -80,13 +80,16 @@ export function FriendRow({ friend, children }: { friend: FriendPresence; childr
   );
 }
 
+/** O convite de login do trilho. Enquanto ele aparece, a barra superior não repete o botão (Shell `Account`). */
 function SignInPrompt() {
   const { signIn, live, devLogin, signInDev } = useSession();
+  useRailSignIn();
   return (
     <div className="card rail-signin">
       <b>{t.social.signInTitle}</b>
       <p>{t.social.signInBody}</p>
-      <button type="button" className="btn btn-p" onClick={signIn}>
+      {/* secundário: o acento cheio fica para o "Jogar agora" */}
+      <button type="button" className="btn btn-s" onClick={signIn}>
         <Icon name="user" />
         {t.account.signIn}
       </button>
@@ -109,9 +112,9 @@ function Party() {
   return (
     <section className="rail-sec" aria-labelledby="rail-party">
       <div className="rail-h">
-        <h3 className="cap" id="rail-party">
+        <h2 className="cap" id="rail-party">
           {t.social.party} · <b>1/5</b>
-        </h3>
+        </h2>
         <button
           type="button"
           className="link"
@@ -152,9 +155,9 @@ function Invite() {
   return (
     <section className="rail-sec" aria-labelledby="rail-invite">
       <div className="rail-h">
-        <h3 className="cap" id="rail-invite">
+        <h2 className="cap" id="rail-invite">
           {t.social.invite} · <b>{t.social.now}</b>
-        </h3>
+        </h2>
       </div>
       <div className="card invite">
         <div className="invite-top">
@@ -201,9 +204,9 @@ function Online() {
   return (
     <section className="rail-sec" aria-labelledby="rail-online">
       <div className="rail-h">
-        <h3 className="cap" id="rail-online">
+        <h2 className="cap" id="rail-online">
           {t.social.online} · <b>{friends.length}</b>
-        </h3>
+        </h2>
         <span className="lbl">{t.social.inLobbies(inLobbies)}</span>
       </div>
       {friends.length === 0 ? (
@@ -259,9 +262,9 @@ export function SocialRail() {
     return (
       <section className="rail-sec" aria-labelledby="rail-friends-out">
         <div className="rail-h">
-          <h3 className="cap" id="rail-friends-out">
+          <h2 className="cap" id="rail-friends-out">
             {t.friends.title}
-          </h3>
+          </h2>
           <button
             type="button"
             className="link"
@@ -283,54 +286,5 @@ export function SocialRail() {
       <Invite />
       <Online />
     </>
-  );
-}
-
-/**
- * Compatibilidade: a sala (fase 2) usa `FriendsBlock`. `invite` lista quem ainda não está
- * com você, com Convidar; `join` é o bloco de amigos online do trilho.
- */
-export function FriendsBlock({ mode = 'join', exclude }: { mode?: 'join' | 'invite'; exclude?: string }) {
-  const { user, pushToast, live, callFriend } = useSession();
-  const friends = useFriends();
-  const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
-  if (mode === 'join') return user ? <Online /> : <SignInPrompt />;
-  const list = friends.filter((f) => f.lobbyId !== exclude);
-  return (
-    <section className="rail-sec" aria-labelledby="fr-invite">
-      <div className="rail-h">
-        <h3 className="cap" id="fr-invite">
-          {t.friends.inviteTitle}
-        </h3>
-      </div>
-      {!user ? (
-        <SignInPrompt />
-      ) : list.length === 0 ? (
-        <p className="rail-empty">{t.friends.none}</p>
-      ) : (
-        <ul>
-          {list.map((f) => (
-            <FriendRow key={f.name} friend={f}>
-              <button
-                type="button"
-                className="btn btn-g btn-sm"
-                disabled={invited.has(f.name)}
-                aria-label={t.friends.inviteLabel(f.name)}
-                onClick={() => {
-                  if (live) {
-                    void callFriend(f).then((ok) => ok && setInvited((s) => new Set(s).add(f.name)));
-                    return;
-                  }
-                  setInvited((s) => new Set(s).add(f.name));
-                  pushToast(t.friends.invitedToast(f.name));
-                }}
-              >
-                {invited.has(f.name) ? t.friends.invited : t.friends.invite}
-              </button>
-            </FriendRow>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

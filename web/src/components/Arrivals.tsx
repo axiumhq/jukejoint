@@ -79,11 +79,14 @@ export function Arrivals({ now }: { now: number }) {
         {items.map((a) => (
           <li key={a.key} className={fresh.has(a.key) ? 'fe is-new' : 'fe'}>
             <Avatar name={a.name} size={32} ring={!!user && a.friend} />
+            {/* Quem entrou numa linha; o nome do lobby ganha a linha de baixo inteira (até duas) e o title. */}
             <div className="fe-t">
-              <div className="fe-n">{a.name}</div>
-              <div className="fe-l">
-                {t.home.joined} <Link to={`/sala/${encodeURIComponent(a.lobby.id)}`}>{a.lobby.name}</Link>
+              <div className="fe-n">
+                <b>{a.name}</b> {t.home.joined}
               </div>
+              <Link to={`/sala/${encodeURIComponent(a.lobby.id)}`} className="fe-l" title={a.lobby.name}>
+                {a.lobby.name}
+              </Link>
             </div>
             <span className="num">{t.home.ago(Math.max(0, Math.round((now - a.at) / 1000)))}</span>
           </li>

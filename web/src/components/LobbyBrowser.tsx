@@ -72,12 +72,13 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
   const filtered = useMemo(() => filterLobbies(pool, f, signedIn, lobbyCtx, now), [pool, f, signedIn, lobbyCtx, now]);
   // Amigos sem login: não há lista para filtrar, então a aba mostra o convite para entrar.
   const results = tab === 'fav' ? filtered.filter((l) => favs.has(l.id)) : tab === 'friends' && !signedIn ? [] : filtered;
-  const ordered = orderLobbies(results, lobbyCtx, featured);
-  const visible = ordered.slice(0, shown);
-  const rest = ordered.length - visible.length;
-
   const anyChip = !!f.mode || f.regions.length > 0 || f.slotsOnly || f.beginners || f.playing || f.lowPing || f.q !== '';
   const narrowed = anyChip || tab !== 'all';
+  // O recomendado já está no topo da home: sem filtro, a lista não o repete como primeiro cartão.
+  // Com filtro ou aba, ele volta para o lugar dele (sem destaque: o acento é do "Jogar agora" lá em cima).
+  const ordered = narrowed ? orderLobbies(results, lobbyCtx) : orderLobbies(results, lobbyCtx).filter((l) => l.id !== featured?.id);
+  const visible = ordered.slice(0, shown);
+  const rest = ordered.length - visible.length;
   const modeName = getMode(f.mode)?.name;
   const counts = {
     all: pool.length,
@@ -130,7 +131,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
           <b>{t.browse.friendsOutTitle}</b>
           <p>{t.browse.friendsOutBody}</p>
           <div>
-            <button type="button" className="btn btn-p" onClick={signIn}>
+            <button type="button" className="btn btn-s" onClick={signIn}>
               <Icon name="user" />
               {t.account.signIn}
             </button>
@@ -265,7 +266,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
       </div>
 
       <div id="lobby-grid" className={view === 'list' ? 'lgrid list' : 'lgrid'} role="tabpanel" aria-labelledby={`lb-tab-${TABS[activeTab]!.id}`}>
-        {empty ?? visible.map((l) => <LobbyCard key={l.id} lobby={l} env={env} featured={l.id === featured?.id} fav={favs.has(l.id)} onFav={toggle} />)}
+        {empty ?? visible.map((l) => <LobbyCard key={l.id} lobby={l} env={env} fav={favs.has(l.id)} onFav={toggle} />)}
         {!empty && rest <= 0 && <CreateCard onCreate={create} />}
       </div>
       {rest > 0 && (

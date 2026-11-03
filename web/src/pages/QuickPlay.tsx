@@ -22,7 +22,7 @@ const READ_MS = 450;
 const PICK_MS = 1100;
 
 export function QuickPlay() {
-  useDocumentTitle(t.quickPlay.title);
+  useDocumentTitle(t.meta.quickPlay);
   const s = useSession();
   const { lobbies, requestJoin, openHost, joiningId } = s;
   const [params] = useSearchParams();

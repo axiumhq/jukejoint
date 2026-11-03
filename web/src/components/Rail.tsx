@@ -26,6 +26,9 @@ interface RailValue {
   closeSheet: () => void;
   /** Elemento que abriu a folha (para devolver o foco). */
   opener: RefObject<HTMLElement | null>;
+  /** O trilho mostra o convite de login (a barra superior então não repete o botão). */
+  signInShown: boolean;
+  claimSignIn: () => () => void;
 }
 
 const RailContext = createContext<RailValue | null>(null);
@@ -50,9 +53,27 @@ export function RailProvider({ children }: { children: ReactNode }) {
 
   const closeSheet = useCallback(() => setSheetOpen(false), []);
 
+  const [signIns, setSignIns] = useState(0);
+  const claimSignIn = useCallback(() => {
+    setSignIns((n) => n + 1);
+    return () => setSignIns((n) => n - 1);
+  }, []);
+
   const value = useMemo<RailValue>(
-    () => ({ target, setTarget, slots: claims.length, claim, title: claims.at(-1)?.title ?? null, sheetOpen, openSheet, closeSheet, opener }),
-    [target, claims, claim, sheetOpen, openSheet, closeSheet],
+    () => ({
+      target,
+      setTarget,
+      slots: claims.length,
+      claim,
+      title: claims.at(-1)?.title ?? null,
+      sheetOpen,
+      openSheet,
+      closeSheet,
+      opener,
+      signInShown: signIns > 0,
+      claimSignIn,
+    }),
+    [target, claims, claim, sheetOpen, openSheet, closeSheet, signIns, claimSignIn],
   );
   return <RailContext.Provider value={value}>{children}</RailContext.Provider>;
 }
@@ -61,6 +82,15 @@ export function useRail() {
   const ctx = useContext(RailContext);
   if (!ctx) throw new Error('useRail precisa estar dentro de <RailProvider>');
   return ctx;
+}
+
+/**
+ * Chame em quem mostra um botão de login dentro do trilho: enquanto estiver montado, a barra superior
+ * esconde o dela no desktop (no celular o trilho é folha fechada e a barra volta a mostrar).
+ */
+export function useRailSignIn() {
+  const { claimSignIn } = useRail();
+  useLayoutEffect(() => claimSignIn(), [claimSignIn]);
 }
 
 /** Põe `children` no trilho da casca enquanto a tela estiver montada. */

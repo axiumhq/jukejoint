@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { Layout } from './components/Shell';
+import { t } from './i18n';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
@@ -23,7 +24,7 @@ function RouteWait() {
   }, []);
   return (
     <div className="page route-wait" aria-busy="true">
-      <div className="wrap">{show && <p className="fine">Abrindo…</p>}</div>
+      <div className="wrap">{show && <p className="fine">{t.common.opening}</p>}</div>
     </div>
   );
 }

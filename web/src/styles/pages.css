@@ -81,6 +81,9 @@
 }
 
 .dc-link {
+  display: inline-block;
+  padding-block: 2px;
+  margin-block: -2px;
   font-size: 0.875rem;
   font-weight: 600;
   border-radius: var(--r-xs);
@@ -1186,13 +1189,6 @@
   color: var(--tx-2);
 }
 
-.ins-aff {
-  margin-top: 34px;
-  max-width: 68ch;
-  font-size: 0.78125rem;
-  color: var(--tx-3);
-}
-
 /* índice no trilho */
 .toc {
   display: grid;
@@ -1467,6 +1463,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 24px;
   color: var(--tx-2);
   border-radius: var(--r-xs);
   transition: color var(--t-fast);
