@@ -354,6 +354,11 @@ func TestWebSocketRoomFlow(t *testing.T) {
 			break
 		}
 	}
+	// handoff_progress decodes its step; during the countdown there is no match yet.
+	b.send(map[string]any{"type": "handoff_progress", "req": 4, "step": 0})
+	if m := b.until("error"); m["code"] != "not_in_match" || m["req"].(float64) != 4 {
+		t.Fatalf("handoff_progress before the match: %v", m)
+	}
 	// Unknown fields are refused, not ignored.
 	b.send(map[string]any{"type": "ready", "ready": false, "admin": true})
 	if m := b.until("error"); m["code"] != "bad_request" {
