@@ -8,6 +8,7 @@
 //! - antes de qualquer coisa que rode o motor, o binário precisa ter a versão e o hash fixados.
 
 use std::{
+    collections::VecDeque,
     fs::{self, OpenOptions},
     io::{BufRead, BufReader, Read},
     path::{Path, PathBuf},
@@ -21,9 +22,13 @@ use std::{
 };
 
 use super::{
-    args, parse, system, BinaryCheck, CheckReport, CliEvent, DaemonInfo, DaemonState, EngineAdapter, EngineError,
-    EnvEntry, EventSink, GameCheck, HostsCheck, JoinCode, SessionEvent, SessionInfo, SessionKind, StopReport,
-    BLOCKED_HOST, GAME_EXE, MODLOCK_SHA256, MODLOCK_VERSION,
+    args,
+    catalog::{self, Catalog},
+    parse,
+    progress::{Progress, STEP_INSIDE},
+    system, BinaryCheck, CheckReport, CliEvent, DaemonInfo, DaemonState, EngineAdapter, EngineError, EnvEntry, EventSink,
+    GameCheck, HostsCheck, JoinCode, ModeSlug, SessionEvent, SessionInfo, SessionKind, StopReport, BLOCKED_HOST, GAME_EXE,
+    MODLOCK_SHA256, MODLOCK_VERSION,
 };
 
 /// Variáveis de ambiente que o app lê.
@@ -37,6 +42,8 @@ const BESIDE_APP: &[&str] = &["modlock.exe", "modlock-x86_64-pc-windows-msvc.exe
 const DAEMON_LOG: &str = "daemon-app.log";
 /// Limite prático do caminho de um socket AF_UNIX no Windows.
 const SOCKET_PATH_MAX: usize = 100;
+/// Quantas linhas da sessão vão no `detail` de um erro de fim de sessão.
+const RECENT_LINES: usize = 6;
 
 #[cfg(windows)]
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
@@ -56,6 +63,8 @@ pub struct EngineConfig {
     pub exe_dir: Option<PathBuf>,
     /// `%LOCALAPPDATA%\modlock`: downloads do Modlock (servidor do jogo).
     pub download_dir: Option<PathBuf>,
+    /// Raiz das pastas de projeto dos modos (`ENGINE_PROJECTS_DIR`; ver `catalog.rs`).
+    pub modes_root: Option<(PathBuf, &'static str)>,
 }
 
 impl EngineConfig {
@@ -70,7 +79,12 @@ impl EngineConfig {
                 .join(format!("modlock-{MODLOCK_VERSION}"))
                 .join("modlock.exe")
         });
-        Self::resolve(&|k| std::env::var(k).ok(), exe_dir.as_deref(), dev_tools)
+        let env = |k: &str| std::env::var(k).ok();
+        let mut cfg = Self::resolve(&env, exe_dir.as_deref(), dev_tools);
+        // Só em build de desenvolvimento: sem ENGINE_PROJECTS_DIR, os projetos vêm de spike/mods.
+        let dev_mods = cfg!(debug_assertions).then(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("spike").join("mods"));
+        cfg.modes_root = Catalog::resolve_root(&env, exe_dir.as_deref(), dev_mods);
+        cfg
     }
 
     /// Mesma coisa que `from_env`, com o ambiente injetado (para testes).
@@ -93,7 +107,8 @@ impl EngineConfig {
             .or_else(|| set("APPDATA").map(PathBuf::from))
             .unwrap_or_else(std::env::temp_dir);
         let download_dir = set("LOCALAPPDATA").map(|d| PathBuf::from(d).join("modlock"));
-        Self { bin, origin, state_root, state_override, exe_dir: exe_dir.map(Path::to_path_buf), download_dir }
+        let modes_root = Catalog::resolve_root(env, exe_dir, None);
+        Self { bin, origin, state_root, state_override, exe_dir: exe_dir.map(Path::to_path_buf), download_dir, modes_root }
     }
 
     /// `<APPDATA>\modlock\state`, onde ficam `daemon.lock` e `modlock.sock`.
@@ -118,6 +133,66 @@ struct Shared {
     join_code: Option<String>,
     exit_code: Option<i32>,
     ended: bool,
+    progress: Progress,
+    /// Últimas linhas de texto da sessão (notas, stderr), para o `detail` de um erro.
+    recent: VecDeque<String>,
+    /// Foi o app que pediu o fim (`engine_stop`, fechar o app): o fim não é erro.
+    stopping: bool,
+}
+
+impl Shared {
+    fn remember(&mut self, ev: &CliEvent) {
+        let line = match ev {
+            CliEvent::Note { text } => text.clone(),
+            CliEvent::Text { line } => line.clone(),
+            _ => return,
+        };
+        if self.recent.len() >= RECENT_LINES {
+            self.recent.pop_front();
+        }
+        self.recent.push_back(line.chars().take(240).collect());
+    }
+
+    fn recent_detail(&self) -> String {
+        if self.recent.is_empty() {
+            return "Sem saída da sessão.".into();
+        }
+        format!("Últimas linhas: {}", self.recent.iter().cloned().collect::<Vec<_>>().join(" | "))
+    }
+}
+
+/// O erro de um evento no meio da sessão: hoje só o modo que falhou no servidor do jogo.
+fn event_error(ev: &CliEvent) -> Option<EngineError> {
+    match ev {
+        CliEvent::Host { event, data } if event == "failed" => Some(
+            EngineError::new("modo_falhou", "O modo parou com um erro no servidor da partida. Encerre e tente de novo.")
+                .with_detail(format!("host.failed: {}", data.to_string().chars().take(400).collect::<String>())),
+        ),
+        _ => None,
+    }
+}
+
+/// O erro do fim da sessão, quando o fim não foi pedido pelo app: saiu com código diferente de 0
+/// ou, entrando, terminou antes de chegar dentro da partida.
+fn end_error(kind: SessionKind, code: Option<i32>, step: Option<u8>, stopping: bool, detail: String) -> Option<EngineError> {
+    if stopping {
+        return None;
+    }
+    let failed = matches!(code, Some(c) if c != 0);
+    let early = kind == SessionKind::Join && step.is_none_or(|s| s < STEP_INSIDE);
+    if !failed && !early {
+        return None;
+    }
+    let code_txt = code.map_or("desconhecido".to_string(), |c| c.to_string());
+    let (id, message) = match kind {
+        SessionKind::Join => (
+            "entrada_falhou",
+            "Não deu para entrar na partida. Confira se o Deadlock está fechado e tente de novo.",
+        ),
+        SessionKind::Host => ("partida_parou", "A partida no seu PC parou. A sala volta a ficar aberta."),
+    };
+    let what = if kind == SessionKind::Join { "join" } else { "host" };
+    Some(EngineError::new(id, message).with_detail(format!("modlock {what} terminou (código {code_txt}). {detail}")))
 }
 
 impl Session {
@@ -132,6 +207,7 @@ impl Session {
             join_code: sh.join_code.clone(),
             running: !sh.ended,
             exit_code: sh.exit_code,
+            step: sh.progress.step(),
         }
     }
 }
@@ -145,6 +221,7 @@ struct HashCache {
 
 pub struct ModlockCli {
     cfg: EngineConfig,
+    catalog: Catalog,
     sink: EventSink,
     session: Mutex<Option<Session>>,
     next_id: AtomicU64,
@@ -163,6 +240,7 @@ struct Captured {
 impl ModlockCli {
     pub fn new(cfg: EngineConfig, sink: EventSink) -> Self {
         Self {
+            catalog: Catalog::new(cfg.modes_root.clone()),
             cfg,
             sink,
             session: Mutex::new(None),
@@ -550,10 +628,12 @@ impl ModlockCli {
 
         if let Some(err) = stderr {
             let sink = self.sink.clone();
+            let shared = shared.clone();
             thread::spawn(move || {
                 for_each_line(err, |line| {
                     if let Some(ev) = parse::event(&line) {
-                        sink(SessionEvent { session: id, kind, stream: "stderr", event: Some(ev), exit_code: None });
+                        shared.lock().unwrap().remember(&ev);
+                        sink(SessionEvent { session: id, kind, stream: "stderr", event: Some(ev), exit_code: None, step: None, error: None });
                     }
                 })
             });
@@ -566,20 +646,27 @@ impl ModlockCli {
                 if let Some(out) = stdout {
                     for_each_line(out, |line| {
                         let Some(ev) = parse::event(&line) else { return };
-                        if let CliEvent::Hosting { join_code: Some(code), .. } = &ev {
-                            shared.lock().unwrap().join_code = Some(code.clone());
-                        }
-                        sink(SessionEvent { session: id, kind, stream: "stdout", event: Some(ev), exit_code: None });
+                        let step = {
+                            let mut sh = shared.lock().unwrap();
+                            if let CliEvent::Hosting { join_code: Some(code), .. } = &ev {
+                                sh.join_code = Some(code.clone());
+                            }
+                            sh.remember(&ev);
+                            sh.progress.advance(kind, &ev)
+                        };
+                        let error = event_error(&ev);
+                        sink(SessionEvent { session: id, kind, stream: "stdout", event: Some(ev), exit_code: None, step, error });
                     });
                 }
                 // Saída fechada: espera o processo terminar para registrar o código.
                 let code = wait_exit(&child, Duration::from_secs(30));
-                {
+                let error = {
                     let mut sh = shared.lock().unwrap();
                     sh.ended = true;
                     sh.exit_code = code;
-                }
-                sink(SessionEvent { session: id, kind, stream: "fim", event: None, exit_code: code });
+                    end_error(kind, code, sh.progress.step(), sh.stopping, sh.recent_detail())
+                };
+                sink(SessionEvent { session: id, kind, stream: "fim", event: None, exit_code: code, step: None, error });
             });
         }
 
@@ -593,6 +680,7 @@ impl ModlockCli {
     /// Se o cliente não sair, ele é encerrado: é o processo `modlock host/join`, não o daemon.
     fn end_session(&self) -> (Option<SessionInfo>, bool) {
         let Some(mut s) = self.session.lock().unwrap().take() else { return (None, false) };
+        s.shared.lock().unwrap().stopping = true;
         drop(s.stdin.take());
         let mut forced = false;
         if wait_exit(&s.child, Duration::from_secs(20)).is_none() && !s.shared.lock().unwrap().ended {
@@ -681,6 +769,12 @@ impl EngineAdapter for ModlockCli {
                 purpose: "Outra pasta de estado do Modlock (troca o APPDATA só dos processos do Modlock).",
             },
             EnvEntry {
+                name: catalog::ENV_PROJECTS_DIR,
+                value: std::env::var(catalog::ENV_PROJECTS_DIR).ok(),
+                scope: "app",
+                purpose: "Pasta com os projetos dos modos. Sem ela, a pasta modos ao lado do app (em dev, spike/mods). Hoje todo modo abre o projeto de teste hello.",
+            },
+            EnvEntry {
                 name: "MODLOCK_NO_UPDATE_CHECK",
                 value: Some("1".into()),
                 scope: "modlock",
@@ -688,7 +782,8 @@ impl EngineAdapter for ModlockCli {
             },
         ];
         let download_dir = self.cfg.download_dir.as_ref().map(|d| d.display().to_string());
-        CheckReport { binary, daemon, game, hosts, env, download_dir, ready, problems }
+        let modes = self.catalog.check();
+        CheckReport { binary, daemon, game, hosts, env, download_dir, modes, ready, problems }
     }
 
     fn start_daemon(&self) -> Result<DaemonInfo, EngineError> {
@@ -733,6 +828,12 @@ impl EngineAdapter for ModlockCli {
         self.start_daemon()?;
         let target = dir.display().to_string();
         self.spawn_session(SessionKind::Host, args::host(), &dir, target)
+    }
+
+    fn host_mode(&self, mode: &ModeSlug) -> Result<SessionInfo, EngineError> {
+        self.active_session_guard()?;
+        let resolved = self.catalog.resolve(mode)?;
+        self.host(&resolved.dir)
     }
 
     fn join(&self, code: &JoinCode) -> Result<SessionInfo, EngineError> {
@@ -921,6 +1022,52 @@ mod tests {
         let fresh = ModlockCli::new(cfg, Arc::new(|_| {}));
         let b = fresh.check().binary;
         assert!(!b.vanished);
+        fs::remove_dir_all(&d).unwrap();
+    }
+
+    #[test]
+    fn session_end_errors() {
+        let d = || "Últimas linhas: x".to_string();
+        // Fim pedido pelo app (engine_stop, fechar o app): nunca é erro, nem com o processo encerrado.
+        assert!(end_error(SessionKind::Join, Some(1), Some(1), true, d()).is_none());
+        // Entrou e saiu normalmente.
+        assert!(end_error(SessionKind::Join, Some(0), Some(STEP_INSIDE), false, d()).is_none());
+        assert!(end_error(SessionKind::Host, Some(0), Some(1), false, d()).is_none());
+        // Saiu com erro, ou entrando terminou antes de chegar dentro.
+        let e = end_error(SessionKind::Join, Some(2), Some(1), false, d()).unwrap();
+        assert_eq!(e.code, "entrada_falhou");
+        assert!(e.detail.as_deref().unwrap().contains("código 2") && e.detail.unwrap().contains("Últimas linhas"));
+        assert_eq!(end_error(SessionKind::Join, Some(0), None, false, d()).unwrap().code, "entrada_falhou");
+        assert_eq!(end_error(SessionKind::Host, Some(3), Some(2), false, d()).unwrap().code, "partida_parou");
+        // Modo que falhou no servidor.
+        let failed = CliEvent::Host { event: "failed".into(), data: serde_json::json!({"error": "boom"}) };
+        assert_eq!(event_error(&failed).unwrap().code, "modo_falhou");
+        assert!(event_error(&CliEvent::Host { event: "ready".into(), data: serde_json::json!({}) }).is_none());
+    }
+
+    #[test]
+    fn recent_lines_are_capped() {
+        let mut sh = Shared::default();
+        assert_eq!(sh.recent_detail(), "Sem saída da sessão.");
+        for i in 0..10 {
+            sh.remember(&CliEvent::Note { text: format!("linha {i}") });
+        }
+        sh.remember(&CliEvent::Update { current: None, latest: None });
+        assert_eq!(sh.recent.len(), RECENT_LINES);
+        assert!(sh.recent_detail().ends_with("linha 9") && !sh.recent_detail().contains("linha 3 "));
+    }
+
+    #[test]
+    fn host_mode_refuses_unknown_and_missing_before_running_anything() {
+        let d = std::env::temp_dir().join(format!("engine-hostmode-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(&d).unwrap();
+        let env = env_of(&[(catalog::ENV_PROJECTS_DIR, d.to_str().unwrap()), ("APPDATA", d.to_str().unwrap())]);
+        let engine = ModlockCli::new(EngineConfig::resolve(&env, None, None), Arc::new(|_| {}));
+        assert_eq!(engine.check().modes.root.as_deref(), Some(d.display().to_string().as_str()));
+        assert!(!engine.check().modes.test_project_ok);
+        assert_eq!(engine.host_mode(&ModeSlug::parse("nao-existe").unwrap()).unwrap_err().code, "modo_desconhecido");
+        assert_eq!(engine.host_mode(&ModeSlug::parse("neblina").unwrap()).unwrap_err().code, "modo_ausente");
         fs::remove_dir_all(&d).unwrap();
     }
 }

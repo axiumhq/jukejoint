@@ -44,6 +44,8 @@ Mapeados dos protos do Modlock:
 - **Entrando** (`peernet.JoinEvent`): `baixandoConteudo(%)`, `endereco`, `conectado`.
 - **Servidor** (`control.HostEvent`): `pronto`, `modIniciado`, `modFalhou(erro)`, `log`, `jogadorEntrou/Saiu`, `chat`, `frameLento`.
 
+Na fase 1 (CLI), o app traduz esses eventos nas quatro etapas que o site e a API usam (baixando o modo, abrindo o jogo, entrando, dentro): `desktop/src-tauri/src/engine/progress.rs`. Quem entra só tem `note` em texto livre na v0.1.68, então ali a regra é por palavras e precisa ser conferida no teste com dois PCs; na fase 2 os eventos `JoinEvent` estruturados substituem isso. O site hospeda pelo slug do modo, e o app resolve a pasta pelo catálogo (`catalog.rs`; hoje todo modo abre o projeto de teste `hello`).
+
 ## Erros conhecidos e o que o app faz
 
 | Situação (vista no spike) | Detecção | Ação na UI |

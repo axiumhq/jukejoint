@@ -213,28 +213,18 @@ fn show_main(app: &AppHandle) {
     }
 }
 
-/// Link validado: traz a janela para frente e abre a sala `/sala/<id>` do site. Link inválido:
-/// traz a janela e mostra um aviso nativo.
+/// Link com o app já aberto: traz a janela para frente e conta ao site, que navega pelo React
+/// Router até `/sala/<id>` (sem recarregar a página) ou mostra o aviso do link inválido. O aviso
+/// nativo fica só para a partida a frio, quando o site ainda não carregou (ver `run`).
 fn handle_link(app: &AppHandle, url: &str) {
+    show_main(app);
     match deeplink::parse_join(url, SLUG) {
         Ok(id) => {
-            show_main(app);
-            if let Some(w) = app.get_webview_window(MAIN) {
-                if let Ok(mut u) = w.url() {
-                    u.set_path(&format!("/sala/{}", id.as_str()));
-                    u.set_query(None);
-                    u.set_fragment(None);
-                    let _ = w.navigate(u);
-                }
-            }
             let _ = app.emit_to(MAIN, EV_DEEP_LINK, id.as_str());
         }
         Err(e) => {
-            // Nada de sumir em silêncio: traz a janela, avisa quem joga e conta ao site.
             eprintln!("deep link ignorado ({e:?}): {url:.80}");
-            show_main(app);
             let _ = app.emit_to(MAIN, EV_DEEP_LINK_INVALID, e.reason());
-            notice::invalid_link(app);
         }
     }
 }
