@@ -50,7 +50,7 @@ Sem rolagem horizontal a 375 px (medido: `scrollWidth = innerWidth` em 375 e 390
 | Capa de modo | modos, lobbies, herói, sala, barra móvel | normal, hover (zoom de 5%), filtro ativo (anel de acento) |
 | Cartão de lobby / linha compacta | home | Entrar, Entrar no meio, Bater na porta, Avisar quando vagar/acabar; etiquetas falta N, N da sua lista, em partida, lotado, só com convite, iniciantes ok; favorito |
 | Abas, chips e visão | home | selecionado, contagens que mudam com os dados, chip do modo removível, vazio com "Limpar filtros" |
-| Avatar gerado, presença, pilha | todo nome | online, em lobby (acento), na sua lista (anel de acento) |
+| Avatar gerado, presença, pilha | todo nome | online, em lobby (acento), na sua lista (anel de acento); ponto e vizinho na pilha recortam o avatar (§4, Avatar gerado) |
 | Feed "Chegando agora" | home | entrada animada, Pausar/Retomar |
 | Trilho social | as duas telas | convite Aceitar/Agora não, Entrar/Chamar/Convidar (vira "Chamado") |
 | Vaga de jogador | sala | confirmou, ainda não, falta você, vazia (Convidar) |
@@ -92,6 +92,54 @@ Mais dois temas, nos mesmos 28 tokens. **O padrão é o Deadlock** (escolha do u
 - **Interface:** Geist 12–13,5 px (base 13 px, densidade de DMM). **Números:** Geist Mono tabular.
 - Carregamento: fontsource 5.3.0 fixo via jsDelivr (`@fontsource-variable/geist`, `geist-mono`, `roboto-serif/full.css`).
 
+### Contraste (WCAG 2.2, medido em 03/11/2026)
+
+Razões calculadas direto dos valores de `tokens.css` (os mesmos de `v8.css`). Regra: texto de corpo e todo texto secundário que carrega informação ≥ 4,5:1; 3:1 só para título grande e UI que não é texto. `--tx-3` sobre `--s4` é o pior caso (rótulo num item pressionado) e é por ele que o `--tx-3` é calibrado.
+
+| Par | Deadlock | Carmim | Pergaminho | Gelo | Grafite |
+|---|---:|---:|---:|---:|---:|
+| `--tx` / `--bg` | 16,89 | 17,96 | 18,19 | 18,20 | 15,21 |
+| `--tx` / `--s1` | 16,26 | 17,36 | 17,67 | 17,57 | 14,51 |
+| `--tx` / `--s2` | 15,34 | 16,58 | 16,77 | 16,76 | 13,57 |
+| `--tx` / `--s3` | 13,86 | 15,30 | 15,27 | 15,41 | 12,19 |
+| `--tx` / `--s4` | 12,28 | 13,65 | 13,67 | 13,69 | 10,61 |
+| `--tx-2` / `--bg` | 10,24 | 9,46 | 10,19 | 9,79 | 8,84 |
+| `--tx-2` / `--s1` | 9,86 | 9,14 | 9,90 | 9,45 | 8,43 |
+| `--tx-2` / `--s2` | 9,30 | 8,73 | 9,39 | 9,01 | 7,89 |
+| `--tx-2` / `--s3` | 8,40 | 8,06 | 8,56 | 8,29 | 7,08 |
+| `--tx-2` / `--s4` | 7,44 | 7,19 | 7,66 | 7,36 | 6,16 |
+| `--tx-3` / `--bg` | 6,29 | 6,13 | 6,19 | 6,14 | 6,53 |
+| `--tx-3` / `--s1` | 6,06 | 5,92 | 6,01 | 5,93 | 6,23 |
+| `--tx-3` / `--s2` | 5,71 | 5,66 | 5,70 | 5,65 | 5,83 |
+| `--tx-3` / `--s3` | 5,16 | 5,22 | 5,19 | 5,20 | 5,23 |
+| `--tx-3` / `--s4` | 4,57 | 4,66 | 4,65 | 4,62 | 4,56 |
+| `--acc-ink` / `--acc` | 8,50 | 4,61 | 14,37 | 12,51 | 6,86 |
+| `--acc-ink` / `--acc-hi` (hover) | 9,86 | 5,13 | 15,84 | 13,98 | 8,16 |
+| `--acc-tx` / `--bg` | 11,48 | 6,90 | 10,70 | 13,42 | 9,52 |
+| `--acc-tx` / `--s2` | 10,43 | 6,37 | 9,87 | 12,36 | 8,49 |
+| `--live` / `--bg` | 10,07 | 9,42 | 9,25 | 10,97 | 7,97 |
+| `--warn` / `--bg` | 6,27 | 10,69 | 8,81 | 11,45 | 9,89 |
+
+O que mudou para chegar aqui (o Deadlock já passava e ficou igual):
+
+| Tema | Token | Antes | Depois | Por quê |
+|---|---|---|---|---|
+| Carmim | `--tx-3` | `hsl(345 10% 54%)` | `hsl(345 10% 58%)` | 4,04 → 4,66 sobre `--s4` |
+| Carmim | `--acc-hi` | `hsl(350 80% 55%)` | `hsl(350 82% 45%)` | o hover do botão primário clareava e o texto branco caía para 3,98; agora o hover aprofunda (5,13) |
+| Pergaminho | `--tx-3` | `hsl(32 10% 54%)` | `hsl(32 10% 56%)` | 4,36 → 4,65 sobre `--s4` |
+| Gelo | `--tx-3` | `hsl(214 10% 54%)` | `hsl(214 10% 57%)` | 4,17 → 4,62 sobre `--s4` |
+| Grafite | `--tx-3` | `hsl(220 5% 58%)` | `hsl(220 5% 61%)` | 4,13 → 4,56 sobre `--s4` |
+
+Texto sobre as capas não entra nessa tabela: é medido na tela (texto escondido, percentil 95 da luminância do fundo atrás de cada linha). Depois do ajuste da Neblina, o pior caso é 8,2:1 em texto pequeno e 14,8:1 no título, nos cinco temas.
+
+### Avatar gerado
+
+Medalhão geométrico determinístico a partir do nome (`lib/avatar.ts`), sem foto e sem personagem. Três tons de uma mesma família de cor (campo, figura e meio-tom), calculados em OKLCH para que todo mundo tenha o mesmo peso visual; dez famílias escolhidas a dedo e um em quatro sai invertido (campo claro, figura escura). Seis composições num grid de 36 (horizonte, órbita, quartos, faixas, eclipse, diagonal), no máximo três formas, legíveis de 20 px (pilhas) a 40 px (vagas da sala). Não lê o tema.
+
+- **Presença:** o ponto abre um recorte de 2 px no próprio avatar (máscara CSS), então fica limpo sobre qualquer superfície, sem halo da cor do fundo.
+- **Pilha:** cada rosto é recortado onde o próximo encosta (2 px de vão; 3,5 px quando o próximo tem anel).
+- **Anel (da sua lista):** contorno de 1,5 px em `--acc-tx` com 1,5 px de vão transparente (`outline` que segue o círculo).
+
 ### Raios, espaço e movimento
 
 - Raios: 4 · 6 (botão, chip) · 8 · 10 (cartão) · 12 (herói, sala) · 16–18 (folha, barras móveis) · pílula.
@@ -105,7 +153,7 @@ Mais dois temas, nos mesmos 28 tokens. **O padrão é o Deadlock** (escolha do u
 - **Para adicionar um tema:**
   1. Copie um bloco `[data-theme="…"]` em `v8.css` e preencha os mesmos 28 tokens (as 7 cores `--k*` da capa incluídas).
   2. Adicione `{id, name, note, sw:[fundo, acento]}` em `THEMES` (`v8.js`).
-  3. Confira o contraste: `--acc-ink` sobre `--acc` ≥ 4,5:1, e `--tx-2`/`--tx-3` sobre `--s2`.
+  3. Confira o contraste com a tabela de §4 (Contraste): `--acc-ink` sobre `--acc` e `--acc-hi` ≥ 4,5:1, e `--tx-3` ≥ 4,5:1 até sobre `--s4`.
   4. Capture `home-1440-<id>.png`.
 
 ## 6. De onde veio cada coisa
@@ -113,7 +161,7 @@ Mais dois temas, nos mesmos 28 tokens. **O padrão é o Deadlock** (escolha do u
 | Da B · Gelo técnico (estrutura) | Do DMM e do clima do Deadlock (pele) | Novo no v8 |
 |---|---|---|
 | Barra superior com nav, busca Ctrl K, contagem ao vivo, pílula da sala e conta | Fundo quase preto quente, creme/pergaminho (tema Pergaminho) e o vermelho que o usuário usa (Carmim) | Sistema de 5 temas por tokens (padrão: Deadlock), com capas que mudam de cor |
-| Trilho social fixo (grupo, convite, amigos com presença e Entrar) | Serifa condensada em títulos, com a palavra de acento em dois tons | Capas como emblemas de oficina oculta (anel ritual, trilho e catenária, bússola na neblina, roda de cofre, relógio com lâminas, estande de tiro) com fumaça, latão, grão e vinheta |
+| Trilho social fixo (grupo, convite, amigos com presença e Entrar) | Serifa condensada em títulos, com a palavra de acento em dois tons | Capas como emblemas de oficina oculta (diafragma de sete lâminas, trilho e catenária, bússola na neblina, roda de cofre, relógio com lâminas, estande de tiro) com fumaça, latão, grão e vinheta |
 | Ordem da home: recomendado com barra de dados, modos, lobbies com abas e filtros, chegando agora | Rótulos espaçados em caixa alta | Deslocamento de matiz por modo dentro do tema |
 | Sala: cabeçalho, grade de vagas, PRONTO fixo, trilho com regras, convite e atividade | Densidade de 12–13 px | Fluxo de PRONTO completo: contagem cancelável e 4 etapas do handoff |
 | Comportamento móvel: herói empilhado, cartão de amigos, barra "Jogar agora" fixa | Fios carmim/latão e line-art de engrenagem e régua a 5–7,5% | Aviso dispensável do patch; Pausar no feed; texto neutro em gênero ("abriu a sala", "Confirmou", "da sua lista") |

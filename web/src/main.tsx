@@ -9,7 +9,6 @@ import '@fontsource-variable/geist-mono/index.css';
 import '@fontsource-variable/roboto-serif/standard.css';
 import './styles/tokens.css';
 import './styles/base.css';
-import './styles/legacy.css';
 import './styles/shell.css';
 import './styles/home.css';
 import './styles/lobbies.css';

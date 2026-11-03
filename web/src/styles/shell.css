@@ -149,10 +149,6 @@
   font-size: 12px;
 }
 
-.room-pill .stack .av {
-  box-shadow: 0 0 0 2px var(--bg);
-}
-
 .room-pill.is-joining .num {
   animation: pill-step 1.2s var(--e-out) infinite alternate;
 }
@@ -534,6 +530,26 @@
 
 .notice .sp {
   flex: 1;
+}
+
+/* Espera de rota (App.tsx): a tela que aparece enquanto o pedaço da página carrega. */
+.page {
+  padding-top: 64px;
+  padding-bottom: 96px;
+  min-height: 60vh;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--gut);
+}
+
+.fine {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--tx-3);
 }
 
 /* ───────── Trilho social ───────── */
