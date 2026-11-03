@@ -9,6 +9,7 @@ import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../da
 import { PLATFORM_SCOPE, releases } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
 import { formatDate, formatShortDate, t } from '../i18n';
+import { desktop as D } from '../i18n/desktop';
 import { useSession } from '../state/session';
 
 /**
@@ -27,6 +28,31 @@ const HAS_RISK_TEXT = t.install.riskBody.trim().length > 0;
 const TOC = (['baixar', 'passos', 'windows', 'antivirus', 'arquivos', 'faz', 'anticheat', 'desinstalar', 'perguntas'] as const).filter(
   (id) => id !== 'anticheat' || HAS_RISK_TEXT,
 );
+
+/** Dentro do app: o status vem dele, e o botão abre a tela Instalação (motor, serviço, antivírus). */
+function AppStatusInApp() {
+  const { desktopVersion, openInstallWindow } = useSession();
+  return (
+    <div className="ast is-on">
+      <span className="ast-sig" aria-hidden="true" />
+      <div className="ast-t">
+        <p className="ast-title" role="status">
+          {D.statusInApp(desktopVersion ?? '')}
+        </p>
+        <p className="ast-help">{D.statusInAppHelp}</p>
+      </div>
+      <div className="ast-act">
+        <button type="button" className="btn btn-p btn-sm" onClick={openInstallWindow}>
+          <Icon name="gear" />
+          {D.openInstall}
+        </button>
+        <Link to="/#lobbies" className="btn btn-s btn-sm">
+          {t.install.goLobbies}
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function AppStatus() {
   const { appConnected, setAppConnected } = useSession();
@@ -61,7 +87,7 @@ function AppStatus() {
 }
 
 function DownloadCard() {
-  const { pushToast } = useSession();
+  const { pushToast, desktop } = useSession();
   return (
     <section className="dl" id="baixar" aria-labelledby="dl-title">
       <div className="dl-main">
@@ -105,9 +131,7 @@ function DownloadCard() {
           {t.install.source} <span>({t.install.sourceNote})</span>
         </p>
       </div>
-      <div className="dl-status">
-        <AppStatus />
-      </div>
+      <div className="dl-status">{desktop ? <AppStatusInApp /> : <AppStatus />}</div>
     </section>
   );
 }

@@ -4,7 +4,9 @@ import type { Lobby } from '../data/lobbies';
 import { getMode, modes, type Region } from '../data/modes';
 import { useCannotRunApp } from '../hooks';
 import { t } from '../i18n';
+import { desktop as D } from '../i18n/desktop';
 import { live as L } from '../i18n/live';
+import type { EngineError } from '../lib/desktop';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { LiveDot, Tag } from './Common';
@@ -135,6 +137,73 @@ function OpenOnPc({ lobby, onClose }: { lobby: Lobby | null; onClose: () => void
   );
 }
 
+/** Um problema do motor em duas camadas: a frase para quem joga e, recolhido, o detalhe técnico. */
+export function EngineProblem({ error }: { error: EngineError }) {
+  return (
+    <div className="dlg-prob">
+      <p>{error.message}</p>
+      {error.detail && (
+        <details className="dlg-tech">
+          <summary>{D.details}</summary>
+          <code>{error.detail}</code>
+        </details>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Dentro do app: o que a checagem do motor (`engine_check`) diz. Pronto, ou a lista do que falta,
+ * com o botão para a tela Instalação. Entrar na sala continua possível: o motor só é usado quando a
+ * partida começa.
+ */
+function AppCheckBlock() {
+  const { appCheck, recheckApp, openInstallWindow } = useSession();
+  if (!appCheck) return null;
+  const test = appCheck.modes?.testMode ? D.testMode(appCheck.modes.testProject) : null;
+  if (appCheck.status === 'checking' && appCheck.problems.length === 0) {
+    return (
+      <p className="dlg-note" role="status">
+        <span className="rb-spin" aria-hidden="true" />
+        <span>{D.checking}</span>
+      </p>
+    );
+  }
+  if (appCheck.status === 'ready') {
+    return (
+      <div className="dlg-stack">
+        <Note icon="check">{D.ready}</Note>
+        {test && <Note icon="info">{test}</Note>}
+      </div>
+    );
+  }
+  return (
+    <section className="dlg-opt dlg-probs" aria-labelledby="join-probs" aria-busy={appCheck.status === 'checking'}>
+      <h3 className="cap" id="join-probs">
+        {D.problemsTitle(appCheck.problems.length)}
+      </h3>
+      <ul>
+        {appCheck.problems.map((p) => (
+          <li key={p.code + p.message}>
+            <Icon name="info" />
+            <EngineProblem error={p} />
+          </li>
+        ))}
+      </ul>
+      <p className="dlg-hint">{D.problemsHint}</p>
+      <div className="dlg-act is-start">
+        <button type="button" className="btn btn-s btn-sm" onClick={openInstallWindow}>
+          <Icon name="gear" />
+          {D.openInstall}
+        </button>
+        <button type="button" className="btn btn-g btn-sm" onClick={recheckApp} disabled={appCheck.status === 'checking'}>
+          {appCheck.status === 'checking' ? D.checking : D.recheck}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Entrar: mostra o lobby (ao vivo), avisa se a partida já começou ou se ainda falta gente para o quórum,
  * pede o app se ele não estiver aberto, e confirma a troca se você já está noutro lobby.
@@ -142,8 +211,10 @@ function OpenOnPc({ lobby, onClose }: { lobby: Lobby | null; onClose: () => void
  * O lobby com convite nunca chega aqui (vai para "Bater na porta").
  */
 export function JoinDialog() {
-  const { joinTarget, closeJoin, confirmJoin, lobbies, appConnected, hereId } = useSession();
-  const phone = useCannotRunApp();
+  const { joinTarget, closeJoin, confirmJoin, lobbies, appConnected, hereId, desktop, appCheck } = useSession();
+  // Dentro do app desktop nunca é "celular": quem está aqui está no PC.
+  const phone = useCannotRunApp() && !desktop;
+  const appProblems = desktop && appCheck?.status === 'problems';
   // O lobby continua ao vivo enquanto o diálogo está aberto.
   const live = joinTarget?.kind === 'lobby' ? (lobbies.find((l) => l.id === joinTarget.lobby.id) ?? joinTarget.lobby) : null;
   const here = !phone && hereId && live && hereId !== live.id ? lobbies.find((l) => l.id === hereId) : undefined;
@@ -169,15 +240,18 @@ export function JoinDialog() {
         {phone ? (
           <OpenOnPc lobby={live} onClose={closeJoin} />
         ) : appConnected ? (
-          <div className="dlg-act">
-            <button type="button" className="btn btn-s btn-lg" onClick={closeJoin}>
-              {t.join.switchCancel}
-            </button>
-            <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
-              {here ? t.join.switchConfirm : t.lobbyState.join}
-              <Icon name="arrow" />
-            </button>
-          </div>
+          <>
+            {desktop && <AppCheckBlock />}
+            <div className="dlg-act">
+              <button type="button" className="btn btn-s btn-lg" onClick={closeJoin}>
+                {t.join.switchCancel}
+              </button>
+              <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
+                {here ? t.join.switchConfirm : appProblems ? D.enterAnyway : t.lobbyState.join}
+                <Icon name="arrow" />
+              </button>
+            </div>
+          </>
         ) : (
           <div className="dlg-opts">
             <section className="dlg-opt is-main" aria-labelledby="join-have">

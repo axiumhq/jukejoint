@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import type { Lobby } from '../data/lobbies';
 import type { Region } from '../data/modes';
 import type { KnockView } from '../lib/api';
+import type { EngineError } from '../lib/desktop';
 import type { FriendPresence } from '../lib/friends';
 import type { KnockStatus, LobbyContext } from '../lib/lobbies';
 import type { Seat } from '../lib/room';
@@ -39,6 +40,14 @@ export type JoinTarget = { kind: 'lobby'; lobby: Lobby } | { kind: 'bots' };
 /** `mock` = dados simulados; os outros são o estado do WebSocket da API. */
 export type ConnectionState = 'mock' | 'connecting' | 'online' | 'offline';
 
+/** A checagem do motor (`engine_check`) quando o site está dentro do app desktop. */
+export interface AppCheck {
+  status: 'checking' | 'ready' | 'problems';
+  /** Já em duas camadas: `message` para quem joga, `detail` técnico. */
+  problems: EngineError[];
+  modes?: { testMode: boolean; testProject: string; testProjectOk: boolean };
+}
+
 export interface SessionValue {
   /** `true` com a API real. */
   live: boolean;
@@ -51,8 +60,24 @@ export interface SessionValue {
   user: MockUser | null;
   signIn: () => void;
   signOut: () => void;
+  /** O app está aberto. Dentro do app desktop vem dele (sempre `true`); fora, é a simulação da /instalar. */
   appConnected: boolean;
   setAppConnected: (v: boolean) => void;
+  /** O site está rodando dentro do app desktop (lib/desktop.ts). */
+  desktop: boolean;
+  /** Versão do app desktop, dentro dele. */
+  desktopVersion: string | null;
+  /** Dentro do app: a checagem do motor. Fora: `null`. */
+  appCheck: AppCheck | null;
+  recheckApp: () => void;
+  /** Abre (ou traz para frente) a tela Instalação do app. */
+  openInstallWindow: () => void;
+  /** Ao vivo, dentro do app: o app não conseguiu hospedar ou entrar na partida da sua sala. */
+  engineError: EngineError | null;
+  /** Tenta de novo hospedar ou entrar (depois de `engineError`). */
+  retryEngine: () => void;
+  /** Ao vivo, só o anfitrião: encerra a partida (dentro do app, também fecha a sessão do app) e reabre a sala. */
+  endMatch: () => void;
   lobbies: Lobby[];
   /** Lobby em que você está (entrou ou abriu). */
   hereId: string | null;

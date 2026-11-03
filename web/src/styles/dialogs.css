@@ -197,6 +197,70 @@
   padding-top: 4px;
 }
 
+.dlg-act.is-start {
+  justify-content: flex-start;
+}
+
+/* dentro do app: o que a checagem do motor encontrou, em duas camadas (frase e detalhe técnico) */
+.dlg-probs {
+  margin-bottom: 4px;
+  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.28) inset;
+}
+
+.dlg-probs ul {
+  display: grid;
+  gap: 10px;
+}
+
+.dlg-probs li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.78125rem;
+  line-height: 1.45;
+}
+
+.dlg-probs li > .ico {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warn);
+}
+
+.dlg-probs .dlg-hint {
+  margin-top: 0;
+}
+
+.dlg-prob {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.dlg-tech summary {
+  width: fit-content;
+  min-height: 24px;
+  color: var(--tx-3);
+  font-size: 0.71875rem;
+  cursor: pointer;
+}
+
+.dlg-tech summary:hover {
+  color: var(--tx-2);
+}
+
+.dlg-tech code {
+  display: block;
+  margin-top: 4px;
+  padding: 7px 9px;
+  border-radius: var(--r-md);
+  background: var(--s2);
+  color: var(--tx-2);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
 .dlg-opts {
   display: grid;
   grid-template-columns: 1fr 1fr;

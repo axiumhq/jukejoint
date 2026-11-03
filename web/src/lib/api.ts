@@ -26,6 +26,8 @@ export interface SeatView {
   host?: boolean;
   ready: boolean;
   readyAt?: number;
+  /** Protocolo 2: a etapa do handoff que o app desta vaga mandou (0 a 3; 3 = dentro). Só em partida. */
+  step?: number;
 }
 
 export interface JoinView {
@@ -89,7 +91,16 @@ export interface InviteView {
 export type KnockState = 'pending' | 'accepted';
 
 export type ServerMsg =
-  | { type: 'welcome'; me: ApiUser | null; here: string | null; serverNow: number; knocks?: Record<string, KnockState>; invites?: InviteView[] }
+  | {
+      type: 'welcome';
+      /** Versão do protocolo (server/README.md); ausente = 1. */
+      protocol?: number;
+      me: ApiUser | null;
+      here: string | null;
+      serverNow: number;
+      knocks?: Record<string, KnockState>;
+      invites?: InviteView[];
+    }
   | { type: 'lobbies'; lobbies: LobbyView[] }
   | { type: 'lobby'; lobby: LobbyView }
   | { type: 'lobby_removed'; lobbyId: string; reason: 'closed' | 'empty' }
@@ -121,6 +132,8 @@ export type Intent =
   | { type: 'invite'; userId: string }
   | { type: 'decline_invite'; lobbyId: string }
   | { type: 'set_join_code'; code: string }
+  /** Protocolo 2: a etapa do seu app na partida (só para frente); a de quem hospeda também move a sala. */
+  | { type: 'handoff_progress'; step: number }
   | { type: 'ping' };
 
 /* ───────── Estado ───────── */
