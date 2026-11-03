@@ -1,0 +1,239 @@
+//! App desktop: uma janela com o site (`web/`), a tela Instalação (`desktop/src/`), o deep link
+//! `<esquema>://join/<id>` com instância única e o `EngineAdapter` sobre o Modlock fixado.
+
+mod commands;
+pub mod deeplink;
+pub mod engine;
+
+use std::sync::Arc;
+
+use engine::{
+    modlock::{EngineConfig, ModlockCli},
+    EngineAdapter, EventSink, MODLOCK_VERSION,
+};
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+};
+
+/// Nome da marca, lido de `web/src/config/brand.ts` pelo build.rs.
+pub const BRAND_NAME: &str = env!("APP_BRAND_NAME");
+/// Nome curto da marca; também é o esquema do deep link.
+pub const SLUG: &str = env!("APP_SLUG");
+
+pub const MAIN: &str = "main";
+pub const INSTALL: &str = "instalacao";
+/// Em dev, a tela Instalação vem do Vite do `desktop/` (o site vem do Vite do `web/`, no devUrl).
+const INSTALL_DEV_URL: &str = "http://localhost:5281/";
+/// Com `1`, o app registra o esquema do deep link no Windows (HKCU) ao abrir. O instalador
+/// (ainda não feito) é quem deve registrar; isto é para testar sem ele.
+pub const ENV_REGISTER_SCHEME: &str = "APP_REGISTER_SCHEME";
+
+/// Eventos que o app manda para as janelas.
+pub const EV_ENGINE: &str = "engine://event";
+pub const EV_CHECK: &str = "engine://check";
+pub const EV_DEEP_LINK: &str = "app://deep-link";
+
+pub struct AppState {
+    pub engine: Arc<ModlockCli>,
+}
+
+pub fn run() {
+    let app = tauri::Builder::default()
+        // Precisa ser o primeiro plugin: uma segunda execução repassa os argumentos (o link) para
+        // esta e encerra; com a feature deep-link, o link chega em on_open_url.
+        .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| show_main(app)))
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            let handle = app.handle().clone();
+            let sink: EventSink = Arc::new(move |ev| {
+                let _ = handle.emit(EV_ENGINE, ev);
+            });
+            let engine = Arc::new(ModlockCli::new(EngineConfig::from_env(), sink));
+            app.manage(AppState { engine: engine.clone() });
+
+            if tauri::is_dev() {
+                allow_install_dev_server(app)?;
+            }
+
+            // Link de quando o app foi aberto por ele (partida a frio): a janela já abre na sala.
+            let first = deeplink::find_in_args(std::env::args().skip(1), SLUG)
+                .and_then(|u| deeplink::parse_join(&u, SLUG).ok());
+            let start = first.map(|id| format!("sala/{}", id.as_str())).unwrap_or_default();
+            create_main_window(app.handle(), &start)?;
+
+            setup_deep_link(app)?;
+            setup_tray(app)?;
+
+            // Primeira checagem em segundo plano; se faltar algo, abre a tela Instalação.
+            let h = app.handle().clone();
+            std::thread::spawn(move || {
+                let report = engine.check();
+                if !report.ready {
+                    let _ = open_install_window(&h);
+                }
+                let _ = h.emit(EV_CHECK, &report);
+            });
+            Ok(())
+        })
+        .on_window_event(|window, event| {
+            // Fechar a janela do site fecha o app (nada fica em segundo plano).
+            if window.label() == MAIN {
+                if let WindowEvent::CloseRequested { .. } = event {
+                    window.app_handle().exit(0);
+                }
+            }
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::app_info,
+            commands::open_install_window,
+            commands::engine_check,
+            commands::engine_daemon_start,
+            commands::engine_daemon_stop,
+            commands::engine_host,
+            commands::engine_join,
+            commands::engine_stop,
+            commands::engine_session,
+        ])
+        .build(tauri::generate_context!())
+        .expect("falha ao iniciar o app");
+
+    app.run(|handle, event| {
+        if let RunEvent::Exit = event {
+            // Encerra a sessão e o daemon que este app subiu, sempre com `daemon stop`.
+            handle.state::<AppState>().engine.shutdown();
+        }
+    });
+}
+
+/// Objeto que o site e a tela Instalação podem ler para saber que estão dentro do app.
+fn init_script() -> String {
+    let info = serde_json::json!({
+        "name": BRAND_NAME,
+        "scheme": SLUG,
+        "version": env!("CARGO_PKG_VERSION"),
+        "modlockVersion": MODLOCK_VERSION,
+    });
+    format!(
+        "Object.defineProperty(window,'__DESKTOP_APP__',{{value:Object.freeze({info}),writable:false,configurable:false}});"
+    )
+}
+
+fn create_main_window(app: &AppHandle, path: &str) -> tauri::Result<()> {
+    WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App(path.into()))
+        .title(BRAND_NAME)
+        .inner_size(1360.0, 860.0)
+        .min_inner_size(960.0, 640.0)
+        .background_color(tauri::window::Color(10, 15, 14, 255))
+        .initialization_script(init_script())
+        .build()?;
+    Ok(())
+}
+
+pub fn open_install_window(app: &AppHandle) -> tauri::Result<()> {
+    if let Some(w) = app.get_webview_window(INSTALL) {
+        let _ = w.unminimize();
+        w.show()?;
+        return w.set_focus();
+    }
+    let url = if tauri::is_dev() {
+        WebviewUrl::External(INSTALL_DEV_URL.parse().expect("url de dev"))
+    } else {
+        WebviewUrl::App("_app/index.html".into())
+    };
+    WebviewWindowBuilder::new(app, INSTALL, url)
+        .title(format!("Instalação · {BRAND_NAME}"))
+        .inner_size(1080.0, 800.0)
+        .min_inner_size(720.0, 560.0)
+        .background_color(tauri::window::Color(10, 15, 14, 255))
+        .initialization_script(init_script())
+        .build()?;
+    Ok(())
+}
+
+/// Em dev a tela Instalação roda em outra porta, que o Tauri trata como remota: libera para ela
+/// as mesmas permissões da capability `instalacao` (e só em dev).
+fn allow_install_dev_server(app: &tauri::App) -> tauri::Result<()> {
+    let cap = tauri::ipc::CapabilityBuilder::new("instalacao-dev")
+        .remote(format!("{INSTALL_DEV_URL}*"))
+        .window(INSTALL)
+        .permission("core:event:allow-listen")
+        .permission("core:event:allow-unlisten")
+        .permission("allow-app-info")
+        .permission("allow-engine-check")
+        .permission("allow-engine-daemon-start")
+        .permission("allow-engine-daemon-stop")
+        .permission("allow-engine-session");
+    app.add_capability(cap)
+}
+
+fn show_main(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window(MAIN) {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
+/// Link validado: traz a janela para frente e abre a sala `/sala/<id>` do site.
+fn handle_link(app: &AppHandle, url: &str) {
+    match deeplink::parse_join(url, SLUG) {
+        Ok(id) => {
+            show_main(app);
+            if let Some(w) = app.get_webview_window(MAIN) {
+                if let Ok(mut u) = w.url() {
+                    u.set_path(&format!("/sala/{}", id.as_str()));
+                    u.set_query(None);
+                    u.set_fragment(None);
+                    let _ = w.navigate(u);
+                }
+            }
+            let _ = app.emit_to(MAIN, EV_DEEP_LINK, id.as_str());
+        }
+        Err(e) => eprintln!("deep link ignorado ({e:?}): {url:.80}"),
+    }
+}
+
+fn setup_deep_link(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri_plugin_deep_link::DeepLinkExt;
+    if std::env::var(ENV_REGISTER_SCHEME).as_deref() == Ok("1") {
+        app.deep_link().register_all()?;
+    }
+    let h = app.handle().clone();
+    app.deep_link().on_open_url(move |event| {
+        for url in event.urls() {
+            handle_link(&h, url.as_str());
+        }
+    });
+    Ok(())
+}
+
+fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
+    let open = MenuItem::with_id(app, "abrir", format!("Abrir {BRAND_NAME}"), true, None::<&str>)?;
+    let install = MenuItem::with_id(app, "instalacao", "Instalação", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "sair", "Sair", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &install, &quit])?;
+    let mut tray = TrayIconBuilder::with_id("principal")
+        .tooltip(BRAND_NAME)
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, e| match e.id.as_ref() {
+            "abrir" => show_main(app),
+            "instalacao" => {
+                let _ = open_install_window(app);
+            }
+            "sair" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, e| {
+            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = e {
+                show_main(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    tray.build(app)?;
+    Ok(())
+}

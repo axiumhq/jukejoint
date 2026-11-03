@@ -1,0 +1,15 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "instalacao",
+  "description": "Tela Instalação: lê o estado e liga/desliga o daemon. Não hospeda nem entra em partidas.",
+  "windows": ["instalacao"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-app-info",
+    "allow-engine-check",
+    "allow-engine-daemon-start",
+    "allow-engine-daemon-stop",
+    "allow-engine-session"
+  ]
+}

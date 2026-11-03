@@ -1,0 +1,6 @@
+# Copyright (c) 1993-2009 Microsoft Corp.
+#
+#	127.0.0.1       localhost
+#	::1             localhost
+192.168.3.24 host.docker.internal
+127.0.0.1 kubernetes.docker.internal

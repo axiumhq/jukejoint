@@ -1,0 +1,10 @@
+{"building":{"dir":"C:\\mods\\hello"}}
+{"built":{"dir":"C:\\mods\\hello","ok":true}}
+{"note":"starting the server"}
+time="2026-11-03T13:20:01-03:00" level=info msg="signaling connected"
+{"hosting":{"joinCode":"k7Qx29zz"}}
+{"host":{"ready":{}}}
+{"host":{"started":{"mod":"hello"}}}
+{"host":{"joined":{"name":"jogador","steamId":"76561190000000000"}}}
+{"host":{"log":{"mod":"hello","text":"/hello"}}}
+{"host":{"left":{"name":"jogador"}}}
