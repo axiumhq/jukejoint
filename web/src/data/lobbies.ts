@@ -1,3 +1,4 @@
+import type { Seat } from '../lib/room';
 import { getMode, type Region } from './modes';
 
 export type LobbyStatus = 'aberto' | 'em-partida' | 'cheio';
@@ -49,8 +50,12 @@ export interface Lobby {
   fullSince?: number;
   /** Quem abriu marcou "iniciantes ok" (chip da home). */
   beginners?: boolean;
-  /** Criado pela conta simulada nesta sessão. */
+  /** Criado pela conta simulada nesta sessão (ao vivo: você é quem abriu). */
   mine?: boolean;
+  /** Ao vivo: o ID de quem abriu (o nome está em `host`). */
+  hostId?: string;
+  /** Ao vivo: as vagas como o servidor manda. Sem isto, `roster()` simula as pessoas. */
+  seats?: Seat[];
 }
 
 /** Momento de carga do protótipo: as idades dos dados de exemplo contam a partir daqui. */

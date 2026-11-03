@@ -12,6 +12,7 @@ import { getMode, type Mode } from '../data/modes';
 import { useDocumentTitle, useFriends, useMediaQuery, useReducedMotion } from '../hooks';
 import { useNow } from '../hooks/useNow';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { friendsIn } from '../lib/friends';
 import { lobbyState, roundText } from '../lib/lobbies';
 import { readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
@@ -69,6 +70,7 @@ function SeatCard({
   visitor,
   signedIn,
   onInvite,
+  onKick,
 }: {
   seat: Seat;
   index: number;
@@ -77,6 +79,8 @@ function SeatCard({
   visitor: boolean;
   signedIn: boolean;
   onInvite: (from: HTMLElement) => void;
+  /** Ao vivo, para quem abriu: tirar esta pessoa da sala. */
+  onKick?: () => void;
 }) {
   if (!seat.name) {
     const body = (
@@ -146,6 +150,11 @@ function SeatCard({
           <div className="seat-n">{name}</div>
           <div className="seat-s">{state}</div>
         </div>
+        {onKick && (
+          <button type="button" className="seat-kick" aria-label={L.kickLabel(seat.name)} onClick={onKick}>
+            {L.kick}
+          </button>
+        )}
       </div>
     </li>
   );
@@ -154,7 +163,7 @@ function SeatCard({
 /* ───────── Trilho da sala ───────── */
 
 function InviteFriends({ lobby }: { lobby: Lobby }) {
-  const { user, signIn, pushToast } = useSession();
+  const { user, signIn, pushToast, live, callFriend } = useSession();
   const friends = useFriends();
   const [invited, setInvited] = useState<ReadonlySet<string>>(() => new Set());
   if (!user) {
@@ -182,6 +191,11 @@ function InviteFriends({ lobby }: { lobby: Lobby }) {
               disabled={done}
               aria-label={done ? undefined : t.friends.inviteLabel(f.name)}
               onClick={() => {
+                // Ao vivo o convite vai pelo servidor (chega como aviso para quem foi chamado).
+                if (live) {
+                  void callFriend(f).then((ok) => ok && setInvited((s) => new Set(s).add(f.name)));
+                  return;
+                }
                 setInvited((s) => new Set(s).add(f.name));
                 pushToast(t.friends.invitedToast(f.name));
               }}
@@ -196,12 +210,45 @@ function InviteFriends({ lobby }: { lobby: Lobby }) {
   );
 }
 
+/** Ao vivo, para quem abriu um lobby com convite: quem bateu na porta, com Abrir e Recusar. */
+function Knocks() {
+  const { knocksHere, answerKnock } = useSession();
+  if (knocksHere.length === 0) return null;
+  return (
+    <section className="rail-sec" aria-labelledby="room-knocks">
+      <div className="rail-h">
+        <h3 className="cap" id="room-knocks">
+          {L.knocksTitle} · <b className="num">{knocksHere.length}</b>
+        </h3>
+      </div>
+      <ul className="rknocks">
+        {knocksHere.map((k) => (
+          <li key={k.userId} className="rknock">
+            <Avatar name={k.name} size={28} />
+            <b>{k.name}</b>
+            {k.message && <small>{k.message}</small>}
+            <div className="rknock-act">
+              <button type="button" className="btn btn-s btn-sm" aria-label={L.knockDeclineLabel(k.name)} onClick={() => answerKnock(k.userId, false)}>
+                {L.knockDecline}
+              </button>
+              <button type="button" className="btn btn-p btn-sm" aria-label={L.knockAcceptLabel(k.name)} onClick={() => answerKnock(k.userId, true)}>
+                {L.knockAccept}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode | undefined; inside: boolean; feed: FeedItem[]; now: number }) {
   const { inviteTo, user } = useSession();
   const free = Math.max(0, lobby.slots - lobby.players);
   const link = `${window.location.host}/sala/${encodeURIComponent(lobby.id)}`;
   return (
     <>
+      {lobby.mine && <Knocks />}
       {mode && (
         <section className="rail-sec" aria-labelledby="room-rules">
           <div className="rail-h">
@@ -284,7 +331,7 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
 
 function RoomView({ lobby }: { lobby: Lobby }) {
   const s = useSession();
-  const { user, hereId, joiningId, joiningStep, ready, toggleReady, startMatch, leaveLobby, closeLobby, inviteTo, pushToast, lobbyCtx } = s;
+  const { user, hereId, joiningId, joiningStep, ready, toggleReady, startMatch, cancelStart, kick, leaveLobby, closeLobby, inviteTo, pushToast, lobbyCtx } = s;
   const { seatsHere, confirmedAt, countdownEndsAt, handoffStep } = s;
   const now = useNow(5000);
   const friends = useFriends();
@@ -515,6 +562,29 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         </button>
       </>
     );
+  } else if (lobby.mine && countdown) {
+    // Ao vivo, quem abriu também vê a contagem de 5 s e pode cancelar.
+    mid = (
+      <p className="rb-hint is-count">
+        <span className="rb-cd num" aria-hidden="true">
+          {secs}
+        </span>
+        <span>
+          {t.room.countdownLead} {t.room.seconds(secs)}. {t.room.countdownTail}
+        </span>
+      </p>
+    );
+    act = (
+      <>
+        <button type="button" className="btn btn-g" onClick={() => closeLobby(lobby.id)} aria-label={t.room.closeLabel(lobby.name)}>
+          <Icon name="x" />
+          {t.room.close}
+        </button>
+        <button type="button" className="btn rb-ready is-on" aria-label={t.room.cancelLabel} onClick={cancelStart}>
+          {t.room.cancel}
+        </button>
+      </>
+    );
   } else if (lobby.mine) {
     const canStart = lobby.players >= k && readyN >= k;
     mid = (
@@ -674,6 +744,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
               visitor={!here && !lobby.mine}
               signedIn={!!user}
               onInvite={focusInvite}
+              onKick={s.live && lobby.mine && seat.name && !seat.you && !playing ? () => kick(seat) : undefined}
             />
           ))}
         </ul>
@@ -710,9 +781,20 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
 export function Room() {
   const { id = '' } = useParams();
-  const { lobbies } = useSession();
+  const { lobbies, synced } = useSession();
   const lobby = lobbies.find((l) => l.id === id);
   useDocumentTitle(t.room.meta(lobby?.name ?? t.room.goneTitle));
+
+  // Ao vivo, antes da primeira lista: ainda não dá para dizer que a sala sumiu.
+  if (!lobby && !synced) {
+    return (
+      <div className="page route-wait" aria-busy="true">
+        <div className="wrap">
+          <p className="fine">{L.connecting}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!lobby) {
     return (

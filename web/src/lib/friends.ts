@@ -9,6 +9,8 @@ import type { Lobby } from '../data/lobbies';
  */
 
 export interface FriendPresence {
+  /** Ao vivo: o ID da conta (para chamar). */
+  id?: string;
   name: string;
   /** Lobby em que está; `null` = online, fora de lobby. */
   lobbyId: string | null;

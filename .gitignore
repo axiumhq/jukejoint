@@ -16,3 +16,6 @@ node_modules/
 
 # Worktrees dos agentes (ramos próprios)
 /.claude/worktrees/
+
+# API: chave de assinatura dos cookies e estado local (nunca versionar)
+/server/.data/

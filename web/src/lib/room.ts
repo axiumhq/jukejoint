@@ -10,6 +10,10 @@ import { passersby, type Lobby } from '../data/lobbies';
 export interface Seat {
   /** `null` = vaga livre. */
   name: string | null;
+  /** Ao vivo: o ID da conta (para remover da sala). */
+  id?: string;
+  /** Ao vivo: vaga de lobby com convite vista de fora (sem nome de verdade). */
+  hidden?: boolean;
   you?: boolean;
   host?: boolean;
   friend?: boolean;
@@ -40,6 +44,12 @@ function hash(s: string) {
 }
 
 export function roster(l: Lobby, o: RosterOptions): Seat[] {
+  // Ao vivo, as vagas vêm do servidor: nada de simular.
+  if (l.seats) {
+    const live = l.seats.map((s) => ({ ...s }));
+    while (live.length < l.slots) live.push({ name: null });
+    return live;
+  }
   const seats: Seat[] = [];
   const used = new Set<string>([o.you]);
   const playing = l.status === 'em-partida';

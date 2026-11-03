@@ -1,97 +1,24 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { lobbies as seedLobbies, passersby, type Lobby } from '../data/lobbies';
-import { getMode, type Region } from '../data/modes';
+import { getMode } from '../data/modes';
+import { API_URL } from '../data/source';
 import { t } from '../i18n';
 import { useNavigate } from 'react-router';
 import { friendsIn, friendsOnline } from '../lib/friends';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
-import { nextToConfirm, readyCount, roster, type Seat } from '../lib/room';
+import { nextToConfirm, readyCount, roster } from '../lib/room';
 import { dayPeriod } from '../lib/time';
+import { LiveSessionProvider } from './liveSession';
+import { SessionContext, type HostDraft, type JoinTarget, type MockUser, type SessionValue, type Toast } from './sessionContext';
+
+export { useSession } from './sessionContext';
+export type { ConnectionState, HostDraft, JoinTarget, MockUser, SessionValue, Toast } from './sessionContext';
 
 /**
  * Estado simulado da sessão. Nada aqui fala com servidor:
  * login, conexão com o app, entrar, sair, bater na porta e criar lobby são só estado local.
+ * Com `VITE_API_URL`, `SessionProvider` usa a sessão ao vivo (state/liveSession.tsx) no lugar desta.
  */
-
-export interface MockUser {
-  name: string;
-  friendsOnline: number;
-}
-
-export interface Toast {
-  id: number;
-  message: string;
-}
-
-export interface HostDraft {
-  name: string;
-  modeSlug: string;
-  region: Region;
-  slots: number;
-  minPlayers: number;
-  locked: boolean;
-}
-
-export type JoinTarget = { kind: 'lobby'; lobby: Lobby } | { kind: 'bots' };
-
-interface SessionValue {
-  user: MockUser | null;
-  signIn: () => void;
-  signOut: () => void;
-  appConnected: boolean;
-  setAppConnected: (v: boolean) => void;
-  lobbies: Lobby[];
-  /** Lobby em que você está (entrou ou abriu). */
-  hereId: string | null;
-  /** Contexto para `lobbyState()`: presença, entrada em curso, portas e avisos. */
-  lobbyCtx: LobbyContext;
-  createLobby: (draft: HostDraft) => void;
-  closeLobby: (id: string) => void;
-  leaveLobby: () => void;
-  inviteTo: (lobby: Lobby) => void;
-  /** Você marcou "pronto" na sala em que está. */
-  ready: boolean;
-  toggleReady: () => void;
-  /** Só o anfitrião, com o mínimo de jogadores: começa a partida. */
-  startMatch: () => void;
-  /** As vagas da sala em que você está (mesma conta que decide a contagem). Vazio fora de sala. */
-  seatsHere: Seat[];
-  /** Quem confirmou depois de você, com a hora (simulado; alimenta a atividade da sala). */
-  confirmedAt: ReadonlyMap<string, number>;
-  /** Fim da contagem de 5 s (epoch ms) na sala em que você está; `null` sem contagem. Desmarcar pronto cancela. */
-  countdownEndsAt: number | null;
-  /** Etapa do app depois que a partida começa (índice em HANDOFF_STEPS); 3 = dentro do lobby. `null` sem handoff. */
-  handoffStep: number | null;
-  joiningId: string | null;
-  /** Etapa simulada da entrada (índice em t.lobbies.joinSteps). */
-  joiningStep: number;
-  /** Pede para entrar. Abre o diálogo se o app não estiver conectado ou se você já está noutro lobby. */
-  requestJoin: (target: JoinTarget) => void;
-  joinTarget: JoinTarget | null;
-  closeJoin: () => void;
-  /** Confirma a entrada do diálogo (conecta o app se precisar). */
-  confirmJoin: () => void;
-  /** Compatibilidade v3. */
-  confirmJoinWithApp: () => void;
-  knockTarget: Lobby | null;
-  openKnock: (lobby: Lobby) => void;
-  closeKnock: () => void;
-  sendKnock: (message: string) => void;
-  knocks: ReadonlyMap<string, KnockStatus>;
-  hostDialog: { open: boolean; modeSlug?: string };
-  openHost: (modeSlug?: string) => void;
-  closeHost: () => void;
-  notify: Set<string>;
-  toggleNotify: (key: string, label: string) => void;
-  /** Convites recebidos que você recusou (id do lobby); o trilho não mostra de novo. */
-  declinedInvites: ReadonlySet<string>;
-  declineInvite: (lobbyId: string) => void;
-  toasts: Toast[];
-  pushToast: (message: string) => void;
-  dismissToast: (id: number) => void;
-}
-
-const SessionContext = createContext<SessionValue | null>(null);
 
 const MOCK_USER: MockUser = { name: 'Corvo_Noturno', friendsOnline: 4 };
 
@@ -139,7 +66,12 @@ export function liveTick(list: Lobby[], hereId: string | null, now = Date.now(),
   });
 }
 
+/** A sessão do site: ao vivo com `VITE_API_URL`, simulada sem. */
 export function SessionProvider({ children }: { children: ReactNode }) {
+  return API_URL ? <LiveSessionProvider api={API_URL}>{children}</LiveSessionProvider> : <MockSessionProvider>{children}</MockSessionProvider>;
+}
+
+function MockSessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MockUser | null>(null);
   const [appConnected, setAppConnected] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>(seedLobbies);
@@ -478,8 +410,28 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const declineInvite = useCallback((lobbyId: string) => setDeclined((s) => new Set(s).add(lobbyId)), []);
 
+  // "Chamar" simulado: só o aviso (no produto, o convite vai pelo servidor; ver liveSession.tsx).
+  const callFriend = useCallback(
+    async (f: { name: string }) => {
+      pushToast(t.social.calledToast(f.name));
+      return true;
+    },
+    [pushToast],
+  );
+  const noop = useCallback(() => {}, []);
+
   const value = useMemo<SessionValue>(
     () => ({
+      live: false,
+      connection: 'mock',
+      synced: true,
+      devLogin: false,
+      signInDev: signIn,
+      cancelStart: noop,
+      kick: noop,
+      knocksHere: [],
+      answerKnock: noop,
+      callFriend,
       user,
       signIn,
       signOut,
@@ -554,6 +506,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       toggleNotify,
       declinedInvites,
       declineInvite,
+      callFriend,
+      noop,
       toasts,
       pushToast,
       dismissToast,
@@ -561,10 +515,4 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
-}
-
-export function useSession() {
-  const ctx = useContext(SessionContext);
-  if (!ctx) throw new Error('useSession precisa estar dentro de <SessionProvider>');
-  return ctx;
 }

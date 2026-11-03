@@ -3,6 +3,7 @@ import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode, modes, type Region } from '../data/modes';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { LiveDot, Tag } from './Common';
@@ -59,7 +60,7 @@ function Note({ icon = 'info', tone, children }: { icon?: IconName; tone?: 'warn
 }
 
 function SignInBlock({ body }: { body: string }) {
-  const { signIn } = useSession();
+  const { signIn, live, devLogin, signInDev } = useSession();
   return (
     <div className="dlg-signin">
       <p>{body}</p>
@@ -67,7 +68,12 @@ function SignInBlock({ body }: { body: string }) {
         <Icon name="user" />
         {t.account.signIn}
       </button>
-      <small>{t.account.mockNote}</small>
+      {devLogin && (
+        <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
+          {L.devSignIn}
+        </button>
+      )}
+      <small>{live ? L.steamNote : t.account.mockNote}</small>
     </div>
   );
 }

@@ -1,0 +1,102 @@
+/*
+ * Modo ao vivo (API real): o aviso de conexão, o botão de remover da sala, os pedidos na porta
+ * e o login de teste. Só tokens de tokens.css; nada aqui muda o protótipo simulado.
+ */
+
+/* aviso de conexão, logo abaixo da barra superior */
+.live-status {
+  position: fixed;
+  top: calc(var(--tb) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  color: var(--tx-2);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+.live-status > i {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--acc);
+}
+.live-status.is-offline > i {
+  background: var(--warn);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .live-status > i {
+    animation: live-blink 1.2s ease-in-out infinite;
+  }
+}
+@keyframes live-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* login de teste ao lado de "Entrar com a Steam" */
+.acct-dev {
+  white-space: nowrap;
+}
+.rail-signin .acct-dev {
+  margin-top: 6px;
+}
+
+/* remover alguém da sala (só quem abriu vê) */
+.seat-kick {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 2px 8px;
+  border-radius: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--tx-3);
+  font: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.seat-kick:hover,
+.seat-kick:focus-visible {
+  color: var(--warn);
+  background: var(--s3);
+}
+
+/* pedidos na porta, no trilho da sala */
+.rknocks {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.rknock {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--r-lg);
+  background: var(--s2);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+.rknock small {
+  grid-column: 2;
+  color: var(--tx-2);
+  overflow-wrap: anywhere;
+}
+.rknock-act {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}

@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { BRAND_NAME } from '../config/brand';
 import { useFriends, useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { friendsIn } from '../lib/friends';
 import { roster } from '../lib/room';
 import { useSession } from '../state/session';
@@ -16,6 +17,7 @@ import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 import { ThemeMenu } from './ThemeMenu';
+import '../styles/live.css';
 
 /*
  * Casca v8 (estrutura da pele B): barra superior, coluna principal e trilho social fixo.
@@ -97,7 +99,7 @@ function LiveCount() {
 }
 
 function Account() {
-  const { user, signIn, signOut } = useSession();
+  const { user, signIn, signOut, live, devLogin, signInDev } = useSession();
   const friends = useFriends();
   const [open, setOpen] = useState(false);
   const wrap = useRef<HTMLDivElement>(null);
@@ -124,13 +126,20 @@ function Account() {
 
   if (!user) {
     return (
-      <button type="button" className="btn btn-p btn-steam" onClick={signIn} aria-label={t.account.signIn}>
-        <Icon name="user" />
-        <span className="t">{t.account.signIn}</span>
-        <span className="t-short" aria-hidden="true">
-          {t.friends.join}
-        </span>
-      </button>
+      <>
+        {devLogin && (
+          <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
+            {L.devSignIn}
+          </button>
+        )}
+        <button type="button" className="btn btn-p btn-steam" onClick={signIn} aria-label={t.account.signIn}>
+          <Icon name="user" />
+          <span className="t">{t.account.signIn}</span>
+          <span className="t-short" aria-hidden="true">
+            {t.friends.join}
+          </span>
+        </button>
+      </>
     );
   }
 
@@ -155,7 +164,7 @@ function Account() {
             <b>{user.name}</b>
             <p>{t.account.friendsOnline(friends.length)}</p>
           </div>
-          <p>{t.account.mockNote}</p>
+          <p>{live ? (user.dev ? L.devNote : L.steamNote) : t.account.mockNote}</p>
           <button
             type="button"
             className="btn btn-s btn-sm"
@@ -245,12 +254,26 @@ function RailAside({ sheet }: { sheet: boolean }) {
   );
 }
 
+/** Ao vivo: o aviso discreto enquanto o WebSocket conecta ou reconecta. */
+function LiveStatus() {
+  const { live, connection } = useSession();
+  if (!live || connection === 'online') return null;
+  const offline = connection === 'offline';
+  return (
+    <p className={offline ? 'live-status is-offline' : 'live-status'} role="status">
+      <i aria-hidden="true" />
+      {offline ? L.offline : L.connecting}
+    </p>
+  );
+}
+
 function Frame() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
   const first = useRef(true);
   const sheet = useMediaQuery('(max-width: 960px)');
   const { sheetOpen, closeSheet } = useRail();
+  const { live } = useSession();
   const modal = sheet && sheetOpen;
 
   useEffect(() => closeSheet(), [pathname, closeSheet]);
@@ -278,13 +301,14 @@ function Frame() {
       </a>
       <CoverDefs />
       <TopBar inert={modal} />
+      <LiveStatus />
       <div className="app">
         <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
           <LineArt />
           <LineArt className="b" />
           <Outlet />
           <p className="fineprint">
-            {t.footer.about} {t.footer.prototype}
+            {t.footer.about} {live ? null : t.footer.prototype}
           </p>
         </main>
         <RailAside sheet={sheet} />
