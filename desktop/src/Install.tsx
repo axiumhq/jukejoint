@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { BRAND_NAME } from '@web/config/brand';
 import {
   api,
@@ -12,12 +12,17 @@ import {
   type EngineError,
   type SessionInfo,
 } from './api';
+import { followThemeChanges } from './theme-sync';
 
 /**
  * Tela Instalação do app: mostra, sem esconder nada, o que o app toca neste PC. O binário do
  * motor (caminho e SHA-256), o serviço do motor (o daemon do Modlock), o arquivo hosts, as
  * variáveis de ambiente, o jogo e o que fazer quando o antivírus coloca o motor em quarentena.
  * Só lê, exceto ligar/parar o serviço.
+ *
+ * Cada seção tem um chip de estado. As que têm problema sobem para o topo com tudo aberto; nas que
+ * estão em ordem, o técnico (pastas, log, variáveis, hosts) fica atrás de "Ver detalhes". Os hashes
+ * ficam sempre à vista: são eles que dão para conferir o motor.
  *
  * Problemas aparecem em duas camadas: a frase para quem joga (`message`) e, num "Detalhes
  * técnicos" fechado, o código estável e o `detail` (variável, caminho, saída do Modlock).
@@ -90,6 +95,22 @@ function headline(report: CheckReport | null, checkError: EngineError | null, ac
   return actionFailed ? 'A instalação está certa, mas a última ação falhou.' : 'Tudo certo para hospedar e entrar.';
 }
 
+type Tone = 'ok' | 'warn' | 'idle';
+
+/** Uma seção da tela: com problema, sobe para o topo e abre os detalhes. */
+interface Block {
+  id: string;
+  /** Nome curto para a navegação. */
+  name: string;
+  problem: boolean;
+  /** Entre as seções com problema, vem primeiro (a recuperação do antivírus com o motor fora do disco). */
+  lead?: boolean;
+  node: ReactNode;
+}
+
+const AV_CODES = new Set(['binario_sumiu', 'binario_ausente', 'processo', 'daemon_nao_subiu']);
+const ENV_CODES = new Set(['origem_ausente', 'origem_invalida', 'socket_caminho_longo']);
+
 export function Install() {
   const [app, setApp] = useState<AppInfo | null>(null);
   const [report, setReport] = useState<CheckReport | null>(null);
@@ -104,6 +125,8 @@ export function Install() {
   const [status, setStatus] = useState<{ n: number; msg: string }>({ n: 0, msg: '' });
 
   const say = useCallback<Say>((msg) => setStatus((s) => ({ n: s.n + 1, msg })), []);
+
+  useEffect(() => followThemeChanges(), []);
 
   const refresh = useCallback(async (): Promise<{ report: CheckReport | null; error: EngineError | null }> => {
     setBusy('check');
@@ -166,19 +189,11 @@ export function Install() {
   }
 
   const r = report;
-  const b = r?.binary;
-  /** O motor não está no disco: a recuperação (antivírus) sobe para o topo. */
-  const motorMissing = !!b && !b.exists;
-  const sections: [string, string][] = [
-    ['motor', 'Motor'],
-    ['servico', 'Serviço do motor'],
-    ['hosts', 'Arquivo hosts'],
-    ['ambiente', 'Variáveis'],
-    ['jogo', 'Jogo'],
-    ['antivirus', 'Antivírus'],
-    ['nao-faz', 'O que não faz'],
-  ];
-  if (motorMissing) sections.unshift(...sections.splice(5, 1));
+  const blocks: Block[] = r ? buildBlocks({ r, session, busy, actionError, onAct: (a) => void daemon(a), onCheck: () => busy === null && void check() }) : [];
+  // Problemas primeiro (a recuperação do antivírus na frente, se o motor sumiu), depois o resto na
+  // ordem de sempre. "O que o app não faz" fica sempre por último.
+  const rank = (s: Block) => (s.problem ? (s.lead ? 0 : 1) : 2);
+  const ordered = blocks.map((s, i) => ({ s, i })).sort((a, z) => rank(a.s) - rank(z.s) || a.i - z.i).map((x) => x.s);
 
   return (
     <Announce.Provider value={say}>
@@ -222,253 +237,353 @@ export function Install() {
           </p>
           {!inApp && <p className="ins-note">Prévia fora do app: os dados abaixo são de exemplo.</p>}
 
-          <nav className="ins-toc" aria-label="Seções">
-            {sections.map(([id, name]) => (
-              <a key={id} href={`#${id}`} className="lbl">
-                {name}
-              </a>
-            ))}
-          </nav>
-
           <Summary report={r} checkError={checkError} actionError={actionError} />
 
-          {r && b && (
-            <>
-              {motorMissing && <Antivirus report={r} first onCheck={() => busy === null && void check()} busy={busy !== null} />}
+          {ordered.length > 0 && (
+            <nav className="ins-toc" aria-label="Seções">
+              {ordered.map((s) => (
+                <a key={s.id} href={`#${s.id}`} className={s.problem ? 'is-pb' : undefined}>
+                  {s.name}
+                  {s.problem && <span className="sr-only"> (precisa de atenção)</span>}
+                </a>
+              ))}
+              <a href="#nao-faz">O que não faz</a>
+            </nav>
+          )}
 
-              <Section id="motor" title={['O', 'motor']} meta={`Modlock ${b.expectedVersion}, versão fixada`}>
-                <dl className="rows">
-                  <Row k="Executável">
-                    {b.path ? (
-                      <Code copy label="caminho do executável">
-                        {b.path}
-                      </Code>
-                    ) : (
-                      b.folder && (
-                        <Code copy label="pasta do app">
-                          {b.folder}
-                        </Code>
-                      )
-                    )}
-                    {b.exists ? (
-                      b.source && <span className="fine">encontrado por: {b.source}</span>
-                    ) : b.vanished ? (
-                      <span className="bad">
-                        não encontrado: o arquivo estava aqui e sumiu, provavelmente em quarentena no antivírus. <a href="#antivirus">Como restaurar</a>
-                      </span>
-                    ) : b.path ? (
-                      <span className="bad">não encontrado neste caminho</span>
-                    ) : (
-                      <span className="bad">não encontrado{b.folder ? ' na pasta do app' : ''}</span>
-                    )}
-                  </Row>
-                  <Row k="Tamanho">
-                    <span className="num">{formatMb(b.sizeBytes)}</span>
-                  </Row>
-                  <Row k="SHA-256 do arquivo">
-                    {b.sha256 ? (
-                      <Code copy label="SHA-256 do arquivo">
-                        {b.sha256}
-                      </Code>
-                    ) : (
-                      <span className="fine">—</span>
-                    )}
-                    {b.exists && <Mark ok={b.hashOk} yes="igual ao fixado" no="diferente do fixado: o app não roda este arquivo" />}
-                  </Row>
-                  <Row k="SHA-256 fixado">
-                    <Code copy label="SHA-256 fixado">
-                      {b.expectedSha256}
-                    </Code>
-                  </Row>
-                  <Row k="Versão">
-                    <span className="num">{b.version ?? '—'}</span>
-                    {b.hashOk && <Mark ok={b.versionOk} yes={`esperada ${b.expectedVersion}`} no={`esperada ${b.expectedVersion}`} />}
-                  </Row>
-                  <Row k="Conferir por conta própria">
-                    <Code copy label="comando Get-FileHash">
-                      {hashCommand(b.path ?? (b.folder ? joinPath(b.folder, 'modlock.exe') : null))}
-                    </Code>
-                    <span className="fine">No PowerShell. O resultado precisa ser igual ao SHA-256 fixado.</span>
-                  </Row>
-                </dl>
-              </Section>
+          {ordered.map((s) => (
+            <Fragment key={s.id}>{s.node}</Fragment>
+          ))}
 
-              <Section
-                id="servico"
-                title={['O serviço', 'do motor']}
-                meta="modlock daemon, roda em segundo plano"
-                badge={<StateChip state={r.daemon.state} />}
-                actions={<DaemonButton report={r} session={session} busy={busy} onAct={(a) => void daemon(a)} />}
-              >
-                {actionError && (
-                  <div className="act-err" id="servico-err">
-                    <p className="act-err-t">
-                      {actionError.action === 'start' ? 'Não deu para ligar o serviço do motor.' : 'Não deu para parar o serviço do motor.'}
-                    </p>
-                    <Problem p={actionError.error} />
-                  </div>
-                )}
-                <dl className="rows">
-                  <Row k="Servidor em uso">
-                    {r.daemon.status?.origin ? <Code>{r.daemon.status.origin}</Code> : <span className="fine">—</span>}
-                    {r.daemon.status && r.daemon.expectedOrigin && (
-                      <Mark ok={r.daemon.originOk} yes="o nosso" no="outro servidor: o app troca ao hospedar ou entrar" />
-                    )}
-                  </Row>
-                  <Row k="Servidor esperado">
-                    {r.daemon.expectedOrigin ? (
-                      <Code>{r.daemon.expectedOrigin}</Code>
-                    ) : (
-                      <>
-                        <span className="bad">não configurado nesta cópia do app</span>
-                        <span className="fine">
-                          <code>ENGINE_ORIGIN</code> não definida
-                        </span>
-                      </>
-                    )}
-                  </Row>
-                  {r.daemon.status && (
-                    <Row k="Processo">
-                      <span className="num">PID {r.daemon.status.pid ?? '—'}</span>
-                      <span className="fine">
-                        desde <span className="num">{r.daemon.status.since ?? '—'}</span> · {r.daemon.status.clients ?? 0} cliente(s) ·{' '}
-                        {r.daemon.startedByApp ? 'iniciado por este app' : 'iniciado fora deste app'}
-                      </span>
-                    </Row>
-                  )}
-                  <Row k="Pasta de dados">
-                    <Code copy label="pasta de dados do serviço">
-                      {r.daemon.stateDir}
-                    </Code>
-                    <span className="fine">trava, arquivo de conexão e log do serviço</span>
-                  </Row>
-                  <Row k="Arquivo de conexão">
-                    <Code>{r.daemon.socketPath}</Code>
-                    {r.daemon.socketPathTooLong && <span className="bad">caminho longo demais para o Windows: o serviço não liga</span>}
-                  </Row>
-                  <Row k="Log">
-                    <Code copy label="caminho do log">
-                      {r.daemon.logPath}
-                    </Code>
-                  </Row>
-                </dl>
-                {r.daemon.state === 'socketTravado' && (
-                  <div className="callout">
-                    <p>
-                      O serviço anterior foi fechado à força e deixou o arquivo de conexão (<code>modlock.sock</code>) preso. O Windows só libera esse arquivo
-                      ao reiniciar: reinicie o PC e abra o app de novo.
-                    </p>
-                    <Tech code="socket_travado">
-                      Sem reiniciar: aponte <code>ENGINE_STATE_DIR</code> para outra pasta curta (por exemplo <code>C:\Users\&lt;nome&gt;\.ml</code>).
-                    </Tech>
-                  </div>
-                )}
-                <p className="fine">
-                  O app só para o serviço com <code>modlock daemon stop</code>. Encerrar o processo pelo Gerenciador de Tarefas deixa o arquivo de conexão preso
-                  até reiniciar o PC.
-                </p>
-              </Section>
+          {r && (
+            <Section id="nao-faz" title={<>O que o app <em>não faz</em></>}>
+              <ul className="nots">
+                <li>
+                  Não roda o <code>modlock.exe</code> se o hash não for o fixado.
+                </li>
+                <li>Não encerra o serviço do motor à força; só pede para ele parar.</li>
+                <li>Não usa o hyperline.gg: o serviço do motor sobe sempre com o nosso servidor.</li>
+                <li>Não edita o arquivo hosts nem arquivos do jogo.</li>
+                <li>
+                  Não registra o link <code>{app?.scheme ?? 'lobby'}://</code> no Windows sozinho: até existir o instalador, isso só acontece com{' '}
+                  <code>APP_REGISTER_SCHEME=1</code>.
+                </li>
+                <li>
+                  Não fica aberto em segundo plano: o ícone na bandeja é só um atalho enquanto a janela do site está aberta. Fechar essa janela fecha o app e para
+                  o que ele ligou.
+                </li>
+              </ul>
+            </Section>
+          )}
 
-              <Section id="hosts" title={['Arquivo', 'hosts']} meta="opcional">
-                <dl className="rows">
-                  <Row k="Caminho">
-                    <Code>{r.hosts.path}</Code>
-                    {!r.hosts.readable && <span className="bad">não foi possível ler</span>}
-                  </Row>
-                  <Row k={`Bloqueio do ${r.hosts.host}`}>
-                    {r.hosts.lines.length > 0 ? r.hosts.lines.map((l) => <Code key={l}>{l}</Code>) : <span className="fine">nenhuma linha</span>}
-                    <Mark ok={r.hosts.blocked} yes="ativo" no="não está bloqueado" soft />
-                  </Row>
-                  <Row k="Linha para adicionar">
-                    <Code copy label="linha do arquivo hosts">
-                      {BLOCK_LINE}
-                    </Code>
-                  </Row>
-                </dl>
-                <p className="fine">
-                  Serve para provar que nada passa pelo {r.hosts.host}. O app só lê este arquivo: editar exige administrador, então é você quem adiciona a
-                  linha, se quiser.
-                </p>
-              </Section>
-
-              <Section id="ambiente" title={['Variáveis de', 'ambiente']} meta="lidas e definidas pelo app">
-                <table className="envt">
-                  <thead>
-                    <tr>
-                      <th className="lbl">Nome</th>
-                      <th className="lbl">Valor</th>
-                      <th className="lbl">Para quê</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {r.env.map((e) => (
-                      <tr key={e.name}>
-                        <td>
-                          <code className="mono">{e.name}</code>
-                          <span className="fine">{e.scope === 'app' ? 'lida pelo app' : 'definida pelo app no motor'}</span>
-                        </td>
-                        <td>{e.value ? <code className="mono">{e.value}</code> : <span className="fine">não definida</span>}</td>
-                        <td className="fine">{e.purpose}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </Section>
-
-              <Section id="jogo" title={['O', 'jogo']} meta={r.game.exe}>
-                <dl className="rows">
-                  <Row k="Deadlock">
-                    {r.game.running ? (
-                      <span className="bad">
-                        aberto (PID <span className="num">{r.game.pids.join(', ')}</span>)
-                      </span>
-                    ) : (
-                      <span>fechado</span>
-                    )}
-                  </Row>
-                </dl>
-                <p className="fine">
-                  Para carregar um modo, o Deadlock precisa estar fechado: com o jogo aberto, o <code>gameinfo.gi</code> fica travado e o conteúdo não monta. O
-                  app confere isso antes de hospedar ou entrar.
-                </p>
-              </Section>
-
-              {!motorMissing && <Antivirus report={r} />}
-
-              <Section id="nao-faz" title={['O que o app', 'não faz']}>
-                <ul className="nots">
-                  <li>
-                    Não roda o <code>modlock.exe</code> se o hash não for o fixado.
-                  </li>
-                  <li>Não encerra o serviço do motor à força; só pede para ele parar.</li>
-                  <li>Não usa o hyperline.gg: o serviço do motor sobe sempre com o nosso servidor.</li>
-                  <li>Não edita o arquivo hosts nem arquivos do jogo.</li>
-                  <li>
-                    Não registra o link <code>{app?.scheme ?? 'lobby'}://</code> no Windows sozinho: até existir o instalador, isso só acontece com{' '}
-                    <code>APP_REGISTER_SCHEME=1</code>.
-                  </li>
-                  <li>Não fica aberto em segundo plano: fechar a janela do site fecha o app e para o que ele ligou.</li>
-                </ul>
-              </Section>
-
-              {session && (
-                <p className="fine ins-session">
-                  Partida {session.kind === 'host' ? 'hospedada' : 'de entrada'} {session.running ? 'em andamento' : 'encerrada'}
-                  {session.joinCode && (
-                    <>
-                      {' '}
-                      · código <span className="num">{session.joinCode}</span>
-                    </>
-                  )}{' '}
-                  · PID <span className="num">{session.pid}</span>
-                </p>
-              )}
-            </>
+          {session && (
+            <p className="fine ins-session">
+              Partida {session.kind === 'host' ? 'hospedada' : 'de entrada'} {session.running ? 'em andamento' : 'encerrada'}
+              {session.joinCode && (
+                <>
+                  {' '}
+                  · código <span className="num">{session.joinCode}</span>
+                </>
+              )}{' '}
+              · PID <span className="num">{session.pid}</span>
+            </p>
           )}
         </main>
       </div>
     </Announce.Provider>
   );
+}
+
+/** Monta as seções com o estado de cada uma (chip, problema e o que fica atrás de "Ver detalhes"). */
+function buildBlocks({
+  r,
+  session,
+  busy,
+  actionError,
+  onAct,
+  onCheck,
+}: {
+  r: CheckReport;
+  session: SessionInfo | null;
+  busy: null | 'check' | Action;
+  actionError: { action: Action; error: EngineError } | null;
+  onAct: (a: Action) => void;
+  onCheck: () => void;
+}): Block[] {
+  const b = r.binary;
+  const codes = new Set(r.problems.map((p) => p.code));
+  if (actionError) codes.add(actionError.error.code);
+  /** O motor não está no disco: a recuperação (antivírus) sobe para o topo. */
+  const motorMissing = !b.exists;
+
+  const motorProblem = !b.exists || !b.hashOk || !b.versionOk;
+  const motorChip: [Tone, string] = !b.exists
+    ? ['warn', 'Não encontrado']
+    : !b.hashOk
+      ? ['warn', 'Hash diferente']
+      : !b.versionOk
+        ? ['warn', 'Versão errada']
+        : ['ok', 'Conferido'];
+
+  const d = r.daemon;
+  const svcProblem = d.state === 'socketTravado' || d.socketPathTooLong || !!actionError;
+
+  const hostsChip: [Tone, string] = !r.hosts.readable ? ['warn', 'Não deu para ler'] : r.hosts.blocked ? ['ok', 'Bloqueado'] : ['idle', 'Sem bloqueio'];
+
+  const envProblem = [...ENV_CODES].some((c) => codes.has(c));
+  const avProblem = [...AV_CODES].some((c) => codes.has(c));
+
+  return [
+    {
+      id: 'motor',
+      name: 'Motor',
+      problem: motorProblem,
+      node: (
+        <Section id="motor" title="O motor" chip={<Chip tone={motorChip[0]}>{motorChip[1]}</Chip>} meta={`Modlock ${b.expectedVersion}, versão fixada`}>
+          <dl className="rows">
+            <Row k="Executável">
+              {b.path ? (
+                <Code copy label="caminho do executável">
+                  {b.path}
+                </Code>
+              ) : (
+                b.folder && (
+                  <Code copy label="pasta do app">
+                    {b.folder}
+                  </Code>
+                )
+              )}
+              {b.exists ? (
+                b.source && <span className="fine">encontrado por: {b.source}</span>
+              ) : b.vanished ? (
+                <span className="bad">
+                  não encontrado: o arquivo estava aqui e sumiu, provavelmente em quarentena no antivírus. <a href="#antivirus">Como restaurar</a>
+                </span>
+              ) : b.path ? (
+                <span className="bad">não encontrado neste caminho</span>
+              ) : (
+                <span className="bad">não encontrado{b.folder ? ' na pasta do app' : ''}</span>
+              )}
+            </Row>
+            <Row k="Tamanho">
+              <span className="num">{formatMb(b.sizeBytes)}</span>
+            </Row>
+            <Row k="SHA-256 do arquivo">
+              {b.sha256 ? (
+                <Code copy hash label="SHA-256 do arquivo">
+                  {b.sha256}
+                </Code>
+              ) : (
+                <span className="fine">—</span>
+              )}
+              {b.exists && <Mark ok={b.hashOk} yes="igual ao fixado" no="diferente do fixado: o app não roda este arquivo" />}
+            </Row>
+            <Row k="SHA-256 fixado">
+              <Code copy hash label="SHA-256 fixado">
+                {b.expectedSha256}
+              </Code>
+            </Row>
+            <Row k="Versão">
+              <span className="num">{b.version ?? '—'}</span>
+              {b.hashOk && <Mark ok={b.versionOk} yes={`esperada ${b.expectedVersion}`} no={`esperada ${b.expectedVersion}`} />}
+            </Row>
+            <Row k="Conferir por conta própria">
+              <Code copy label="comando Get-FileHash">
+                {hashCommand(b.path ?? (b.folder ? joinPath(b.folder, 'modlock.exe') : null))}
+              </Code>
+              <span className="fine">No PowerShell. O resultado precisa ser igual ao SHA-256 fixado.</span>
+            </Row>
+          </dl>
+        </Section>
+      ),
+    },
+    {
+      id: 'servico',
+      name: 'Serviço do motor',
+      problem: svcProblem,
+      node: (
+        <Section
+          id="servico"
+          title="O serviço do motor"
+          chip={<StateChip state={d.state} />}
+          meta="modlock daemon, roda em segundo plano"
+          actions={<DaemonButton report={r} session={session} busy={busy} onAct={onAct} />}
+        >
+          {actionError && (
+            <div className="act-err" id="servico-err">
+              <p className="act-err-t">{actionError.action === 'start' ? 'Não deu para ligar o serviço do motor.' : 'Não deu para parar o serviço do motor.'}</p>
+              <Problem p={actionError.error} />
+            </div>
+          )}
+          {d.state === 'socketTravado' && (
+            <div className="callout">
+              <p>
+                O serviço anterior foi fechado à força e deixou o arquivo de conexão (<code>modlock.sock</code>) preso. O Windows só libera esse arquivo ao
+                reiniciar: reinicie o PC e abra o app de novo.
+              </p>
+              <Tech code="socket_travado">
+                Sem reiniciar: aponte <code>ENGINE_STATE_DIR</code> para outra pasta curta (por exemplo <code>C:\Users\&lt;nome&gt;\.ml</code>).
+              </Tech>
+            </div>
+          )}
+          <dl className="rows">
+            <Row k="Servidor em uso">
+              {d.status?.origin ? <Code>{d.status.origin}</Code> : <span className="fine">{d.state === 'rodando' ? '—' : 'nenhum: o serviço está desligado'}</span>}
+              {d.status && d.expectedOrigin && <Mark ok={d.originOk} yes="o nosso" no="outro servidor: o app troca ao hospedar ou entrar" />}
+            </Row>
+            <Row k="Servidor esperado">
+              {d.expectedOrigin ? (
+                <Code>{d.expectedOrigin}</Code>
+              ) : (
+                <>
+                  <span className="bad">não configurado nesta cópia do app</span>
+                  <span className="fine">
+                    <code>ENGINE_ORIGIN</code> não definida
+                  </span>
+                </>
+              )}
+            </Row>
+            {d.status && (
+              <Row k="Processo">
+                <span className="num">PID {d.status.pid ?? '—'}</span>
+                <span className="fine">
+                  desde <span className="num">{d.status.since ?? '—'}</span> · {d.status.clients ?? 0} cliente(s) ·{' '}
+                  {d.startedByApp ? 'iniciado por este app' : 'iniciado fora deste app'}
+                </span>
+              </Row>
+            )}
+          </dl>
+          <More section="servico" open={d.state === 'socketTravado' || d.socketPathTooLong} label="Ver pastas e log">
+            <dl className="rows">
+              <Row k="Pasta de dados">
+                <Code copy label="pasta de dados do serviço">
+                  {d.stateDir}
+                </Code>
+                <span className="fine">trava, arquivo de conexão e log do serviço</span>
+              </Row>
+              <Row k="Arquivo de conexão">
+                <Code>{d.socketPath}</Code>
+                {d.socketPathTooLong && <span className="bad">caminho longo demais para o Windows: o serviço não liga</span>}
+              </Row>
+              <Row k="Log">
+                <Code copy label="caminho do log">
+                  {d.logPath}
+                </Code>
+              </Row>
+            </dl>
+            <p className="fine">
+              O app só para o serviço com <code>modlock daemon stop</code>. Encerrar o processo pelo Gerenciador de Tarefas deixa o arquivo de conexão preso até
+              reiniciar o PC.
+            </p>
+          </More>
+        </Section>
+      ),
+    },
+    {
+      id: 'hosts',
+      name: 'Arquivo hosts',
+      problem: !r.hosts.readable,
+      node: (
+        <Section id="hosts" title="Arquivo hosts" chip={<Chip tone={hostsChip[0]}>{hostsChip[1]}</Chip>} meta="opcional">
+          <p className="isec-say">
+            {r.hosts.blocked
+              ? `O ${r.hosts.host} está bloqueado neste PC: dá para provar que nada passa por ele.`
+              : `Opcional: bloquear o ${r.hosts.host} no arquivo hosts prova que nada passa por ele.`}
+          </p>
+          <More section="hosts" open={!r.hosts.readable}>
+            <dl className="rows">
+              <Row k="Caminho">
+                <Code>{r.hosts.path}</Code>
+                {!r.hosts.readable && <span className="bad">não foi possível ler</span>}
+              </Row>
+              <Row k={`Bloqueio do ${r.hosts.host}`}>
+                {r.hosts.lines.length > 0 ? r.hosts.lines.map((l) => <Code key={l}>{l}</Code>) : <span className="fine">nenhuma linha</span>}
+                <Mark ok={r.hosts.blocked} yes="ativo" no="não está bloqueado" soft />
+              </Row>
+              <Row k="Linha para adicionar">
+                <Code copy label="linha do arquivo hosts">
+                  {BLOCK_LINE}
+                </Code>
+              </Row>
+            </dl>
+            <p className="fine">O app só lê este arquivo: editar exige administrador, então é você quem adiciona a linha, se quiser.</p>
+          </More>
+        </Section>
+      ),
+    },
+    {
+      id: 'ambiente',
+      name: 'Variáveis',
+      problem: envProblem,
+      node: (
+        <Section
+          id="ambiente"
+          title="Variáveis de ambiente"
+          chip={<Chip tone={envProblem ? 'warn' : 'ok'}>{envProblem ? 'Revisar' : 'Em ordem'}</Chip>}
+          meta="lidas e definidas pelo app"
+        >
+          <More section="ambiente" open={envProblem} label={`Ver as ${r.env.length} variáveis`}>
+            <table className="envt">
+              <thead>
+                <tr>
+                  <th scope="col" className="lbl">
+                    Nome
+                  </th>
+                  <th scope="col" className="lbl">
+                    Valor
+                  </th>
+                  <th scope="col" className="lbl">
+                    Para quê
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {r.env.map((e) => (
+                  <tr key={e.name}>
+                    <td>
+                      <code className="mono">{breakable(e.name)}</code>
+                      <span className="fine">{e.scope === 'app' ? 'lida pelo app' : 'definida pelo app no motor'}</span>
+                    </td>
+                    <td>{e.value ? <code className="mono">{breakable(e.value)}</code> : <span className="fine">não definida</span>}</td>
+                    <td className="fine">{e.purpose}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </More>
+        </Section>
+      ),
+    },
+    {
+      id: 'jogo',
+      name: 'Jogo',
+      problem: r.game.running,
+      node: (
+        <Section id="jogo" title="O jogo" chip={<Chip tone={r.game.running ? 'warn' : 'ok'}>{r.game.running ? 'Aberto' : 'Fechado'}</Chip>} meta={r.game.exe}>
+          {r.game.running && (
+            <dl className="rows">
+              <Row k="Deadlock">
+                <span className="bad">
+                  aberto (PID <span className="num">{r.game.pids.join(', ')}</span>): feche o jogo antes de hospedar ou entrar
+                </span>
+              </Row>
+            </dl>
+          )}
+          <p className="fine">
+            Para carregar um modo, o Deadlock precisa estar fechado: com o jogo aberto, o <code>gameinfo.gi</code> fica travado e o conteúdo não monta. O app
+            confere isso antes de hospedar ou entrar.
+          </p>
+        </Section>
+      ),
+    },
+    {
+      id: 'antivirus',
+      name: 'Antivírus',
+      problem: avProblem,
+      lead: motorMissing,
+      node: <Antivirus report={r} first={motorMissing} open={avProblem} onCheck={onCheck} busy={busy !== null} />,
+    },
+  ];
 }
 
 /**
@@ -617,17 +732,24 @@ function Tech({ code, children }: { code: string; children?: ReactNode }) {
   );
 }
 
-function Antivirus({ report, first = false, onCheck, busy = false }: { report: CheckReport; first?: boolean; onCheck?: () => void; busy?: boolean }) {
+function Antivirus({
+  report,
+  first,
+  open,
+  onCheck,
+  busy,
+}: {
+  report: CheckReport;
+  first: boolean;
+  open: boolean;
+  onCheck: () => void;
+  busy: boolean;
+}) {
   const b = report.binary;
   const exe = b.path ?? joinPath(b.folder, 'modlock.exe');
   const downloads = report.downloadDir;
-  return (
-    <Section
-      id="antivirus"
-      title={['Se o antivírus', 'apagou o motor']}
-      meta={first ? (b.vanished ? 'o modlock.exe sumiu desta pasta' : 'o modlock.exe não está neste PC') : 'falso positivo'}
-      className={first ? 'is-first' : undefined}
-    >
+  const steps = (
+    <>
       <ol className="steps">
         <li>
           Abra a quarentena. No Windows: <b>Segurança do Windows</b>, <b>Proteção contra vírus e ameaças</b>, <b>Histórico de proteção</b>. No Kaspersky:{' '}
@@ -673,7 +795,7 @@ function Antivirus({ report, first = false, onCheck, busy = false }: { report: C
         </li>
         <li>
           <p>Volte aqui e verifique de novo.</p>
-          {first && onCheck && (
+          {open && (
             <div>
               <button type="button" className="btn btn-s btn-sm" aria-disabled={busy} onClick={onCheck}>
                 {busy ? 'Verificando…' : 'Verificar de novo'}
@@ -687,6 +809,26 @@ function Antivirus({ report, first = false, onCheck, busy = false }: { report: C
         processos do jeito comum do Windows, nunca por WMI, para não somar mais um alerta. A pasta de dados do serviço (<code>{report.daemon.stateDir}</code>)
         guarda só a trava, o arquivo de conexão e o log.
       </p>
+    </>
+  );
+  return (
+    <Section
+      id="antivirus"
+      title="Se o antivírus apagou o motor"
+      chip={<Chip tone={open ? 'warn' : 'idle'}>{open ? 'Ação necessária' : 'Só se precisar'}</Chip>}
+      meta={first ? (b.vanished ? 'o modlock.exe sumiu desta pasta' : 'o modlock.exe não está neste PC') : 'falso positivo'}
+      className={open ? 'is-first' : undefined}
+    >
+      {open ? (
+        steps
+      ) : (
+        <>
+          <p className="isec-say">Alguns antivírus colocam o modlock.exe em quarentena por engano. Se acontecer, os passos para restaurar estão aqui.</p>
+          <More section="antivirus" open={false} label="Ver os passos">
+            {steps}
+          </More>
+        </>
+      )}
     </Section>
   );
 }
@@ -695,15 +837,15 @@ function Section({
   id,
   title,
   meta,
-  badge,
+  chip,
   actions,
   className,
   children,
 }: {
   id: string;
-  title: readonly [string, string];
+  title: ReactNode;
   meta?: string;
-  badge?: ReactNode;
+  chip?: ReactNode;
   actions?: ReactNode;
   className?: string;
   children: ReactNode;
@@ -712,15 +854,39 @@ function Section({
     <section className={className ? `isec ${className}` : 'isec'} id={id} aria-labelledby={`${id}-t`}>
       <div className="isec-h">
         <h2 className="display two" id={`${id}-t`}>
-          {title[0]} <em>{title[1]}</em>
+          {title}
         </h2>
-        {badge}
+        {chip}
         {meta && <span className="lbl">{meta}</span>}
         <span className="sp" />
         {actions}
       </div>
       {children}
     </section>
+  );
+}
+
+/**
+ * "Ver detalhes" de uma seção (o `<details>` nativo: teclado e leitor de tela de graça). Abre
+ * sozinho quando a seção passa a ter problema e quando um link da tela aponta para a seção.
+ */
+function More({ section, open: wantOpen, label = 'Ver detalhes', children }: { section: string; open: boolean; label?: string; children: ReactNode }) {
+  const [open, setOpen] = useState(wantOpen);
+  useEffect(() => {
+    if (wantOpen) setOpen(true);
+  }, [wantOpen]);
+  useEffect(() => {
+    const onHash = () => {
+      if (window.location.hash === `#${section}`) setOpen(true);
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [section]);
+  return (
+    <details className="more" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>{open ? 'Ocultar detalhes' : label}</summary>
+      <div className="more-b">{children}</div>
+    </details>
   );
 }
 
@@ -733,7 +899,28 @@ function Row({ k, children }: { k: string; children: ReactNode }) {
   );
 }
 
-function Code({ children, copy = false, label }: { children: string; copy?: boolean; label?: string }) {
+/**
+ * Caminhos e comandos quebram nos espaços e depois das barras (e do `_` dos nomes de variável),
+ * nunca no meio de uma palavra como "SHA256" ou depois do hífen de "-Algorithm": uma parte sem
+ * barra fica inteira na linha. O `<wbr>` não entra no texto copiado.
+ */
+function breakable(text: string): ReactNode[] {
+  return text.split(/( +)/).map((tok, t) => {
+    if (!/[\\/_]/.test(tok)) {
+      return /\S/.test(tok) ? (
+        <span key={t} className="nb">
+          {tok}
+        </span>
+      ) : (
+        tok
+      );
+    }
+    return <Fragment key={t}>{tok.split(/(?<=[\\/_])/).flatMap((part, i) => (i === 0 ? [part] : [<wbr key={i} />, part]))}</Fragment>;
+  });
+}
+
+/** `hash`: um hash não tem onde quebrar, então quebra em qualquer caractere. */
+function Code({ children, copy = false, hash = false, label }: { children: string; copy?: boolean; hash?: boolean; label?: string }) {
   const say = useContext(Announce);
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
@@ -751,7 +938,7 @@ function Code({ children, copy = false, label }: { children: string; copy?: bool
   }
   return (
     <span className="code">
-      <code className="mono">{children}</code>
+      <code className={hash ? 'mono is-hash' : 'mono'}>{hash ? children : breakable(children)}</code>
       {copy && (
         <button type="button" className="btn btn-g btn-sm code-cp" aria-label={`Copiar ${label ?? 'texto'}`} onClick={() => void doCopy()}>
           {copied ? 'Copiado' : 'Copiar'}
@@ -765,6 +952,12 @@ function Mark({ ok, yes, no, soft = false }: { ok: boolean; yes: string; no: str
   return <span className={ok ? 'mark is-ok' : soft ? 'mark is-soft' : 'mark is-bad'}>{ok ? yes : no}</span>;
 }
 
+function Chip({ tone, children }: { tone: Tone; children: ReactNode }) {
+  return <span className={`state is-${tone}`}>{children}</span>;
+}
+
+const DAEMON_TONE: Record<DaemonState, Tone> = { rodando: 'ok', parado: 'idle', socketTravado: 'warn' };
+
 function StateChip({ state }: { state: DaemonState }) {
-  return <span className={`state state-${state}`}>{DAEMON_LABEL[state]}</span>;
+  return <Chip tone={DAEMON_TONE[state]}>{DAEMON_LABEL[state]}</Chip>;
 }
