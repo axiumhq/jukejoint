@@ -49,6 +49,7 @@ type Intent struct {
 	Accept  *bool        `json:"accept,omitempty"`
 	Message string       `json:"message,omitempty"`
 	Code    string       `json:"code,omitempty"`
+	Step    *int         `json:"step,omitempty"`
 	Lobby   *CreateLobby `json:"lobby,omitempty"`
 }
 
@@ -139,7 +140,7 @@ func (h *Hub) Connect(c Client, u *UserRef) {
 	defer h.mu.Unlock()
 	h.clients[c] = struct{}{}
 	now := h.clock.Now()
-	welcome := Msg{"type": "welcome", "serverNow": now.UnixMilli(), "me": nil, "here": nil}
+	welcome := Msg{"type": "welcome", "protocol": Protocol, "serverNow": now.UnixMilli(), "me": nil, "here": nil}
 	var p *person
 	if u != nil {
 		p = h.person(*u)
@@ -428,6 +429,8 @@ func (h *Hub) Handle(uid string, in Intent) (Msg, *Error) {
 		return nil, nil
 	case "set_join_code":
 		return h.setJoinCode(p, in.Code)
+	case "handoff_progress":
+		return h.handoffProgress(p, in.Step)
 	case "ping":
 		return nil, nil
 	}
@@ -476,7 +479,7 @@ func (h *Hub) create(p *person, in *CreateLobby) (Msg, *Error) {
 		JoinInProgress: jip,
 		HostID:         p.user.ID,
 		OpenedAt:       now,
-		members:        []*member{{user: p.user, ready: true, readyAt: now, joinedAt: now}},
+		members:        []*member{{user: p.user, ready: true, readyAt: now, joinedAt: now, step: -1}},
 		phase:          PhaseOpen,
 		joins:          []joinEvent{{p.user, now}},
 		allowed:        map[string]bool{},
@@ -515,7 +518,7 @@ func (h *Hub) join(p *person, id string) (Msg, *Error) {
 		h.removeMember(cur, uid)
 	}
 	now := h.clock.Now()
-	m := &member{user: p.user, joinedAt: now}
+	m := &member{user: p.user, joinedAt: now, step: -1}
 	if l.inMatch() {
 		m.ready, m.readyAt = true, now
 	}
@@ -560,6 +563,12 @@ func (h *Hub) removeMember(l *Lobby, uid string) {
 		next := l.members[0]
 		l.HostID = next.user.ID
 		next.ready, next.readyAt = true, h.clock.Now()
+		// The code was the old host's session. A match hosted on the old
+		// host's PC is over with it, so the room opens again.
+		l.joinCode = ""
+		if l.inMatch() {
+			h.resetMatch(l)
+		}
 		// The pending knocks stay on the lobby, so the new host sees them in
 		// the next push; friends see the new host flag.
 		if np := h.people[next.user.ID]; np != nil {
@@ -701,6 +710,10 @@ func (h *Hub) cancelStart(p *person) (Msg, *Error) {
 func (h *Hub) beginHandoff(l *Lobby) {
 	l.phase = PhaseHandoff
 	l.handoffStep = 0
+	l.appDriven = false
+	for _, m := range l.members {
+		m.step = -1
+	}
 	l.startedAt = h.clock.Now()
 	l.countdownEnds = time.Time{}
 	l.fullSince = time.Time{}
@@ -729,17 +742,76 @@ func (h *Hub) endMatch(p *person) (Msg, *Error) {
 	if !l.inMatch() {
 		return nil, nil
 	}
+	h.resetMatch(l)
+	h.pushLobby(l)
+	return nil, nil
+}
+
+// resetMatch ends the match: the room opens again, the guests confirm again
+// and the join code (the host's session, now over) is cleared.
+func (h *Hub) resetMatch(l *Lobby) {
 	l.stopTimer()
 	l.phase = PhaseOpen
 	l.handoffStep = 0
 	l.startedAt = time.Time{}
+	l.joinCode = ""
+	l.appDriven = false
 	for _, m := range l.members {
+		m.step = -1
 		if m.user.ID != l.HostID {
 			m.ready, m.readyAt = false, time.Time{}
 		}
 	}
 	if l.players() >= l.Slots {
 		l.fullSince = h.clock.Now()
+	}
+}
+
+var (
+	errNoMatch   = &Error{"not_in_match", "A partida não está começando agora."}
+	errStepBack  = errBad("A etapa do app não volta.")
+	errStepRange = errBad("Etapa do app inválida.")
+)
+
+// handoffProgress is a seated member's app reporting its own progress in the
+// match (step = index in HandoffSteps; len(HandoffSteps) = inside the game).
+// Steps only move forward. The host's report also drives the room: the
+// fallback timer stops for good this match and the room follows the host's
+// app (host inside = playing).
+func (h *Hub) handoffProgress(p *person, step *int) (Msg, *Error) {
+	l := h.lobbies[p.lobbyID]
+	if l == nil {
+		return nil, errNotIn
+	}
+	m := l.member(p.user.ID)
+	if m == nil {
+		return nil, errNotIn
+	}
+	if !l.inMatch() {
+		return nil, errNoMatch
+	}
+	if step == nil || *step < 0 || *step > len(HandoffSteps) {
+		return nil, errStepRange
+	}
+	s := *step
+	if s < m.step {
+		return nil, errStepBack
+	}
+	if s == m.step {
+		return nil, nil
+	}
+	m.step = s
+	if l.HostID == p.user.ID {
+		if !l.appDriven {
+			l.appDriven = true
+			l.stopTimer()
+		}
+		if s > l.handoffStep {
+			l.handoffStep = s
+		}
+		if l.handoffStep >= len(HandoffSteps) {
+			l.phase = PhasePlaying
+		}
 	}
 	h.pushLobby(l)
 	return nil, nil

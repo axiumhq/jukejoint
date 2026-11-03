@@ -8,13 +8,17 @@ import { confirmations, EMPTY_LIVE, pickInvite, reduce, toLobby, toPresence, typ
 import type { FriendPresence } from '../lib/friends';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
 import { ApiError, devLoginUrl, fetchMe, herePath, LiveClient, logout, steamLoginUrl, type Ack } from '../lib/liveClient';
+import { IN_DESKTOP } from '../lib/desktop';
 import { roster, type Seat } from '../lib/room';
+import { useEngineHandoff } from './engineHandoff';
+import { useDesktopApp } from './useDesktopApp';
 import { SessionContext, type ConnectionState, type HostDraft, type JoinTarget, type MockUser, type SessionValue, type Toast } from './sessionContext';
 
 /**
  * A sessão ao vivo (com `VITE_API_URL`): o mesmo contrato da simulada, mas o estado vem do servidor.
  * O site só manda pedidos (entrar, pronto, começar, chamar…) e mostra o que o servidor decide.
- * A conexão com o app desktop continua simulada aqui: o lançamento do jogo é do EngineAdapter, não do servidor.
+ * Dentro do app desktop, a partida é de verdade (state/engineHandoff.ts): o app hospeda ou entra e
+ * as etapas vêm dele. Fora do app, a conexão com o app continua simulada (botão da /instalar).
  */
 export function LiveSessionProvider({ api, children }: { api: string; children: ReactNode }) {
   const navigate = useNavigate();
@@ -22,7 +26,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   const [state, setState] = useState<LiveState>(EMPTY_LIVE);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [devLogin, setDevLogin] = useState(false);
-  const [appConnected, setAppConnected] = useState(false);
+  const [simulatedApp, setSimulatedApp] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [joinTarget, setJoinTarget] = useState<JoinTarget | null>(null);
   const [knockTarget, setKnockTarget] = useState<Lobby | null>(null);
@@ -44,6 +48,15 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
     },
     [dismissToast],
   );
+
+  // Dentro do app desktop, "app aberto" vem dele; fora, é o botão de simulação da /instalar.
+  const app = useDesktopApp(pushToast);
+  const appConnected = app.desktop || simulatedApp;
+  const setAppConnected = useCallback((v: boolean) => {
+    if (!IN_DESKTOP) setSimulatedApp(v);
+  }, []);
+  /** Dentro do app com a checagem ainda não pronta: o diálogo de entrar mostra o que falta. */
+  const appNeedsLook = app.desktop && app.check?.status !== 'ready';
 
   /** O que merece aviso, além de mudar o estado. */
   const onEvent = useCallback(
@@ -139,7 +152,16 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   );
   const ready = !!hereView?.seats?.find((s) => s.userId === meId)?.ready;
   const countdownEndsAt = hereView?.phase === 'countdown' ? (state.countdownEnds[hereView.id] ?? null) : null;
-  const handoffStep = hereView && (hereView.phase === 'handoff' || hereView.phase === 'playing') ? (hereView.handoffStep ?? 0) : null;
+  // A partida de verdade (dentro do app): hospedar, entrar e as etapas que o app anuncia.
+  const engine = useEngineHandoff({ view: hereView, meId, request, pushToast });
+  const roomStep = hereView && (hereView.phase === 'handoff' || hereView.phase === 'playing') ? (hereView.handoffStep ?? 0) : null;
+  // Dentro do app, a sua etapa é a do seu app; fora, a da sala (que o servidor anda por tempo ou segue o app de quem hospeda).
+  const handoffStep = roomStep !== null && engine.enabled ? engine.step : roomStep;
+  const { stop: engineStop, retry: retryEngine, endMatch: engineEndMatch } = engine;
+  const endMatch = useCallback(() => {
+    if (IN_DESKTOP) engineEndMatch();
+    else void request({ type: 'end_match' });
+  }, [engineEndMatch, request]);
   const confirmedAt = useMemo(() => confirmations(hereView, meId), [hereView, meId]);
   const knocksHere = useMemo(() => (hereView && hereView.hostId === meId ? (hereView.knocks ?? []) : []), [hereView, meId]);
 
@@ -203,21 +225,27 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
       if (target.kind === 'lobby') {
         const cur = lobbiesRef.current.find((l) => l.id === target.lobby.id) ?? target.lobby;
         if (!lobbyState(cur, lobbyCtx).canJoin) return;
-        if (!appConnected || (hereId && hereId !== cur.id)) {
+        if (!appConnected || appNeedsLook || (hereId && hereId !== cur.id)) {
           setJoinTarget({ kind: 'lobby', lobby: cur });
           return;
         }
         void startJoin({ kind: 'lobby', lobby: cur });
         return;
       }
-      if (appConnected) void startJoin(target);
+      if (appConnected && !appNeedsLook) void startJoin(target);
       else setJoinTarget(target);
     },
-    [appConnected, hereId, lobbyCtx, startJoin],
+    [appConnected, appNeedsLook, hereId, lobbyCtx, startJoin],
   );
 
+  // Dentro do app, o diálogo abre para mostrar a checagem (e confere de novo).
+  const { recheck } = app;
+  useEffect(() => {
+    if (joinTarget && IN_DESKTOP) recheck();
+  }, [joinTarget, recheck]);
+
   const confirmJoin = useCallback(() => {
-    setAppConnected(true);
+    if (!IN_DESKTOP) setSimulatedApp(true);
     const target = joinTarget;
     setJoinTarget(null);
     if (target) void startJoin(target);
@@ -249,8 +277,10 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   const leaveLobby = useCallback(async () => {
     const l = lobbiesRef.current.find((x) => x.id === stateRef.current.hereId);
     if (!l) return;
+    // Saiu no meio da partida: o app encerra a sessão (hospedando ou entrando).
+    engineStop();
     if (await request({ type: 'leave' })) pushToast(t.lobbies.leftToast(l.name));
-  }, [pushToast, request]);
+  }, [engineStop, pushToast, request]);
 
   const inviteTo = useCallback(
     (lobby: Lobby) => {
@@ -331,6 +361,14 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
       signOut,
       appConnected,
       setAppConnected,
+      desktop: app.desktop,
+      desktopVersion: app.version,
+      appCheck: app.check,
+      recheckApp: app.recheck,
+      openInstallWindow: app.openInstall,
+      engineError: engine.error,
+      retryEngine,
+      endMatch,
       lobbies: state.synced ? lobbies : [],
       hereId,
       lobbyCtx,
@@ -383,6 +421,15 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
       signIn,
       signOut,
       appConnected,
+      setAppConnected,
+      app.desktop,
+      app.version,
+      app.check,
+      app.recheck,
+      app.openInstall,
+      engine.error,
+      retryEngine,
+      endMatch,
       state.synced,
       lobbies,
       hereId,

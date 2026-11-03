@@ -4,8 +4,10 @@
 //! Na fase 2 a mesma interface passa a falar com um sidecar Go, sem mexer no app nem no site.
 
 pub mod args;
+pub mod catalog;
 pub mod modlock;
 pub mod parse;
+pub mod progress;
 pub mod system;
 pub mod validate;
 
@@ -13,6 +15,7 @@ use std::path::Path;
 
 use serde::Serialize;
 
+pub use catalog::{ModeSlug, ModesCheck};
 pub use parse::{CliEvent, DaemonStatus, HostsMatch};
 pub use system::DaemonState;
 pub use validate::{JoinCode, LobbyId};
@@ -35,7 +38,10 @@ pub trait EngineAdapter: Send + Sync {
     /// Para o daemon com `modlock daemon stop` (nunca encerrando o processo).
     fn stop_daemon(&self) -> Result<DaemonInfo, EngineError>;
     /// Hospeda o projeto de mod nesta pasta; o código de entrada chega como evento `hosting`.
+    /// Só para uso interno: o site hospeda por [`EngineAdapter::host_mode`].
     fn host(&self, project: &Path) -> Result<SessionInfo, EngineError>;
+    /// Hospeda um modo do catálogo (`catalog.rs`): o slug vira a pasta do projeto aqui dentro.
+    fn host_mode(&self, mode: &ModeSlug) -> Result<SessionInfo, EngineError>;
     /// Entra na sessão de outro PC pelo código.
     fn join(&self, code: &JoinCode) -> Result<SessionInfo, EngineError>;
     /// Encerra a sessão (fechando a entrada padrão, como o `--json` pede) e depois o daemon.
@@ -89,6 +95,8 @@ pub struct CheckReport {
     /// `%LOCALAPPDATA%\modlock`, onde o Modlock baixa o servidor do jogo (o `ENGINE_STATE_DIR`
     /// só troca o `APPDATA`, então esta pasta não muda). Entra nas exclusões do antivírus.
     pub download_dir: Option<String>,
+    /// O catálogo de modos (pasta dos projetos; hoje todo modo abre o projeto de teste).
+    pub modes: ModesCheck,
     /// Pronto para hospedar ou entrar (binário certo, origem definida, sem socket travado).
     pub ready: bool,
     pub problems: Vec<EngineError>,
@@ -180,6 +188,9 @@ pub struct SessionInfo {
     pub join_code: Option<String>,
     pub running: bool,
     pub exit_code: Option<i32>,
+    /// Etapa do handoff a que a sessão chegou (`progress.rs`): 0 baixando o modo, 1 abrindo o
+    /// jogo, 2 entrando, 3 dentro. `None` antes do primeiro evento que conta.
+    pub step: Option<u8>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -202,6 +213,14 @@ pub struct SessionEvent {
     pub stream: &'static str,
     pub event: Option<CliEvent>,
     pub exit_code: Option<i32>,
+    /// A etapa do handoff, só quando este evento a fez avançar.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub step: Option<u8>,
+    /// Algo deu errado: o modo falhou no servidor (`host.failed`) ou a sessão terminou com erro
+    /// (`fim` com código diferente de 0, sem ter sido o app que encerrou). Mesmo formato dos erros
+    /// dos comandos; `detail` traz as últimas linhas da sessão.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<EngineError>,
 }
 
 pub type EventSink = std::sync::Arc<dyn Fn(SessionEvent) + Send + Sync>;

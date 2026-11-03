@@ -49,9 +49,14 @@ const (
 	maxJoins       = 6
 )
 
-// HandoffSteps is how long each handoff step lasts (HANDOFF_MS in the web).
-// It stands in for the desktop app's events until the EngineAdapter reports
-// real progress: download the mode, open the game, join the session.
+// Protocol is the WebSocket protocol version, sent in the welcome. Changes are
+// additive; server/README.md lists what each version added.
+const Protocol = 2
+
+// HandoffSteps is how long each handoff step lasts (HANDOFF_MS in the web):
+// download the mode, open the game, join the session. The timers are only the
+// fallback for web-only sessions: once the host's desktop app reports real
+// progress (handoff_progress), the room follows the app and the timer stops.
 var HandoffSteps = []time.Duration{900 * time.Millisecond, 1700 * time.Millisecond, 1500 * time.Millisecond}
 
 // Mode is what the server needs to know about a game mode to validate a lobby.
@@ -87,6 +92,9 @@ type member struct {
 	ready    bool
 	readyAt  time.Time
 	joinedAt time.Time
+	// step is this member's own handoff progress as their app reported it
+	// (index in HandoffSteps; len = inside). -1 = nothing reported this match.
+	step int
 }
 
 type joinEvent struct {
@@ -127,6 +135,10 @@ type Lobby struct {
 	knocks        map[string]*knock
 	timer         Timer
 	gen           int
+
+	// appDriven: the host's app reported progress this match, so the room
+	// follows it and the handoff timer is off.
+	appDriven bool
 }
 
 func (l *Lobby) member(id string) *member {
@@ -265,6 +277,9 @@ type SeatView struct {
 	Host    bool   `json:"host,omitempty"`
 	Ready   bool   `json:"ready"`
 	ReadyAt int64  `json:"readyAt,omitempty"`
+	// Step is this seat's own handoff progress as its app reported it (index
+	// in HandoffSteps; len = inside). Only during a match and once reported.
+	Step *int `json:"step,omitempty"`
 }
 
 // JoinView is a recent arrival ("entrou agora").
@@ -356,7 +371,12 @@ func (l *Lobby) view(viewer string, now time.Time) View {
 	}
 	for _, m := range l.members {
 		host := m.user.ID == l.HostID
-		v.Seats = append(v.Seats, SeatView{UserID: m.user.ID, Name: m.user.Name, Host: host, Ready: m.ready || host || l.inMatch(), ReadyAt: ms(m.readyAt)})
+		seat := SeatView{UserID: m.user.ID, Name: m.user.Name, Host: host, Ready: m.ready || host || l.inMatch(), ReadyAt: ms(m.readyAt)}
+		if l.inMatch() && m.step >= 0 {
+			step := m.step
+			seat.Step = &step
+		}
+		v.Seats = append(v.Seats, seat)
 	}
 	for _, j := range l.joins {
 		v.Joins = append(v.Joins, JoinView{UserID: j.user.ID, Name: j.user.Name, At: ms(j.at)})

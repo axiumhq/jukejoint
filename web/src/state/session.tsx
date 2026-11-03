@@ -7,8 +7,10 @@ import { useNavigate } from 'react-router';
 import { friendsIn, friendsOnline } from '../lib/friends';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
 import { nextToConfirm, readyCount, roster } from '../lib/room';
+import { IN_DESKTOP } from '../lib/desktop';
 import { dayPeriod } from '../lib/time';
 import { LiveSessionProvider } from './liveSession';
+import { useDesktopApp } from './useDesktopApp';
 import { SessionContext, type HostDraft, type JoinTarget, type MockUser, type SessionValue, type Toast } from './sessionContext';
 
 export { useSession } from './sessionContext';
@@ -73,7 +75,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
 function MockSessionProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<MockUser | null>(null);
-  const [appConnected, setAppConnected] = useState(false);
+  const [simulatedApp, setSimulatedApp] = useState(false);
   const [lobbies, setLobbies] = useState<Lobby[]>(seedLobbies);
   const [hereId, setHereId] = useState<string | null>(null);
   const [joiningId, setJoiningId] = useState<string | null>(null);
@@ -120,6 +122,15 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
     },
     [dismissToast],
   );
+
+  // Dentro do app desktop, "app aberto" vem dele (e a partida continua simulada aqui); fora, é a simulação da /instalar.
+  const app = useDesktopApp(pushToast);
+  const appConnected = app.desktop || simulatedApp;
+  const setAppConnected = useCallback((v: boolean) => {
+    if (!IN_DESKTOP) setSimulatedApp(v);
+  }, []);
+  const appNeedsLook = app.desktop && app.check?.status !== 'ready';
+  const { recheck } = app;
 
   // Ao vivo simulado: pausa com a aba oculta para não gastar bateria à toa.
   useEffect(() => {
@@ -216,21 +227,26 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
       if (target.kind === 'lobby') {
         const live = lobbiesRef.current.find((l) => l.id === target.lobby.id) ?? target.lobby;
         if (!lobbyState(live, lobbyCtx).canJoin) return;
-        if (!appConnected || (hereRef.current && hereRef.current !== live.id)) {
+        if (!appConnected || appNeedsLook || (hereRef.current && hereRef.current !== live.id)) {
           setJoinTarget({ kind: 'lobby', lobby: live });
           return;
         }
         startJoin({ kind: 'lobby', lobby: live });
         return;
       }
-      if (appConnected) startJoin(target);
+      if (appConnected && !appNeedsLook) startJoin(target);
       else setJoinTarget(target);
     },
-    [appConnected, startJoin, lobbyCtx],
+    [appConnected, appNeedsLook, startJoin, lobbyCtx],
   );
 
+  // Dentro do app, o diálogo abre para mostrar a checagem (e confere de novo).
+  useEffect(() => {
+    if (joinTarget && IN_DESKTOP) recheck();
+  }, [joinTarget, recheck]);
+
   const confirmJoin = useCallback(() => {
-    setAppConnected(true);
+    if (!IN_DESKTOP) setSimulatedApp(true);
     const target = joinTarget;
     setJoinTarget(null);
     if (target) startJoin(target);
@@ -437,6 +453,14 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
       signOut,
       appConnected,
       setAppConnected,
+      desktop: app.desktop,
+      desktopVersion: app.version,
+      appCheck: app.check,
+      recheckApp: app.recheck,
+      openInstallWindow: app.openInstall,
+      engineError: null,
+      retryEngine: noop,
+      endMatch: noop,
       lobbies,
       hereId,
       lobbyCtx,
@@ -479,6 +503,12 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
       signIn,
       signOut,
       appConnected,
+      setAppConnected,
+      app.desktop,
+      app.version,
+      app.check,
+      app.recheck,
+      app.openInstall,
       lobbies,
       hereId,
       lobbyCtx,

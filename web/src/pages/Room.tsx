@@ -7,12 +7,15 @@ import { Icon, type IconName } from '../components/Icon';
 import { LobbyAction } from '../components/LobbyAction';
 import { ModeCover } from '../components/ModeCover';
 import { Rail, useRail, useRailSignIn } from '../components/Rail';
+import { EngineProblem } from '../components/SessionDialogs';
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Mode } from '../data/modes';
 import { useDocumentTitle, useFriends, useMediaQuery, useReducedMotion } from '../hooks';
 import { useNow } from '../hooks/useNow';
 import { t } from '../i18n';
+import { desktop as D } from '../i18n/desktop';
 import { live as L } from '../i18n/live';
+import type { EngineError } from '../lib/desktop';
 import { friendsIn } from '../lib/friends';
 import { lobbyState, roundText } from '../lib/lobbies';
 import { handoffState, readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
@@ -44,7 +47,7 @@ const FEED_ICON: Partial<Record<FeedKind, IconName>> = { countStart: 'play', cou
 /* ───────── O app trabalhando (entrada e handoff) ───────── */
 
 /** Só a etapa atual, em texto: o progresso numerado da sala já está no cabeçalho. */
-function AppWorking({ step }: { step: number }) {
+function AppWorking({ step, test }: { step: number; test?: string | null }) {
   return (
     <div className="rb-work">
       <p className="rb-hint is-work">
@@ -52,10 +55,28 @@ function AppWorking({ step }: { step: number }) {
         <span>
           <b>{APP_STEPS[step] ?? APP_STEPS[0]}</b> {t.room.keepOpen}
         </span>
+        {test && (
+          <span className="tag line rb-test" title={test}>
+            {D.testTag}
+          </span>
+        )}
       </p>
       <Link to="/instalar#antivirus" className="rb-help">
         {t.room.stuck} <u>{t.room.help}</u>
       </Link>
+    </div>
+  );
+}
+
+/** Dentro do app: hospedar ou entrar falhou. A frase do app e, recolhido, o detalhe técnico. */
+function AppFailed({ error, host }: { error: EngineError; host: boolean }) {
+  return (
+    <div className="rb-fail" role="alert">
+      <Icon name="info" />
+      <div className="rb-fail-t">
+        <b>{host ? D.failedHost : D.failedJoin}</b>
+        <EngineProblem error={error} />
+      </div>
     </div>
   );
 }
@@ -505,6 +526,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
   /* ───── barra PRONTO: meio e ações por estado ───── */
   const st = lobbyState(lobby, lobbyCtx, now);
+  const testNote = s.desktop && s.appCheck?.modes?.testMode ? D.testMode(s.appCheck.modes.testProject) : null;
   let mid;
   let act;
   if (joining) {
@@ -526,8 +548,29 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         <LobbyAction lobby={lobby} state={st} primary />
       </div>
     );
+  } else if (s.engineError && (handoff || playing)) {
+    // Dentro do app: hospedar ou entrar falhou. O erro de verdade, e dá para tentar de novo.
+    mid = <AppFailed error={s.engineError} host={!!lobby.mine} />;
+    act = (
+      <>
+        {lobby.mine ? (
+          <button type="button" className="btn btn-g" onClick={s.endMatch} aria-label={D.endMatchLabel(lobby.name)}>
+            <Icon name="x" />
+            {D.endMatch}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
+            <Icon name="exit" />
+            {t.room.leave}
+          </button>
+        )}
+        <button type="button" className="btn btn-p rb-ready" onClick={s.retryEngine}>
+          {D.retry}
+        </button>
+      </>
+    );
   } else if (handoff) {
-    mid = <AppWorking step={handoffStep!} />;
+    mid = <AppWorking step={handoffStep!} test={testNote} />;
     act = (
       <button type="button" className="btn btn-s rb-ready" aria-disabled="true">
         {t.room.opening}
@@ -542,10 +585,17 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     );
     act = (
       <>
-        <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
-          <Icon name="exit" />
-          {t.room.leave}
-        </button>
+        {s.live && s.desktop && lobby.mine ? (
+          <button type="button" className="btn btn-g" onClick={s.endMatch} aria-label={D.endMatchLabel(lobby.name)}>
+            <Icon name="x" />
+            {D.endMatch}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
+            <Icon name="exit" />
+            {t.room.leave}
+          </button>
+        )}
         <button type="button" className="btn btn-p rb-ready" onClick={() => pushToast(t.room.reopenToast)}>
           {t.room.backToGame}
           <Icon name="arrow" />

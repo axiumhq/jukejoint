@@ -73,7 +73,8 @@ web/
     styles/lobbies.css     abas, chips, cartões e lista compacta
     styles/pages.css, room.css   telas da fase 2
     lib/                   lobbies, room, friends, stats, theme, avatar, cover, search, lobbyCard (+ testes)
-    state/                 session.tsx (sessão simulada), theme.tsx (tema e menu)
+    state/                 session.tsx (sessão simulada), liveSession.tsx (ao vivo), useDesktopApp.ts e
+                           engineHandoff.ts (dentro do app desktop), theme.tsx (tema e menu)
     hooks/                 useLiveStats, useFriends, useIncomingInvite, useFavorites, usePref, useLobbyFilters…
     components/            Shell, Rail, Search, ThemeMenu, Friends (trilho social), Recommended,
                            LobbyBrowser, LobbyCard, LobbyAction, Arrivals, Avatar, ModeCover, LineArt,
@@ -101,11 +102,20 @@ Contraste no tema Deadlock (WCAG): `--tx-3` 5,8:1 sobre `--s2` e 5,2:1 sobre `--
 ## O que é simulado
 
 - **Entrar com a Steam:** só alterna um usuário fictício. Nada é enviado. Amigos só aparecem com login.
-- **App conectado:** começa desconectado. "Abrir o app" no diálogo de entrada ou "Simular app aberto" em `/instalar` muda o estado.
+- **App conectado:** fora do app, começa desconectado. "Abrir o app" no diálogo de entrada ou "Simular app aberto" em `/instalar` muda o estado. Dentro do app desktop isso não é simulado (abaixo).
 - **Entrar em lobby:** etapas "Baixando o modo…, Abrindo o Deadlock…, Entrando no lobby…" simuladas; não abre o jogo.
 - **Criar, sair, fechar, convidar, bater na porta, treinar com bots, avisos:** estado local; somem ao recarregar. O anfitrião simulado sempre abre a porta depois de 6 s.
 - **Gente entrando e saindo:** a cada 3,8 s alguém entra num lobby com vaga ou sai (`liveTick` em `src/state/session.tsx`); as contagens acompanham. Pausa com a aba oculta.
 - **Download, hash e link do código-fonte:** valores de exemplo.
+
+## Dentro do app desktop
+
+O mesmo site roda na janela do app (`desktop/`). A ponte é `src/lib/desktop.ts`: detecta o app (`window.__DESKTOP_APP__` ou `__TAURI_INTERNALS__`) e carrega o `@tauri-apps/api` (2.12.4, a mesma versão do `desktop/`) por import dinâmico, então o bundle do navegador não traz código do Tauri. Fora do app nada muda (simulado e ao vivo seguem como acima).
+
+- **App conectado** vem do app (sem botão de simulação). O diálogo de entrar mostra a checagem real (`engine_check`): pronto, ou cada problema com a frase do app e o detalhe técnico em "Detalhes técnicos", com o botão "Abrir a tela Instalação" (`open_install_window`). `/instalar` mostra o mesmo botão (`state/useDesktopApp.ts`).
+- **Deep link:** `app://deep-link` navega pelo React Router (sem recarregar); `app://deep-link-invalido` vira aviso no site.
+- **Partida de verdade (ao vivo):** `state/engineHandoff.ts`, com as regras puras em `lib/handoff.ts`. Quando o servidor passa a sala para o handoff, quem hospeda chama `engine_host { mode }` (o slug do lobby; o app resolve a pasta) e manda o código do evento `hosting` (`set_join_code`); quem entra espera o `joinCode` na visão do lobby e chama `engine_join { code }`. Cada etapa que o app anuncia vai ao servidor (`handoff_progress`, protocolo 2 em `server/README.md`) e é a etapa que a sala mostra para você. Falhou: a barra mostra o erro do app com os detalhes e "Tentar de novo". Sessão de quem hospeda acabou: `end_match`. Saiu da sala ou a partida acabou: `engine_stop`. Recarregou no meio: a sessão do app é retomada (`engine_session`).
+- **Modo de teste:** enquanto não há modos de verdade, todo modo abre o projeto `hello`; o diálogo e a barra dizem isso.
 
 ## Histórico
 

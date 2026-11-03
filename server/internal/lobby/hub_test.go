@@ -568,6 +568,157 @@ func TestJoinCodeMembersOnly(t *testing.T) {
 	}
 }
 
+/* ───────── The desktop app's progress (handoff_progress) ───────── */
+
+// matchOf seats a (host) and the given guests, confirms them and runs the
+// countdown until the handoff starts.
+func matchOf(e *env, guests ...string) string {
+	e.t.Helper()
+	id := e.create("a", CreateLobby{})
+	for _, g := range guests {
+		e.do(g, Intent{Type: "join", LobbyID: id})
+		e.do(g, Intent{Type: "ready", Ready: ptr(true)})
+	}
+	e.do("a", Intent{Type: "start"})
+	e.clock.Advance(StartCountdown)
+	return id
+}
+
+func seatStep(t *testing.T, v View, uid string) *int {
+	t.Helper()
+	for _, s := range v.Seats {
+		if s.UserID == uid {
+			return s.Step
+		}
+	}
+	t.Fatalf("no seat for %s", uid)
+	return nil
+}
+
+func TestWelcomeHasProtocol(t *testing.T) {
+	e := newEnv(t, nil)
+	if w := e.connect("a").last("welcome"); w["protocol"] != Protocol || Protocol < 2 {
+		t.Fatalf("welcome without protocol: %v", w)
+	}
+}
+
+func TestHandoffProgressValidation(t *testing.T) {
+	e := newEnv(t, nil)
+	e.connect("a")
+	e.connect("b")
+	e.connect("c")
+	id := e.create("a", CreateLobby{})
+	e.do("b", Intent{Type: "join", LobbyID: id})
+	e.refuse("a", Intent{Type: "handoff_progress", Step: ptr(0)}, "not_in_match")
+	e.do("b", Intent{Type: "ready", Ready: ptr(true)})
+	e.do("a", Intent{Type: "start"})
+	e.refuse("b", Intent{Type: "handoff_progress", Step: ptr(0)}, "not_in_match") // countdown is not the match
+	e.clock.Advance(StartCountdown)
+
+	e.refuse("c", Intent{Type: "handoff_progress", Step: ptr(0)}, "not_in_lobby") // not seated
+	e.refuse("b", Intent{Type: "handoff_progress"}, "bad_request")
+	e.refuse("b", Intent{Type: "handoff_progress", Step: ptr(-1)}, "bad_request")
+	e.refuse("b", Intent{Type: "handoff_progress", Step: ptr(len(HandoffSteps) + 1)}, "bad_request")
+	e.do("b", Intent{Type: "handoff_progress", Step: ptr(2)})
+	e.do("b", Intent{Type: "handoff_progress", Step: ptr(2)}) // same step: nothing to do
+	e.refuse("b", Intent{Type: "handoff_progress", Step: ptr(1)}, "bad_request")
+	e.refuse("", Intent{Type: "handoff_progress", Step: ptr(3)}, "auth_required")
+}
+
+func TestHandoffFollowsHostApp(t *testing.T) {
+	e := newEnv(t, nil)
+	a, b := e.connect("a"), e.connect("b")
+	id := matchOf(e, "b")
+	if v := b.view(t, id); v.Phase != PhaseHandoff || *v.HandoffStep != 0 || seatStep(t, v, "a") != nil {
+		t.Fatalf("handoff should start with no reports: %+v", v)
+	}
+
+	// A guest's report moves only their seat; the room timer keeps going.
+	e.do("b", Intent{Type: "handoff_progress", Step: ptr(1)})
+	if v := a.view(t, id); *seatStep(t, v, "b") != 1 || *v.HandoffStep != 0 {
+		t.Fatalf("guest report: %+v", v.Seats)
+	}
+	e.clock.Advance(HandoffSteps[0])
+	if v := a.view(t, id); *v.HandoffStep != 1 {
+		t.Fatalf("timer should still drive the room before the host reports: %d", *v.HandoffStep)
+	}
+
+	// The host's app reports: the timer stops for good and the room follows the app.
+	e.do("a", Intent{Type: "handoff_progress", Step: ptr(0)})
+	if v := a.view(t, id); *v.HandoffStep != 1 || *seatStep(t, v, "a") != 0 {
+		t.Fatalf("the room step never goes back: %+v", v)
+	}
+	e.clock.Advance(time.Minute)
+	if v := b.view(t, id); *v.HandoffStep != 1 || v.Phase != PhaseHandoff {
+		t.Fatalf("timer kept going after the app reported: %+v", v)
+	}
+	e.do("a", Intent{Type: "handoff_progress", Step: ptr(2)})
+	if v := b.view(t, id); *v.HandoffStep != 2 || v.Phase != PhaseHandoff {
+		t.Fatalf("host step 2: %+v", v)
+	}
+	e.do("a", Intent{Type: "handoff_progress", Step: ptr(len(HandoffSteps))})
+	if v := b.view(t, id); v.Phase != PhasePlaying || *v.HandoffStep != len(HandoffSteps) {
+		t.Fatalf("host inside should mean playing: %+v", v)
+	}
+	// The guest is still on their own way in, and gets there later.
+	e.do("b", Intent{Type: "handoff_progress", Step: ptr(len(HandoffSteps))})
+	if v := a.view(t, id); *seatStep(t, v, "b") != len(HandoffSteps) {
+		t.Fatalf("guest inside: %+v", v.Seats)
+	}
+}
+
+func TestEndMatchClearsCodeAndSteps(t *testing.T) {
+	e := newEnv(t, nil)
+	a, b := e.connect("a"), e.connect("b")
+	id := matchOf(e, "b")
+	e.do("a", Intent{Type: "set_join_code", Code: "k7Qx29zz"})
+	e.do("a", Intent{Type: "handoff_progress", Step: ptr(3)})
+	e.do("b", Intent{Type: "handoff_progress", Step: ptr(1)})
+	if v := b.view(t, id); v.JoinCode != "k7Qx29zz" || v.Phase != PhasePlaying {
+		t.Fatalf("before end_match: %+v", v)
+	}
+	e.do("a", Intent{Type: "end_match"})
+	v := b.view(t, id)
+	if v.Phase != PhaseOpen || v.JoinCode != "" || v.HandoffStep != nil || seatStep(t, v, "b") != nil {
+		t.Fatalf("end_match should clear the code and the steps: %+v", v)
+	}
+	e.refuse("b", Intent{Type: "handoff_progress", Step: ptr(2)}, "not_in_match")
+
+	// Next match: no reports yet, so the timer is the fallback again.
+	e.do("b", Intent{Type: "ready", Ready: ptr(true)})
+	e.do("a", Intent{Type: "start"})
+	e.clock.Advance(StartCountdown)
+	for _, d := range HandoffSteps {
+		e.clock.Advance(d)
+	}
+	if v := a.view(t, id); v.Phase != PhasePlaying {
+		t.Fatalf("timer fallback after a reset: %+v", v)
+	}
+}
+
+func TestHostLeavingEndsTheMatch(t *testing.T) {
+	e := newEnv(t, nil)
+	e.connect("a")
+	b, _ := e.connect("b"), e.connect("c")
+	id := matchOf(e, "b", "c")
+	e.do("a", Intent{Type: "set_join_code", Code: "k7Qx29zz"})
+	e.do("a", Intent{Type: "handoff_progress", Step: ptr(1)})
+	e.do("a", Intent{Type: "leave"})
+	v := b.view(t, id)
+	if v.HostID != "b" || v.Phase != PhaseOpen || v.JoinCode != "" || v.Status != "aberto" {
+		t.Fatalf("host left mid-match: %+v", v)
+	}
+	if seatStep(t, v, "b") != nil {
+		t.Fatalf("steps should reset: %+v", v.Seats)
+	}
+	// The old host's code never comes back, not even outside a match.
+	e.do("b", Intent{Type: "set_join_code", Code: "novo-codigo"})
+	e.do("b", Intent{Type: "leave"})
+	if v := e.hub.lobbies[id]; v.joinCode != "" {
+		t.Fatalf("code survived the host change: %q", v.joinCode)
+	}
+}
+
 func TestAnonymousIsReadOnly(t *testing.T) {
 	e := newEnv(t, nil)
 	e.connect("a")

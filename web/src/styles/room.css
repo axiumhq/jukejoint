@@ -588,6 +588,44 @@ button.seat.is-empty:hover {
   text-decoration-color: currentColor;
 }
 
+/* dentro do app: o projeto de teste no lugar do modo, dito na própria barra */
+.rb-test {
+  flex: none;
+}
+
+/* dentro do app: hospedar ou entrar falhou (a frase do app e o detalhe técnico recolhido) */
+.rb-fail {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  color: var(--tx-2);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.rb-fail > .ico {
+  flex: none;
+  margin-top: 1px;
+  color: var(--warn);
+}
+
+.rb-fail-t {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rb-fail-t > b {
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.rb-fail .dlg-tech code {
+  max-height: 96px;
+  overflow: auto;
+}
+
 .rb-act {
   display: flex;
   align-items: center;

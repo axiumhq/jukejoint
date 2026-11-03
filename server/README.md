@@ -86,7 +86,8 @@ Mensagens em JSON, texto, até 4 KiB. O cliente manda **pedidos** (intents) e o 
 | `answer_knock` | `userId`, `accept` | Só o anfitrião. |
 | `invite` | `userId` | Quem está numa sala, para um amigo online. Em lobby com convite, só o anfitrião. O convite abre a porta. Um convite por amigo a cada 15 s. |
 | `decline_invite` | `lobbyId` | Quem recebeu. |
-| `set_join_code` | `code` (`[A-Za-z0-9._:-]{1,128}`, vazio limpa) | Só o anfitrião. Lugar reservado para o código/peer do app (EngineAdapter). |
+| `set_join_code` | `code` (`[A-Za-z0-9._:-]{1,128}`, vazio limpa) | Só o anfitrião. O código do evento `hosting` do app de quem hospeda (EngineAdapter); vai só para quem está na sala. Some no `end_match` e quando o anfitrião muda. |
+| `handoff_progress` | `step` (0 a 3: baixando o modo, abrindo o jogo, entrando, dentro) | Protocolo 2. Quem está sentado na sala, só durante a partida (`handoff`/`playing`; antes, `not_in_match`). É a etapa do **seu** app, para a sua vaga, e só anda para frente (voltar é `bad_request`; repetir não faz nada). A do anfitrião também move a sala: o tempo para de vez nesta partida e a sala segue o app dele (anfitrião dentro = `playing`). |
 | `ping` | | Qualquer um. |
 
 Campos desconhecidos são recusados (`bad_request`), não ignorados.
@@ -95,7 +96,7 @@ Campos desconhecidos são recusados (`bad_request`), não ignorados.
 
 | `type` | Campos |
 |---|---|
-| `welcome` | `me` (ou `null`), `here` (o lobby em que você está), `serverNow`, `knocks`, `invites`. Vem a cada conexão e reconexão. |
+| `welcome` | `protocol` (versão, abaixo), `me` (ou `null`), `here` (o lobby em que você está), `serverNow`, `knocks`, `invites`. Vem a cada conexão e reconexão. |
 | `lobbies` | `lobbies: [visão]`: o retrato completo, logo depois do `welcome`. |
 | `lobby` | `lobby: visão`: um lobby mudou (ou nasceu). |
 | `lobby_removed` | `lobbyId`, `reason` (`closed` ou `empty`). |
@@ -108,7 +109,16 @@ Campos desconhecidos são recusados (`bad_request`), não ignorados.
 | `kicked` | `lobbyId`, `name`: você foi tirado da sala. |
 | `ack` / `error` | Respostas aos pedidos. |
 
-**A visão de um lobby** depende de quem olha: `id, name, modeSlug, region, hostId, hostName, players, slots, minPlayers, locked, beginners, joinInProgress, status (aberto | cheio | em-partida), phase, countdownMs, handoffStep, openedAt, startedAt, fullSince, seats, joins`. Num lobby com convite, quem está fora recebe `hidden: true` e só a contagem (sem `seats` nem `joins`). O `joinCode` vai só para quem está na sala, e `knocks` só para o anfitrião.
+**A visão de um lobby** depende de quem olha: `id, name, modeSlug, region, hostId, hostName, players, slots, minPlayers, locked, beginners, joinInProgress, status (aberto | cheio | em-partida), phase, countdownMs, handoffStep, openedAt, startedAt, fullSince, seats, joins`. Num lobby com convite, quem está fora recebe `hidden: true` e só a contagem (sem `seats` nem `joins`). O `joinCode` vai só para quem está na sala, e `knocks` só para o anfitrião. Cada vaga (`seats[]`) é `userId, name, host, ready, readyAt` e, em partida, `step` (protocolo 2): a etapa que o app daquela vaga mandou, se já mandou.
+
+### Versões do protocolo
+
+As mudanças são só acréscimos: um cliente antigo continua funcionando (campos novos são ignorados por ele; intents novas ele só não manda).
+
+| Versão | O que entrou |
+|---|---|
+| 1 | O protocolo original (até 03/11/2026). |
+| 2 | `welcome.protocol`; o pedido `handoff_progress {step}`; `seats[].step`; o `joinCode` limpo no `end_match` e na troca de anfitrião; o anfitrião que sai no meio da partida encerra a partida (a sala reabre). |
 
 ### A sala (máquina de estados)
 
@@ -117,12 +127,14 @@ open ──start (anfitrião, mínimo de jogadores e de confirmados)──► co
   ▲                                                                  │
   └── cancel_start · alguém desmarca pronto · saída abaixo do mínimo ┘
 countdown ──5 s──► handoff (etapas 0 → 1 → 2: baixando o modo, abrindo o jogo, entrando) ──► playing (etapa 3)
-handoff/playing ──end_match (anfitrião)──► open
+                    (as etapas seguem o app de quem hospeda; sem app, andam por tempo)
+handoff/playing ──end_match (anfitrião) · anfitrião sai──► open
 ```
 
-- O anfitrião saiu: a vaga mais antiga vira anfitriã. O último saiu: o lobby fecha.
+- O anfitrião saiu: a vaga mais antiga vira anfitriã e o código de entrada some. Se foi no meio da partida, ela acabou (morava no PC de quem saiu): a sala volta para `open`. O último saiu: o lobby fecha.
 - Caiu a conexão: a vaga fica guardada por 30 s. Voltou nesse tempo, continua na sala; senão, sai.
-- As etapas do handoff andam por tempo (900, 1700 e 1500 ms, os mesmos do site) **até o app mandar os eventos de verdade** pelo EngineAdapter.
+- As etapas do handoff seguem o app (`handoff_progress`, protocolo 2). O app de quem hospeda manda a primeira assim que a partida começa; dali em diante a sala anda pelas etapas dele. Sem app (site no navegador, demo), as etapas andam por tempo (900, 1700 e 1500 ms, os mesmos do site): o tempo é só a reserva. Cada vaga tem a própria etapa, mandada pelo próprio app.
+- `end_match` (ou a sessão de quem hospeda que terminou, que o site traduz em `end_match`) reabre a sala, limpa o código e as etapas.
 
 ## Login pela Steam: o que é verificado
 
@@ -168,7 +180,7 @@ Os usuários de teste são amigos entre si. **Nunca ligue isto num servidor púb
 - **Postgres** no lugar da memória (usuários, sessões, nonces e amigos). Os lobbies também somem num reinício.
 - **Amigos:** hoje só da Steam (`GetFriendList`, buscada no login e só com `STEAM_API_KEY`). Lista privada na Steam = nenhum amigo. Não há atualização da lista sem novo login, nem amigos "da plataforma".
 - **Grupo (party) de verdade:** o "Chamar" convida para o lobby em que você está. Grupo que segue o líder entre lobbies ainda não existe.
-- **Eventos do app:** o handoff anda por tempo; falta o app desktop reportar as etapas e preencher o `joinCode` (EngineAdapter). Também falta o fim de partida automático.
+- **Eventos do app:** o app desktop já preenche o `joinCode` e manda as etapas (`handoff_progress`), e a sessão de quem hospeda que termina encerra a partida. Falta o teste com dois PCs e o jogo de verdade (as etapas de quem entra saem de texto livre do Modlock; ver `desktop/README.md`). O servidor confia na etapa que cada app manda sobre a própria vaga: não há como provar que alguém está mesmo dentro do jogo.
 - **Ping real:** o site mostra um ping estimado pela região até o app medir.
 - **Atrás de proxy:** o IP do cliente vem do socket; para o limite por IP atrás de um proxy reverso, falta confiar em `X-Forwarded-For` só do proxy conhecido.
 - **Escala:** um mutex só e presença enviada amigo a amigo; cada mudança de lobby vai para todos os sockets. Serve para centenas de jogadores, não para dezenas de milhares (aí entram Redis/NATS, como em `docs/decisao-plataforma.md`).
@@ -183,7 +195,7 @@ cd server
 go vet ./... && go test ./...
 ```
 
-- `internal/lobby`: a máquina de estados com relógio falso (contagem, cancelamentos, handoff até "dentro do lobby", passagem de anfitrião, lobby que fecha vazio, remover, lotado, troca de lobby, porta, convite, reconexão dentro e fora dos 30 s, `joinCode` só para quem está na sala, filtros da lista).
+- `internal/lobby`: a máquina de estados com relógio falso (contagem, cancelamentos, handoff até "dentro do lobby", passagem de anfitrião, lobby que fecha vazio, remover, lotado, troca de lobby, porta, convite, reconexão dentro e fora dos 30 s, `joinCode` só para quem está na sala, filtros da lista; `handoff_progress`: validação, etapa que não volta, o tempo que para quando o app de quem hospeda fala, `end_match` e saída do anfitrião limpando código e etapas, e o tempo de volta como reserva na partida seguinte).
 - `internal/auth`: OpenID com uma Steam falsa (`httptest`): resposta válida, repetição recusada sem chegar à Steam e mais de 20 respostas adulteradas; cookies assinados (propósito, chave, adulteração, validade); `return` seguro; chave criada e relida; Steam Web API sem vazar a chave.
 - `internal/httpapi`: origem do WebSocket e dos `POST`, CORS, login de teste (desligado, proxy, Host estranho, nome inválido), fluxo completo de login da Steam com a Steam falsa, sala pelo WebSocket, logout que fecha os sockets e o limite de ritmo.
 - `internal/store`: sessão vencida, nonce repetido e amizade nos dois sentidos.

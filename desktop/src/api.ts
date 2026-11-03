@@ -59,6 +59,8 @@ export interface CheckReport {
   env: { name: string; value: string | null; scope: 'app' | 'modlock'; purpose: string }[];
   /** %LOCALAPPDATA%\modlock, onde o Modlock baixa o servidor do jogo. */
   downloadDir: string | null;
+  /** Catálogo de modos (engine/catalog.rs): pasta dos projetos; hoje todo modo abre o projeto de teste. */
+  modes?: { root: string | null; source: string | null; testMode: boolean; testProject: string; testProjectOk: boolean };
   ready: boolean;
   problems: EngineError[];
 }
@@ -72,6 +74,8 @@ export interface SessionInfo {
   joinCode: string | null;
   running: boolean;
   exitCode: number | null;
+  /** Etapa do handoff (0 baixando o modo, 1 abrindo o jogo, 2 entrando, 3 dentro). */
+  step?: number | null;
 }
 
 export interface AppInfo {

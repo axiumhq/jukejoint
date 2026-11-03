@@ -1,15 +1,15 @@
 //! Comandos Tauri. Cada um precisa de `allow-<nome>` na capability da janela
 //! (`capabilities/*.json`); o site e a tela Instalação recebem conjuntos diferentes.
 
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use serde::Serialize;
 use tauri::{AppHandle, State};
 
 use crate::{
     engine::{
-        modlock::ModlockCli, CheckReport, DaemonInfo, EngineAdapter, EngineError, JoinCode, SessionInfo, StopReport,
-        MODLOCK_VERSION,
+        modlock::ModlockCli, CheckReport, DaemonInfo, EngineAdapter, EngineError, JoinCode, ModeSlug, SessionInfo,
+        StopReport, MODLOCK_VERSION,
     },
     AppState, BRAND_NAME, SLUG,
 };
@@ -66,9 +66,12 @@ pub async fn engine_daemon_stop(state: State<'_, AppState>) -> Result<DaemonInfo
     blocking(&state, |e| e.stop_daemon()).await
 }
 
+/// Hospeda o modo `mode` (slug do site). O app resolve a pasta do projeto no próprio catálogo
+/// (`engine/catalog.rs`); o site nunca manda caminho.
 #[tauri::command]
-pub async fn engine_host(state: State<'_, AppState>, project: String) -> Result<SessionInfo, EngineError> {
-    blocking(&state, move |e| e.host(&PathBuf::from(project))).await
+pub async fn engine_host(state: State<'_, AppState>, mode: String) -> Result<SessionInfo, EngineError> {
+    let mode = ModeSlug::parse(&mode)?;
+    blocking(&state, move |e| e.host_mode(&mode)).await
 }
 
 #[tauri::command]
