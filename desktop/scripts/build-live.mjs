@@ -137,7 +137,8 @@ copyFileSync(exe, join(out, `${brand}.exe`));
 copyFileSync(modlock, join(out, 'modlock.exe'));
 cpSync(hello, join(out, 'modos', 'hello'), {
   recursive: true,
-  filter: (src) => !['node_modules', '.git', 'dist', '.build.lock'].includes(basename(src)),
+  // Local run logs (server.log) carry paths and peer IDs from this PC: never ship them.
+  filter: (src) => !['node_modules', '.git', 'dist', '.build.lock'].includes(basename(src)) && !src.endsWith('.log'),
 });
 
 const leiaMe = `${brand}: cópia de teste do app
