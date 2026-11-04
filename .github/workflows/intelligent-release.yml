@@ -12,7 +12,7 @@ on:
       stabilization_seconds:
         description: Seconds to wait for late queue entries
         type: string
-        default: '900'
+        default: '60'
       dry_run:
         description: Analyze without creating a release or tag
         type: boolean
@@ -36,7 +36,7 @@ jobs:
     uses: axiumhq/.github/.github/workflows/intelligent-release.yml@main
     with:
       baseline_version: '0.0.0'
-      stabilization_seconds: ${{ inputs.stabilization_seconds || '900' }}
+      stabilization_seconds: ${{ inputs.stabilization_seconds || '60' }}
       force: ${{ inputs.force || false }}
       dry_run: ${{ github.event_name == 'push' || inputs.dry_run }}
       direct_impact: ${{ inputs.direct_impact || 'auto' }}
