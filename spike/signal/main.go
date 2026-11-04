@@ -88,7 +88,14 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("signaling on %s", *addr)
-	log.Fatal(http.ListenAndServe(*addr, handler))
+	server := &http.Server{
+		Addr: *addr, Handler: handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		IdleTimeout:       90 * time.Second,
+		MaxHeaderBytes:    16 << 10,
+	}
+	log.Fatal(server.ListenAndServe())
 }
 
 // healthcheck GETs /healthz on the port addr listens on, over loopback. The
@@ -278,6 +285,10 @@ func verifyTicketRequest(r *http.Request, w http.ResponseWriter, envPrefix strin
 // Ticket requests must be signed with envPrefix; now is the clock used to check
 // their timestamps and ticket expiries. Tickets are authenticated with secret.
 func newHandler(le *logrus.Entry, envPrefix string, secret []byte, now func() time.Time) (http.Handler, error) {
+	return newHandlerWithLimits(le, envPrefix, secret, now, newAdmission(50, 100, 256, now))
+}
+
+func newHandlerWithLimits(le *logrus.Entry, envPrefix string, secret []byte, now func() time.Time, admission *admission) (http.Handler, error) {
 	// Relay signaling between the peers identified by their tickets.
 	relay := signaling_server.NewServerWithIdentify(le, func(ctx context.Context) (peer.ID, error) {
 		pid, ok := ctx.Value(peerKey{}).(peer.ID)
@@ -295,8 +306,13 @@ func newHandler(le *logrus.Entry, envPrefix string, secret []byte, now func() ti
 
 	// Issue each verified peer an opaque, expiring ticket for the ws endpoint.
 	// Never answer 401 here: the pinned client gives up on its peer for good
-	// after one, so every failure is a 403.
+	// after one, so invalid signatures get a 403. Overload is retryable.
 	routes.HandleFunc("POST /api/signal/ticket", func(w http.ResponseWriter, r *http.Request) {
+		if !admission.allowRequest() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		pid, err := verifyTicketRequest(r, w, envPrefix, now())
 		if err != nil {
 			peerField := pid.String()
@@ -327,6 +343,11 @@ func newHandler(le *logrus.Entry, envPrefix string, secret []byte, now func() ti
 	// 401 is avoided here for the same reason as above). The expiry only gates
 	// opening the socket: one already open stays open.
 	routes.HandleFunc("GET /api/signal/ws", func(w http.ResponseWriter, r *http.Request) {
+		if !admission.allowRequest() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		pid, err := verifyTicket(secret, r.URL.Query().Get("tk"), now())
 		if err != nil {
 			// Log the peer when the ticket was genuine, never the ticket itself.
@@ -334,6 +355,12 @@ func newHandler(le *logrus.Entry, envPrefix string, secret []byte, now func() ti
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
+		if !admission.acquire() {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		defer admission.release()
 		conn, err := websocket.Accept(w, r, nil)
 		if err != nil {
 			return
