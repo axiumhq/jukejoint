@@ -108,7 +108,7 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user, sid := s.sessionFromToken(r.Context(), tokenFrom(r, true))
-	key, max := "ip:"+clientIP(r), maxConnsIP
+	key, max := "ip:"+s.clientIP(r), maxConnsIP
 	if user != nil {
 		key, max = "user:"+user.ID, maxConnsUser
 	}

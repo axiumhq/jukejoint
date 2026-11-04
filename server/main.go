@@ -13,10 +13,19 @@
 //	DEV_LOGIN=1    optional, dev only: fake test users from localhost
 //	APP_SCHEME     deep link scheme of the desktop app (jukejoint)
 //	APP_NAME       app name shown on the app sign-in page (Jukejoint)
+//	TRUSTED_PROXIES  optional: CIDRs or IPs of the reverse proxy (a Cloudflare
+//	               Tunnel) whose Cf-Connecting-Ip names the client for the
+//	               per-IP limits; empty trusts no header
+//
+// "server healthcheck" asks this server's own /healthz and exits 0 when it
+// answers, for container health checks (the image has no shell or curl).
 package main
 
 import (
+	"fmt"
+	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -51,7 +60,33 @@ func steamKey(dataDir string) string {
 	return strings.TrimSpace(k)
 }
 
+// healthcheck GETs /healthz on the port ADDR listens on, over loopback.
+func healthcheck(addr string) error {
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("bad ADDR %q: %w", addr, err)
+	}
+	c := &http.Client{Timeout: 3 * time.Second}
+	res, err := c.Get("http://" + net.JoinHostPort("127.0.0.1", port) + "/healthz")
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<10))
+	if res.StatusCode != http.StatusOK {
+		return fmt.Errorf("healthz answered %d", res.StatusCode)
+	}
+	return nil
+}
+
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "healthcheck" {
+		if err := healthcheck(env("ADDR", "127.0.0.1:8090")); err != nil {
+			fmt.Fprintln(os.Stderr, "unhealthy:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
 	fail := func(msg string, args ...any) {
 		log.Error(msg, args...)
@@ -91,6 +126,10 @@ func main() {
 	} else {
 		log.Info("no STEAM_API_KEY: users get a neutral name and no friend list")
 	}
+	proxies, err := httpapi.ParseProxies(os.Getenv("TRUSTED_PROXIES"))
+	if err != nil {
+		fail("bad TRUSTED_PROXIES", "err", err)
+	}
 	dev := os.Getenv("DEV_LOGIN") == "1"
 	if dev {
 		log.Warn("DEV_LOGIN=1: fake test users are enabled for localhost. Never use this in production.")
@@ -108,6 +147,8 @@ func main() {
 		Log:        log,
 		AppScheme:  env("APP_SCHEME", "jukejoint"),
 		AppName:    env("APP_NAME", "Jukejoint"),
+
+		TrustedProxies: proxies,
 	})
 	if err != nil {
 		fail("config", "err", err)

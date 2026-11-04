@@ -117,7 +117,7 @@ func (s *Server) appToken(w http.ResponseWriter, r *http.Request) {
 	if !s.requireOrigin(w, r) {
 		return
 	}
-	if !s.authRate.allow("ip:" + clientIP(r)) {
+	if !s.authRate.allow("ip:" + s.clientIP(r)) {
 		http.Error(w, "muitas tentativas, espere um pouco", http.StatusTooManyRequests)
 		return
 	}

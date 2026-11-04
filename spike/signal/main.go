@@ -20,6 +20,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -59,7 +60,15 @@ func main() {
 	// Modlock v0.1.68 hardcodes "hyperline" as the prefix it signs requests with.
 	env := flag.String("env", "hyperline", "env prefix the clients sign requests with")
 	secretFile := flag.String("secret-file", "", "file holding the ticket HMAC key, created if missing (empty: random key per run)")
+	health := flag.Bool("healthcheck", false, "ask the /healthz of a server on -addr over loopback and exit (for container health checks)")
 	flag.Parse()
+
+	if *health {
+		if err := healthcheck(*addr); err != nil {
+			log.Fatalf("unhealthy: %v", err)
+		}
+		return
+	}
 
 	// Load the ticket key, or make one that dies with this process.
 	var secret []byte
@@ -80,6 +89,26 @@ func main() {
 	}
 	log.Printf("signaling on %s", *addr)
 	log.Fatal(http.ListenAndServe(*addr, handler))
+}
+
+// healthcheck GETs /healthz on the port addr listens on, over loopback. The
+// container image has no shell or curl, so the binary checks itself.
+func healthcheck(addr string) error {
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return errors.Wrapf(err, "bad -addr %q", addr)
+	}
+	c := &http.Client{Timeout: 3 * time.Second}
+	res, err := c.Get("http://" + net.JoinHostPort("127.0.0.1", port) + "/healthz")
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<10))
+	if res.StatusCode != http.StatusOK {
+		return errors.Errorf("healthz answered %d", res.StatusCode)
+	}
+	return nil
 }
 
 // newSecret returns secretSize random bytes.

@@ -55,6 +55,9 @@ type Config struct {
 	AppScheme string
 	// AppName is how the app is called on that page ("Jukejoint" when empty).
 	AppName string
+	// TrustedProxies are the reverse proxies whose Cf-Connecting-Ip is
+	// believed for the per-IP limits (see ParseProxies). Empty: none.
+	TrustedProxies []*net.IPNet
 }
 
 // Server serves the API.
@@ -205,14 +208,6 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 	_ = json.NewEncoder(w).Encode(v)
 }
 
-func clientIP(r *http.Request) string {
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
-	}
-	return host
-}
-
 // requireOrigin guards state-changing requests: the Origin header must be one
 // of ours. Browsers always send it on POST, so a missing one is refused too.
 func (s *Server) requireOrigin(w http.ResponseWriter, r *http.Request) bool {
@@ -316,11 +311,11 @@ func (s *Server) devAllowed(r *http.Request) bool {
 	if !s.cfg.DevLogin {
 		return false
 	}
-	ip := net.ParseIP(clientIP(r))
+	ip := net.ParseIP(remoteIP(r))
 	if ip == nil || !ip.IsLoopback() {
 		return false
 	}
-	for _, h := range []string{"X-Forwarded-For", "X-Forwarded-Host", "X-Real-Ip", "Forwarded"} {
+	for _, h := range []string{"X-Forwarded-For", "X-Forwarded-Host", "X-Real-Ip", "Forwarded", cfConnectingIP} {
 		if r.Header.Get(h) != "" {
 			return false
 		}
@@ -390,7 +385,7 @@ func (s *Server) getLobby(w http.ResponseWriter, r *http.Request) {
 /* ───────── Steam sign-in ───────── */
 
 func (s *Server) steamLogin(w http.ResponseWriter, r *http.Request) {
-	if !s.authRate.allow("ip:" + clientIP(r)) {
+	if !s.authRate.allow("ip:" + s.clientIP(r)) {
 		http.Error(w, "muitas tentativas, espere um pouco", http.StatusTooManyRequests)
 		return
 	}
@@ -414,7 +409,7 @@ func (s *Server) steamLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) steamCallback(w http.ResponseWriter, r *http.Request) {
-	if !s.authRate.allow("ip:" + clientIP(r)) {
+	if !s.authRate.allow("ip:" + s.clientIP(r)) {
 		http.Error(w, "muitas tentativas, espere um pouco", http.StatusTooManyRequests)
 		return
 	}

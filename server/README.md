@@ -50,8 +50,19 @@ Abra o site em duas janelas com cookies separados (uma normal e uma anônima, ou
 | `DEV_LOGIN` | (vazia) | `1` liga o login de teste. **Só desenvolvimento.** Ver abaixo. |
 | `APP_SCHEME` | `jukejoint` | O esquema do link que abre o app desktop (`<esquema>://auth/<código>`). Só letras minúsculas e números, começando por letra (2 a 31 caracteres); outra coisa, o servidor não sobe. Tem que ser o mesmo que o app registra. |
 | `APP_NAME` | `Jukejoint` | O nome do app na página que aparece depois do login pelo app (até 40 caracteres). |
+| `TRUSTED_PROXIES` | (vazia) | Opcional. IPs ou faixas CIDR, separados por vírgula, do proxy na frente da API (o `cloudflared` do túnel). Só de um pedido que chega de lá o servidor acredita no `CF-Connecting-IP` para saber quem é o cliente; de qualquer outro endereço o cabeçalho é ignorado, porque qualquer um pode mandá-lo. Sem isso, atrás do túnel todos parecem um cliente só e dividem os limites por IP. No PC: `127.0.0.1`. Em container: a faixa da rede Docker, por exemplo `172.16.0.0/12`. Valor inválido, o servidor não sobe. |
 
 **`WEB_ORIGIN` e o app desktop:** o site dentro do app tem origem própria e precisa estar na lista, senão a API recusa (CORS, `Origin` dos `POST` e do WebSocket). No `.exe` é `http://tauri.localhost`; no `tauri dev` é `http://localhost:5280`. Exemplo: `WEB_ORIGIN=http://localhost:5173,http://tauri.localhost,http://localhost:5280` (a primeira continua sendo para onde o navegador volta depois do login).
+
+## Imagem Docker
+
+`server/Dockerfile` gera um binário estático sobre o distroless `static:nonroot` (usuário 65532, sem shell). O CI (`.github/workflows/images.yml`) publica `ghcr.io/axiumhq/jukejoint-api` para `linux/arm64` e `linux/amd64`, com a tag do commit; quem hospeda fixa pelo digest, que aparece no resumo de cada execução.
+
+```bash
+docker buildx build --platform linux/arm64 -t jukejoint-api server
+```
+
+Na imagem, `ADDR=0.0.0.0:8291` e `DATA_DIR=/data` (volume, já com o dono certo). Passe `PUBLIC_URL`, `WEB_ORIGIN`, `STEAM_API_KEY` e `TRUSTED_PROXIES` ao rodar. A imagem roda com o sistema de arquivos só leitura e sem capabilities. `server healthcheck` pede o próprio `/healthz` pelo loopback e sai com 0 ou 1: é o `HEALTHCHECK` da imagem.
 
 ## Endpoints HTTP
 
@@ -179,7 +190,7 @@ A Steam aceita `http://localhost` como `realm`. Em produção, use `PUBLIC_URL=h
 - **Origem:** o WebSocket só abre com `Origin` exatamente igual a `PUBLIC_URL` ou a um `WEB_ORIGIN`; sem `Origin`, recusa. Os `POST` (logout, login de teste) exigem o mesmo. Isso é a proteção contra CSRF, já que o cookie viaja junto. O CORS só libera essas origens, com credenciais (`Content-Type` e `Authorization`). O token do app não viaja sozinho (o navegador só o manda se o site o puser), então por ele não há CSRF; mesmo assim os `POST` e o WebSocket continuam exigindo a origem.
 - **Login do app:** o código vale uma vez só e 2 minutos, está ligado ao `challenge` do PKCE (quem roubar o link não tem o `verifier`), é gasto antes de qualquer conferência e a conta é comparada em tempo constante. A tabela de códigos é limitada a 1000 (vencidos saem a cada novo). O `challenge` e o `verifier` têm formato conferido; segredos (código, `verifier`, token) nunca vão para o log.
 - **Limites:** corpo HTTP até 16 KiB; mensagem do WebSocket até 4 KiB; nomes até 40 caracteres e recado da porta até 80, sem caracteres de controle nem de direção do texto (bidi); até 500 lobbies abertos; até 20 batidas pendentes por lobby; até 6 sockets por usuário e 12 por IP sem login.
-- **Ritmo:** 8 pedidos por segundo por usuário (rajada de 20) no WebSocket; 10 tentativas de login seguidas por IP, depois uma a cada 2 s. Mais de 20 pedidos inválidos derrubam o socket. Cliente lento demais para receber é desconectado, em vez de segurar o servidor.
+- **Ritmo:** 8 pedidos por segundo por usuário (rajada de 20) no WebSocket; 10 tentativas de login seguidas por IP, depois uma a cada 2 s (atrás do túnel, o IP do jogador, com `TRUSTED_PROXIES`). Mais de 20 pedidos inválidos derrubam o socket. Cliente lento demais para receber é desconectado, em vez de segurar o servidor.
 - **Servidor decide:** o cliente só manda intents; toda transição é validada contra o estado atual (anfitrião, quórum, vagas, porta, fase). Campos desconhecidos são recusados.
 - **Cabeçalhos:** `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin`, `Cache-Control: no-store`.
 - Erros da Steam Web API nunca levam a URL (que tem a chave) para o log.

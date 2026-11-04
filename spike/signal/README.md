@@ -35,6 +35,16 @@ export PATH="$PWD/../../tools/go/bin:$PATH" GOTOOLCHAIN=local
 go build -o ../../tools/signal.exe .
 ```
 
+## Imagem Docker
+
+`spike/signal/Dockerfile` gera um binário estático sobre o distroless `static:nonroot` (usuário 65532, sem shell). O CI (`.github/workflows/images.yml`) publica `ghcr.io/axiumhq/jukejoint-signal` para `linux/arm64` e `linux/amd64`.
+
+```bash
+docker buildx build --platform linux/arm64 -t jukejoint-signal spike/signal
+```
+
+A imagem roda `-addr :8080 -secret-file /data/signal-secret.key`: monte um volume em `/data` para os tickets sobreviverem a um reinício. `-healthcheck` pede o `/healthz` da porta do `-addr` pelo loopback e sai com 0 ou 1; é o `HEALTHCHECK` da imagem (que supõe a porta 8080).
+
 ## Testes
 
 ```bash

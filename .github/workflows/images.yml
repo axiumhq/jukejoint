@@ -1,0 +1,142 @@
+# Builds the two server images (lobby API and signaling) and publishes them to
+# GHCR, for linux/arm64 (the Raspberry Pi that hosts them) and linux/amd64.
+#
+# Each image is tagged with the full commit SHA and "main". The Pi never runs a
+# tag: pi-infra pins image@sha256:<digest>, and the digests of every run are
+# listed in its summary, ready to paste into pi-infra's compose/versions.env.
+name: images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - server/**
+      - spike/signal/**
+      - .github/workflows/images.yml
+  pull_request:
+    paths:
+      - server/**
+      - spike/signal/**
+      - .github/workflows/images.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dir: server
+          - name: signal
+            dir: spike/signal
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      # actions/setup-go v7.0.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+        with:
+          go-version-file: ${{ matrix.dir }}/go.mod
+          cache-dependency-path: ${{ matrix.dir }}/go.sum
+      - run: go vet ./...
+      - run: go test ./...
+
+  image:
+    name: image ${{ matrix.name }}
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: server
+          - name: signal
+            context: spike/signal
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/jukejoint-${{ matrix.name }}
+      # Pull requests only build: nothing is published from a branch.
+      PUSH: ${{ github.event_name != 'pull_request' }}
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      # docker/setup-buildx-action v4.4.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069
+
+      # docker/login-action v4.7.0
+      - if: env.PUSH == 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image name
+        id: name
+        # GHCR names must be lowercase; the owner may not be.
+        run: echo "image=${IMAGE,,}" >> "$GITHUB_OUTPUT"
+
+      # docker/build-push-action v7.4.0
+      - id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc
+        with:
+          context: ${{ matrix.context }}
+          platforms: linux/arm64,linux/amd64
+          push: ${{ env.PUSH == 'true' }}
+          provenance: false
+          tags: |
+            ${{ steps.name.outputs.image }}:${{ github.sha }}
+            ${{ github.ref == 'refs/heads/main' && format('{0}:main', steps.name.outputs.image) || '' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Check the published platforms
+        if: env.PUSH == 'true'
+        env:
+          REF: ${{ steps.name.outputs.image }}@${{ steps.build.outputs.digest }}
+        run: |
+          platforms=$(docker buildx imagetools inspect "$REF" --format '{{range .Manifest.Manifests}}{{.Platform.OS}}/{{.Platform.Architecture}} {{end}}')
+          echo "platforms: $platforms"
+          for want in linux/arm64 linux/amd64; do
+            case " $platforms " in
+              *" $want "*) ;;
+              *) echo "missing $want in $REF" >&2; exit 1 ;;
+            esac
+          done
+
+      - name: Summary
+        if: env.PUSH == 'true'
+        env:
+          NAME: ${{ matrix.name }}
+          REF: ${{ steps.name.outputs.image }}:${{ github.sha }}@${{ steps.build.outputs.digest }}
+        run: |
+          var="JUKEJOINT_$(echo "$NAME" | tr '[:lower:]' '[:upper:]')_IMAGE"
+          {
+            echo "### jukejoint-$NAME"
+            echo
+            echo "For pi-infra \`compose/versions.env\`:"
+            echo
+            echo '```text'
+            echo "$var=$REF"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

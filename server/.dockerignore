@@ -1,0 +1,4 @@
+.data/
+*.exe
+**/*_test.go
+README.md
