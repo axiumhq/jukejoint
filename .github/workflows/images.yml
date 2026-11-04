@@ -3,7 +3,8 @@
 #
 # Each image is tagged with the full commit SHA and "main". The Pi never runs a
 # tag: pi-infra pins image@sha256:<digest>, and the digests of every run are
-# listed in its summary, ready to paste into pi-infra's compose/versions.env.
+# listed in its summary. On main, the last job sends both pins to infra-pi
+# (jukejoint-published), which opens the reviewed pin PR.
 name: images
 
 on:
@@ -140,3 +141,62 @@ jobs:
             echo "$var=$REF"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # Asks infra-pi for a reviewed pin update, exactly like the Axium image does:
+  # the shared deploy/application-images PR picks up both pins, and merging it
+  # deploys them. This repository never reaches the Pi itself.
+  infra:
+    name: request infra-pi pin update
+    needs: image
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      # docker/login-action v4.7.0
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve both pins
+        id: pins
+        env:
+          OWNER: ${{ github.repository_owner }}
+          REVISION: ${{ github.sha }}
+        run: |
+          owner="${OWNER,,}"
+          for name in api signal; do
+            ref="ghcr.io/$owner/jukejoint-$name:$REVISION"
+            digest=$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | jq -r .digest)
+            printf '%s' "$digest" | grep -Eq '^sha256:[a-f0-9]{64}$'
+            echo "$name=$ref@$digest" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Create CI token for infrastructure
+        id: app
+        # actions/create-github-app-token v3.2.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1
+        with:
+          app-id: ${{ secrets.CI_APP_ID }}
+          private-key: ${{ secrets.CI_APP_PRIVATE_KEY }}
+          owner: axiumhq
+          repositories: infra-pi
+
+      - name: Request reviewed infrastructure image update
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          API: ${{ steps.pins.outputs.api }}
+          SIGNAL: ${{ steps.pins.outputs.signal }}
+          REVISION: ${{ github.sha }}
+        run: |
+          jq -n --arg api "$API" --arg signal "$SIGNAL" --arg revision "$REVISION" \
+            '{event_type:"jukejoint-published",client_payload:{revision:$revision,updates:{JUKEJOINT_API_IMAGE:$api,JUKEJOINT_SIGNAL_IMAGE:$signal}}}' |
+            curl --fail-with-body --request POST \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              --data @- \
+              https://api.github.com/repos/axiumhq/infra-pi/dispatches
