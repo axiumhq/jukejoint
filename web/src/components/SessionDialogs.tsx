@@ -9,6 +9,7 @@ import { live as L } from '../i18n/live';
 import type { EngineError } from '../lib/desktop';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
 import { useSession } from '../state/session';
+import { DevSignIn, SignInPending } from './AppLogin';
 import { LiveDot, Tag } from './Common';
 import { Dialog } from './Dialog';
 import { Icon, type IconName } from './Icon';
@@ -63,18 +64,20 @@ function Note({ icon = 'info', tone, children }: { icon?: IconName; tone?: 'warn
 }
 
 function SignInBlock({ body }: { body: string }) {
-  const { signIn, live, devLogin, signInDev } = useSession();
+  const { signIn, live, authPending } = useSession();
   return (
     <div className="dlg-signin">
       <p>{body}</p>
-      <button type="button" className="btn btn-p btn-lg" onClick={signIn}>
-        <Icon name="user" />
-        {t.account.signIn}
-      </button>
-      {devLogin && (
-        <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
-          {L.devSignIn}
-        </button>
+      {authPending ? (
+        <SignInPending />
+      ) : (
+        <>
+          <button type="button" className="btn btn-p btn-lg" onClick={signIn}>
+            <Icon name="user" />
+            {t.account.signIn}
+          </button>
+          <DevSignIn />
+        </>
       )}
       <small>{live ? L.steamNote : t.account.mockNote}</small>
     </div>

@@ -112,6 +112,8 @@ export const desktop = {
   stop: () => call<unknown>('engine_stop'),
   session: () => call<SessionInfo | null>('engine_session'),
   openInstallWindow: () => call<void>('open_install_window'),
+  /** Abre o login da Steam no navegador do sistema (o app monta a URL com o `challenge` do PKCE). */
+  authOpenBrowser: (challenge: string) => call<void>('auth_open_browser', { challenge }),
 };
 
 /** Escuta um evento do app. Fora do app, não faz nada. Devolve a função que para de escutar. */
@@ -137,7 +139,14 @@ export const DESKTOP_EVENTS = {
   check: 'engine://check',
   deepLink: 'app://deep-link',
   deepLinkInvalid: 'app://deep-link-invalido',
+  authCode: 'app://auth-code',
 } as const;
+
+/** O código de login que volta do navegador (`jukejoint://auth/<código>`). Devolve a função que para de escutar. */
+export const onAuthCode = (cb: (code: string) => void) =>
+  onDesktop<unknown>(DESKTOP_EVENTS.authCode, (payload) => {
+    if (typeof payload === 'string' && payload) cb(payload);
+  });
 
 /** Id de lobby que o app manda no deep link (`[A-Za-z0-9][A-Za-z0-9_-]{0,63}`, como o Rust confere). */
 export function lobbyIdFromLink(payload: unknown): string | null {

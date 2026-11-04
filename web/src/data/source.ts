@@ -12,6 +12,9 @@ function normalize(v: unknown): string | null {
 
 export const API_URL: string | null = normalize(import.meta.env.VITE_API_URL);
 
+/** O endereço público do site (`VITE_SITE_URL`), para os links de convite; `null` sem ela. */
+export const SITE_URL: string | null = normalize(import.meta.env.VITE_SITE_URL);
+
 /** `true` = API real; `false` = dados simulados. */
 export const LIVE = API_URL !== null;
 

@@ -22,6 +22,9 @@ const (
 	maxConnsUser  = 6
 	maxConnsIP    = 12
 	maxBadPerConn = 20
+	// wsProtocol is the subprotocol the app offers next to "auth.<token>"; the
+	// token itself is never echoed back.
+	wsProtocol = "jukejoint"
 )
 
 // wsClient is one WebSocket connection, as the hub sees it.
@@ -104,7 +107,7 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "origem não permitida", http.StatusForbidden)
 		return
 	}
-	user, sid := s.session(r)
+	user, sid := s.sessionFromToken(r.Context(), tokenFrom(r, true))
 	key, max := "ip:"+clientIP(r), maxConnsIP
 	if user != nil {
 		key, max = "user:"+user.ID, maxConnsUser
@@ -115,7 +118,7 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 	}
 	defer s.release(key)
 
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: s.patterns})
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{OriginPatterns: s.patterns, Subprotocols: []string{wsProtocol}})
 	if err != nil {
 		return
 	}

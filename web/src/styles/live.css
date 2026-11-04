@@ -100,3 +100,26 @@
   gap: 6px;
   justify-content: flex-end;
 }
+
+/* app desktop: nomes do login de teste e o aviso "continue no navegador" */
+.acct-dev-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.acct-dev-group > small {
+  color: var(--tx-3);
+}
+.rail-signin .acct-dev-group {
+  margin-top: 6px;
+}
+.login-pending {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.login-pending > small {
+  color: var(--tx-3);
+}

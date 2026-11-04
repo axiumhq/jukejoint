@@ -8,6 +8,7 @@ import { friendsIn } from '../lib/friends';
 import { handoffState, roster } from '../lib/room';
 import { useSession } from '../state/session';
 import { AvatarStack, Presence } from './Avatar';
+import { DevSignIn, SignInPending } from './AppLogin';
 import { LiveDot } from './Common';
 import { SocialRail } from './Friends';
 import { BrandMark, Icon } from './Icon';
@@ -104,7 +105,7 @@ function LiveCount() {
 }
 
 function Account() {
-  const { user, signIn, signOut, live, devLogin, signInDev } = useSession();
+  const { user, signIn, signOut, live, authPending } = useSession();
   const friends = useFriends();
   const { signInShown } = useRail();
   const sheet = useMediaQuery('(max-width: 960px)');
@@ -134,13 +135,10 @@ function Account() {
   if (!user) {
     // O trilho já mostra o convite de login (desktop): a barra não repete o botão.
     if (signInShown && !sheet) return null;
+    if (authPending) return <SignInPending />;
     return (
       <>
-        {devLogin && (
-          <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
-            {L.devSignIn}
-          </button>
-        )}
+        <DevSignIn />
         {/* Secundário e "Login", nunca "Entrar": o acento e o verbo "Entrar" são do lobby. */}
         <button type="button" className="btn btn-s btn-steam" onClick={signIn} aria-label={t.account.signIn}>
           <Icon name="user" />

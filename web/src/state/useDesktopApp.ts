@@ -36,7 +36,10 @@ export function useDesktopApp(pushToast: (message: string) => void) {
       if (id) navigate(`/sala/${encodeURIComponent(id)}`);
       else pushToast(D.invalidLink);
     });
-    const offBad = onDesktop<unknown>(DESKTOP_EVENTS.deepLinkInvalid, () => pushToast(D.invalidLink));
+    const offBad = onDesktop<unknown>(DESKTOP_EVENTS.deepLinkInvalid, (reason) =>
+      // `login`: a volta do login pelo navegador veio estragada; não é um convite.
+      pushToast(reason === 'login' ? D.invalidLoginLink : D.invalidLink),
+    );
     return () => {
       offCheck();
       offLink();

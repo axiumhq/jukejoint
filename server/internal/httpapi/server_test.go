@@ -31,6 +31,11 @@ type testEnv struct {
 
 func newTestEnv(t *testing.T, dev bool) *testEnv {
 	t.Helper()
+	return newTestEnvWith(t, dev, nil)
+}
+
+func newTestEnvWith(t *testing.T, dev bool, tweak func(*Config)) *testEnv {
+	t.Helper()
 	e := &testEnv{t: t}
 	e.steam = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = r.ParseForm()
@@ -45,7 +50,7 @@ func newTestEnv(t *testing.T, dev bool) *testEnv {
 	t.Cleanup(e.srv.Close)
 	public, _ := url.Parse(e.srv.URL)
 	st := store.NewMemory(nil)
-	api, err := New(Config{
+	cfg := Config{
 		PublicURL:  public,
 		WebOrigins: []string{web},
 		DevLogin:   dev,
@@ -60,7 +65,11 @@ func newTestEnv(t *testing.T, dev bool) *testEnv {
 			Now:      time.Now,
 		},
 		Log: slog.New(slog.NewTextHandler(io.Discard, nil)),
-	})
+	}
+	if tweak != nil {
+		tweak(&cfg)
+	}
+	api, err := New(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

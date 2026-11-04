@@ -205,8 +205,8 @@ func TestSigner(t *testing.T) {
 		}
 	}
 	now := time.Now()
-	sealed := s.SealLogin(LoginState{State: "st", Return: "/sala/x|y", Expires: now.Add(time.Minute)})
-	if l, ok := s.OpenLogin(sealed, now); !ok || l.State != "st" || l.Return != "/sala/x|y" {
+	sealed := s.SealLogin(LoginState{State: "st", Return: "/sala/x|y", App: "chal-lenge_1", Expires: now.Add(time.Minute)})
+	if l, ok := s.OpenLogin(sealed, now); !ok || l.State != "st" || l.Return != "/sala/x|y" || l.App != "chal-lenge_1" {
 		t.Fatalf("login state: %+v %v", l, ok)
 	}
 	if _, ok := s.OpenLogin(sealed, now.Add(2*time.Minute)); ok {

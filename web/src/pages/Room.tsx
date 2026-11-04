@@ -20,6 +20,7 @@ import { friendsIn } from '../lib/friends';
 import { lobbyState, roundText } from '../lib/lobbies';
 import { handoffState, readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
 import { useSession } from '../state/session';
+import { inviteLink, inviteLinkLabel } from '../lib/invite';
 
 /**
  * A sala do lobby (/sala/:id), v8 (prototipos/v8/sala.html): cabeçalho com a capa do modo e a fase,
@@ -268,7 +269,7 @@ function Knocks() {
 function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode | undefined; inside: boolean; feed: FeedItem[]; now: number }) {
   const { inviteTo, user } = useSession();
   const free = Math.max(0, lobby.slots - lobby.players);
-  const link = `${window.location.host}/sala/${encodeURIComponent(lobby.id)}`;
+  const link = inviteLinkLabel(inviteLink(lobby.id));
   return (
     <>
       {lobby.mine && <Knocks />}

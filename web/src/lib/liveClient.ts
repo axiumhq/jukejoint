@@ -41,7 +41,9 @@ export interface ClientOptions {
   url: string;
   onMessage: (m: ServerMsg) => void;
   onStatus?: (s: Connection) => void;
-  factory?: (url: string) => SocketLike;
+  factory?: (url: string, protocols?: string[]) => SocketLike;
+  /** Subprotocolos do WebSocket, lidos a cada conexão (no app, levam o token: `['jukejoint', 'auth.<token>']`). */
+  protocols?: () => string[] | undefined;
   /** Quanto um pedido espera pela resposta. */
   timeoutMs?: number;
 }
@@ -89,10 +91,11 @@ export class LiveClient {
   private connect() {
     if (this.stopped) return;
     this.setStatus(this.attempt === 0 ? 'connecting' : 'offline');
-    const make = this.opts.factory ?? ((url: string) => new WebSocket(url) as unknown as SocketLike);
+    const make =
+      this.opts.factory ?? ((url: string, protocols?: string[]) => (protocols ? new WebSocket(url, protocols) : new WebSocket(url)) as unknown as SocketLike);
     let ws: SocketLike;
     try {
-      ws = make(this.opts.url);
+      ws = make(this.opts.url, this.opts.protocols?.());
     } catch {
       this.scheduleRetry();
       return;
@@ -176,14 +179,17 @@ export interface Me {
   steamLogin: boolean;
 }
 
-export async function fetchMe(api: string): Promise<Me> {
-  const res = await fetch(`${api}/api/me`, { credentials: 'include' });
+/** Com `token` (app desktop): Bearer e sem cookie. Sem ele: o cookie, como no site. */
+const authInit = (token?: string): RequestInit => (token ? { headers: { Authorization: `Bearer ${token}` }, credentials: 'omit' } : { credentials: 'include' });
+
+export async function fetchMe(api: string, token?: string): Promise<Me> {
+  const res = await fetch(`${api}/api/me`, authInit(token));
   if (!res.ok) throw new ApiError('http', `HTTP ${res.status}`);
   return (await res.json()) as Me;
 }
 
-export async function logout(api: string) {
-  await fetch(`${api}/auth/logout`, { method: 'POST', credentials: 'include' });
+export async function logout(api: string, token?: string) {
+  await fetch(`${api}/auth/logout`, { method: 'POST', ...authInit(token) });
 }
 
 /** O caminho atual, para voltar a ele depois do login. */

@@ -12,6 +12,7 @@ import { dayPeriod } from '../lib/time';
 import { LiveSessionProvider } from './liveSession';
 import { useDesktopApp } from './useDesktopApp';
 import { SessionContext, type HostDraft, type JoinTarget, type MockUser, type SessionValue, type Toast } from './sessionContext';
+import { inviteLink } from '../lib/invite';
 
 export { useSession } from './sessionContext';
 export type { ConnectionState, HostDraft, JoinTarget, MockUser, SessionValue, Toast } from './sessionContext';
@@ -302,7 +303,7 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
 
   const inviteTo = useCallback(
     (lobby: Lobby) => {
-      const link = `${window.location.origin}/sala/${encodeURIComponent(lobby.id)}`;
+      const link = inviteLink(lobby.id);
       navigator.clipboard?.writeText(link).catch(() => {
         /* sem permissão de área de transferência: o aviso continua valendo para o protótipo */
       });
@@ -443,6 +444,9 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
       synced: true,
       devLogin: false,
       signInDev: signIn,
+      devNames: [],
+      authPending: false,
+      cancelSignIn: noop,
       cancelStart: noop,
       kick: noop,
       knocksHere: [],

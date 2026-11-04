@@ -16,6 +16,7 @@ export const desktop = {
   testMode: (project: string) => `Modo de teste: por enquanto o app abre o projeto "${project}" no lugar do modo escolhido.`,
   testTag: 'modo de teste',
   invalidLink: 'Esse link de convite não abriu: ele não está no formato certo. Peça o link de novo para quem convidou você.',
+  invalidLoginLink: 'O login não terminou: a volta do navegador chegou incompleta. Clique em Login e tente de novo.',
   retry: 'Tentar de novo',
   endMatch: 'Encerrar a partida',
   endMatchLabel: (lobby: string) => `Encerrar a partida de "${lobby}" e reabrir a sala`,

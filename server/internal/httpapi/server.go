@@ -50,6 +50,11 @@ type Config struct {
 	SteamAPI *auth.SteamAPI
 	Log      *slog.Logger
 	Now      func() time.Time
+	// AppScheme is the deep link scheme of the desktop app ("jukejoint" when
+	// empty): the app sign-in page sends the browser to <scheme>://auth/<code>.
+	AppScheme string
+	// AppName is how the app is called on that page ("Jukejoint" when empty).
+	AppName string
 }
 
 // Server serves the API.
@@ -60,6 +65,12 @@ type Server struct {
 	patterns []string
 	authRate *limiter
 	wsRate   *limiter
+
+	// Desktop-app sign-in: one-time codes waiting for their token exchange.
+	appMu     sync.Mutex
+	appCodes  map[string]appCode
+	appScheme string
+	appName   string
 
 	mu      sync.Mutex
 	bySess  map[string]map[*wsClient]struct{}
@@ -100,6 +111,7 @@ func New(cfg Config) (*Server, error) {
 		allowed:  map[string]bool{},
 		authRate: newLimiter(0.5, 10, cfg.Now),
 		wsRate:   newLimiter(8, 20, cfg.Now),
+		appCodes: map[string]appCode{},
 		bySess:   map[string]map[*wsClient]struct{}{},
 		perKey:   map[string]int{},
 		secure:   cfg.PublicURL.Scheme == "https",
@@ -115,6 +127,17 @@ func New(cfg Config) (*Server, error) {
 			s.allowed[o] = true
 			s.patterns = append(s.patterns, o)
 		}
+	}
+	s.appScheme = cfg.AppScheme
+	if s.appScheme == "" {
+		s.appScheme = "jukejoint"
+	}
+	if !appSchemeRe.MatchString(s.appScheme) {
+		return nil, fmt.Errorf("bad APP_SCHEME %q: lowercase letters and digits, starting with a letter", s.appScheme)
+	}
+	s.appName = lobby.CleanText(cfg.AppName, 40)
+	if s.appName == "" {
+		s.appName = "Jukejoint"
 	}
 	if cfg.DevLogin && !isLocalHost(cfg.PublicURL.Hostname()) {
 		return nil, errors.New("DEV_LOGIN=1 only runs with a localhost PUBLIC_URL")
@@ -138,9 +161,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/ws", s.ws)
 	mux.HandleFunc("GET /auth/steam/login", s.steamLogin)
 	mux.HandleFunc("GET /auth/steam/callback", s.steamCallback)
+	mux.HandleFunc("POST /auth/app/token", s.appToken)
 	mux.HandleFunc("POST /auth/logout", s.logout)
 	mux.HandleFunc("GET /auth/dev", s.devPage)
 	mux.HandleFunc("POST /auth/dev/login", s.devLogin)
+	mux.HandleFunc("POST /auth/dev/token", s.devToken)
 	return s.wrap(mux)
 }
 
@@ -162,7 +187,7 @@ func (s *Server) wrap(next http.Handler) http.Handler {
 				return
 			}
 			h.Set("Access-Control-Allow-Methods", "GET, POST")
-			h.Set("Access-Control-Allow-Headers", "Content-Type")
+			h.Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 			h.Set("Access-Control-Max-Age", "600")
 			w.WriteHeader(http.StatusNoContent)
 			return
@@ -199,38 +224,74 @@ func (s *Server) requireOrigin(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
+// tokenFrom finds the session token of a request: the cookie, then
+// "Authorization: Bearer", then (only on the WebSocket, where browsers cannot
+// set headers) an "auth.<token>" entry of Sec-WebSocket-Protocol.
+func tokenFrom(r *http.Request, allowSubprotocol bool) string {
+	if ck, err := r.Cookie(sessionCookie); err == nil {
+		return ck.Value
+	}
+	if h := r.Header.Get("Authorization"); len(h) > 7 && strings.EqualFold(h[:7], "Bearer ") {
+		return strings.TrimSpace(h[7:])
+	}
+	if allowSubprotocol {
+		for _, h := range r.Header.Values("Sec-WebSocket-Protocol") {
+			for _, p := range strings.Split(h, ",") {
+				if tok, ok := strings.CutPrefix(strings.TrimSpace(p), "auth."); ok && tok != "" {
+					return tok
+				}
+			}
+		}
+	}
+	return ""
+}
+
 // session returns the signed-in user, if any, and the session ID.
 func (s *Server) session(r *http.Request) (*store.User, string) {
-	ck, err := r.Cookie(sessionCookie)
-	if err != nil {
+	return s.sessionFromToken(r.Context(), tokenFrom(r, false))
+}
+
+// sessionFromToken checks a signed session token (Verify caps its length).
+func (s *Server) sessionFromToken(ctx context.Context, token string) (*store.User, string) {
+	if token == "" {
 		return nil, ""
 	}
-	sid, ok := s.cfg.Signer.Verify(sessionPurpose, ck.Value)
+	sid, ok := s.cfg.Signer.Verify(sessionPurpose, token)
 	if !ok {
 		return nil, ""
 	}
-	sess, ok, err := s.cfg.Store.Session(r.Context(), sid)
+	sess, ok, err := s.cfg.Store.Session(ctx, sid)
 	if err != nil || !ok {
 		return nil, ""
 	}
-	u, ok, err := s.cfg.Store.User(r.Context(), sess.UserID)
+	u, ok, err := s.cfg.Store.User(ctx, sess.UserID)
 	if err != nil || !ok {
 		return nil, ""
 	}
 	return &u, sid
 }
 
+// newSession stores a fresh session for uid and returns its ID and the signed
+// token (the cookie value, or the Bearer token of the app).
+func (s *Server) newSession(ctx context.Context, uid string) (sid, token string, err error) {
+	sid = auth.RandomToken(32)
+	if err := s.cfg.Store.PutSession(ctx, store.Session{ID: sid, UserID: uid, Expires: s.cfg.Now().Add(sessionTTL)}); err != nil {
+		return "", "", err
+	}
+	return sid, s.cfg.Signer.Sign(sessionPurpose, sid), nil
+}
+
 func (s *Server) startSession(w http.ResponseWriter, r *http.Request, uid string) error {
 	if _, old := s.session(r); old != "" {
 		_ = s.cfg.Store.DeleteSession(r.Context(), old)
 	}
-	sid := auth.RandomToken(32)
-	if err := s.cfg.Store.PutSession(r.Context(), store.Session{ID: sid, UserID: uid, Expires: s.cfg.Now().Add(sessionTTL)}); err != nil {
+	_, token, err := s.newSession(r.Context(), uid)
+	if err != nil {
 		return err
 	}
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
-		Value:    s.cfg.Signer.Sign(sessionPurpose, sid),
+		Value:    token,
 		Path:     "/",
 		MaxAge:   int(sessionTTL.Seconds()),
 		HttpOnly: true,
@@ -333,8 +394,13 @@ func (s *Server) steamLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "muitas tentativas, espere um pouco", http.StatusTooManyRequests)
 		return
 	}
+	app := r.URL.Query().Get("app")
+	if app != "" && !challengeRe.MatchString(app) {
+		http.Error(w, "pedido de login do app inválido", http.StatusBadRequest)
+		return
+	}
 	state := auth.RandomToken(18)
-	ls := auth.LoginState{State: state, Return: auth.SafeReturn(r.URL.Query().Get("return")), Expires: s.cfg.Now().Add(loginTTL)}
+	ls := auth.LoginState{State: state, Return: auth.SafeReturn(r.URL.Query().Get("return")), App: app, Expires: s.cfg.Now().Add(loginTTL)}
 	http.SetCookie(w, &http.Cookie{
 		Name:     loginCookie,
 		Value:    s.cfg.Signer.SealLogin(ls),
@@ -367,17 +433,29 @@ func (s *Server) steamCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	steamID, err := s.cfg.Steam.Verify(r.Context(), r.URL.Query(), ls.State)
 	if errors.Is(err, auth.ErrCancelled) {
+		if ls.App != "" {
+			s.appFailedPage(w, http.StatusOK)
+			return
+		}
 		s.toWeb(w, r, ls.Return)
 		return
 	}
 	if err != nil {
 		s.cfg.Log.Warn("steam sign-in refused", "reason", err)
+		if ls.App != "" {
+			s.appFailedPage(w, http.StatusBadRequest)
+			return
+		}
 		s.toWeb(w, r, "/?login=falhou")
 		return
 	}
 	u := s.steamUser(r.Context(), steamID)
 	if err := s.cfg.Store.PutUser(r.Context(), u); err != nil {
 		http.Error(w, "erro interno", http.StatusInternalServerError)
+		return
+	}
+	if ls.App != "" {
+		s.appLoginDone(w, u.ID, ls.App)
 		return
 	}
 	if err := s.startSession(w, r, u.ID); err != nil {
@@ -475,8 +553,8 @@ func (s *Server) devLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "nome inválido: 2 a 20 letras, números, _ . ou -", http.StatusBadRequest)
 		return
 	}
-	u := store.User{ID: "dev:" + strings.ToLower(name), Name: name, Dev: true}
-	if err := s.cfg.Store.PutUser(r.Context(), u); err != nil {
+	u, err := s.putDevUser(r.Context(), name)
+	if err != nil {
 		http.Error(w, "erro interno", http.StatusInternalServerError)
 		return
 	}
@@ -486,4 +564,45 @@ func (s *Server) devLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	s.cfg.Log.Info("dev sign-in", "user", u.ID)
 	s.toWeb(w, r, r.PostForm.Get("return"))
+}
+
+func (s *Server) putDevUser(ctx context.Context, name string) (store.User, error) {
+	u := store.User{ID: "dev:" + strings.ToLower(name), Name: name, Dev: true}
+	return u, s.cfg.Store.PutUser(ctx, u)
+}
+
+// devToken is the dev login for the desktop app, which cannot use the cookie:
+// the same fake user, but the session token comes back in the body.
+func (s *Server) devToken(w http.ResponseWriter, r *http.Request) {
+	if !s.devAllowed(r) {
+		http.NotFound(w, r)
+		return
+	}
+	if !s.requireOrigin(w, r) {
+		return
+	}
+	var in struct {
+		Name string `json:"name"`
+	}
+	if !decodeJSON(r, &in) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "bad_request", "message": "Pedido inválido."})
+		return
+	}
+	name := lobby.CleanText(in.Name, 20)
+	if !devNameRe.MatchString(name) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"code": "bad_name", "message": "Nome inválido: 2 a 20 letras, números, _ . ou -"})
+		return
+	}
+	u, err := s.putDevUser(r.Context(), name)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"code": "internal", "message": "Erro interno."})
+		return
+	}
+	_, token, err := s.newSession(r.Context(), u.ID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"code": "internal", "message": "Erro interno."})
+		return
+	}
+	s.cfg.Log.Info("dev token sign-in", "user", u.ID)
+	writeJSON(w, http.StatusOK, map[string]any{"token": token, "user": u})
 }

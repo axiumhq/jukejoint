@@ -4,7 +4,7 @@
  */
 import type { AppInfo, CheckReport } from './api';
 
-export const SAMPLE_APP: AppInfo = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.68', dev: true };
+export const SAMPLE_APP: AppInfo = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.68', apiUrl: null, dev: true };
 
 export const SAMPLE_CHECK: CheckReport = {
   binary: {

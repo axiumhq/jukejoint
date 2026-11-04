@@ -8,11 +8,27 @@ import { confirmations, EMPTY_LIVE, pickInvite, reduce, toLobby, toPresence, typ
 import type { FriendPresence } from '../lib/friends';
 import { lobbyState, type KnockStatus, type LobbyContext } from '../lib/lobbies';
 import { ApiError, devLoginUrl, fetchMe, herePath, LiveClient, logout, steamLoginUrl, type Ack } from '../lib/liveClient';
-import { IN_DESKTOP } from '../lib/desktop';
+import {
+  clearPending,
+  challengeFor,
+  clearToken,
+  DEV_NAMES,
+  devToken,
+  exchangeCode,
+  hasPending,
+  loadToken,
+  newVerifier,
+  PENDING_TTL_MS,
+  saveToken,
+  startPending,
+  takePending,
+} from '../lib/appAuth';
+import { desktop, IN_DESKTOP, onAuthCode, toEngineError } from '../lib/desktop';
 import { roster, type Seat } from '../lib/room';
 import { useEngineHandoff } from './engineHandoff';
 import { useDesktopApp } from './useDesktopApp';
 import { SessionContext, type ConnectionState, type HostDraft, type JoinTarget, type MockUser, type SessionValue, type Toast } from './sessionContext';
+import { inviteLink } from '../lib/invite';
 
 /**
  * A sessão ao vivo (com `VITE_API_URL`): o mesmo contrato da simulada, mas o estado vem do servidor.
@@ -26,6 +42,8 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   const [state, setState] = useState<LiveState>(EMPTY_LIVE);
   const [connection, setConnection] = useState<ConnectionState>('connecting');
   const [devLogin, setDevLogin] = useState(false);
+  // Um login iniciado antes de a janela recarregar continua esperando a volta do navegador.
+  const [authPending, setAuthPending] = useState(() => IN_DESKTOP && hasPending());
   const [simulatedApp, setSimulatedApp] = useState(false);
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [joinTarget, setJoinTarget] = useState<JoinTarget | null>(null);
@@ -38,6 +56,8 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   const stateRef = useRef(state);
   stateRef.current = state;
   const toastId = useRef(0);
+  // No app desktop o cookie da API não viaja: a sessão é um token Bearer (lib/appAuth.ts).
+  const token = useRef<string | null>(IN_DESKTOP ? loadToken() : null);
 
   const dismissToast = useCallback((id: number) => setToasts((list) => list.filter((x) => x.id !== id)), []);
   const pushToast = useCallback(
@@ -91,6 +111,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
         onEvent(m);
       },
       onStatus: setConnection,
+      protocols: () => (token.current ? ['jukejoint', `auth.${token.current}`] : undefined),
     });
     client.current = c;
     c.start();
@@ -101,11 +122,27 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   }, [api, onEvent]);
 
   // O servidor diz se aceita o login de teste; e a volta do login com falha vira um aviso.
+  const refreshMe = useCallback(
+    () =>
+      fetchMe(api, token.current ?? undefined)
+        .then((me) => {
+          setDevLogin(me.devLogin);
+          // Token vencido ou revogado: o servidor responde sem usuário, e guardá-lo só atrapalharia.
+          if (token.current && !me.user) {
+            token.current = null;
+            clearToken();
+          }
+          return me;
+        })
+        .catch(() => {
+          setDevLogin(false);
+          return null;
+        }),
+    [api],
+  );
   useEffect(() => {
-    fetchMe(api)
-      .then((me) => setDevLogin(me.devLogin))
-      .catch(() => setDevLogin(false));
-  }, [api]);
+    void refreshMe();
+  }, [refreshMe]);
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     if (q.get('login') !== 'falhou') return;
@@ -186,12 +223,80 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
 
   /* ───────── Conta ───────── */
 
-  const signIn = useCallback(() => window.location.assign(steamLoginUrl(api, herePath())), [api]);
-  const signInDev = useCallback(() => window.location.assign(devLoginUrl(api, herePath())), [api]);
+  /** Guarda o token do app, confere quem é e reabre o WebSocket já autenticado. */
+  const finishAppLogin = useCallback(
+    async (session: { token: string }) => {
+      saveToken(session.token);
+      token.current = session.token;
+      const me = await refreshMe();
+      client.current?.reconnect();
+      if (me?.user) pushToast(L.signedInToast(me.user.name));
+    },
+    [pushToast, refreshMe],
+  );
+
+  const signIn = useCallback(() => {
+    if (!IN_DESKTOP) {
+      window.location.assign(steamLoginUrl(api, herePath()));
+      return;
+    }
+    const verifier = newVerifier();
+    startPending(verifier);
+    setAuthPending(true);
+    challengeFor(verifier)
+      .then((challenge) => desktop.authOpenBrowser(challenge))
+      .catch((e: unknown) => {
+        clearPending();
+        setAuthPending(false);
+        pushToast(toEngineError(e).message || L.appLoginOpenFailed);
+      });
+  }, [api, pushToast]);
+  const cancelSignIn = useCallback(() => {
+    clearPending();
+    setAuthPending(false);
+  }, []);
+  const signInDev = useCallback(
+    (name?: string) => {
+      if (!IN_DESKTOP) {
+        window.location.assign(devLoginUrl(api, herePath()));
+        return;
+      }
+      if (!name) return;
+      devToken(api, name)
+        .then(finishAppLogin)
+        .catch((e: unknown) => pushToast(e instanceof ApiError ? e.message : L.appLoginFailed));
+    },
+    [api, finishAppLogin, pushToast],
+  );
+
+  // A volta do navegador: o app avisa com o código; sem login esperando, ele é ignorado.
+  useEffect(() => {
+    if (!IN_DESKTOP) return;
+    return onAuthCode((code) => {
+      const verifier = takePending();
+      if (!verifier) return;
+      setAuthPending(false);
+      exchangeCode(api, code, verifier)
+        .then(finishAppLogin)
+        .catch((e: unknown) => pushToast(e instanceof ApiError ? e.message : L.appLoginFailed));
+    });
+  }, [api, finishAppLogin, pushToast]);
+
+  // O login que o navegador não devolveu em 10 minutos vence.
+  useEffect(() => {
+    if (!authPending) return;
+    const id = window.setTimeout(cancelSignIn, PENDING_TTL_MS);
+    return () => window.clearTimeout(id);
+  }, [authPending, cancelSignIn]);
+
   const signOut = useCallback(() => {
-    logout(api)
+    logout(api, token.current ?? undefined)
       .catch(() => {})
       .finally(() => {
+        if (token.current) {
+          token.current = null;
+          clearToken();
+        }
         setState((s) => ({ ...s, me: null, friends: [], invites: [], knocks: {}, hereId: null }));
         client.current?.reconnect();
         pushToast(t.account.signedOutToast);
@@ -284,7 +389,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
 
   const inviteTo = useCallback(
     (lobby: Lobby) => {
-      const link = `${window.location.origin}/sala/${encodeURIComponent(lobby.id)}`;
+      const link = inviteLink(lobby.id);
       navigator.clipboard?.writeText(link).catch(() => {});
       pushToast(t.lobbies.inviteCopied(lobby.name));
     },
@@ -356,6 +461,9 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
       synced: state.synced,
       devLogin,
       signInDev,
+      devNames: IN_DESKTOP ? DEV_NAMES : [],
+      authPending,
+      cancelSignIn,
       user,
       signIn,
       signOut,
@@ -417,6 +525,8 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
       connection,
       devLogin,
       signInDev,
+      authPending,
+      cancelSignIn,
       user,
       signIn,
       signOut,

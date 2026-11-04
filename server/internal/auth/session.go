@@ -112,8 +112,11 @@ func RandomToken(n int) string {
 // LoginState is what the login cookie carries between /auth/steam/login and
 // the callback: the state echoed in return_to and where to go afterwards.
 type LoginState struct {
-	State   string
-	Return  string
+	State  string
+	Return string
+	// App is the PKCE challenge of a desktop-app sign-in; empty for a normal
+	// browser sign-in.
+	App     string
 	Expires time.Time
 }
 
@@ -121,7 +124,7 @@ const loginPurpose = "login-state"
 
 // SealLogin signs a login state for the login cookie.
 func (s Signer) SealLogin(l LoginState) string {
-	return s.Sign(loginPurpose, l.State+"|"+strconv.FormatInt(l.Expires.Unix(), 10)+"|"+l.Return)
+	return s.Sign(loginPurpose, l.State+"|"+strconv.FormatInt(l.Expires.Unix(), 10)+"|"+l.App+"|"+l.Return)
 }
 
 // OpenLogin checks and decodes a login cookie.
@@ -130,15 +133,15 @@ func (s Signer) OpenLogin(token string, now time.Time) (LoginState, bool) {
 	if !ok {
 		return LoginState{}, false
 	}
-	parts := strings.SplitN(v, "|", 3)
-	if len(parts) != 3 {
+	parts := strings.SplitN(v, "|", 4)
+	if len(parts) != 4 {
 		return LoginState{}, false
 	}
 	exp, err := strconv.ParseInt(parts[1], 10, 64)
 	if err != nil || now.Unix() > exp {
 		return LoginState{}, false
 	}
-	return LoginState{State: parts[0], Return: parts[2], Expires: time.Unix(exp, 0)}, true
+	return LoginState{State: parts[0], App: parts[2], Return: parts[3], Expires: time.Unix(exp, 0)}, true
 }
 
 // SafeReturn accepts only a local path ("/sala/x?y"), never another origin.

@@ -203,6 +203,7 @@ export function Install() {
             <span className="ins-mark" aria-hidden="true" />
             <span className="display ins-word">{BRAND_NAME}</span>
             <span className="lbl">app desktop {app?.version ?? ''}</span>
+            {app && <span className="fine">{app.apiUrl ? `API ${app.apiUrl}` : 'build sem API'}</span>}
           </div>
           <div className="ins-act">
             {checkedAt && (

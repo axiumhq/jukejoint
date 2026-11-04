@@ -18,7 +18,7 @@
         "script-src": "'self'",
         "style-src": "'self' 'unsafe-inline'",
         "font-src": "'self' data:",
-        "img-src": "'self' data: blob:",
+        "img-src": "'self' data: blob: https://avatars.steamstatic.com https://avatars.akamai.steamstatic.com https://avatars.cloudflare.steamstatic.com",
         "connect-src": "'self' ipc: http://ipc.localhost",
         "base-uri": "'self'",
         "form-action": "'self'"

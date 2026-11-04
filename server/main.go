@@ -9,7 +9,10 @@
 //	               where the browser returns after signing in (http://localhost:5173)
 //	DATA_DIR       where the session signing key lives (.data)
 //	STEAM_API_KEY  optional: real names, avatars and friend lists
+//	               (or the file <DATA_DIR>/steam-api-key, kept out of git)
 //	DEV_LOGIN=1    optional, dev only: fake test users from localhost
+//	APP_SCHEME     deep link scheme of the desktop app (jukejoint)
+//	APP_NAME       app name shown on the app sign-in page (Jukejoint)
 package main
 
 import (
@@ -32,6 +35,20 @@ func env(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// steamKey reads STEAM_API_KEY, or else the first line of <dataDir>/steam-api-key
+// (server/.data is gitignored, so the key stays off the repository).
+func steamKey(dataDir string) string {
+	if k := strings.TrimSpace(os.Getenv("STEAM_API_KEY")); k != "" {
+		return k
+	}
+	b, err := os.ReadFile(filepath.Join(dataDir, "steam-api-key"))
+	if err != nil {
+		return ""
+	}
+	k, _, _ := strings.Cut(strings.TrimSpace(string(b)), "\n")
+	return strings.TrimSpace(k)
 }
 
 func main() {
@@ -69,7 +86,7 @@ func main() {
 		Now:      time.Now,
 	}
 	var api *auth.SteamAPI
-	if k := os.Getenv("STEAM_API_KEY"); k != "" {
+	if k := steamKey(env("DATA_DIR", ".data")); k != "" {
 		api = &auth.SteamAPI{Key: k, Base: "https://api.steampowered.com", Client: httpClient}
 	} else {
 		log.Info("no STEAM_API_KEY: users get a neutral name and no friend list")
@@ -89,6 +106,8 @@ func main() {
 		Steam:      steam,
 		SteamAPI:   api,
 		Log:        log,
+		AppScheme:  env("APP_SCHEME", "jukejoint"),
+		AppName:    env("APP_NAME", "Jukejoint"),
 	})
 	if err != nil {
 		fail("config", "err", err)

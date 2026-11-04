@@ -9,12 +9,15 @@ desktop/
   src/                  tela Instalação (React; importa tokens, base, marca e tema de web/src)
   scripts/dev.mjs       sobe o Vite do site (5280) e o da tela Instalação (5281)
   scripts/build-front.mjs  monta dist/: site na raiz, tela Instalação em dist/_app/
+  scripts/build-live.mjs   build:live / dev:live: o app com a API de verdade (e a pasta out/)
   src-tauri/
-    build.rs            lê BRAND_NAME de web/src/config/brand.ts e confere o tauri.conf.json
+    build.rs            lê BRAND_NAME de web/src/config/brand.ts e confere o tauri.conf.json;
+                        lê APP_API_URL e APP_ENGINE_ORIGIN (opcionais, de build)
     capabilities/       o que cada janela pode chamar
     src/engine/         EngineAdapter: args, parse, validate, system, modlock, catalog (modo → pasta),
                         progress (eventos → etapas do handoff)
-    src/deeplink.rs     <esquema>://join/<id>
+    src/deeplink.rs     <esquema>://join/<id> e <esquema>://auth/<código>
+    src/auth.rs         login do app: abre o login da Steam no navegador (auth_open_browser)
     src/notice.rs       aviso nativo para quem joga (link de convite inválido)
     tests/              fixtures e o teste com o CLI real (ignorado por padrão)
 ```
@@ -68,17 +71,19 @@ npx tauri build --no-bundle
 
 Sai `src-tauri\target\release\app-desktop.exe`, com o site e a tela Instalação embutidos (o
 `beforeBuildCommand` roda `npm run build:front`, que faz o build de `web/` e de `desktop/`). Sem
-instalador: `--no-bundle` e `bundle.active: false`.
+instalador: `--no-bundle` e `bundle.active: false`. Esse build não tem API (site com dados
+simulados); o exe que fala com a API sai de `npm run build:live` (ver "Site ao vivo dentro do app").
 
 ## Testes
 
 ```powershell
 cd desktop\src-tauri
-cargo test                                   # 45 testes, sem o jogo e sem o CLI
+cargo test                                   # 53 testes, sem o jogo e sem o CLI
 ```
 
 Cobrem: argumentos de cada comando, validação (código de entrada, id do lobby, origem, pasta do
-projeto, deep link), o catálogo de modos (slug estrito, nada de caminho, raiz, projeto ausente,
+projeto, deep link de convite e de login, challenge e URL do login), a origem embutida no build
+como padrão do `ENGINE_ORIGIN`, o catálogo de modos (slug estrito, nada de caminho, raiz, projeto ausente,
 todos os modos do site na tabela), eventos → etapas do handoff com as fixtures, os erros de fim
 de sessão, leitura da saída (versão, `daemon status` real capturado, eventos `--json`,
 arquivo hosts), trava do daemon, SHA-256, a regra de nunca executar um binário com hash errado e
@@ -105,11 +110,18 @@ O nome do app e o esquema do link vêm de **um lugar só**: `BRAND_NAME` em
 | Variável | Quem lê | Para quê |
 |---|---|---|
 | `MODLOCK_BIN` | app | Caminho do `modlock.exe`. Sem ela, o app procura `modlock.exe` (ou `modlock-x86_64-pc-windows-msvc.exe`) ao lado do próprio executável; em build de dev, também `tools\modlock-v0.1.68\` do repositório. |
-| `ENGINE_ORIGIN` | app | Origem do servidor de sinalização, passada em `daemon --origin` e `join --origin`. Só `http(s)://host[:porta]`; o hyperline.gg é recusado. Sem ela, `host`/`join` não rodam. |
+| `ENGINE_ORIGIN` | app | Origem do servidor de sinalização, passada em `daemon --origin` e `join --origin`. Só `http(s)://host[:porta]`; o hyperline.gg é recusado. Sem ela, vale a `APP_ENGINE_ORIGIN` do build; sem as duas, `host`/`join` não rodam. |
 | `ENGINE_STATE_DIR` | app | Troca o `APPDATA` só dos processos do Modlock (mesmo efeito do `-StateDir` dos scripts do spike). Útil com um socket travado na pasta padrão. Precisa ser curta: o socket AF_UNIX tem limite de ~108 caracteres. |
 | `ENGINE_PROJECTS_DIR` | app | Pasta com os projetos dos modos (uma subpasta por projeto, com `mod.json`). Sem ela: em build de dev, `spike\mods` do repositório; no app empacotado, `modos\` ao lado do executável. Hoje todo modo abre `hello` (modo de teste). |
 | `APP_REGISTER_SCHEME` | app | Com `1`, registra o esquema do link no Windows (HKCU) ao abrir. Enquanto não há instalador, é o jeito de testar o link vindo do navegador. |
 | `MODLOCK_NO_UPDATE_CHECK=1` | Modlock | Definida pelo app em todo processo do Modlock (versão fixada). |
+| `APP_API_URL` | build | A API deste build (`http(s)://host[:porta]`, sem caminho). Entra no Rust (`auth_open_browser`, `apiUrl` do `app_info`), no build do site (`VITE_API_URL`) e na CSP. Sem ela, o exe não tem API. Usada pelo `build:live`/`dev:live`. |
+| `APP_ENGINE_ORIGIN` | build | Opcional: vira o padrão de `ENGINE_ORIGIN` no exe (a variável em tempo de execução continua ganhando). A checagem diz quando a origem veio do build. |
+| `APP_SITE_URL` | build | Opcional: o site público (vira `VITE_SITE_URL`), usado nos links de convite copiados no app. Sem ela, o convite sai como `jukejoint://join/<id>` (nunca com `tauri.localhost`, que só existe dentro do app). Só o `build:live` lê. |
+
+`APP_API_URL` e `APP_ENGINE_ORIGIN` são lidas pelo `build.rs` na compilação (não pelo app aberto):
+definidas fora do formato, o build para com a mensagem do que está errado. Um `cargo build` sem
+elas continua funcionando (sem API e sem origem padrão).
 
 A versão (`v0.1.68`) e o SHA-256 fixados ficam em `src-tauri/src/engine/mod.rs`, iguais aos de
 `scripts/install-modlock.ps1`. O app não executa o binário (nem para ler a versão) se o hash não
@@ -119,7 +131,8 @@ bater.
 
 | Comando | Janela | O que faz |
 |---|---|---|
-| `app_info` | site, Instalação | Nome, esquema, versão do app e do Modlock. |
+| `app_info` | site, Instalação | Nome, esquema, versão do app e do Modlock e `apiUrl` (a API deste build, ou `null`). |
+| `auth_open_browser` | site | `{ challenge }`: exatamente 43 caracteres `[A-Za-z0-9_-]` (o PKCE do site). Abre `<APP_API_URL>/auth/steam/login?app=<challenge>` no navegador padrão (ShellExecuteW). Erros: `desafio_invalido`, `sem_api` (build sem `APP_API_URL`), `navegador` (o Windows não abriu). |
 | `open_install_window` | site | Abre (ou traz para frente) a tela Instalação. |
 | `engine_check` | site, Instalação | Lê tudo sem mudar nada: binário (caminho, tamanho, SHA-256, versão), daemon (trava, socket, `daemon status` com a origem em uso), Deadlock aberto, bloqueio do hyperline.gg no hosts, variáveis. Devolve `ready` e a lista de problemas em PT-BR. |
 | `engine_daemon_start` | Instalação | Garante o daemon com a nossa origem: se houver um em outra origem, para com `daemon stop` e sobe `modlock daemon --origin <ENGINE_ORIGIN> --idle 60m` (log em `<estado>\daemon-app.log`). Recusa com socket travado. |
@@ -133,9 +146,10 @@ Eventos: `engine://event` (cada linha da sessão, já lida: `note`, `hosting`, `
 `ready`/`joined`/`failed`…, `building`, `built`, `update`, `text`; e `fim` com o código de saída;
 mais `step` quando a linha fez a etapa do handoff avançar e `error`, no formato dos erros dos
 comandos, quando o modo falhou no servidor ou a sessão terminou com erro sem o app ter pedido),
-`engine://check` (a primeira checagem ao abrir), `app://deep-link` (id do lobby) e
-`app://deep-link-invalido` (um link recusado; o payload é o motivo: `formato`, `esquema`, `acao` ou
-`id`).
+`engine://check` (a primeira checagem ao abrir), `app://deep-link` (id do lobby),
+`app://auth-code` (o código de login de `<esquema>://auth/<código>`, só para a janela do site) e
+`app://deep-link-invalido` (um link recusado; o payload é o motivo: `formato`, `esquema`, `acao`,
+`id` ou `login`, este quando o link de login chegou com o código fora do formato).
 
 Regras do adaptador: processos só por `std::process::Command` com argumentos em lista, sem shell e
 sem WMI; o daemon só para com `modlock daemon stop`; `daemon status` só roda com a trava do daemon
@@ -182,6 +196,13 @@ Link recusado não some em silêncio: com o app aberto, o app traz a janela para
 `app://deep-link-invalido`, e o site mostra o aviso. A frio (o site ainda não carregou), o aviso é
 nativo do Windows ("Este link de convite não abriu…", `src/notice.rs`) e a janela abre na inicial.
 
+`jukejoint://auth/<código>` é a volta do login no navegador: o código tem exatamente 43
+caracteres `[A-Za-z0-9_-]` e passa como veio (maiúsculas contam), com as mesmas regras estritas.
+Com o app aberto: traz a janela para frente e manda `app://auth-code` só para a janela do site.
+A frio: abre na inicial, **sem** aviso nativo (o login começou noutra execução do app, que tinha o
+verifier; não é culpa de quem joga, e basta clicar em Entrar de novo). O código nunca vai para o
+log (só "auth link received"; num link recusado, o log corta tudo depois de `auth`).
+
 ## Ao abrir e ao fechar
 
 - Abre a janela do site e um ícone na bandeja (Abrir, Instalação, Fechar o app). O ícone é só um
@@ -199,7 +220,7 @@ nativo do Windows ("Este link de convite não abriu…", `src/notice.rs`) e a ja
 O site usa o app por `web/src/lib/desktop.ts` (detalhes em `web/README.md`, "Dentro do app
 desktop"):
 
-1. **Detecta o app** por `window.__DESKTOP_APP__` (`{ name, scheme, version, modlockVersion }`) ou
+1. **Detecta o app** por `window.__DESKTOP_APP__` (`{ name, scheme, version, modlockVersion, apiUrl }`) ou
    `'__TAURI_INTERNALS__' in window`. Dentro do app, `appConnected` vem dele (sem o botão de
    simulação) e o diálogo de entrar mostra o `engine_check` de verdade.
 2. **Chama o motor** com o `@tauri-apps/api` 2.12.4 por import dinâmico (o bundle do navegador
@@ -213,20 +234,55 @@ desktop"):
 
 ### Site ao vivo dentro do app
 
-O exe de hoje embute o site **sem** `VITE_API_URL` (dados simulados). Para a partida de verdade no
-app falta ligar a API: (a) a CSP do `tauri.conf.json` só libera `connect-src 'self' ipc:`; a
-origem da API (`http(s)://…` e `ws(s)://…`) precisa entrar ali (por exemplo, com
-`npx tauri build --config` só no build ao vivo); (b) a API só aceita as origens de `WEB_ORIGIN`:
-a do app é `http://tauri.localhost` no exe e `http://localhost:5280` no `tauri dev`; (c) o login
-pela Steam dentro do app (o cookie `SameSite=Lax` não vai de `tauri.localhost` para outro site;
-falta o login do app, estilo PKCE). No `tauri dev` com `VITE_API_URL`, `DEV_LOGIN=1` e
-`WEB_ORIGIN=http://localhost:5280` dá para testar num PC só.
+O exe do `tauri build` comum embute o site **sem** API (dados simulados). O que fala com a API sai
+de `npm run build:live` (ou `npm run dev:live`, o `tauri dev` com a API), em `desktop/`:
+
+```powershell
+$env:APP_API_URL = 'http://localhost:8291'           # obrigatória
+$env:APP_ENGINE_ORIGIN = 'http://192.168.0.10:8080'   # opcional: padrão do ENGINE_ORIGIN
+npm run build:live    # ou: npm run dev:live
+```
+
+O script (`scripts/build-live.mjs`, sem shell: o CLI do Tauri roda pelo próprio Node) confere as
+duas como o `build.rs`, passa `APP_API_URL`, `APP_ENGINE_ORIGIN` e `VITE_API_URL` (o
+`beforeBuildCommand`/`beforeDevCommand` herdam o ambiente, então o build do site embute a API) e
+troca só o `connect-src` da CSP por `'self' ipc: http://ipc.localhost <api> <ws(s) da api>`, com
+`--config` apontando para um arquivo temporário (JSON merge patch; o `tauri.conf.json` não muda).
+Com `--dry-run` no fim, só confere e mostra o que rodaria. Os avatares da Steam
+(`avatars.steamstatic.com`, `avatars.akamai…`, `avatars.cloudflare…`) já estão no `img-src` do
+arquivo.
+
+**Login no app** (o cookie `SameSite=Lax` do site não vai de `tauri.localhost` para a API, que é
+outro site): estilo OAuth para apps nativos (RFC 8252 + PKCE). O site gera o `verifier` e o
+`challenge` e chama `auth_open_browser { challenge }`; o app abre o login da Steam no navegador
+padrão; o servidor devolve `jukejoint://auth/<código>`; o app repassa o código em
+`app://auth-code`; o site troca código + verifier por um token (`POST /auth/app/token`) e passa a
+mandar `Authorization: Bearer <token>` (e o token no subprotocolo do WebSocket). O app nunca vê o
+token. O link só volta para o app com o esquema registrado (`APP_REGISTER_SCHEME=1`, enquanto não
+há instalador).
+
+**No servidor:** `WEB_ORIGIN` precisa ter `http://tauri.localhost` (a origem do site no exe)
+e/ou `http://localhost:5280` (no `dev:live`). Com `DEV_LOGIN=1` dá para testar num PC só.
+
+**Pasta para um amigo:** o `build:live` monta `desktop/out/Jukejoint/` (fora do git) com
+`Jukejoint.exe` (o `app-desktop.exe` renomeado; o nome não importa, o app acha as coisas pela
+pasta do próprio exe), `modlock.exe` (copiado de `tools\modlock-v0.1.68\` só se o SHA-256 bater com
+o fixado em `engine/mod.rs`; senão o script para), `modos\hello` e um `LEIA-ME.txt` (a API, manter
+as três coisas juntas, registrar o link com `APP_REGISTER_SCHEME=1`, o aviso do SmartScreen). No
+exe, o `modlock.exe` e a pasta `modos\` são procurados ao lado do executável, então a pasta
+funciona como está.
 
 ## Ainda não feito
 
 - **Instalador** (NSIS/WiX), que também registraria o esquema do link e colocaria o `modlock.exe`
   ao lado do app (`bundle.externalBin`).
-- **Assinatura de código** do executável (reduz os alertas do SmartScreen e de antivírus).
+- **Assinatura de código** do executável (reduz os alertas do SmartScreen e de antivírus; a
+  pasta do `build:live` avisa no LEIA-ME que o Windows pode reclamar).
+- **Login a frio:** um `jukejoint://auth/...` que abre o app do zero é ignorado (o verifier era da
+  execução anterior). Quem fechou o app no meio do login precisa clicar em Entrar de novo.
+- **Teste do login com a Steam de verdade** no exe (`build:live` + servidor com
+  `WEB_ORIGIN=http://tauri.localhost`): o caminho foi montado e conferido em partes (link, URL,
+  CSP), não ponta a ponta.
 - **Atualização automática** do app.
 - **`/bridge.html` no nosso domínio** para `--ui-relay`: até lá a UI dentro do jogo fica
   desligada (`--ui-port 0`).

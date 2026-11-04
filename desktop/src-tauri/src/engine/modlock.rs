@@ -35,6 +35,9 @@ use super::{
 pub const ENV_BIN: &str = "MODLOCK_BIN";
 pub const ENV_ORIGIN: &str = "ENGINE_ORIGIN";
 pub const ENV_STATE_DIR: &str = "ENGINE_STATE_DIR";
+/// Origem embutida no build (`APP_ENGINE_ORIGIN`, ver build.rs); vazia quando não definida.
+/// `ENGINE_ORIGIN` em tempo de execução continua ganhando.
+pub const BUILD_ORIGIN: &str = env!("APP_ENGINE_ORIGIN");
 
 /// Nomes aceitos ao lado do executável do app: o comum e o de sidecar do Tauri.
 const BESIDE_APP: &[&str] = &["modlock.exe", "modlock-x86_64-pc-windows-msvc.exe"];
@@ -53,8 +56,10 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 pub struct EngineConfig {
     /// Caminho do `modlock.exe` e de onde ele veio.
     pub bin: Option<(PathBuf, &'static str)>,
-    /// `None` quando `ENGINE_ORIGIN` não foi definida.
+    /// `None` quando nem `ENGINE_ORIGIN` nem a origem embutida no build existem.
     pub origin: Result<Option<String>, EngineError>,
+    /// A origem veio do build (`APP_ENGINE_ORIGIN`), não da variável de ambiente.
+    pub origin_from_build: bool,
     /// O que o Modlock vê como `%APPDATA%`.
     pub state_root: PathBuf,
     /// Definida quando `ENGINE_STATE_DIR` troca o `APPDATA` dos processos do Modlock.
@@ -80,15 +85,22 @@ impl EngineConfig {
                 .join("modlock.exe")
         });
         let env = |k: &str| std::env::var(k).ok();
-        let mut cfg = Self::resolve(&env, exe_dir.as_deref(), dev_tools);
+        let mut cfg = Self::resolve(&env, exe_dir.as_deref(), dev_tools, Some(BUILD_ORIGIN));
         // Só em build de desenvolvimento: sem ENGINE_PROJECTS_DIR, os projetos vêm de spike/mods.
         let dev_mods = cfg!(debug_assertions).then(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("spike").join("mods"));
         cfg.modes_root = Catalog::resolve_root(&env, exe_dir.as_deref(), dev_mods);
         cfg
     }
 
-    /// Mesma coisa que `from_env`, com o ambiente injetado (para testes).
-    pub fn resolve(env: &dyn Fn(&str) -> Option<String>, exe_dir: Option<&Path>, dev_tools: Option<PathBuf>) -> Self {
+    /// Mesma coisa que `from_env`, com o ambiente injetado (para testes). `default_origin` é a
+    /// origem embutida no build, usada só quando `ENGINE_ORIGIN` não está definida (vazia conta
+    /// como ausente); ela passa pela mesma validação.
+    pub fn resolve(
+        env: &dyn Fn(&str) -> Option<String>,
+        exe_dir: Option<&Path>,
+        dev_tools: Option<PathBuf>,
+        default_origin: Option<&str>,
+    ) -> Self {
         let set = |k: &str| env(k).map(|v| v.trim().to_string()).filter(|v| !v.is_empty());
         let bin = if let Some(p) = set(ENV_BIN) {
             Some((PathBuf::from(p), ENV_BIN))
@@ -97,9 +109,11 @@ impl EngineConfig {
         } else {
             dev_tools.filter(|p| p.is_file()).map(|p| (p, "pasta tools do repositório (dev)"))
         };
-        let origin = match set(ENV_ORIGIN) {
-            Some(o) => super::validate::origin(&o).map(Some),
-            None => Ok(None),
+        let built = default_origin.map(str::trim).filter(|o| !o.is_empty());
+        let (origin, origin_from_build) = match (set(ENV_ORIGIN), built) {
+            (Some(o), _) => (super::validate::origin(&o).map(Some), false),
+            (None, Some(o)) => (super::validate::origin(o).map(Some), true),
+            (None, None) => (Ok(None), false),
         };
         let state_override = set(ENV_STATE_DIR).map(PathBuf::from);
         let state_root = state_override
@@ -108,7 +122,16 @@ impl EngineConfig {
             .unwrap_or_else(std::env::temp_dir);
         let download_dir = set("LOCALAPPDATA").map(|d| PathBuf::from(d).join("modlock"));
         let modes_root = Catalog::resolve_root(env, exe_dir, None);
-        Self { bin, origin, state_root, state_override, exe_dir: exe_dir.map(Path::to_path_buf), download_dir, modes_root }
+        Self {
+            bin,
+            origin,
+            origin_from_build,
+            state_root,
+            state_override,
+            exe_dir: exe_dir.map(Path::to_path_buf),
+            download_dir,
+            modes_root,
+        }
     }
 
     /// `<APPDATA>\modlock\state`, onde ficam `daemon.lock` e `modlock.sock`.
@@ -432,7 +455,7 @@ impl ModlockCli {
                 "Esta cópia do app não sabe qual servidor usar para ligar os PCs. Não é algo que dá para ajustar aqui: avise quem te passou o app.",
             )
             .with_detail(format!(
-                "{ENV_ORIGIN} não definida. Defina com a origem do servidor de sinalização, por exemplo http://192.168.0.10:8080."
+                "{ENV_ORIGIN} não definida (e o build não trouxe APP_ENGINE_ORIGIN). Defina com a origem do servidor de sinalização, por exemplo http://192.168.0.10:8080."
             ))),
             Err(e) => Err(e.clone()),
         }
@@ -760,7 +783,11 @@ impl EngineAdapter for ModlockCli {
                 name: ENV_ORIGIN,
                 value: self.cfg.origin.clone().ok().flatten(),
                 scope: "app",
-                purpose: "Servidor de sinalização passado ao daemon em --origin. O hyperline.gg é recusado.",
+                purpose: if self.cfg.origin_from_build {
+                    "Servidor de sinalização passado ao daemon em --origin. Não definida: vale a origem embutida no build (APP_ENGINE_ORIGIN). O hyperline.gg é recusado."
+                } else {
+                    "Servidor de sinalização passado ao daemon em --origin. O hyperline.gg é recusado."
+                },
             },
             EnvEntry {
                 name: ENV_STATE_DIR,
@@ -926,7 +953,7 @@ mod tests {
 
     #[test]
     fn bin_from_env_wins() {
-        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, r"D:\x\modlock.exe")]), None, None);
+        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, r"D:\x\modlock.exe")]), None, None, None);
         assert_eq!(cfg.bin.unwrap(), (PathBuf::from(r"D:\x\modlock.exe"), ENV_BIN));
     }
 
@@ -935,14 +962,14 @@ mod tests {
         let d = std::env::temp_dir().join(format!("engine-bin-{}", std::process::id()));
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
-        let none = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(d.join("nao-existe.exe")));
+        let none = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(d.join("nao-existe.exe")), None);
         assert!(none.bin.is_none());
         let dev = d.join("dev-modlock.exe");
         fs::write(&dev, "").unwrap();
-        let from_dev = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(dev.clone()));
+        let from_dev = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(dev.clone()), None);
         assert_eq!(from_dev.bin.unwrap().0, dev);
         fs::write(d.join("modlock.exe"), "").unwrap();
-        let beside = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(dev));
+        let beside = EngineConfig::resolve(&env_of(&[]), Some(&d), Some(dev), None);
         assert_eq!(beside.bin.unwrap(), (d.join("modlock.exe"), "ao lado do app"));
         fs::remove_dir_all(&d).unwrap();
     }
@@ -953,23 +980,46 @@ mod tests {
             &env_of(&[(ENV_ORIGIN, " http://10.0.0.2:8080/ "), (ENV_STATE_DIR, r"C:\s"), ("APPDATA", r"C:\Users\x\AppData\Roaming")]),
             None,
             None,
+            None,
         );
         assert_eq!(cfg.origin.clone().unwrap().as_deref(), Some("http://10.0.0.2:8080"));
         assert_eq!(cfg.state_dir(), PathBuf::from(r"C:\s\modlock\state"));
         assert_eq!(cfg.state_override, Some(PathBuf::from(r"C:\s")));
 
-        let def = EngineConfig::resolve(&env_of(&[("APPDATA", r"C:\Users\x\AppData\Roaming")]), None, None);
+        let def = EngineConfig::resolve(&env_of(&[("APPDATA", r"C:\Users\x\AppData\Roaming")]), None, None, None);
         assert_eq!(def.origin.clone().unwrap(), None);
         assert_eq!(def.state_dir(), PathBuf::from(r"C:\Users\x\AppData\Roaming\modlock\state"));
         assert!(def.state_override.is_none());
 
-        let bad = EngineConfig::resolve(&env_of(&[(ENV_ORIGIN, "https://hyperline.gg")]), None, None);
+        let bad = EngineConfig::resolve(&env_of(&[(ENV_ORIGIN, "https://hyperline.gg")]), None, None, None);
+        assert_eq!(bad.origin.unwrap_err().code, "origem_invalida");
+    }
+
+    #[test]
+    fn build_origin_is_the_fallback() {
+        let built = Some("http://10.0.0.9:8080/");
+        let from_build = EngineConfig::resolve(&env_of(&[]), None, None, built);
+        assert_eq!(from_build.origin.clone().unwrap().as_deref(), Some("http://10.0.0.9:8080"));
+        assert!(from_build.origin_from_build);
+
+        // A variável de ambiente ganha, e vazia conta como ausente.
+        let env_wins = EngineConfig::resolve(&env_of(&[(ENV_ORIGIN, "http://10.0.0.2:8080")]), None, None, built);
+        assert_eq!(env_wins.origin.clone().unwrap().as_deref(), Some("http://10.0.0.2:8080"));
+        assert!(!env_wins.origin_from_build);
+        let blank = EngineConfig::resolve(&env_of(&[(ENV_ORIGIN, "  ")]), None, None, built);
+        assert!(blank.origin_from_build);
+
+        // O build vazio é o mesmo que não ter; o do build também passa pela validação.
+        let empty = EngineConfig::resolve(&env_of(&[]), None, None, Some(""));
+        assert_eq!(empty.origin.clone().unwrap(), None);
+        assert!(!empty.origin_from_build);
+        let bad = EngineConfig::resolve(&env_of(&[]), None, None, Some("https://hyperline.gg"));
         assert_eq!(bad.origin.unwrap_err().code, "origem_invalida");
     }
 
     #[test]
     fn missing_binary_blocks_everything() {
-        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, r"Z:\nao\existe\modlock.exe"), ("APPDATA", r"Z:\a")]), None, None);
+        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, r"Z:\nao\existe\modlock.exe"), ("APPDATA", r"Z:\a")]), None, None, None);
         let engine = ModlockCli::new(cfg, Arc::new(|_| {}));
         let report = engine.check();
         assert!(!report.ready);
@@ -988,7 +1038,7 @@ mod tests {
         fs::create_dir_all(&d).unwrap();
         let fake = d.join("modlock.exe");
         fs::write(&fake, "não é o modlock").unwrap();
-        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, fake.to_str().unwrap()), ("APPDATA", d.to_str().unwrap())]), None, None);
+        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, fake.to_str().unwrap()), ("APPDATA", d.to_str().unwrap())]), None, None, None);
         let engine = ModlockCli::new(cfg, Arc::new(|_| {}));
         let b = engine.check().binary;
         assert!(b.exists && !b.hash_ok);
@@ -1006,7 +1056,7 @@ mod tests {
         fs::write(&bin, "qualquer").unwrap();
         let env = env_of(&[("APPDATA", d.to_str().unwrap()), ("LOCALAPPDATA", r"C:\Users\x\AppData\Local")]);
         // Ao lado do app: o caminho só é aceito se o arquivo existia ao abrir.
-        let engine = ModlockCli::new(EngineConfig::resolve(&env, Some(&d), None), Arc::new(|_| {}));
+        let engine = ModlockCli::new(EngineConfig::resolve(&env, Some(&d), None, None), Arc::new(|_| {}));
         assert!(engine.check().binary.exists);
         fs::remove_file(&bin).unwrap();
         let r = engine.check();
@@ -1018,7 +1068,7 @@ mod tests {
         assert_eq!(engine.start_daemon().unwrap_err().code, "binario_sumiu");
 
         // Com MODLOCK_BIN nunca visto, é só "não encontrado".
-        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, bin.to_str().unwrap())]), None, None);
+        let cfg = EngineConfig::resolve(&env_of(&[(ENV_BIN, bin.to_str().unwrap())]), None, None, None);
         let fresh = ModlockCli::new(cfg, Arc::new(|_| {}));
         let b = fresh.check().binary;
         assert!(!b.vanished);
@@ -1063,7 +1113,7 @@ mod tests {
         let _ = fs::remove_dir_all(&d);
         fs::create_dir_all(&d).unwrap();
         let env = env_of(&[(catalog::ENV_PROJECTS_DIR, d.to_str().unwrap()), ("APPDATA", d.to_str().unwrap())]);
-        let engine = ModlockCli::new(EngineConfig::resolve(&env, None, None), Arc::new(|_| {}));
+        let engine = ModlockCli::new(EngineConfig::resolve(&env, None, None, None), Arc::new(|_| {}));
         assert_eq!(engine.check().modes.root.as_deref(), Some(d.display().to_string().as_str()));
         assert!(!engine.check().modes.test_project_ok);
         assert_eq!(engine.host_mode(&ModeSlug::parse("nao-existe").unwrap()).unwrap_err().code, "modo_desconhecido");

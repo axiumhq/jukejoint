@@ -8,6 +8,7 @@ import { OFFLINE_FRIENDS, type FriendPresence } from '../lib/friends';
 import { lobbyState } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { useTheme } from '../state/theme';
+import { DevSignIn, SignInPending } from './AppLogin';
 import { Presence } from './Avatar';
 import { Icon } from './Icon';
 import { useRail, useRailSignIn } from './Rail';
@@ -82,21 +83,23 @@ export function FriendRow({ friend, children }: { friend: FriendPresence; childr
 
 /** O convite de login do trilho. Enquanto ele aparece, a barra superior não repete o botão (Shell `Account`). */
 function SignInPrompt() {
-  const { signIn, live, devLogin, signInDev } = useSession();
+  const { signIn, live, authPending } = useSession();
   useRailSignIn();
   return (
     <div className="card rail-signin">
       <b>{t.social.signInTitle}</b>
       <p>{t.social.signInBody}</p>
       {/* secundário: o acento cheio fica para o "Jogar agora" */}
-      <button type="button" className="btn btn-s" onClick={signIn}>
-        <Icon name="user" />
-        {t.account.signIn}
-      </button>
-      {devLogin && (
-        <button type="button" className="btn btn-s btn-sm acct-dev" onClick={signInDev}>
-          {L.devSignIn}
-        </button>
+      {authPending ? (
+        <SignInPending />
+      ) : (
+        <>
+          <button type="button" className="btn btn-s" onClick={signIn}>
+            <Icon name="user" />
+            {t.account.signIn}
+          </button>
+          <DevSignIn />
+        </>
       )}
       <small>{live ? L.steamNote : t.social.signInNote}</small>
     </div>

@@ -6,6 +6,8 @@
   "scripts": {
     "dev:front": "node scripts/dev.mjs",
     "build:front": "node scripts/build-front.mjs",
+    "build:live": "node scripts/build-live.mjs build",
+    "dev:live": "node scripts/build-live.mjs dev",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "tauri": "tauri"
   },

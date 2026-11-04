@@ -83,6 +83,8 @@ export interface AppInfo {
   scheme: string;
   version: string;
   modlockVersion: string;
+  /** A API deste build (`APP_API_URL`, embutida pelo `npm run build:live`); `null` no build sem API. */
+  apiUrl: string | null;
   dev: boolean;
 }
 

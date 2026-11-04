@@ -7,6 +7,7 @@ use serde::Serialize;
 use tauri::{AppHandle, State};
 
 use crate::{
+    auth,
     engine::{
         modlock::ModlockCli, CheckReport, DaemonInfo, EngineAdapter, EngineError, JoinCode, ModeSlug, SessionInfo,
         StopReport, MODLOCK_VERSION,
@@ -21,6 +22,8 @@ pub struct AppInfo {
     scheme: &'static str,
     version: &'static str,
     modlock_version: &'static str,
+    /// A API deste build (`APP_API_URL`); `None` no build sem API.
+    api_url: Option<&'static str>,
     dev: bool,
 }
 
@@ -31,8 +34,18 @@ pub fn app_info() -> AppInfo {
         scheme: SLUG,
         version: env!("CARGO_PKG_VERSION"),
         modlock_version: MODLOCK_VERSION,
+        api_url: auth::api_url(),
         dev: tauri::is_dev(),
     }
+}
+
+/// Começa o login do app: abre `<APP_API_URL>/auth/steam/login?app=<challenge>` no navegador
+/// padrão. Só a janela do site pode chamar. Síncrono de propósito: roda na thread principal, que
+/// já tem o COM iniciado (o ShellExecuteW pede isso).
+#[tauri::command]
+pub fn auth_open_browser(challenge: String) -> Result<(), EngineError> {
+    let url = auth::login_url(auth::api_url(), &challenge)?;
+    auth::open_browser(&url)
 }
 
 #[tauri::command]

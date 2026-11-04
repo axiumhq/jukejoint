@@ -1,6 +1,8 @@
 //! App desktop: uma janela com o site (`web/`), a tela Instalação (`desktop/src/`), o deep link
-//! `<esquema>://join/<id>` com instância única e o `EngineAdapter` sobre o Modlock fixado.
+//! `<esquema>://join/<id>` e `<esquema>://auth/<código>` (login no navegador) com instância única
+//! e o `EngineAdapter` sobre o Modlock fixado.
 
+pub mod auth;
 mod commands;
 pub mod deeplink;
 pub mod engine;
@@ -8,6 +10,7 @@ mod notice;
 
 use std::sync::Arc;
 
+use deeplink::{Link, LinkError};
 use engine::{
     modlock::{EngineConfig, ModlockCli},
     EngineAdapter, EventSink, MODLOCK_VERSION,
@@ -38,6 +41,9 @@ pub const EV_DEEP_LINK: &str = "app://deep-link";
 /// Um link `<esquema>://join/...` chegou e foi recusado; o payload é o motivo (`formato`,
 /// `esquema`, `acao`, `id`). Quem joga já vê um aviso nativo; o evento é para o site, se quiser.
 pub const EV_DEEP_LINK_INVALID: &str = "app://deep-link-invalido";
+/// Um link `<esquema>://auth/<código>` válido chegou com o app aberto: o payload é o código
+/// (string de 43 caracteres), mandado só para a janela do site, que o troca pelo token.
+pub const EV_AUTH_CODE: &str = "app://auth-code";
 /// Para a tela Instalação dizer por que abriu sozinha (`window.__INSTALL_OPENED_BY__` ou este evento,
 /// se a janela já existia).
 pub const EV_INSTALL_OPENED_BY: &str = "install://opened-by";
@@ -67,16 +73,23 @@ pub fn run() {
             }
 
             // Link de quando o app foi aberto por ele (partida a frio): a janela já abre na sala.
-            // Link inválido: abre na página inicial e avisa por quê.
-            let first = deeplink::find_in_args(std::env::args().skip(1), SLUG).map(|u| (deeplink::parse_join(&u, SLUG), u));
+            // Convite inválido: abre na página inicial e avisa por quê. Link de login (válido ou
+            // não): abre na inicial sem aviso; o login começou noutra execução do app, que guardava
+            // o verifier, então não há como terminar. Basta clicar em Entrar de novo.
+            let first = deeplink::find_in_args(std::env::args().skip(1), SLUG).map(|u| (deeplink::parse(&u, SLUG), u));
             let start = match &first {
-                Some((Ok(id), _)) => format!("sala/{}", id.as_str()),
+                Some((Ok(Link::Join(id)), _)) => format!("sala/{}", id.as_str()),
                 _ => String::new(),
             };
             create_main_window(app.handle(), &start)?;
-            if let Some((Err(e), url)) = &first {
-                eprintln!("deep link ignorado ({e:?}): {url:.80}");
-                notice::invalid_link(app.handle());
+            match &first {
+                Some((Ok(Link::Auth(_)), _)) => eprintln!("auth link received at cold start: ignored (no verifier)"),
+                Some((Err(LinkError::AuthCode), url)) => eprintln!("deep link ignorado (AuthCode): {}", deeplink::for_log(url)),
+                Some((Err(e), url)) => {
+                    eprintln!("deep link ignorado ({e:?}): {}", deeplink::for_log(url));
+                    notice::invalid_link(app.handle());
+                }
+                _ => {}
             }
 
             setup_deep_link(app)?;
@@ -104,6 +117,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::app_info,
+            commands::auth_open_browser,
             commands::open_install_window,
             commands::engine_check,
             commands::engine_daemon_start,
@@ -131,6 +145,7 @@ fn init_script() -> String {
         "scheme": SLUG,
         "version": env!("CARGO_PKG_VERSION"),
         "modlockVersion": MODLOCK_VERSION,
+        "apiUrl": auth::api_url(),
     });
     format!(
         "Object.defineProperty(window,'__DESKTOP_APP__',{{value:Object.freeze({info}),writable:false,configurable:false}});"
@@ -214,16 +229,21 @@ fn show_main(app: &AppHandle) {
 }
 
 /// Link com o app já aberto: traz a janela para frente e conta ao site, que navega pelo React
-/// Router até `/sala/<id>` (sem recarregar a página) ou mostra o aviso do link inválido. O aviso
-/// nativo fica só para a partida a frio, quando o site ainda não carregou (ver `run`).
+/// Router até `/sala/<id>` (sem recarregar a página), troca o código de login pelo token ou mostra
+/// o aviso do link inválido. O aviso nativo fica só para a partida a frio, quando o site ainda não
+/// carregou (ver `run`). O código de login nunca vai para o log.
 fn handle_link(app: &AppHandle, url: &str) {
     show_main(app);
-    match deeplink::parse_join(url, SLUG) {
-        Ok(id) => {
+    match deeplink::parse(url, SLUG) {
+        Ok(Link::Join(id)) => {
             let _ = app.emit_to(MAIN, EV_DEEP_LINK, id.as_str());
         }
+        Ok(Link::Auth(code)) => {
+            eprintln!("auth link received");
+            let _ = app.emit_to(MAIN, EV_AUTH_CODE, code.as_str());
+        }
         Err(e) => {
-            eprintln!("deep link ignorado ({e:?}): {url:.80}");
+            eprintln!("deep link ignorado ({e:?}): {}", deeplink::for_log(url));
             let _ = app.emit_to(MAIN, EV_DEEP_LINK_INVALID, e.reason());
         }
     }

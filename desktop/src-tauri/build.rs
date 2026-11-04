@@ -2,6 +2,11 @@
 //! como `APP_BRAND_NAME`/`APP_SLUG` e confere que o `tauri.conf.json` repete os mesmos valores
 //! (nome do produto e esquema do deep link). Se alguém trocar o nome num lugar só, o build para
 //! com uma mensagem dizendo o que ajustar.
+//!
+//! Também lê, em tempo de build, `APP_API_URL` (a API que o site e o login do app usam) e
+//! `APP_ENGINE_ORIGIN` (o padrão de `ENGINE_ORIGIN`). As duas são opcionais; definidas, precisam
+//! ser só `http(s)://host[:porta]`. Viram `APP_API_URL`/`APP_ENGINE_ORIGIN` no código (vazias
+//! quando não definidas).
 
 use std::{fs, path::Path};
 
@@ -9,6 +14,7 @@ use std::{fs, path::Path};
 /// as janelas só recebem as que estão em `capabilities/*.json`.
 const COMMANDS: &[&str] = &[
     "app_info",
+    "auth_open_browser",
     "open_install_window",
     "engine_check",
     "engine_daemon_start",
@@ -54,6 +60,21 @@ fn main() {
     println!("cargo:rustc-env=APP_BRAND_NAME={name}");
     println!("cargo:rustc-env=APP_SLUG={slug}");
 
+    for var in ["APP_API_URL", "APP_ENGINE_ORIGIN"] {
+        println!("cargo:rerun-if-env-changed={var}");
+        let raw = std::env::var(var).unwrap_or_default();
+        let value = if raw.trim().is_empty() {
+            String::new()
+        } else {
+            origin(&raw).unwrap_or_else(|why| {
+                panic!(
+                    "{var} inválida ({why}): {raw:?}. Use só esquema, host e porta, como http://localhost:8291 ou https://api.exemplo.com (sem caminho, consulta, fragmento ou usuário)."
+                )
+            })
+        };
+        println!("cargo:rustc-env={var}={value}");
+    }
+
     tauri_build::try_build(
         tauri_build::Attributes::new()
             .app_manifest(tauri_build::AppManifest::new().commands(COMMANDS)),
@@ -77,4 +98,43 @@ fn slug(name: &str) -> String {
         .filter(|c| c.is_ascii_alphanumeric())
         .map(|c| c.to_ascii_lowercase())
         .collect()
+}
+
+/// `http(s)://host[:porta]`, com uma barra final opcional (tirada). Mesmas regras de
+/// `validate::origin` no app e de `scripts/build-live.mjs`: só nome ou IPv4, nada de caminho,
+/// consulta, fragmento ou usuário, e nunca o hyperline.gg.
+fn origin(raw: &str) -> Result<String, &'static str> {
+    let s = raw.trim();
+    let s = s.strip_suffix('/').unwrap_or(s);
+    if s.len() > 200 || !s.is_ascii() || s.bytes().any(|c| c.is_ascii_whitespace() || c.is_ascii_control()) {
+        return Err("tamanho, espaços ou caracteres fora do ASCII");
+    }
+    let rest = s
+        .strip_prefix("https://")
+        .or_else(|| s.strip_prefix("http://"))
+        .ok_or("precisa começar com http:// ou https://")?;
+    if rest.is_empty() || rest.contains(['/', '?', '#', '@', '\\', '%']) {
+        return Err("só esquema, host e porta");
+    }
+    let host = match rest.split_once(':') {
+        Some((h, port)) => {
+            if port.is_empty() || !port.bytes().all(|c| c.is_ascii_digit()) || !matches!(port.parse::<u16>(), Ok(1..)) {
+                return Err("porta");
+            }
+            h
+        }
+        None => rest,
+    };
+    let host_ok = !host.is_empty()
+        && !host.starts_with(['-', '.'])
+        && !host.ends_with(['-', '.'])
+        && host.bytes().all(|c| c.is_ascii_alphanumeric() || matches!(c, b'.' | b'-'));
+    if !host_ok {
+        return Err("host");
+    }
+    let lower = host.to_ascii_lowercase();
+    if lower == "hyperline.gg" || lower.ends_with(".hyperline.gg") {
+        return Err("a plataforma não usa o hyperline.gg");
+    }
+    Ok(s.to_string())
 }

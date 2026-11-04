@@ -56,7 +56,14 @@ export interface SessionValue {
   synced: boolean;
   /** O servidor aceita o login de teste (DEV_LOGIN=1, só de localhost). */
   devLogin: boolean;
-  signInDev: () => void;
+  /** No navegador, `name` é ignorado (vai para a página de login de teste da API). No app, entra com esse nome de `devNames`. */
+  signInDev: (name?: string) => void;
+  /** No app desktop: os nomes de teste oferecidos (o cookie não viaja, então não há página de login). Fora dele, vazio. */
+  devNames: readonly string[];
+  /** No app desktop: o login da Steam foi aberto no navegador e o app espera a volta. */
+  authPending: boolean;
+  /** Desiste do login que está esperando o navegador. */
+  cancelSignIn: () => void;
   user: MockUser | null;
   signIn: () => void;
   signOut: () => void;
