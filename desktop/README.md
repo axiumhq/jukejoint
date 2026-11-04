@@ -113,7 +113,7 @@ O nome do app e o esquema do link vêm de **um lugar só**: `BRAND_NAME` em
 | `ENGINE_ORIGIN` | app | Origem do servidor de sinalização, passada em `daemon --origin` e `join --origin`. Só `http(s)://host[:porta]`; o hyperline.gg é recusado. Sem ela, vale a `APP_ENGINE_ORIGIN` do build; sem as duas, `host`/`join` não rodam. |
 | `ENGINE_STATE_DIR` | app | Troca o `APPDATA` só dos processos do Modlock (mesmo efeito do `-StateDir` dos scripts do spike). Útil com um socket travado na pasta padrão. Precisa ser curta: o socket AF_UNIX tem limite de ~108 caracteres. |
 | `ENGINE_PROJECTS_DIR` | app | Pasta com os projetos dos modos (uma subpasta por projeto, com `mod.json`). Sem ela: em build de dev, `spike\mods` do repositório; no app empacotado, `modos\` ao lado do executável. Hoje todo modo abre `hello` (modo de teste). |
-| `APP_REGISTER_SCHEME` | app | Com `1`, registra o esquema do link no Windows (HKCU) ao abrir. Enquanto não há instalador, é o jeito de testar o link vindo do navegador. |
+| `APP_REGISTER_SCHEME` | app | O exe de release registra o esquema do link no Windows (HKCU, apontando para ele mesmo) a cada abertura; `0` desliga. O build de dev só registra com `1` (para não tomar o link do exe de verdade). Enquanto não há instalador, é o que faz o login e os convites voltarem para o app. |
 | `MODLOCK_NO_UPDATE_CHECK=1` | Modlock | Definida pelo app em todo processo do Modlock (versão fixada). |
 | `APP_API_URL` | build | A API deste build (`http(s)://host[:porta]`, sem caminho). Entra no Rust (`auth_open_browser`, `apiUrl` do `app_info`), no build do site (`VITE_API_URL`) e na CSP. Sem ela, o exe não tem API. Usada pelo `build:live`/`dev:live`. |
 | `APP_ENGINE_ORIGIN` | build | Opcional: vira o padrão de `ENGINE_ORIGIN` no exe (a variável em tempo de execução continua ganhando). A checagem diz quando a origem veio do build. |
@@ -258,8 +258,8 @@ outro site): estilo OAuth para apps nativos (RFC 8252 + PKCE). O site gera o `ve
 padrão; o servidor devolve `jukejoint://auth/<código>`; o app repassa o código em
 `app://auth-code`; o site troca código + verifier por um token (`POST /auth/app/token`) e passa a
 mandar `Authorization: Bearer <token>` (e o token no subprotocolo do WebSocket). O app nunca vê o
-token. O link só volta para o app com o esquema registrado (`APP_REGISTER_SCHEME=1`, enquanto não
-há instalador).
+token. O link só volta para o app com o esquema registrado: o exe de release registra sozinho a
+cada abertura (HKCU, apontando para o próprio exe), enquanto não há instalador.
 
 **No servidor:** `WEB_ORIGIN` precisa ter `http://tauri.localhost` (a origem do site no exe)
 e/ou `http://localhost:5280` (no `dev:live`). Com `DEV_LOGIN=1` dá para testar num PC só.
@@ -267,10 +267,11 @@ e/ou `http://localhost:5280` (no `dev:live`). Com `DEV_LOGIN=1` dá para testar 
 **Pasta para um amigo:** o `build:live` monta `desktop/out/Jukejoint/` (fora do git) com
 `Jukejoint.exe` (o `app-desktop.exe` renomeado; o nome não importa, o app acha as coisas pela
 pasta do próprio exe), `modlock.exe` (copiado de `tools\modlock-v0.1.68\` só se o SHA-256 bater com
-o fixado em `engine/mod.rs`; senão o script para), `modos\hello` e um `LEIA-ME.txt` (a API, manter
-as três coisas juntas, registrar o link com `APP_REGISTER_SCHEME=1`, o aviso do SmartScreen). No
-exe, o `modlock.exe` e a pasta `modos\` são procurados ao lado do executável, então a pasta
-funciona como está.
+o fixado em `engine/mod.rs`; senão o script para), `modos\hello` e um `LEIA-ME.txt` (a API,
+extrair antes de abrir, antivírus, manter as três coisas juntas, o aviso do SmartScreen, o login
+pelo navegador), e zipa tudo em `desktop/out/Jukejoint.zip` (o `tar.exe` do Windows). No exe, o
+`modlock.exe` e a pasta `modos\` são procurados ao lado do executável, então a pasta funciona como
+está.
 
 ## Ainda não feito
 

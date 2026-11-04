@@ -137,7 +137,7 @@ copyFileSync(exe, join(out, `${brand}.exe`));
 copyFileSync(modlock, join(out, 'modlock.exe'));
 cpSync(hello, join(out, 'modos', 'hello'), {
   recursive: true,
-  filter: (src) => !['node_modules', '.git', 'dist'].includes(basename(src)),
+  filter: (src) => !['node_modules', '.git', 'dist', '.build.lock'].includes(basename(src)),
 });
 
 const leiaMe = `${brand}: cópia de teste do app
@@ -146,19 +146,40 @@ const leiaMe = `${brand}: cópia de teste do app
 Esta pasta é o app ${brand} para Windows. Ele fala com a API em ${api}.
 ${engineOrigin ? `Servidor que liga os PCs: ${engineOrigin}.` : 'Esta cópia não traz o servidor que liga os PCs: defina ENGINE_ORIGIN antes de abrir o app.'}
 
-Mantenha as 3 coisas juntas, na mesma pasta:
-  ${brand}.exe     o app
-  modlock.exe      o motor (versão ${version}, conferida pelo app)
-  modos\\          os modos (por enquanto só o de teste, hello)
+Antes de abrir
+  1. Extraia o zip inteiro numa pasta sua (por exemplo, Documentos\\${brand}). Não abra de
+     dentro do zip.
+  2. Antivírus: se ele reclamar do modlock.exe, coloque esta pasta nas exceções. O modlock é o
+     motor que monta o modo no Deadlock (código aberto, versão ${version}); o app confere a
+     assinatura dele (SHA-256) antes de usar.
+  3. Mantenha as 3 coisas juntas, na mesma pasta:
+       ${brand}.exe     o app
+       modlock.exe      o motor
+       modos\\          os modos (por enquanto só o de teste, hello)
 
-Para os links de convite e o login pela Steam voltarem para o app, registre o link uma vez
-(PowerShell, nesta pasta):
-  $env:APP_REGISTER_SCHEME = '1'; .\\${brand}.exe
-Se mudar a pasta de lugar, registre de novo.
+Abrir
+  Dê dois cliques em ${brand}.exe. O Windows (SmartScreen) pode avisar que o app é de um editor
+  desconhecido, porque o exe ainda não é assinado: clique em "Mais informações" e depois em
+  "Executar assim mesmo".
+  Ao abrir, o app registra os links ${brand.toLowerCase()}:// no seu usuário do Windows (sem pedir
+  administrador). É assim que o login pela Steam e os convites voltam para ele.
 
-O Windows (SmartScreen) pode avisar que o app é de um editor desconhecido: o exe ainda não é
-assinado. Clique em "Mais informações" e depois em "Executar assim mesmo".
+Entrar
+  Clique em Login. O seu navegador abre a página da Steam (confira o endereço: steamcommunity.com).
+  Depois de entrar lá, o navegador pede para abrir o ${brand}: aceite. A senha fica com a Steam;
+  o app recebe só o seu ID e o nome público.
+
+Jogar
+  Feche o Deadlock antes de entrar numa sala: o app abre o jogo sozinho na hora certa.
 `;
 writeFileSync(join(out, 'LEIA-ME.txt'), '\ufeff' + leiaMe.replace(/\n/g, '\r\n'));
 
+// O zip para mandar: o tar do Windows (System32) faz zip com -a; sem shell, argumentos em lista.
+const zip = join(desktop, 'out', `${brand}.zip`);
+rmSync(zip, { force: true });
+const tar = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe');
+const z = existsSync(tar) ? spawnSync(tar, ['-a', '-c', '-f', zip, brand], { cwd: join(desktop, 'out'), stdio: 'inherit' }) : null;
+const zipped = z && !z.error && z.status === 0 && existsSync(zip);
+
 console.log(`\nPronto: ${out}\n  ${brand}.exe, modlock.exe (SHA-256 conferido), modos\\hello, LEIA-ME.txt`);
+console.log(zipped ? `Zip para mandar: ${zip}` : 'O zip não foi gerado (falta o tar.exe do Windows): zipe a pasta acima.');

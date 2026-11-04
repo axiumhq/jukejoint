@@ -30,8 +30,10 @@ pub const MAIN: &str = "main";
 pub const INSTALL: &str = "instalacao";
 /// Em dev, a tela Instalação vem do Vite do `desktop/` (o site vem do Vite do `web/`, no devUrl).
 const INSTALL_DEV_URL: &str = "http://localhost:5281/";
-/// Com `1`, o app registra o esquema do deep link no Windows (HKCU) ao abrir. O instalador
-/// (ainda não feito) é quem deve registrar; isto é para testar sem ele.
+/// Registro do esquema do deep link no Windows (HKCU, sem administrador), apontando para este
+/// exe. O exe de release registra a cada abertura (enquanto não há instalador, é o que faz o login
+/// pela Steam e os convites voltarem para o app, onde quer que a pasta esteja); `0` desliga. O
+/// build de dev só registra com `1`, para não tomar o link do exe de verdade.
 pub const ENV_REGISTER_SCHEME: &str = "APP_REGISTER_SCHEME";
 
 /// Eventos que o app manda para as janelas.
@@ -251,8 +253,12 @@ fn handle_link(app: &AppHandle, url: &str) {
 
 fn setup_deep_link(app: &tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     use tauri_plugin_deep_link::DeepLinkExt;
-    if std::env::var(ENV_REGISTER_SCHEME).as_deref() == Ok("1") {
-        app.deep_link().register_all()?;
+    let flag = std::env::var(ENV_REGISTER_SCHEME).ok();
+    if should_register(tauri::is_dev(), flag.as_deref()) {
+        // Falhar aqui não impede o app de abrir: só o link vindo do navegador deixa de chegar.
+        if let Err(e) = app.deep_link().register_all() {
+            eprintln!("não deu para registrar o esquema {SLUG}://: {e}");
+        }
     }
     let h = app.handle().clone();
     app.deep_link().on_open_url(move |event| {
@@ -291,4 +297,27 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
     }
     tray.build(app)?;
     Ok(())
+}
+
+/// Release registra o esquema, a menos que `APP_REGISTER_SCHEME=0`; dev, só com `1`.
+fn should_register(dev: bool, flag: Option<&str>) -> bool {
+    match flag.map(str::trim) {
+        Some("1") => true,
+        Some("0") => false,
+        _ => !dev,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::should_register;
+
+    #[test]
+    fn release_registers_by_default_dev_only_on_request() {
+        assert!(should_register(false, None));
+        assert!(should_register(false, Some("")));
+        assert!(!should_register(false, Some("0")));
+        assert!(!should_register(true, None));
+        assert!(should_register(true, Some("1")));
+    }
 }
