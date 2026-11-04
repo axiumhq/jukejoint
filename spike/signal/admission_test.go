@@ -16,12 +16,12 @@ import (
 
 func TestAdmissionRateAndRecovery(t *testing.T) {
 	now := time.Unix(100, 0)
-	a := newAdmission(2, 2, 1, func() time.Time { return now })
-	if !a.allowRequest() || !a.allowRequest() || a.allowRequest() {
+	a := newAdmission(admissionConfig{ticketRate: 2, ticketBurst: 2, socketRate: 2, socketBurst: 2, maxSockets: 1}, func() time.Time { return now })
+	if !a.allowTicket() || !a.allowTicket() || a.allowTicket() {
 		t.Fatal("burst was not bounded")
 	}
 	now = now.Add(500 * time.Millisecond)
-	if !a.allowRequest() || a.allowRequest() {
+	if !a.allowTicket() || a.allowTicket() {
 		t.Fatal("bucket did not refill at the configured rate")
 	}
 }
@@ -29,7 +29,7 @@ func TestAdmissionRateAndRecovery(t *testing.T) {
 func TestAdmissionAtHTTPBoundary(t *testing.T) {
 	logger := logrus.New()
 	logger.SetOutput(&bytes.Buffer{})
-	a := newAdmission(0, 2, 1, time.Now)
+	a := newAdmission(admissionConfig{ticketBurst: 1, socketBurst: 1, maxSockets: 1}, time.Now)
 	h, err := newHandlerWithLimits(logrus.NewEntry(logger), testEnv, testSecret, time.Now, a)
 	if err != nil {
 		t.Fatal(err)
@@ -67,7 +67,7 @@ func TestAdmissionAtHTTPBoundary(t *testing.T) {
 func TestSocketCapacityReleasedOnDisconnect(t *testing.T) {
 	logger := logrus.New()
 	logger.SetOutput(&bytes.Buffer{})
-	a := newAdmission(0, 100, 1, time.Now)
+	a := newAdmission(admissionConfig{ticketBurst: 100, socketBurst: 100, maxSockets: 1}, time.Now)
 	h, err := newHandlerWithLimits(logrus.NewEntry(logger), testEnv, testSecret, time.Now, a)
 	if err != nil {
 		t.Fatal(err)
@@ -105,7 +105,7 @@ func TestSocketCapacityReleasedOnDisconnect(t *testing.T) {
 func TestFailedUpgradeReleasesCapacity(t *testing.T) {
 	logger := logrus.New()
 	logger.SetOutput(&bytes.Buffer{})
-	a := newAdmission(0, 100, 1, time.Now)
+	a := newAdmission(admissionConfig{ticketBurst: 100, socketBurst: 100, maxSockets: 1}, time.Now)
 	h, err := newHandlerWithLimits(logrus.NewEntry(logger), testEnv, testSecret, time.Now, a)
 	if err != nil {
 		t.Fatal(err)

@@ -52,6 +52,12 @@ const ticketTTL = 10 * time.Minute
 // secretSize is the length in bytes of the key that authenticates tickets.
 const secretSize = 32
 
+var defaultAdmission = admissionConfig{
+	ticketRate: 50, ticketBurst: 100,
+	socketRate: 50, socketBurst: 100,
+	maxSockets: 256,
+}
+
 // peerKey keys the caller's peer ID in a signaling stream's context.
 type peerKey struct{}
 
@@ -61,6 +67,11 @@ func main() {
 	env := flag.String("env", "hyperline", "env prefix the clients sign requests with")
 	secretFile := flag.String("secret-file", "", "file holding the ticket HMAC key, created if missing (empty: random key per run)")
 	health := flag.Bool("healthcheck", false, "ask the /healthz of a server on -addr over loopback and exit (for container health checks)")
+	ticketRate := flag.Float64("ticket-rate", defaultAdmission.ticketRate, "maximum ticket requests per second")
+	ticketBurst := flag.Int("ticket-burst", defaultAdmission.ticketBurst, "maximum ticket request burst")
+	socketRate := flag.Float64("socket-rate", defaultAdmission.socketRate, "maximum WebSocket opens per second")
+	socketBurst := flag.Int("socket-burst", defaultAdmission.socketBurst, "maximum WebSocket open burst")
+	maxSockets := flag.Int("max-sockets", defaultAdmission.maxSockets, "maximum simultaneous signaling WebSockets")
 	flag.Parse()
 
 	if *health {
@@ -68,6 +79,14 @@ func main() {
 			log.Fatalf("unhealthy: %v", err)
 		}
 		return
+	}
+	limits := admissionConfig{
+		ticketRate: *ticketRate, ticketBurst: *ticketBurst,
+		socketRate: *socketRate, socketBurst: *socketBurst,
+		maxSockets: *maxSockets,
+	}
+	if err := limits.validate(); err != nil {
+		log.Fatalf("invalid admission limits: %v", err)
 	}
 
 	// Load the ticket key, or make one that dies with this process.
@@ -83,11 +102,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	handler, err := newHandler(logrus.NewEntry(logrus.StandardLogger()), *env, secret, time.Now)
+	handler, err := newHandlerWithLimits(logrus.NewEntry(logrus.StandardLogger()), *env, secret, time.Now, newAdmission(limits, time.Now))
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("signaling on %s", *addr)
+	log.Printf("signaling on %s (tickets %.1f/s burst %d; sockets %.1f/s burst %d; max open %d)",
+		*addr, limits.ticketRate, limits.ticketBurst, limits.socketRate, limits.socketBurst, limits.maxSockets)
 	server := &http.Server{
 		Addr: *addr, Handler: handler,
 		ReadHeaderTimeout: 10 * time.Second,
@@ -285,7 +305,7 @@ func verifyTicketRequest(r *http.Request, w http.ResponseWriter, envPrefix strin
 // Ticket requests must be signed with envPrefix; now is the clock used to check
 // their timestamps and ticket expiries. Tickets are authenticated with secret.
 func newHandler(le *logrus.Entry, envPrefix string, secret []byte, now func() time.Time) (http.Handler, error) {
-	return newHandlerWithLimits(le, envPrefix, secret, now, newAdmission(50, 100, 256, now))
+	return newHandlerWithLimits(le, envPrefix, secret, now, newAdmission(defaultAdmission, now))
 }
 
 func newHandlerWithLimits(le *logrus.Entry, envPrefix string, secret []byte, now func() time.Time, admission *admission) (http.Handler, error) {
@@ -308,7 +328,7 @@ func newHandlerWithLimits(le *logrus.Entry, envPrefix string, secret []byte, now
 	// Never answer 401 here: the pinned client gives up on its peer for good
 	// after one, so invalid signatures get a 403. Overload is retryable.
 	routes.HandleFunc("POST /api/signal/ticket", func(w http.ResponseWriter, r *http.Request) {
-		if !admission.allowRequest() {
+		if !admission.allowTicket() {
 			w.Header().Set("Retry-After", "1")
 			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
 			return
@@ -343,7 +363,7 @@ func newHandlerWithLimits(le *logrus.Entry, envPrefix string, secret []byte, now
 	// 401 is avoided here for the same reason as above). The expiry only gates
 	// opening the socket: one already open stays open.
 	routes.HandleFunc("GET /api/signal/ws", func(w http.ResponseWriter, r *http.Request) {
-		if !admission.allowRequest() {
+		if !admission.allowSocket() {
 			w.Header().Set("Retry-After", "1")
 			http.Error(w, "temporarily unavailable", http.StatusServiceUnavailable)
 			return
