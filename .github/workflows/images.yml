@@ -1,10 +1,11 @@
 # Builds the two server images (lobby API and signaling) and publishes them to
 # GHCR, for linux/arm64 (the Raspberry Pi that hosts them) and linux/amd64.
 #
-# Each image is tagged with the full commit SHA and "main". The Pi never runs a
-# tag: pi-infra pins image@sha256:<digest>, and the digests of every run are
-# listed in its summary. On main, the last job sends both pins to infra-pi
-# (jukejoint-published), which opens the reviewed pin PR.
+# Each image is tagged with the full commit SHA, the published release tag, and
+# "main" on main. The Pi never runs a tag: pi-infra pins image@sha256:<digest>,
+# and the digests of every run are listed in its summary. Main builds and
+# published releases send both pins to infra-pi (jukejoint-published), which
+# opens the reviewed pin PR.
 name: images
 
 on:
@@ -19,6 +20,8 @@ on:
       - server/**
       - spike/signal/**
       - .github/workflows/images.yml
+  release:
+    types: [published]
   workflow_dispatch:
 
 permissions:
@@ -107,6 +110,7 @@ jobs:
           provenance: false
           tags: |
             ${{ steps.name.outputs.image }}:${{ github.sha }}
+            ${{ github.event_name == 'release' && format('{0}:{1}', steps.name.outputs.image, github.event.release.tag_name) || '' }}
             ${{ github.ref == 'refs/heads/main' && format('{0}:main', steps.name.outputs.image) || '' }}
           cache-from: type=gha,scope=${{ matrix.name }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}
@@ -148,7 +152,7 @@ jobs:
   infra:
     name: request infra-pi pin update
     needs: image
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.event_name == 'release')
     runs-on: blacksmith-2vcpu-ubuntu-2404
     permissions:
       contents: read
