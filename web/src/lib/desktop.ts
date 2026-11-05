@@ -13,6 +13,7 @@ export interface DesktopInfo {
   scheme: string;
   version: string;
   modlockVersion: string;
+  dev?: boolean;
 }
 
 export interface EngineError {

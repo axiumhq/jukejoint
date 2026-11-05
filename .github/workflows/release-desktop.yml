@@ -59,29 +59,61 @@ jobs:
 
       - name: Build packaged app files
         shell: pwsh
-        run: |
-          $env:APP_API_URL = 'https://api.jukejoint.app'
-          $env:APP_ENGINE_ORIGIN = 'https://signal.jukejoint.app'
-          npm run build:live --prefix desktop
-          if ($LASTEXITCODE -ne 0) { throw 'O build do app falhou.' }
-
-      - name: Build single-file installer
-        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           if ($env:RELEASE_TAG -notmatch '^v(\d+\.\d+\.\d+)$') { throw "Tag de release inválida: $env:RELEASE_TAG" }
-          $version = $Matches[1]
-          choco install innosetup --yes --no-progress
-          if ($LASTEXITCODE -ne 0) { throw 'A instalação do Inno Setup falhou.' }
-          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          & $iscc "/DAppVersion=$version" 'desktop/installer.iss'
-          if ($LASTEXITCODE -ne 0) { throw 'A geração do instalador falhou.' }
-          $asset = "desktop/out/Jukejoint-v$version-windows-x64-setup.exe"
-          if (-not (Test-Path $asset)) { throw "Instalador não encontrado: $asset" }
+          $env:APP_VERSION = $Matches[1]
+          $env:APP_API_URL = 'https://api.jukejoint.app'
+          $env:APP_ENGINE_ORIGIN = 'https://signal.jukejoint.app'
+          if (-not $env:TAURI_SIGNING_PRIVATE_KEY) { throw 'Cadastre o secret TAURI_SIGNING_PRIVATE_KEY antes de publicar uma release.' }
+          npm run build:release --prefix desktop
+          if ($LASTEXITCODE -ne 0) { throw 'O build do app falhou.' }
 
-      - name: Attach download to GitHub Release
+      - name: Prepare installer and updater manifest
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$env:RELEASE_TAG" "desktop/out/Jukejoint-$($env:RELEASE_TAG)-windows-x64-setup.exe" --repo "$env:GITHUB_REPOSITORY" --clobber
-          if ($LASTEXITCODE -ne 0) { throw 'Não consegui anexar o instalador à release.' }
+          $version = $env:RELEASE_TAG.Substring(1)
+          $bundle = 'desktop/src-tauri/target/release/bundle/nsis'
+          $installer = Get-ChildItem $bundle -Filter '*-setup.exe' | Select-Object -First 1
+          $package = Get-ChildItem $bundle -Filter '*.nsis.zip' | Select-Object -First 1
+          if (-not $installer -or -not $package) { throw "O Tauri não gerou os artefatos NSIS em $bundle." }
+          $setupName = "Jukejoint-$env:RELEASE_TAG-windows-x64-setup.exe"
+          $updateName = "Jukejoint-$env:RELEASE_TAG-windows-x64-update.nsis.zip"
+          $setup = Join-Path $bundle $setupName
+          $update = Join-Path $bundle $updateName
+          $generatedSignature = "$($package.FullName).sig"
+          if (-not (Test-Path $generatedSignature)) { throw "Assinatura do pacote não encontrada: $generatedSignature" }
+          Move-Item $installer.FullName $setup
+          Move-Item $package.FullName $update
+          Move-Item $generatedSignature "$update.sig"
+          $signaturePath = "$update.sig"
+          $release = gh release view "$env:RELEASE_TAG" --repo "$env:GITHUB_REPOSITORY" --json body,publishedAt | ConvertFrom-Json
+          $manifest = @{
+            version = $version
+            notes = $release.body
+            pub_date = $release.publishedAt
+            platforms = @{
+              'windows-x86_64-nsis' = @{
+                signature = (Get-Content $signaturePath -Raw).Trim()
+                url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/$updateName"
+              }
+            }
+          }
+          $manifest | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $bundle 'latest.json') -Encoding utf8NoBOM
+
+      - name: Attach installer and updater package to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $bundle = 'desktop/src-tauri/target/release/bundle/nsis'
+          gh release upload "$env:RELEASE_TAG" `
+            (Join-Path $bundle "Jukejoint-$env:RELEASE_TAG-windows-x64-setup.exe") `
+            (Join-Path $bundle "Jukejoint-$env:RELEASE_TAG-windows-x64-update.nsis.zip") `
+            (Join-Path $bundle 'latest.json') `
+            --repo "$env:GITHUB_REPOSITORY" --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Não consegui anexar os artefatos à release.' }

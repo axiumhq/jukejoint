@@ -1,6 +1,7 @@
 // `npm run build:live` e `npm run dev:live`: o app falando com a API de verdade.
 //
 //   APP_API_URL=<origem da API> [APP_ENGINE_ORIGIN=<servidor de sinalização>] [APP_SITE_URL=<site público>] npm run build:live
+//   APP_API_URL=... APP_VERSION=1.2.3 npm run build:release
 //   APP_API_URL=<origem da API> [APP_ENGINE_ORIGIN=...] npm run dev:live
 //   (com --dry-run no fim: só confere e mostra o que rodaria)
 //
@@ -9,9 +10,10 @@
 // a ws(s) equivalente), passada ao Tauri CLI por `--config` com um arquivo temporário (um JSON
 // merge patch sobre o tauri.conf.json; o arquivo do repositório não muda).
 //
-// `build:live` roda `tauri build --no-bundle` e monta `out/<Marca>/` para mandar a um amigo: o
-// exe, o modlock.exe (conferido pelo SHA-256 fixado), `modos/` (o `hello` e os modos de verdade
-// de `REAL_PROJECTS`, em src-tauri/src/engine/catalog.rs) e um LEIA-ME.txt.
+// `build:live` monta `out/<Marca>/` para teste: o exe, o modlock.exe (conferido pelo SHA-256
+// fixado), `modos/` (o `hello` e os modos de verdade de `REAL_PROJECTS`, em
+// src-tauri/src/engine/catalog.rs) e um LEIA-ME.txt. `build:release` empacota os mesmos recursos
+// no instalador NSIS do Tauri e gera o pacote assinado usado pelo updater.
 // Processos sem shell: o CLI do Tauri roda pelo próprio Node.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -24,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 const desktop = fileURLToPath(new URL('..', import.meta.url));
 const repo = join(desktop, '..');
 const tauriDir = join(desktop, 'src-tauri');
+const resources = join(tauriDir, 'resources');
 const DEV_SITE = 'http://localhost:5280';
 
 const [mode, ...flags] = process.argv.slice(2);
@@ -37,6 +40,7 @@ function usage(msg) {
   $env:APP_ENGINE_ORIGIN = 'http://192.168.0.10:8080'  # opcional: padrão do ENGINE_ORIGIN no exe
   $env:APP_SITE_URL = 'https://jukejoint.gg'          # opcional: o site público, para os links de convite
   npm run build:live     # exe + pasta out/ para mandar a um amigo
+  $env:APP_VERSION = '1.2.3'; npm run build:release  # instalador e pacote do updater
   npm run dev:live       # tauri dev com a API
 
 O servidor precisa aceitar a origem do app em WEB_ORIGIN: http://tauri.localhost (exe) e/ou
@@ -63,8 +67,12 @@ function origin(name, raw) {
   return s;
 }
 
-if (mode !== 'build' && mode !== 'dev') usage('Diga build ou dev (use npm run build:live ou npm run dev:live).');
+if (!['build', 'dev', 'release'].includes(mode)) usage('Diga build, dev ou release.');
 if (!process.env.APP_API_URL?.trim()) usage('Falta APP_API_URL.');
+const appVersion = process.env.APP_VERSION?.trim() || '';
+if (mode === 'release' && !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(appVersion)) {
+  usage('Falta APP_VERSION válida para o build de release (ex.: 1.2.3).');
+}
 const api = origin('APP_API_URL', process.env.APP_API_URL);
 const engineOrigin = process.env.APP_ENGINE_ORIGIN?.trim() ? origin('APP_ENGINE_ORIGIN', process.env.APP_ENGINE_ORIGIN) : '';
 // Sem site público, os convites copiados no app saem como <esquema>://join/<id> (web/src/lib/invite.ts).
@@ -73,6 +81,16 @@ const ws = api.replace(/^http/, 'ws');
 
 const connectSrc = `'self' ipc: http://ipc.localhost ${api} ${ws}`;
 const patch = { app: { security: { csp: { 'connect-src': connectSrc } } } };
+if (mode === 'release') {
+  patch.version = appVersion;
+  patch.bundle = {
+    active: true,
+    targets: ['nsis'],
+    createUpdaterArtifacts: true,
+    resources: { [join(resources, 'modlock.exe')]: 'modlock.exe', [join(resources, 'modos')]: 'modos' },
+    windows: { nsis: { installMode: 'currentUser' } },
+  };
+}
 
 const conf = JSON.parse(readFileSync(join(tauriDir, 'tauri.conf.json'), 'utf8'));
 const brand = conf.productName;
@@ -89,32 +107,20 @@ const cliPkg = require.resolve('@tauri-apps/cli/package.json');
 const cliJs = join(dirname(cliPkg), JSON.parse(readFileSync(cliPkg, 'utf8')).bin.tauri);
 
 const patchFile = join(tmpdir(), `${brand.toLowerCase()}-live-${process.pid}.json`);
-const args = mode === 'build' ? ['build', '--no-bundle', '--config', patchFile] : ['dev', '--config', patchFile];
-const env = { ...process.env, APP_API_URL: api, APP_ENGINE_ORIGIN: engineOrigin, VITE_API_URL: api, VITE_SITE_URL: siteUrl };
+const args = mode === 'dev' ? ['dev', '--config', patchFile] : ['build', ...(mode === 'build' ? ['--no-bundle'] : []), '--config', patchFile];
+const env = { ...process.env, APP_API_URL: api, APP_ENGINE_ORIGIN: engineOrigin, APP_VERSION: appVersion || conf.version, VITE_API_URL: api, VITE_SITE_URL: siteUrl };
 
 console.log(`API: ${api}`);
 console.log(`ENGINE_ORIGIN padrão: ${engineOrigin || '(nenhum: o exe vai pedir ENGINE_ORIGIN)'}`);
 console.log(`Site público (convites): ${siteUrl || '(nenhum: convites saem como deep link do app)'}`);
 console.log(`connect-src: ${connectSrc}`);
 console.log(`tauri ${args.slice(0, -1).join(' ')} <${patchFile}>`);
-console.log(`Lembrete: o servidor precisa de WEB_ORIGIN com ${mode === 'build' ? 'http://tauri.localhost' : DEV_SITE}.`);
+console.log(`Lembrete: o servidor precisa de WEB_ORIGIN com ${mode === 'dev' ? DEV_SITE : 'http://tauri.localhost'}.`);
 if (dryRun) {
   console.log(`\n--dry-run: nada foi rodado. Patch da configuração:\n${JSON.stringify(patch, null, 2)}`);
   process.exit(0);
 }
 
-writeFileSync(patchFile, JSON.stringify(patch));
-let r;
-try {
-  r = spawnSync(process.execPath, [cliJs, ...args], { cwd: desktop, env, stdio: 'inherit' });
-} finally {
-  rmSync(patchFile, { force: true });
-}
-if (r.error) throw r.error;
-if (r.status !== 0) process.exit(r.status ?? 1);
-if (mode === 'dev') process.exit(0);
-
-// --- Pasta para mandar a um amigo -------------------------------------------------------------
 const out = join(desktop, 'out', brand);
 const exe = join(tauriDir, 'target', 'release', 'app-desktop.exe');
 const modlock = join(repo, 'tools', `modlock-${version}`, 'modlock.exe');
@@ -128,7 +134,50 @@ if (!realList) {
 }
 const projects = ['hello', ...[...realList[1].matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1])];
 const projectDirs = projects.map((p) => [p, join(repo, 'spike', 'mods', p)]);
+/** Copia os projetos dos modos para dest/modos, sem logs locais, testes nem dependências. */
+function copyModes(dest) {
+  for (const [name, dir] of projectDirs) {
+    cpSync(dir, join(dest, 'modos', name), {
+      recursive: true,
+      // Local run logs (server.log) carry paths and peer IDs from this PC: never ship them. The
+      // tests (test/) run in the repository only.
+      filter: (src) => !['node_modules', '.git', 'dist', '.build.lock', 'test'].includes(basename(src)) && !src.endsWith('.log'),
+    });
+  }
+}
 
+function stageRuntimeAssets() {
+  for (const [what, p] of [['o modlock.exe fixado', modlock], ...projectDirs.map(([n, d]) => [`o projeto do modo ${n}`, d])]) {
+    if (!existsSync(p)) {
+      console.error(`Falta ${what}: ${p}`);
+      process.exit(1);
+    }
+  }
+  const sha = createHash('sha256').update(readFileSync(modlock)).digest('hex');
+  if (sha !== pinned) {
+    console.error(`O modlock.exe em ${modlock} NÃO é o fixado.\n  SHA-256: ${sha}\n  esperado: ${pinned}\nBaixe de novo com scripts/install-modlock.ps1.`);
+    process.exit(1);
+  }
+  rmSync(resources, { recursive: true, force: true });
+  mkdirSync(join(resources, 'modos'), { recursive: true });
+  copyFileSync(modlock, join(resources, 'modlock.exe'));
+  copyModes(resources);
+}
+
+if (mode === 'release') stageRuntimeAssets();
+
+writeFileSync(patchFile, JSON.stringify(patch));
+let r;
+try {
+  r = spawnSync(process.execPath, [cliJs, ...args], { cwd: desktop, env, stdio: 'inherit' });
+} finally {
+  rmSync(patchFile, { force: true });
+}
+if (r.error) throw r.error;
+if (r.status !== 0) process.exit(r.status ?? 1);
+if (mode !== 'build') process.exit(0);
+
+// --- Pasta para mandar a um amigo -------------------------------------------------------------
 for (const [what, p] of [['o exe do build', exe], [`o modlock.exe ${version} (scripts/install-modlock.ps1 baixa)`, modlock], ...projectDirs.map(([n, d]) => [`o projeto do modo ${n}`, d])]) {
   if (!existsSync(p)) {
     console.error(`Falta ${what}: ${p}`);
@@ -145,14 +194,7 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'modos'), { recursive: true });
 copyFileSync(exe, join(out, `${brand}.exe`));
 copyFileSync(modlock, join(out, 'modlock.exe'));
-for (const [name, dir] of projectDirs) {
-  cpSync(dir, join(out, 'modos', name), {
-    recursive: true,
-    // Local run logs (server.log) carry paths and peer IDs from this PC: never ship them. The
-    // tests (test/) run in the repository only.
-    filter: (src) => !['node_modules', '.git', 'dist', '.build.lock', 'test'].includes(basename(src)) && !src.endsWith('.log'),
-  });
-}
+copyModes(out);
 
 const leiaMe = `${brand}: cópia de teste do app
 ==============================

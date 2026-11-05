@@ -32,6 +32,16 @@
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.ico"]
   },
   "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQ0RkU4MzY5QkZCRkQ1MTkKUldRWjFiKy9hWVArUktwNjhCUmtDVmF2dk02TjIxNmZIbDNrZjdyT0NZakEyUEF2b3l0K2dwbTAK",
+      "endpoints": [
+        "https://github.com/axiumhq/jukejoint/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      },
+      "requireSignedVersion": true
+    },
     "deep-link": {
       "desktop": {
         "schemes": ["jukejoint"]
