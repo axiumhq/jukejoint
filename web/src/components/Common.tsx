@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { Icon } from './Icon';
 
 /** Primitivos pequenos: chip, etiqueta, ponto ao vivo, lâmpadas de vaga, esqueleto e título de seção. */
@@ -22,6 +23,11 @@ export function Chip({ children, pressed, onClick, count, label, className }: Ch
       {count != null && <span className="c">{count}</span>}
     </button>
   );
+}
+
+/** Dentro de um botão de criar lobby bloqueado: a razão, para leitor de tela (a dica visível é o `title`). */
+export function CreateReason({ blocked }: { blocked: boolean }) {
+  return blocked ? <span className="sr-only"> ({L.createBlocked})</span> : null;
 }
 
 export type TagTone = 'acc' | 'soft' | 'strong' | 'plain' | 'warn' | 'lock' | 'line';
@@ -90,7 +96,7 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/** Estado vazio do design: painel, título em Bodoni, uma linha e uma ação. */
+/** Estado vazio do design: painel, título na serifa de título, uma linha e uma ação. */
 export function EmptyState({ title, children, action, className }: EmptyStateProps) {
   return (
     <div className={className ? `empty ${className}` : 'empty'}>
@@ -113,7 +119,7 @@ interface SectionTitleProps {
   children?: ReactNode;
 }
 
-/** Cabeçalho de seção: título em Bodoni (as duas palavras no mesmo tom, como no design). */
+/** Cabeçalho de seção: título na serifa de título (as duas palavras no mesmo tom, como no design). */
 export function SectionTitle({ id, words, meta, badge, children }: SectionTitleProps) {
   return (
     <div className="sec-h">

@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNod
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Region } from '../data/modes';
 import { useFavorites, useFriends, usePref } from '../hooks';
+import { useServerStatus } from '../hooks/useServerStatus';
 import { useLobbyFilters, type BrowseTab } from '../hooks/useFilters';
 import { t } from '../i18n';
 import { live as L } from '../i18n/live';
 import { filterLobbies, hasFriends, LOW_PING_MS, nearestAlternatives, REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
-import { Chip, EmptyState, Skeleton } from './Common';
+import { Chip, CreateReason, EmptyState, Skeleton } from './Common';
 import { Icon } from './Icon';
 import { CreateCard, LobbyCard, orderLobbies } from './LobbyCard';
 
@@ -54,7 +55,8 @@ const TABS: { id: BrowseTab; label: string }[] = [
 ];
 
 export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; now: number }) {
-  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx, synced } = useSession();
+  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx } = useSession();
+  const { status, retry, createBlocked } = useServerStatus();
   const friends = useFriends();
   const { f, tab, params, update, setTab, clearAll } = useLobbyFilters();
   const { favs, toggle } = useFavorites();
@@ -87,7 +89,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
     fav: pool.filter((l) => favs.has(l.id)).length,
   };
   const env = { ctx: lobbyCtx, signedIn, me: user?.name ?? t.lobbies.you, friends, now };
-  const create = () => openHost(f.mode || undefined);
+  const create = () => !createBlocked && openHost(f.mode || undefined);
   const toggleRegion = (r: Region) => update({ regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r] });
   // A faixa de ping aparece na região marcada; sem marca, na mais perto (menor ping).
   const nearest = pool.length ? pool.reduce((a, b) => (b.ping < a.ping ? b : a)).region : null;
@@ -102,9 +104,25 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
     tabRefs.current[next]?.focus();
   };
 
-  const loading = results.length === 0 && !synced;
+  // Sem conexão (ou sem a primeira lista no prazo) a lista não pode dizer "nenhum lobby": mostra a falha.
+  const loading = results.length === 0 && status === 'loading';
+  const failed = results.length === 0 && status === 'failed';
   let empty: ReactNode = null;
-  if (results.length === 0 && synced) {
+  if (failed) {
+    empty = (
+      <EmptyState
+        className="lb-empty"
+        title={L.serverFail}
+        action={
+          <button type="button" className="btn btn-p" onClick={retry}>
+            {L.retry}
+          </button>
+        }
+      >
+        {L.serverFailBody}
+      </EmptyState>
+    );
+  } else if (results.length === 0 && status === 'ok') {
     if (pool.length === 0) {
       empty = (
         <EmptyState
@@ -112,7 +130,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
           title={t.lobbies.emptyNoneTitle}
           action={
             <div>
-              <button type="button" className="btn btn-p" onClick={() => openHost()}>
+              <button type="button" className="btn btn-p" onClick={() => create()}>
                 {t.lobbies.create}
               </button>
               <button type="button" className="btn btn-g" onClick={() => requestJoin({ kind: 'bots' })}>
@@ -209,9 +227,16 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
           {modeName ?? t.home.play}
         </h2>
         <span className="sp" />
-        <button type="button" className="btn btn-s" onClick={create}>
+        <button
+          type="button"
+          className="btn btn-s"
+          aria-disabled={createBlocked || undefined}
+          title={createBlocked ? L.createBlocked : undefined}
+          onClick={create}
+        >
           <Icon name="plus" />
           {t.lobbies.create}
+          <CreateReason blocked={createBlocked} />
         </button>
       </div>
 

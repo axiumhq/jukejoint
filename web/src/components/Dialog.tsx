@@ -32,6 +32,8 @@ export function Dialog({ open, onClose, title, children, lead, size, className }
     if (open && !el.open) {
       opener.current = document.activeElement as HTMLElement | null;
       el.showModal();
+      // Foco inicial na ação principal (data-autofocus), não no "×".
+      el.querySelector<HTMLElement>('[data-autofocus]')?.focus({ preventScroll: true });
     }
     if (!open && el.open) el.close();
     if (!open && opener.current) {

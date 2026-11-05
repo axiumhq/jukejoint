@@ -87,10 +87,14 @@ export function Search({ open, onOpenChange }: SearchProps) {
         remember();
         onOpenChange(true);
         cancelAnimationFrame(raf.current);
-        raf.current = requestAnimationFrame(() => {
-          input.current?.focus();
-          input.current?.select();
-        });
+        // Foco já, no mesmo evento: o que se digita logo depois do Ctrl K cai no campo.
+        input.current?.focus();
+        input.current?.select();
+        // No celular o campo só aparece depois de abrir o painel: aí o foco vem no quadro seguinte,
+        // sem apagar o que já foi digitado.
+        if (document.activeElement !== input.current) {
+          raf.current = requestAnimationFrame(() => input.current?.focus());
+        }
       }
     };
     document.addEventListener('keydown', onKey);
@@ -154,7 +158,7 @@ export function Search({ open, onOpenChange }: SearchProps) {
     let sub: string;
     let lead;
     if (h.kind === 'lobby') {
-      sub = `${h.mode?.name ?? ''} · ${h.lobby.players}/${h.lobby.slots} · ${t.regions[h.lobby.region]}`;
+      sub = `${h.mode?.name ?? ''} · ${h.lobby.players} de ${h.lobby.slots} · ${t.regions[h.lobby.region]}`;
       lead = (
         <span className="sr-cv">
           <ModeCover slug={h.lobby.modeSlug} />

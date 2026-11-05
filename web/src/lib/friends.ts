@@ -12,6 +12,8 @@ export interface FriendPresence {
   /** Ao vivo: o ID da conta (para chamar). */
   id?: string;
   name: string;
+  /** Ao vivo: a foto da Steam. */
+  avatar?: string;
   /** Lobby em que está; `null` = online, fora de lobby. */
   lobbyId: string | null;
   host: boolean;

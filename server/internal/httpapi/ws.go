@@ -131,7 +131,7 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 	var ref *lobby.UserRef
 	if user != nil {
 		c.uid = user.ID
-		ref = &lobby.UserRef{ID: user.ID, Name: user.Name}
+		ref = &lobby.UserRef{ID: user.ID, Name: user.Name, Avatar: user.Avatar}
 	}
 	s.track(sid, c, true)
 	defer s.track(sid, c, false)

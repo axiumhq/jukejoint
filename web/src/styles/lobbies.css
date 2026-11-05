@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: var(--sp-4);
   min-width: 0;
   box-shadow: inset 0 -1px 0 var(--line);
 }
@@ -17,11 +17,11 @@
 
 .lb-reg {
   flex: none;
-  margin-bottom: 4px;
+  margin-bottom: var(--sp-1);
 }
 
 .lb-reg .c {
-  margin-left: 4px;
+  margin-left: var(--sp-1);
   font-weight: 500;
 }
 
@@ -29,18 +29,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
   min-width: 0;
 }
 
 .fchips {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
   overflow-x: auto;
   scrollbar-width: none;
   min-width: 0;
-  padding: 2px;
-  margin: -2px;
+  padding: var(--sp-1);
+  margin: calc(var(--sp-1) * -1);
 }
 
 .fchips::-webkit-scrollbar {
@@ -70,7 +70,7 @@
 .lgrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 /* O cartão do design: faixa de arte de 112 px à esquerda, conteúdo à direita. */
@@ -89,9 +89,48 @@
   background: color-mix(in srgb, var(--s2), #fff 4%);
 }
 
-/* você está aqui: o fio de latão em volta */
-.lc.is-you {
+/*
+ * O cartão inteiro é um link só: o nome (o único link, com o nome do lobby como nome acessível)
+ * se estica por cima do cartão. A estrela e a ação ficam por cima dele e seguem clicáveis.
+ * Nada interativo mora dentro do link.
+ */
+.lc-n::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.lc-act,
+.fav {
+  position: relative;
+  z-index: 1;
+}
+
+/* o foco do nome desenha o anel no cartão todo, que é a área do link */
+.lc-n:focus-visible {
+  outline: 0;
+}
+
+.lc:has(.lc-n:focus-visible) {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.lc:has(.lc-n:hover) .lc-n {
+  color: var(--acc);
+}
+
+/* você está aqui: o fio de latão em volta, por cima da arte (a faixa cobria o lado esquerdo) */
+.lc.is-you::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
   box-shadow: inset 0 0 0 1px var(--acc);
+  pointer-events: none;
 }
 
 .lc-art {
@@ -115,41 +154,59 @@
   top: 50%;
   width: 68px;
   height: 68px;
-  margin-top: -34px;
+  translate: 0 -50%;
 }
 
 .lc-b {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-2);
   min-width: 0;
-  padding: 12px 14px 12px 8px;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-2);
 }
 
 .lc-meta {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
   min-width: 0;
+  /* a mesma altura com ou sem tag: nome, lâmpadas e botão alinham entre os cartões da fileira */
+  min-height: 20px;
 }
 
+/* "LOBBY 09 · BR/SA · 22 ms" nunca corta: quem encurta é a tag ao lado */
 .lc-id {
-  min-width: 0;
+  flex: none;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
+/* a unidade fica em minúscula ("ms"), fora da caixa alta do rótulo */
 .lc-id .num {
   letter-spacing: inherit;
+  text-transform: none;
+}
+
+.lc-meta .tag {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 20px;
+}
+
+.lc-meta .tag > .dot,
+.lc-meta .tag > .ico {
+  display: inline-block;
+  margin-right: var(--sp-1);
+  vertical-align: middle;
 }
 
 .lc-t {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: var(--sp-2);
   min-height: 24px;
   min-width: 0;
 }
@@ -158,7 +215,7 @@
 .lc-n {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   min-width: 0;
   min-height: 24px;
   font-size: var(--fs-lg);
@@ -167,10 +224,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.lc-n:hover {
-  color: var(--acc);
 }
 
 .lc-n .ico {
@@ -185,7 +238,7 @@
   flex: none;
   width: 28px;
   height: 28px;
-  margin: -4px -6px -4px 0;
+  margin: calc(var(--sp-1) * -1) calc(var(--sp-2) * -1) calc(var(--sp-1) * -1) 0;
   border-radius: var(--r-sm);
   display: grid;
   place-items: center;
@@ -238,9 +291,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
   height: 24px;
-  margin-top: 2px;
+  margin-top: 0;
   min-width: 0;
 }
 
@@ -251,7 +304,7 @@
 }
 
 .lc-row .stack {
-  padding-right: 2px;
+  padding-right: var(--sp-1);
 }
 
 /* a pilha leva o fio da cor do painel, como no kit */
@@ -264,22 +317,31 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
   margin-top: auto;
   min-width: 0;
 }
 
 .lc-cnt {
+  min-width: 0;
   font-size: var(--fs-xs);
   line-height: 16px;
   color: var(--tx-2);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lc-act {
   display: flex;
-  gap: 6px;
+  gap: var(--sp-2);
   flex: none;
+}
+
+/* "Sair" (ou o X de fechar) e "Abrir a sala": o par do lobby em que você está */
+.lc-act .btn-pair {
+  display: flex;
+  gap: var(--sp-2);
 }
 
 .lc-act .btn-sm {
@@ -300,7 +362,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--sp-1);
   min-height: 176px;
   color: var(--tx);
   text-align: center;
@@ -330,7 +392,7 @@
 
 .lgrid.list {
   grid-template-columns: 1fr;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .lgrid.list .lc {
@@ -347,7 +409,6 @@
   left: 14px;
   width: 32px;
   height: 32px;
-  margin-top: -16px;
 }
 
 .lgrid.list .lc-b {
@@ -355,8 +416,8 @@
   grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) 176px 160px auto;
   grid-template-areas: 'name tag ping meter act';
   align-items: center;
-  gap: 12px;
-  padding: 6px 14px 6px 10px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
 }
 
 .lgrid.list .lc-meta {
@@ -409,7 +470,7 @@
 .lgrid.list .lc-create {
   min-height: 56px;
   flex-direction: row;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .lgrid.list .lc-create b {
@@ -419,10 +480,10 @@
 .more-row {
   display: flex;
   justify-content: center;
-  margin-top: 4px;
+  margin-top: var(--sp-1);
 }
 
-/* vazio: o EmptyState da base (título em Bodoni, uma linha, a ação) ocupando a grade toda */
+/* vazio: o EmptyState da base (título na serifa de título, uma linha, a ação) ocupando a grade toda */
 .lb-empty {
   grid-column: 1 / -1;
 }
@@ -431,14 +492,14 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .lb-sug {
   display: inline-flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 12px;
+  gap: var(--sp-1) var(--sp-3);
 }
 
 /* ───────── Pontos de quebra ───────── */
@@ -451,7 +512,7 @@
   }
 
   .lc-act .btn-sm {
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
     font-size: var(--fs-xs);
   }
 }
@@ -472,18 +533,27 @@
 }
 
 /* toque: abas e a troca de visão chegam a 44 px; a estrela ganha área de 44 px */
-@media (pointer: coarse) {
-  .lb-tabs.utabs > button {
-    height: 44px;
-  }
-
+@media (max-width: 760px), (pointer: coarse) {
+  .lb-tabs.utabs > button,
   .lb-view > button,
   .lb-reg > button {
-    height: 38px;
+    height: var(--hit, 44px);
+  }
+
+  .fchips .chip,
+  .lb-reg > button {
+    min-width: var(--hit, 44px);
+  }
+
+  /* a estrela ganha área de 44 px (o cartão já é o link: lobbies.css, acima) */
+  .fav {
+    width: var(--hit, 44px);
+    height: var(--hit, 44px);
+    margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) calc(var(--sp-2) * -1) 0;
   }
 
   .fav::after {
-    inset: -8px;
+    inset: 0;
   }
 }
 
@@ -503,8 +573,8 @@
   }
 
   .fchips {
-    margin: 0 -16px;
-    padding: 2px 16px;
+    margin: 0 calc(var(--sp-4) * -1);
+    padding: var(--sp-1) var(--sp-4);
     width: calc(100% + 32px);
     scroll-snap-type: x mandatory;
     scroll-padding-left: 16px;
@@ -516,7 +586,7 @@
 
   .lgrid {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--sp-2);
   }
 
   /* no celular o cartão encolhe para a linha do design (.lcm): medalhão de 56, nome e uma ação */
@@ -539,15 +609,14 @@
     left: 8px;
     width: 56px;
     height: 56px;
-    margin-top: -28px;
   }
 
   .lc-b,
   .lgrid.list .lc-b {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    padding: 10px 12px 10px 8px;
+    gap: var(--sp-1);
+    padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-2);
   }
 
   .lgrid.list .lc-meta {
@@ -555,9 +624,13 @@
   }
 
   .lc-m,
-  .lc-row,
-  .fav {
+  .lc-row {
     display: none;
+  }
+
+  /* a estrela também no celular (a aba Favoritos depende dela) */
+  .lgrid.list .fav {
+    display: grid;
   }
 
   .lgrid.list .lc-cnt {

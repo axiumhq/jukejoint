@@ -73,7 +73,7 @@ export function FriendRow({ friend, children }: { friend: FriendPresence; childr
   const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
   return (
     <li className="fr">
-      <Presence name={friend.name} size={32} status={lobby ? 'lobby' : 'menu'} />
+      <Presence name={friend.name} size={32} status={lobby ? 'lobby' : 'menu'} src={friend.avatar} />
       <div className="fr-t">
         <b>{friend.name}</b>
         <small>{where(friend, lobby, hereId)}</small>
@@ -108,46 +108,22 @@ function SignInPrompt() {
   );
 }
 
-function Party() {
-  const { user, lobbies, hereId, pushToast } = useSession();
+/** Só na folha do celular: o acesso aos ajustes (na barra lateral do desktop o tema tem o seu lugar). */
+function SheetSettings() {
   const { closeSheet } = useRail();
   const { openMenu } = useTheme();
-  const here = hereId ? lobbies.find((l) => l.id === hereId) : undefined;
-  const hint = () => pushToast(t.social.partyHint);
   return (
-    <section className="rail-sec rail-party" aria-labelledby="rail-party">
-      <div className="rail-h">
-        <h2 className="cap" id="rail-party">
-          {t.social.party} · <b>1 de 5</b>
-        </h2>
-        <button
-          type="button"
-          className="link"
-          onClick={() => {
-            closeSheet();
-            openMenu();
-          }}
-        >
-          {t.social.settings}
-        </button>
-      </div>
-      <div className="card party">
-        <Presence name={user!.name} size={40} status={here ? 'lobby' : 'menu'} />
-        <div>
-          <b>{user!.name}</b>
-          <small>{here ? t.social.inRoom(here.name) : t.social.alone}</small>
-        </div>
-      </div>
-      <div className="party-slots">
-        {[0, 1, 2, 3].map((i) => (
-          <button key={i} type="button" className="slot-e" aria-label={t.social.callToParty} onClick={hint}>
-            <Icon name="plus" />
-          </button>
-        ))}
-        <button type="button" className="btn btn-g btn-sm" onClick={hint}>
-          {t.social.call}
-        </button>
-      </div>
+    <section className="rail-sec" aria-label={t.social.settings}>
+      <button
+        type="button"
+        className="link"
+        onClick={() => {
+          closeSheet();
+          openMenu();
+        }}
+      >
+        {t.social.settings}
+      </button>
     </section>
   );
 }
@@ -224,7 +200,7 @@ function ListPanel({ onClose, called, onCall }: { onClose: () => void; called: R
                 const lobby = f.lobbyId ? lobbies.find((l) => l.id === f.lobbyId) : undefined;
                 return (
                   <li key={f.name} className="fr">
-                    <Presence name={f.name} size={36} status={lobby ? 'lobby' : 'menu'} />
+                    <Presence name={f.name} size={36} status={lobby ? 'lobby' : 'menu'} src={f.avatar} />
                     <div className="fr-t">
                       <b>{f.name}</b>
                       <small>{where(f, lobby, hereId)}</small>
@@ -261,7 +237,7 @@ function Online() {
         <h2 className="cap" id="rail-online">
           {t.social.online} · <b>{friends.length}</b>
         </h2>
-        <span className="lbl">{t.social.inLobbies(inLobbies)}</span>
+        {friends.length > 0 && <span className="lbl">{t.social.inLobbies(inLobbies)}</span>}
       </div>
       {friends.length === 0 ? (
         <p className="rail-empty">{t.friends.none}</p>
@@ -278,10 +254,12 @@ function Online() {
           ))}
         </ul>
       )}
-      <button type="button" className="btn btn-g btn-sm list-open" aria-expanded={panel} onClick={() => setPanel((v) => !v)}>
-        {panel ? t.friends.closeList : t.friends.viewAll}
-      </button>
-      {panel && <ListPanel onClose={() => setPanel(false)} called={called} onCall={onCall} />}
+      {friends.length > 0 && (
+        <button type="button" className="btn btn-g btn-sm list-open" aria-expanded={panel} onClick={() => setPanel((v) => !v)}>
+          {panel ? t.friends.closeList : t.friends.viewAll}
+        </button>
+      )}
+      {panel && friends.length > 0 && <ListPanel onClose={() => setPanel(false)} called={called} onCall={onCall} />}
       {live ? (
         <p className="rail-empty">{L.friendsNote}</p>
       ) : (
@@ -309,7 +287,10 @@ function Online() {
   );
 }
 
-export function SocialRail() {
+/**
+ * RF-63: o "Seu grupo" do protótipo era falso e fica fora do redesign (nem no DOM, nem no celular).
+ */
+export function SocialRail({ sheet = false }: { sheet?: boolean }) {
   const { user } = useSession();
   const { closeSheet } = useRail();
   const { openMenu } = useTheme();
@@ -337,7 +318,7 @@ export function SocialRail() {
   }
   return (
     <>
-      <Party />
+      {sheet && <SheetSettings />}
       <Invite />
       <Online />
     </>

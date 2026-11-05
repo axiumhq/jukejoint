@@ -2,12 +2,12 @@
 // (devDependencies: só servem de matéria-prima, o site não importa nada deles).
 //
 // Sistema de tipo do redesign (Design-System do Claude Design):
-//   Bodoni Moda     títulos (.display, h1, h2)       peso 400 fixo, eixo opsz mantido (6 a 96)
+//   Young Serif     títulos (.display, h1, h2)       400 (estático, só existe esse peso)
 //   Hanken Grotesk  interface                         pesos 400 a 600 (variável, faixa cortada)
 //   Barlow Condensed números, ping, rótulos de dado  500 e 600 (estáticos)
 //   JetBrains Mono  código e hash do instalador      500 (estático)
-// Os arquivos variáveis inteiros carregam eixos que o CSS não usa; fixar ou cortar os eixos
-// (instanciação do HarfBuzz, via subset-font) deixa cada um com poucas dezenas de kB.
+// O Hanken variável inteiro carrega carregam eixos que o CSS não usa; fixar ou cortar os eixos
+// (instanciação do HarfBuzz, via subset-font) deixa o arquivo com poucas dezenas de kB.
 //
 // Uso: npm run fonts  (rodar de novo só se mudar a versão de um @fontsource ou uma faixa abaixo).
 // Não acessa a rede: lê de node_modules e escreve em src/fonts/.
@@ -22,11 +22,6 @@ const out = (f) => new URL(`src/fonts/${f}`, root);
 /** Variáveis: eixo fixo (número) ou faixa ({ min, max, default }). */
 const INSTANCES = [
   {
-    from: '@fontsource-variable/bodoni-moda/files/bodoni-moda-latin-opsz-normal.woff2',
-    file: 'bodoni-moda-400.woff2',
-    axes: { wght: 400 },
-  },
-  {
     from: '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2',
     file: 'hanken-grotesk.woff2',
     axes: { wght: { min: 400, max: 600, default: 400 } },
@@ -35,6 +30,7 @@ const INSTANCES = [
 
 /** Estáticos: cópia direta do subconjunto latino. */
 const COPIES = [
+  ['@fontsource/young-serif/files/young-serif-latin-400-normal.woff2', 'young-serif-400.woff2'],
   ['@fontsource/barlow-condensed/files/barlow-condensed-latin-500-normal.woff2', 'barlow-condensed-500.woff2'],
   ['@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2', 'barlow-condensed-600.woff2'],
   ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2', 'jetbrains-mono-500.woff2'],

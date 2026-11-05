@@ -1,7 +1,7 @@
 /*
  * Diálogos (components/Dialog.tsx e SessionDialogs.tsx): entrar / abrir o app, trocar de lobby,
  * bater na porta e criar lobby. A base é a do design: superfície da barra lateral (--s1), cantos
- * de 16, sombra --sh-dlg, título em Bodoni 26/32. Um acento: a escolha marcada e a ação primária.
+ * de 16, sombra --sh-dlg, título na serifa de título 26/32. Um acento: a escolha marcada e a ação primária.
  */
 
 .dlg {
@@ -50,14 +50,14 @@
 
 .dlg-in {
   display: grid;
-  gap: 14px;
-  padding: 20px;
+  gap: var(--sp-4);
+  padding: var(--sp-5);
 }
 
 .dlg-h {
   display: flex;
   align-items: flex-start;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 
 .dlg-ht {
@@ -65,7 +65,7 @@
   min-width: 0;
 }
 
-/* título em Bodoni 26/32 (o .h3d do design) */
+/* título na serifa de título 26/32 (o .h3d do design) */
 .dlg-h h2 {
   font-size: var(--fs-h3);
   line-height: 32px;
@@ -73,7 +73,7 @@
 }
 
 .dlg-lead {
-  margin-top: 6px;
+  margin-top: var(--sp-2);
   max-width: 56ch;
   color: var(--tx-2);
   font-size: var(--fs-md);
@@ -82,7 +82,7 @@
 }
 
 .dlg-x {
-  margin: -4px -6px 0 0;
+  margin: calc(var(--sp-1) * -1) calc(var(--sp-2) * -1) 0 0;
 }
 
 /* celular: o diálogo sobe de baixo, como folha */
@@ -96,13 +96,13 @@
   }
 
   .dlg-in {
-    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    padding: var(--sp-4) var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom));
   }
 }
 
 .dlg-stack {
   display: grid;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 /* ───────── Resumo do lobby ───────── */
@@ -111,8 +111,8 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 10px 14px 10px 10px;
+  gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -130,14 +130,14 @@
 
 .dlg-lt {
   display: grid;
-  gap: 3px;
+  gap: var(--sp-1);
   flex: 1;
   min-width: 0;
 }
 
 .dlg-lt b {
   font-size: 0.9375rem;
-  font-weight: 650;
+  font-weight: 600;
   letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -148,7 +148,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 2px 9px;
+  gap: var(--sp-1) var(--sp-2);
   font-size: 0.75rem;
   color: var(--tx-2);
 }
@@ -164,9 +164,9 @@
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   font-size: 0.75rem;
-  font-weight: 550;
+  font-weight: 600;
   color: var(--tx-3);
 }
 
@@ -179,12 +179,12 @@
 .dlg-note {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  padding: 9px 12px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   background: hsl(from var(--s1) h s l / 0.6);
   color: var(--tx);
-  font-size: 0.78125rem;
+  font-size: var(--fs-sm);
   line-height: 1.45;
 }
 
@@ -208,8 +208,8 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 8px;
-  padding-top: 4px;
+  gap: var(--sp-2);
+  padding-top: var(--sp-1);
 }
 
 .dlg-act.is-start {
@@ -218,26 +218,26 @@
 
 /* dentro do app: o que a checagem do motor encontrou, em duas camadas (frase e detalhe técnico) */
 .dlg-probs {
-  margin-bottom: 4px;
+  margin-bottom: var(--sp-1);
   box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.28) inset;
 }
 
 .dlg-probs ul {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .dlg-probs li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  font-size: 0.78125rem;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
   line-height: 1.45;
 }
 
 .dlg-probs li > .ico {
   flex: none;
-  margin-top: 2px;
+  margin-top: var(--sp-1);
   color: var(--warn);
 }
 
@@ -247,7 +247,7 @@
 
 .dlg-prob {
   display: grid;
-  gap: 4px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
@@ -255,7 +255,7 @@
   width: fit-content;
   min-height: 24px;
   color: var(--tx-3);
-  font-size: 0.71875rem;
+  font-size: var(--fs-xs);
   cursor: pointer;
 }
 
@@ -265,8 +265,8 @@
 
 .dlg-tech code {
   display: block;
-  margin-top: 4px;
-  padding: 7px 9px;
+  margin-top: var(--sp-1);
+  padding: var(--sp-2) var(--sp-2);
   border-radius: var(--r-md);
   background: var(--s2);
   color: var(--tx-2);
@@ -280,14 +280,14 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   align-items: start;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .dlg-opt {
   display: grid;
   align-content: start;
-  gap: 12px;
-  padding: 14px;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -305,7 +305,7 @@
 /* celular: o link para abrir no PC, sempre legível e selecionável */
 .dlg-link {
   display: block;
-  padding: 9px 12px;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   background: var(--bg);
   box-shadow: 0 0 0 1px var(--line-2) inset;
@@ -322,7 +322,7 @@
 
 .dlg-trust {
   display: grid;
-  gap: 7px;
+  gap: var(--sp-2);
   font-size: 0.75rem;
   color: var(--tx-2);
 }
@@ -330,7 +330,7 @@
 .dlg-trust li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .dlg-trust .ico {
@@ -342,8 +342,8 @@
 .dlg-signin {
   display: grid;
   justify-items: start;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -364,12 +364,12 @@
 
 .dlg-form {
   display: grid;
-  gap: 18px;
+  gap: var(--sp-4);
 }
 
 .dlg-field {
   display: grid;
-  gap: 8px;
+  gap: var(--sp-2);
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -378,7 +378,7 @@
 
 .dlg-field > legend {
   padding: 0;
-  margin-bottom: 8px;
+  margin-bottom: var(--sp-2);
 }
 
 /* rótulos do formulário: 13/18 600, sem caixa alta (como no design) */
@@ -396,7 +396,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .dlg-count {
@@ -443,7 +443,7 @@
 }
 
 .dlg-hint {
-  margin-top: -8px;
+  margin-top: calc(var(--sp-2) * -1);
   color: var(--tx-3);
   font-size: 0.75rem;
 }
@@ -456,7 +456,7 @@
 .dlg-select select {
   width: 100%;
   height: 44px;
-  padding: 0 12px;
+  padding: 0 var(--sp-3);
   border: 0;
   border-radius: var(--r-md);
   background: var(--s1);
@@ -489,7 +489,7 @@
 
 .dlg-select select {
   appearance: none;
-  padding-right: 34px;
+  padding-right: var(--sp-8);
   font-family: var(--f-mono);
   font-variant-numeric: tabular-nums;
   cursor: pointer;
@@ -512,14 +512,14 @@
 .dlg-row {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 14px;
+  gap: var(--sp-4);
 }
 
 /* região: controle segmentado */
 .dlg-seg {
   display: flex;
   height: 44px;
-  padding: 3px;
+  padding: var(--sp-1);
   border-radius: var(--r-md);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line-2) inset;
@@ -544,8 +544,8 @@
   display: grid;
   place-items: center;
   border-radius: 5px;
-  font-size: 0.78125rem;
-  font-weight: 550;
+  font-size: var(--fs-sm);
+  font-weight: 600;
   color: var(--tx-2);
   transition:
     background var(--t-fast),
@@ -571,7 +571,7 @@
 .dlg-picks {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .dlg-picks.is-modes {
@@ -582,9 +582,9 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-width: 0;
-  padding: 8px;
+  padding: var(--sp-2);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -643,12 +643,12 @@
 
 .dlg-pick-t {
   display: grid;
-  gap: 2px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
 .dlg-pick-t b {
-  font-size: 0.78125rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   line-height: 1.25;
   text-wrap: balance;
@@ -666,20 +666,20 @@
 
 .dlg-pick.is-row {
   align-items: flex-start;
-  padding: 10px;
+  padding: var(--sp-3);
 }
 
 /* interruptores do criar lobby */
 .dlg-sws {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 28px;
+  gap: var(--sp-1) var(--sp-6);
 }
 
 .dlg-sw {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-height: 44px;
   padding: 0;
   border: 0;
@@ -776,7 +776,7 @@
     justify-self: center;
     width: 36px;
     height: 4px;
-    margin-bottom: -4px;
+    margin-bottom: calc(var(--sp-1) * -1);
     border-radius: 2px;
     background: var(--s4);
   }
@@ -802,8 +802,8 @@
   .dlg-host .dlg-form > .dlg-act {
     position: sticky;
     bottom: 0;
-    margin: 0 -16px;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    margin: 0 calc(var(--sp-4) * -1);
+    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom));
     background: var(--s1);
     box-shadow: 0 1px 0 var(--line) inset;
     flex-wrap: nowrap;
@@ -819,6 +819,20 @@
 
   .dlg-sws {
     flex-direction: column;
+  }
+}
+
+/* toque: o resumo técnico vira alvo de 44 px; campos com 16 px não dão zoom no iOS */
+@media (max-width: 760px), (pointer: coarse) {
+  .dlg-tech summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--hit, 44px);
+  }
+
+  .dlg-input,
+  .dlg-select select {
+    font-size: 1rem;
   }
 }
 

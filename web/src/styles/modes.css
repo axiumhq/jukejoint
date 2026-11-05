@@ -7,14 +7,14 @@
 /* ───────── /modos ───────── */
 
 .mi {
-  padding-top: 8px;
+  padding-top: var(--sp-2);
 }
 
 .mi-h {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 32px;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-8);
 }
 
 .mi-ht {
@@ -22,12 +22,12 @@
   align-items: baseline;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 4px 16px;
+  gap: var(--sp-1) var(--sp-4);
 }
 
 .mi-ht h1 {
-  font-size: 2.5rem;
-  line-height: 48px;
+  font-size: var(--fs-h1);
+  line-height: 46px;
 }
 
 .mi-meta {
@@ -46,7 +46,7 @@
 .mi-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .mi-card {
@@ -76,14 +76,14 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
-  padding: 14px;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
 }
 
 .mi-t {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .mi-n {
@@ -109,7 +109,7 @@
 .mi-d {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: var(--sp-4);
   margin: 0;
 }
 
@@ -133,7 +133,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--sp-2);
   margin-top: auto;
 }
 
@@ -166,7 +166,7 @@
 .md-hero {
   position: relative;
   height: 260px;
-  margin-top: 8px;
+  margin-top: var(--sp-2);
   border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--k0);
@@ -177,8 +177,9 @@
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  /* o véu escuro atrás do texto: título, frase e chips leem a 4,5:1 mesmo sobre o anel aceso da cena */
   background:
-    linear-gradient(90deg, hsl(from var(--k0) h s l / 0.88) 0, hsl(from var(--k0) h s l / 0.5) 38%, transparent 66%),
+    linear-gradient(90deg, hsl(from var(--k0) h s l / 0.94) 0, hsl(from var(--k0) h s l / 0.88) 40%, hsl(from var(--k0) h s l / 0.5) 62%, transparent 82%),
     linear-gradient(0deg, hsl(from var(--k0) h s l / 0.7), transparent 55%);
 }
 
@@ -189,14 +190,14 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 20px 32px;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-8);
 }
 
 .md-back {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   font-size: var(--fs-sm);
   line-height: 18px;
   color: var(--tx-2);
@@ -208,13 +209,13 @@
 
 .md-hb h1 {
   margin: 0;
-  font-size: 3.25rem;
-  line-height: 58px;
+  font-size: var(--fs-hero);
+  line-height: 1.08;
   text-wrap: balance;
 }
 
 .md-tag {
-  max-width: 560px;
+  max-width: 44ch;
   margin: 0;
   font-size: 1rem;
   line-height: 22px;
@@ -224,7 +225,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   margin: auto 0 0;
 }
 
@@ -232,16 +233,17 @@
   display: inline-flex;
   align-items: center;
   height: 28px;
-  padding: 0 10px;
+  padding: 0 var(--sp-3);
   border-radius: var(--r-sm);
-  background: rgb(0 0 0 / 0.35);
+  /* chip sobre a arte: fundo escuro o bastante para 4,5:1 mesmo sobre o anel aceso */
+  background: hsl(from var(--k0) h s l / 0.82);
   box-shadow: inset 0 0 0 1px var(--line-2);
   font-size: var(--fs-sm);
   color: var(--tx);
 }
 
 .md-by {
-  margin-left: 6px;
+  margin-left: var(--sp-2);
   font-size: var(--fs-sm);
   color: var(--tx-2);
 }
@@ -251,10 +253,10 @@
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px 24px;
+  gap: var(--sp-3) var(--sp-6);
   min-height: 72px;
-  margin-top: 32px;
-  padding: 10px 12px 10px 20px;
+  margin-top: var(--sp-8);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-5);
   border-radius: var(--r-xl);
   background: var(--s2);
 }
@@ -262,7 +264,7 @@
 .md-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 32px;
+  gap: var(--sp-2) var(--sp-8);
   margin: 0;
 }
 
@@ -289,7 +291,7 @@
 
 .md-act {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .t-short {
@@ -297,7 +299,7 @@
 }
 
 .md-hint {
-  margin: 8px 20px 0;
+  margin: var(--sp-2) var(--sp-5) 0;
   font-size: 0.75rem;
   line-height: 16px;
   color: var(--tx-3);
@@ -305,27 +307,27 @@
 }
 
 .md-sec {
-  margin-top: 32px;
+  margin-top: var(--sp-8);
 }
 
 .md-sec .sec-h {
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-4);
 }
 
 .md-sec .sec-h h2 {
-  font-size: 1.5rem;
-  line-height: 32px;
+  font-size: var(--fs-h2);
+  line-height: 36px;
 }
 
 .md-cols {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 24px;
+  gap: 0 var(--sp-6);
 }
 
 .md-prose {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
   font-size: var(--fs-sm);
   line-height: 18px;
   color: var(--tx-2);
@@ -344,7 +346,7 @@
 .md-rules {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -353,14 +355,14 @@
 .md-rules li {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--sp-3);
   font-size: var(--fs-sm);
   line-height: 18px;
   color: var(--tx-2);
 }
 
 .md-rules li > span:last-child {
-  padding-top: 3px;
+  padding-top: var(--sp-1);
 }
 
 .md-n {
@@ -383,14 +385,14 @@
 }
 
 .md-empty {
-  margin-top: 12px;
+  margin-top: var(--sp-3);
   color: var(--tx-3);
 }
 
 .md-others {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -399,9 +401,9 @@
 .md-oc {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-width: 0;
-  padding: 8px 10px;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-xl);
   background: var(--s2);
   color: var(--tx);
@@ -442,7 +444,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 10px;
+  gap: var(--sp-3);
   padding: 0;
   border: 0;
   font-size: var(--fs-sm);
@@ -468,7 +470,7 @@
 .rail .mr-regions {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .rail .mr-rank {
@@ -477,7 +479,7 @@
 
 .rail .mr-rank th,
 .rail .mr-rank td {
-  padding: 6px 0;
+  padding: var(--sp-2) 0;
   border: 0;
   line-height: 20px;
 }
@@ -526,8 +528,8 @@
   display: grid;
   place-items: center;
   min-height: max(560px, calc(100dvh - 160px));
-  margin-top: 8px;
-  padding: 24px 0;
+  margin-top: var(--sp-2);
+  padding: var(--sp-6) 0;
   border-radius: var(--r-xl);
   overflow: hidden;
   isolation: isolate;
@@ -569,23 +571,23 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
   min-height: 420px;
-  padding: 24px;
+  padding: var(--sp-6);
 }
 
 .qp-page .qp-h {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
   margin: 0;
 }
 
 .qp-page .qp-h h1 {
   margin: 0;
-  font-size: 2.25rem;
-  line-height: 44px;
+  font-size: var(--fs-h1);
+  line-height: 46px;
 }
 
 .qp-sub {
@@ -598,13 +600,13 @@
   --h: 44px;
   width: 44px;
   padding: 0;
-  margin: -8px -10px 0 0;
+  margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) 0 0;
 }
 
 .qp-scan {
   display: flex;
   justify-content: space-between;
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .qp-scan i {
@@ -649,7 +651,7 @@
 .qp-page .qp-steps {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -659,7 +661,7 @@
   display: grid;
   grid-template-columns: 20px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-height: 32px;
   padding: 0;
   background: none;
@@ -696,7 +698,7 @@
 .qp-res {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .qp-res h2 {
@@ -708,9 +710,9 @@
 .qp-page .qp-found {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   margin: 0;
-  padding: 12px;
+  padding: var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--s3);
   box-shadow: none;
@@ -764,7 +766,7 @@
 .qp-page .qp-why {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--sp-2);
   margin: 0;
 }
 
@@ -782,8 +784,8 @@
   display: flex;
   flex-direction: column-reverse;
   align-items: stretch;
-  gap: 12px;
-  margin-top: 4px;
+  gap: var(--sp-3);
+  margin-top: var(--sp-1);
   padding: 0;
   border: 0;
 }
@@ -794,6 +796,14 @@
 
 .qp-page .qp-act .btn {
   justify-content: center;
+}
+
+/* toque: voltar e os cartões de "Outros modos" chegam a 44 px (--hit) */
+@media (max-width: 760px), (pointer: coarse) {
+  .md-back,
+  .md-oc {
+    min-height: var(--hit, 44px);
+  }
 }
 
 /* ───────── Telas estreitas ───────── */
@@ -823,16 +833,16 @@
   }
 
   .md-hb {
-    padding: 16px;
+    padding: var(--sp-4);
   }
 
   .md-hb h1 {
-    font-size: 2.5rem;
+    font-size: var(--fs-h1);
     line-height: 46px;
   }
 
   .md-bar {
-    padding: 12px;
+    padding: var(--sp-3);
   }
 
   .md-facts {
@@ -859,7 +869,7 @@
   }
 
   .md-hint {
-    margin-inline: 4px;
+    margin-inline: var(--sp-1);
     text-align: left;
   }
 
@@ -870,9 +880,9 @@
 
   .md-others {
     display: flex;
-    gap: 8px;
-    margin: 0 -16px;
-    padding: 0 16px;
+    gap: var(--sp-2);
+    margin: 0 calc(var(--sp-4) * -1);
+    padding: 0 var(--sp-4);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-padding-left: 16px;
@@ -909,7 +919,7 @@
   }
 
   .md-facts {
-    gap: 8px 24px;
+    gap: var(--sp-2) var(--sp-6);
   }
 }
 
@@ -935,10 +945,10 @@
   .md-sheet {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--sp-3);
     width: 100%;
-    margin-top: 12px;
-    padding: 12px 14px;
+    margin-top: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
     border: 0;
     border-radius: var(--r-lg);
     background: var(--s2);
@@ -987,7 +997,7 @@
 }
 
 .qp-page .qp-none p {
-  margin: 6px 0 0;
+  margin: var(--sp-2) 0 0;
   font-size: var(--fs-sm);
   color: var(--tx-2);
 }

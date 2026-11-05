@@ -15,6 +15,8 @@ import type { Seat } from '../lib/room';
 export interface MockUser {
   name: string;
   friendsOnline: number;
+  /** Ao vivo: a foto da Steam (https). */
+  avatar?: string;
   /** Ao vivo: o ID da conta (SteamID64 ou `dev:nome`). */
   id?: string;
   /** Ao vivo: conta de teste do login de desenvolvimento. */
@@ -56,6 +58,8 @@ export interface SessionValue {
   /** `true` com a API real. */
   live: boolean;
   connection: ConnectionState;
+  /** Ao vivo: tenta conectar de novo agora ("Tentar de novo"). Simulado: não faz nada. */
+  reconnect: () => void;
   /** Já chegou a lista de lobbies (simulado: sempre). Antes disso, lista vazia não quer dizer "0 lobbies". */
   synced: boolean;
   /** O servidor aceita o login de teste (DEV_LOGIN=1, só de localhost). */

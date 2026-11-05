@@ -1,0 +1,12 @@
+/* Estados de falha de conexão (sala, lista): botões lado a lado sem depender dos outros arquivos. */
+.room-gone-act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3, 12px);
+  justify-content: center;
+  margin-top: var(--sp-4, 16px);
+}
+
+.room-gone .room-gone-act .btn {
+  margin-top: 0;
+}

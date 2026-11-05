@@ -16,22 +16,23 @@
  * Um sistema de acento: --acc para agir e marcar o item ativo, --live só presença.
  */
 
-/* Carvão neutro (padrão): carvão quase neutro, marfim no texto, latão na ação. */
+/* Carvão quente (padrão): carvão de matiz ~55°, marfim no texto, latão na ação. */
 :root,
 [data-theme='carvao'] {
   color-scheme: dark;
-  --bg: #131312;
-  --s1: #181716;
-  --s2: #1c1b1a;
-  --s3: #262523;
-  --s4: #2c2a27;
+  --bg: #151210;
+  --s1: #1c1815;
+  --s2: #231e1b;
+  --s3: #2d2824;
+  --s4: #39312c;
+  --s1-2: var(--s2); /* fundo de cartão dentro da barra lateral (só o Vinho muda) */
   --tx: #ece6db;
   --tx-2: #bdb7ad;
-  --tx-3: #9b958c;
+  --tx-3: #a39d94;
   --acc: #c8a46a;
   --acc-hi: #d8b173;
   --acc-ink: #17130c;
-  --live: #8fb48a;
+  --live: #87b593;
   --warn: #e59583;
   --sky-1: #0d0d0e;
   --sky-2: #4a3448;
@@ -41,19 +42,20 @@
   --med-1: #4a2c49;
   --med-2: #151114;
   /* amostra do seletor de tema */
-  --swatch: #2a2826;
+  --swatch: #2d2824;
 }
 
 /* Azul meia-noite: azul-noite frio com latão claro. */
 [data-theme='noite'] {
   --bg: #10141b;
   --s1: #141923;
-  --s2: #171d27;
+  --s2: #1b212b;
+  --s1-2: var(--s2);
   --s3: #212937;
   --s4: #2a3446;
   --tx: #e9e7e1;
-  --tx-2: #b8bec8;
-  --tx-3: #939caa;
+  --tx-2: #b9bec4;
+  --tx-3: #959ca3;
   --acc: #d3b47f;
   --acc-hi: #e4c289;
   --acc-ink: #141821;
@@ -73,9 +75,10 @@
 [data-theme='ameixa'] {
   --bg: #151217;
   --s1: #1b161e;
-  --s2: #1f1a22;
-  --s3: #2a242e;
-  --s4: #372d3c;
+  --s2: #231d26;
+  --s3: #2e2731;
+  --s4: #3a303f;
+  --s1-2: var(--s2);
   --tx: #ede4dd;
   --tx-2: #c3b9bf;
   --tx-3: #a59ba4;
@@ -96,11 +99,12 @@
 
 /* Vinho e latão: a barra lateral na cor de campo da marca (vinho) e o selecionado em ameixa. */
 [data-theme='vinho'] {
-  --bg: #151110;
+  --bg: #161013;
   --s1: #2b1828;
-  --s2: #1f1918;
-  --s3: #2a2220;
+  --s2: #221a1d;
+  --s3: #2d2328;
   --s4: #4a2c49;
+  --s1-2: #392335; /* cartão dentro da barra lateral vinho: um passo acima dela */
   --tx: #e9dfcf;
   --tx-2: #cac3b9;
   --tx-3: #aea79e;
@@ -128,11 +132,11 @@
   --sel: var(--s4);
   --er: var(--warn);
   --acc-tx: var(--acc); /* o latão como texto: passa de 7:1 sobre o fundo nos quatro temas */
-  --acc-soft: rgb(from var(--acc) r g b / 0.13);
+  --acc-soft: color-mix(in oklch, var(--acc) 14%, var(--s2));
   --acc-line: rgb(from var(--acc) r g b / 0.42);
   /* fios: marfim translúcido, iguais nos quatro temas */
-  --line: rgb(236 230 219 / 0.09);
-  --line-2: rgb(236 230 219 / 0.2);
+  --line: rgb(236 230 219 / 0.12);
+  --line-2: rgb(236 230 219 / 0.38); /* limite de componente: 3:1 (WCAG 1.4.11) */
   /* sem brilho de fundo no redesign: o fundo é chapado */
   --bg-tint: transparent;
   --bg-tint-2: transparent;
@@ -160,7 +164,7 @@
 
   /* tipo */
   --f-ui: 'Hanken Grotesk', system-ui, sans-serif;
-  --f-display: 'Bodoni Moda', Georgia, serif;
+  --f-display: 'Young Serif', Georgia, serif;
   /* números, ping, rótulos de dado ("LOBBY 04 · 14 MS"): o nome --f-mono ficou pelo papel (números) */
   --f-num: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --f-mono: var(--f-num);
@@ -169,9 +173,11 @@
   --fs-sm: 0.8125rem; /* 13/18 */
   --fs-md: 0.875rem; /* 14/20, o corpo */
   --fs-lg: 1rem; /* 16/22, nome no cartão */
-  --fs-h3: 1.625rem; /* 26/32 */
+  --fs-body: 0.875rem; /* 14/20, o corpo (= --fs-md) */
+  --lh-body: 1.25rem;
+  --fs-h3: 1.25rem; /* 20/26 */
   --fs-h2: 1.75rem; /* 28/36, título de seção */
-  --fs-h1: 2.25rem; /* 36/42, título de página */
+  --fs-h1: 2.5rem; /* 40/46, título de página */
   --fs-hero: 3.5rem; /* 56/60, slogan do destaque */
   --fs-lead: 0.875rem;
 
@@ -207,6 +213,10 @@
   --sp-6: 24px;
   --sp-8: 32px;
   --sp-9: 36px;
+  --sp-10: 40px;
+
+  /* alvo de toque/controle: o controle de hoje no desktop, 44 px no toque e até 760 px */
+  --hit: 36px;
 
   /* movimento: só para mostrar estado */
   --e-out: cubic-bezier(0.22, 1, 0.36, 1);
@@ -237,6 +247,12 @@
     --side-c: 0px;
     --bn: 64px;
     --tb: 56px;
+  }
+}
+
+@media (max-width: 760px), (pointer: coarse) {
+  :root {
+    --hit: 44px;
   }
 }
 

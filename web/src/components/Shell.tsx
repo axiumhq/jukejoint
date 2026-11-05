@@ -25,7 +25,8 @@ import '../styles/live.css';
  * Casca do redesign ("Fiel ao kit"): barra lateral à esquerda (JJ, navegação com ícones, a sua
  * lista e o tema), coluna principal com a barra de topo (wordmark, busca, ao vivo ou pílula da
  * sala, conta) e, quando a tela traz `<Rail>`, o painel dela à direita.
- * A barra lateral recolhe para só ícones na sala e, abaixo de 1240 px, em telas com painel.
+ * A barra lateral é a mesma em toda tela (navegação com rótulo, a sua lista e o tema): a sala não
+ * muda a moldura. Entre 961 e 1240 px quem cede espaço é o painel da direita (mais estreito).
  * Abaixo de 960 px: sem barra lateral, barra de abas embaixo e o painel (ou a sua lista) como folha.
  * Pontos de quebra em styles/shell.css e tokens.css.
  */
@@ -167,13 +168,13 @@ function Account() {
         aria-label={t.account.menu(user.name)}
         onClick={() => setOpen((v) => !v)}
       >
-        <Avatar name={user.name} size={30} />
+        <Avatar name={user.name} size={30} src={user.avatar} />
         <span className="acct-name">{user.name}</span>
       </button>
       {open && (
         <div className="pop acct-menu">
           <div className="acct-who">
-            <Presence name={user.name} size={36} status="menu" />
+            <Presence name={user.name} size={36} status="menu" src={user.avatar} />
             <div>
               <b>{user.name}</b>
               <p>{t.account.friendsOnline(friends.length)}</p>
@@ -237,8 +238,8 @@ function usePlayActive() {
   return pathname === '/' || pathname.startsWith('/jogar') || pathname.startsWith('/sala/');
 }
 
-/** Os links de Jogar, Modos, Hoje e Instalar (só no site), com o ícone de linha do design. */
-function NavItems({ items = NAV_HERE, label = true }: { items?: NavItem[]; label?: boolean }) {
+/** Os links de Jogar, Modos, Hoje e Instalar (só no site), sempre com ícone e rótulo. */
+function NavItems({ items = NAV_HERE }: { items?: NavItem[] }) {
   const play = usePlayActive();
   return (
     <>
@@ -246,15 +247,15 @@ function NavItems({ items = NAV_HERE, label = true }: { items?: NavItem[]; label
         const body = (
           <>
             <Icon name={n.icon} />
-            <span className={label ? 'nav-t' : 'nav-t sr-only'}>{n.label}</span>
+            <span className="nav-t">{n.label}</span>
           </>
         );
         return n.to === '/' ? (
-          <Link key={n.to} to={n.to} aria-current={play ? 'page' : undefined} title={label ? undefined : n.label}>
+          <Link key={n.to} to={n.to} aria-current={play ? 'page' : undefined}>
             {body}
           </Link>
         ) : (
-          <NavLink key={n.to} to={n.to} title={label ? undefined : n.label}>
+          <NavLink key={n.to} to={n.to}>
             {body}
           </NavLink>
         );
@@ -263,22 +264,20 @@ function NavItems({ items = NAV_HERE, label = true }: { items?: NavItem[]; label
   );
 }
 
-/** A barra lateral: o JJ, a navegação, a sua lista (quando aberta) e o tema. Recolhida, só ícones. */
-function Side({ compact, social, inert }: { compact: boolean; social: boolean; inert?: boolean }) {
+/** A barra lateral: o JJ, a navegação, a sua lista e o tema. Igual em toda tela, sala incluída. */
+function Side({ inert }: { inert?: boolean }) {
   return (
     <aside className="side" aria-label={t.a11y.sidebar} inert={inert}>
       <Link to="/" className="side-brand" aria-label={t.a11y.home}>
-        <BrandSymbol height={compact ? 36 : 44} />
+        <BrandSymbol height={44} />
       </Link>
       <nav className="side-nav" aria-label={t.a11y.mainNav}>
-        <NavItems label={!compact} />
+        <NavItems />
       </nav>
-      {social && (
-        <div className="side-social">
-          <SocialRail />
-        </div>
-      )}
-      {!compact && <ThemeSwatches />}
+      <div className="side-social">
+        <SocialRail />
+      </div>
+      <ThemeSwatches />
     </aside>
   );
 }
@@ -334,7 +333,7 @@ function RailAside({ sheet }: { sheet: boolean }) {
           </button>
         </div>
         <div ref={ref} className="rail-in" hidden={social && slots > 0} />
-        {social && <SocialRail />}
+        {social && <SocialRail sheet />}
       </aside>
       <div className={open ? 'scrim is-on' : 'scrim'} onClick={closeSheet} aria-hidden="true" />
     </>
@@ -357,23 +356,20 @@ function LiveStatus() {
 function Frame() {
   const { pathname, hash } = useLocation();
   const main = useRef<HTMLElement>(null);
-  const first = useRef(true);
+  // A rota anterior: o foco só vai para o <main> quando a rota MUDA (não na primeira carga, nem
+  // na segunda execução do efeito que o StrictMode faz em dev, que antes pulava a lateral e o topo).
+  const prevPath = useRef(pathname);
   const sheet = useMediaQuery('(max-width: 960px)');
-  const narrow = useMediaQuery('(max-width: 1240px)');
   const { sheetOpen, closeSheet, slots } = useRail();
   const { live } = useSession();
   const modal = sheet && sheetOpen;
   const pageRail = slots > 0;
-  // Recolhida: na sala (o design da sala) e, abaixo de 1240 px, em telas com painel.
-  const compact = !sheet && (pathname.startsWith('/sala/') || (pageRail && narrow));
 
   useEffect(() => closeSheet(), [pathname, closeSheet]);
 
   useEffect(() => {
-    if (first.current) {
-      first.current = false;
-      return;
-    }
+    if (prevPath.current === pathname) return;
+    prevPath.current = pathname;
     if (hash) return;
     window.scrollTo(0, 0);
     main.current?.focus({ preventScroll: true });
@@ -387,7 +383,7 @@ function Frame() {
 
   // /instalar tem o aviso de afiliação mais completo; o rodapé usa esse lá, para não repetir.
   const about = pathname.startsWith('/instalar') ? t.install.affiliation : t.footer.about;
-  const cls = ['frame', compact && 'is-compact', pageRail && 'has-rail'].filter(Boolean).join(' ');
+  const cls = pageRail ? 'frame has-rail' : 'frame';
 
   return (
     <>
@@ -396,7 +392,7 @@ function Frame() {
       </a>
       <CoverDefs />
       <div className={cls}>
-        {!sheet && <Side compact={compact} social={!compact} inert={modal} />}
+        {!sheet && <Side inert={modal} />}
         <div className="col">
           <TopBar inert={modal} />
           <DesktopUpdateNotice />
