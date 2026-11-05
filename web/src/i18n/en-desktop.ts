@@ -1,0 +1,16 @@
+export const enDesktop = {
+  checking: 'Checking the app…', ready: 'The app is ready. When the match starts, it will open the game and join the lobby.',
+  problemsTitle: (n: number) => (n === 1 ? 'The app needs one fix before the match' : `The app needs ${n} fixes before the match`),
+  problemsHint: 'You can join the lobby now and fix this on the Setup screen before the match starts.',
+  checkFailed: 'Could not check the app right now.', details: 'Technical details', openInstall: 'Open Setup', recheck: 'Check again',
+  enterAnyway: 'Join anyway', testMode: (project: string) => `Test mode: the app will open “${project}” until this mode is ready.`,
+  testTag: 'test mode', invalidLink: 'This invite link could not be opened. Ask for a new link.',
+  invalidLoginLink: 'Sign-in did not finish. The browser returned an incomplete link. Try signing in again.', retry: 'Try again',
+  endMatch: 'End match', endMatchLabel: (lobby: string) => `End the match in “${lobby}” and reopen the lobby`,
+  failedHost: 'The app could not start the match on your PC.', failedJoin: 'The app could not join the match.',
+  hostEnded: 'The match on your PC ended. The lobby is open again.', endingMatch: 'Ending the in-game match. This can take up to 20 seconds.',
+  endedMatch: 'The match ended. Close Deadlock before starting another one.',
+  endFailed: 'The lobby reopened, but the game engine did not confirm the match ended. Close Deadlock and the app, then reopen the app.',
+  statusInApp: (version: string) => (version ? `You are in the app (version ${version})` : 'You are in the app'),
+  statusInAppHelp: 'This website is open inside the app. Engine, service, and antivirus details are on the Setup screen.',
+};

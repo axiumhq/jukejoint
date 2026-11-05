@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
 import { t } from '../i18n';
 import { useTheme } from '../state/theme';
 import { Icon } from './Icon';
+import { LocaleSelect } from './LocaleSelect';
 
 /**
  * Seletor de tema da barra lateral (o do design): "Tema" e uma amostra redonda por tema.
@@ -29,6 +30,7 @@ export function ThemeSwatches() {
           />
         ))}
       </div>
+      <LocaleSelect />
     </div>
   );
 }

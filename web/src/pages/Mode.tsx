@@ -8,7 +8,7 @@ import { CreateCard, LobbyCard, orderLobbies, type CardEnv } from '../components
 import { ModeCover, ModeMedallion } from '../components/ModeCover';
 import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
-import { getMode, modes, type Mode, type Region } from '../data/modes';
+import { getMode, getModes, type Mode, type Region } from '../data/modes';
 import { releases } from '../data/patches';
 import { useDocumentTitle, useFriends, useLiveStats } from '../hooks';
 import { useFeaturedLobby } from '../hooks/useFeatured';
@@ -205,6 +205,7 @@ function SheetCard({ friends, regions }: { friends: number; regions: number }) {
 /* ───────── /modos/:slug ───────── */
 
 export function ModePage() {
+  const modes = getModes();
   const { slug } = useParams();
   const mode = getMode(slug);
   const { lobbies, requestJoin, openHost, lobbyCtx, user } = useSession();
@@ -394,6 +395,7 @@ export function ModePage() {
 /* ───────── /modos ───────── */
 
 export function ModesIndex() {
+  const modes = getModes();
   useDocumentTitle(t.meta.modes);
   const stats = useLiveStats();
   return (

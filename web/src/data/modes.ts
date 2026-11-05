@@ -1,4 +1,5 @@
 import { BRAND_NAME } from '../config/brand';
+import { getLocale } from '../i18n/locale';
 
 export type Motif = 'rings' | 'rails' | 'fog' | 'clock' | 'vault' | 'grid';
 export type Region = 'BR' | 'NA' | 'EU';
@@ -205,4 +206,100 @@ export const modes: Mode[] = [
   },
 ];
 
-export const getMode = (slug: string | undefined) => modes.find((m) => m.slug === slug);
+const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'rules' | 'format'>> = {
+  'circulo-profano': {
+    line: 'Survive the ritual ring as it closes every minute.',
+    tagline: 'Up to twelve players in a ritual ring that closes every minute. Stay outside and you will not last.',
+    description: [
+      'Up to twelve players start in a ritual ring at the center of the map. Every minute the circle closes in, and anyone outside quickly loses health.',
+      'There is no shop or farming. Each elimination grants everyone a random item of the same tier. Short matches reward good positioning.',
+    ],
+    rules: [
+      'Free-for-all, no teams.',
+      'The circle shrinks every 60 seconds; the final close takes 90. Outside it, you lose 8% health per second.',
+      'Each elimination grants a random item. Items cannot be sold.',
+      'The player with the most eliminations when the circle closes wins, or the last player alive.',
+    ],
+    format: 'Free-for-all',
+  },
+  'ultimo-bonde': {
+    line: 'Escort the tram to the end of the line before midnight.',
+    tagline: 'Escort the tram to the end of the line before midnight.',
+    description: [
+      'Two teams of six. One escorts a tram along the city tracks while the other tries to stop it. The tram moves only while an attacker is nearby.',
+      'Attackers gain extra time for each station they capture. The teams switch sides after two rounds.',
+    ],
+    rules: [
+      'Two teams of six, two rounds with sides switched.',
+      'The tram moves while at least one attacker is within 8 meters.',
+      'Each captured station adds 90 seconds to the clock.',
+      'The team that escorts the tram the farthest across both rounds wins.',
+    ],
+    format: '6v6',
+  },
+  neblina: {
+    line: 'Twelve meters of sight, one hunter, and three minutes.',
+    tagline: 'Twelve meters of sight, one hunter, and three minutes to avoid being caught.',
+    description: [
+      'Fog covers the city and limits vision to a few meters. One player becomes the hunter; everyone else has three minutes to survive.',
+      'Caught players join the hunters. Footstep sounds appear on the hunter’s map every 20 seconds.',
+    ],
+    rules: [
+      'Five to ten players. One hunter is chosen each round.',
+      'Everyone has a 12-meter vision limit.',
+      'Caught players join the hunter team.',
+      'Survivors score after three minutes. Five rounds per match.',
+    ],
+    format: 'Hunter versus everyone',
+  },
+  'duelo-meia-noite': {
+    line: '1v1 with the same hero, best of five.',
+    tagline: '1v1, same hero, best of five. Lose and return to the queue.',
+    description: [
+      'Fast duels to practice mechanics. Both players get the same hero, chosen at random each round, with fixed items.',
+      'The first player to win three rounds takes the match. There is a queue: the loser goes to the back of the lobby line.',
+    ],
+    rules: [
+      'One versus one, best of five rounds.',
+      'A random hero is selected each round and shared by both players.',
+      'Fixed items each round, no shop.',
+      'If no one is eliminated in 90 seconds, the player with more health wins.',
+      'The lobby works as a queue, with up to eight players taking turns.',
+    ],
+    format: '1v1 queue',
+  },
+  'cerco-ao-cofre': {
+    line: 'Three locks: crack the vault or hold the door.',
+    tagline: 'Three locks, two minutes each. Crack the vault or hold the door.',
+    description: [
+      'Attack and defense inside a closed bank. Attackers must break three locks in sequence; defenders only need to hold until time runs out.',
+      'Each lock opened creates a new entrance for attackers and lowers the defenders’ maximum health.',
+    ],
+    rules: [
+      'Two teams of five. Each team attacks once.',
+      'Three locks in sequence, two minutes per lock.',
+      'Defenders respawn only while the current lock is closed.',
+      'If tied, the team with more time remaining on the last opened lock wins.',
+    ],
+    format: '5v5',
+  },
+  'campo-de-treino': {
+    line: 'Every item, bots at your pace, and no scoreboard.',
+    tagline: 'Every item unlocked, bots at your pace, and no scoreboard watching.',
+    description: [
+      'An open map to test heroes and item builds without pressure. Every item is unlocked, cooldowns are optional, and you choose whether bots stand still, move, or attack.',
+      'Play alone or with friends. This is also the mode used by “Play with bots.”',
+    ],
+    rules: [
+      'One to six players, no scoreboard.',
+      'Every item is available from the start.',
+      'Chat commands adjust bots, cooldowns, and health.',
+    ],
+    format: 'Practice with bots',
+  },
+};
+
+const englishModes = modes.map((mode) => (enCopy[mode.slug] ? { ...mode, ...enCopy[mode.slug] } : mode));
+
+export const getModes = () => (getLocale() === 'en' ? englishModes : modes);
+export const getMode = (slug: string | undefined) => getModes().find((mode) => mode.slug === slug);
