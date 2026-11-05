@@ -98,6 +98,7 @@ function RoomPill() {
 
 function LiveCount() {
   const { players } = useLiveStats();
+  if (players <= 0) return null;
   const n = formatNumber(players);
   return (
     <Link to="/#lobbies" className="live-count" aria-label={t.header.liveLabel(n)}>

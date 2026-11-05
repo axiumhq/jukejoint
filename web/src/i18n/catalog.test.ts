@@ -1,10 +1,13 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { modes } from '../data/modes';
+import { cartao } from './cartao';
 import { desktop } from './desktop';
 import { getMessages } from './index';
 import { installTexts } from './install';
 import { live } from './live';
 import { setLocale } from './locale';
+import { mesa } from './mesa';
+import { modosHome } from './modos-home';
 
 /**
  * O catálogo em inglês não pode mostrar português: nem chave esquecida (que cai no pt-BR pelo
@@ -56,6 +59,9 @@ describe('catálogo em inglês', () => {
     expect(englishLeaks('live', () => ({ ...live }))).toEqual([]);
     expect(englishLeaks('desktop', () => ({ ...desktop }))).toEqual([]);
     expect(englishLeaks('install', () => ({ ...installTexts }))).toEqual([]);
+    expect(englishLeaks('mesa', () => ({ ...mesa }))).toEqual([]);
+    expect(englishLeaks('cartao', () => ({ ...cartao }))).toEqual([]);
+    expect(englishLeaks('modosHome', () => ({ ...modosHome }))).toEqual([]);
   });
 });
 

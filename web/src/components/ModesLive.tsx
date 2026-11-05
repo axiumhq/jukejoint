@@ -1,31 +1,32 @@
 import { useMemo } from 'react';
 import { getModes } from '../data/modes';
 import { useLobbyFilters } from '../hooks/useFilters';
-import { formatNumber, t } from '../i18n';
+import { useServerStatus } from '../hooks/useServerStatus';
+import { modosHome as M } from '../i18n/modos-home';
 import { useSession } from '../state/session';
-import { ModeMedallion } from './ModeCover';
-
-/** Comprimento do anel de 36 de raio (2πr). */
-const RING = 226.2;
+import { ModeCover, ModeIcon } from './ModeCover';
+import '../styles/modes-live.css';
 
 /**
- * Modos ao vivo: um cartão por modo com o anel de ocupação (vagas livres no meio) e
- * "N de M jogando". Clicar filtra a lista de lobbies pelo modo (e clicar de novo tira).
- * No celular o mesmo botão vira a fileira de medalhões acima dos filtros.
+ * Modos da home. Com lobbies: lista compacta (ícone, nome, frase, quantos lobbies e quanta gente);
+ * clicar filtra a lista de lobbies pelo modo (e clicar de novo tira). Cidade vazia (conexão ok e
+ * nenhum lobby): cartões com a cena do modo; clicar abre o "Criar lobby" já com o modo escolhido.
  */
 export function ModesLive() {
   const modes = getModes();
-  const { lobbies } = useSession();
+  const { lobbies, openHost } = useSession();
+  const { status } = useServerStatus();
   const { f, update } = useLobbyFilters();
   const byMode = useMemo(() => {
-    const m: Record<string, { players: number; cap: number }> = {};
+    const m: Record<string, { lobbies: number; players: number }> = {};
     for (const l of lobbies) {
-      const c = (m[l.modeSlug] ??= { players: 0, cap: 0 });
+      const c = (m[l.modeSlug] ??= { lobbies: 0, players: 0 });
+      c.lobbies += 1;
       c.players += l.players;
-      c.cap += l.slots;
     }
     return m;
   }, [lobbies]);
+  const empty = lobbies.length === 0 && status === 'ok';
   const pick = (slug: string) => {
     const next = f.mode === slug ? '' : slug;
     update({ mode: next });
@@ -35,49 +36,48 @@ export function ModesLive() {
         ?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
   };
   return (
-    <section className="sec home-modes" aria-labelledby="modes-title">
-      <div className="sec-h">
-        <h2 className="display" id="modes-title">
-          {t.home.modesTitle.join(' ')}
-        </h2>
-      </div>
-      <div className="mv-list">
+    <section className="home-modes ml" aria-labelledby="modes-title">
+      <h2 className="ml-h" id="modes-title">
+        {M.title}
+      </h2>
+      {empty && <p className="ml-sub">{M.sub}</p>}
+      <ul className={empty ? 'ml-list is-cards' : 'ml-list'}>
         {modes.map((m) => {
-          const c = byMode[m.slug] ?? { players: 0, cap: 0 };
-          const free = Math.max(0, c.cap - c.players);
-          const dash = c.cap > 0 ? ((c.players / c.cap) * RING).toFixed(1) : '0';
+          if (empty) {
+            return (
+              <li key={m.slug}>
+                <button type="button" className="ml-card has-cover" aria-label={M.openLabel(m.name)} onClick={() => openHost(m.slug)}>
+                  <span className="ml-art">
+                    <ModeCover slug={m.slug} />
+                    <b>{m.name}</b>
+                  </span>
+                  <span className="ml-ln">{m.line}</span>
+                  <span className="ml-nums">{M.meta(m.format, m.minPlayers, m.maxPlayers)}</span>
+                </button>
+              </li>
+            );
+          }
+          const c = byMode[m.slug];
           return (
-            <button
-              key={m.slug}
-              type="button"
-              className="mv"
-              aria-pressed={f.mode === m.slug}
-              aria-label={`${t.home.modeFilter(m.name)}. ${t.home.modePlaying(c.players, c.cap)}`}
-              onClick={() => pick(m.slug)}
-            >
-              <span className="mv-ring" aria-hidden="true">
-                <svg viewBox="0 0 80 80">
-                  <circle className="bg" cx="40" cy="40" r="36" />
-                  <circle className="fg" cx="40" cy="40" r="36" strokeDasharray={`${dash} ${RING}`} transform="rotate(-90 40 40)" />
-                </svg>
-                <span className="mv-free">
-                  <span className="display">{formatNumber(free)}</span>
-                  <span className="lbl">{t.home.modeFree}</span>
-                </span>
-              </span>
-              <span className="mv-tile" aria-hidden="true">
-                <ModeMedallion slug={m.slug} />
-              </span>
-              <span className="mv-t" aria-hidden="true">
+            <li key={m.slug}>
+              <button type="button" className="ml-row" aria-pressed={f.mode === m.slug} aria-label={M.filterLabel(m.name)} onClick={() => pick(m.slug)}>
+                <ModeIcon slug={m.slug} className="ml-ic" />
                 <b>{m.name}</b>
-                <span className="mv-d">{t.home.modePlaying(c.players, c.cap)}</span>
-                <span className="mv-m">{t.home.modePlayers(c.players)}</span>
-              </span>
-            </button>
+                <span className="ml-ln">{m.line}</span>
+                <span className="ml-nums">
+                  {c ? (
+                    <>
+                      <em>{M.lobbies(c.lobbies)}</em> · {M.playing(c.players)}
+                    </>
+                  ) : (
+                    M.none
+                  )}
+                </span>
+              </button>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </section>
   );
 }
-

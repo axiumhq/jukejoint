@@ -1,4 +1,21 @@
-/* Lobbies da home: a barra de abas com a região, os chips com a visão e os cartões (cartão ↔ linha compacta). */
+/* Lobbies da home: o título, a barra de abas com a região, os chips com a visão e os cartões
+   "ingresso + cartaz" (cartão ↔ linha compacta). */
+
+/* "LOBBIES ABERTOS 10": Jost 500 em caixa-alta, a contagem apagada ao lado */
+.lb-h h2 {
+  font: 500 1.375rem/1.2 var(--f-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lb-h h2 .c {
+  margin-left: var(--sp-2);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--tx-3);
+  font-variant-numeric: tabular-nums;
+}
 
 /* abas Todos / Sua lista / Favoritos (o .utabs da base) com a região à direita; o fio corre a barra toda */
 .lb-bar {
@@ -62,31 +79,39 @@
 
 /* esqueleto do cartão (carregando) */
 .lc-sk {
-  min-height: 176px;
+  min-height: 330px;
+  border-radius: 14px;
 }
 
-/* ───────── Cartões ───────── */
+/* ───────── Cartões: ingresso + cartaz (Home v4) ───────── */
 
 .lgrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
+  gap: var(--sp-5);
 }
 
-/* O cartão do design: faixa de arte de 112 px à esquerda, conteúdo à direita. */
+/*
+ * O cartão: a arte (capa do modo com o véu), o número carimbado e o estado no alto, o placar
+ * sobre a base da arte, o corpo e o canhoto depois do picote. --lc-bg é a cor do cartão; o véu
+ * da arte sai dela, então acompanha o hover. Os recortes do picote são círculos na cor da
+ * página, cortados pelo overflow do cartão.
+ */
 .lc {
+  --lc-bg: var(--s1);
+  --lc-art: 196px;
   position: relative;
-  display: grid;
-  grid-template-columns: 112px minmax(0, 1fr);
-  min-height: 176px;
-  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 14px;
   overflow: hidden;
-  background: var(--s2);
+  background: var(--lc-bg);
   transition: background-color var(--t-fast);
 }
 
 .lc:hover {
-  background: color-mix(in srgb, var(--s2), #fff 4%);
+  --lc-bg: var(--s2);
 }
 
 /*
@@ -119,10 +144,10 @@
 }
 
 .lc:has(.lc-n:hover) .lc-n {
-  color: var(--acc);
+  color: var(--acc-tx);
 }
 
-/* você está aqui: o fio de latão em volta, por cima da arte (a faixa cobria o lado esquerdo) */
+/* você está aqui: o fio de latão em volta, por cima da arte */
 .lc.is-you::before {
   content: '';
   position: absolute;
@@ -133,85 +158,148 @@
   pointer-events: none;
 }
 
+/* a arte: a capa do modo com o véu escurecendo para baixo (da cor do cartão a transparente) */
 .lc-art {
   position: relative;
-  display: block;
-  min-height: 100%;
+  flex: none;
+  height: var(--lc-art);
+  overflow: hidden;
+  background: var(--k0);
 }
 
-.lc-art .strip {
+.lc-art::after {
+  content: '';
   position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 74px;
-  height: 100%;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    var(--lc-bg) 4%,
+    color-mix(in srgb, var(--lc-bg) 35%, transparent) 55%,
+    color-mix(in srgb, var(--lc-bg) 55%, transparent)
+  );
 }
 
-.lc-art .med {
+/* a arte cresce 4% no hover do cartão (a transição é a da capa, base.css) */
+.lc:hover .lc-art .cover > svg {
+  transform: scale(1.04);
+}
+
+/* sem vaga, em partida fechado ou com convite: só a cena apaga; o placar continua legível */
+.lc.dim .lc-art .cover {
+  opacity: 0.62;
+}
+
+/* no alto da arte: "LOBBY Nº 04" carimbado à esquerda, o estado à direita */
+.lc-top {
   position: absolute;
-  left: 28px;
-  top: 50%;
-  width: 68px;
-  height: 68px;
-  translate: 0 -50%;
-}
-
-.lc-b {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-width: 0;
-  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-2);
-}
-
-.lc-meta {
+  z-index: 1;
+  top: var(--sp-3);
+  left: var(--sp-4);
+  right: var(--sp-4);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   min-width: 0;
-  /* a mesma altura com ou sem tag: nome, lâmpadas e botão alinham entre os cartões da fileira */
-  min-height: 20px;
+  pointer-events: none;
 }
 
-/* "LOBBY 09 · BR/SA · 22 ms" nunca corta: quem encurta é a tag ao lado */
-.lc-id {
-  flex: none;
+.lc-no,
+.lc-st {
+  font: 600 var(--fs-2xs) / 1.2 var(--f-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
-/* num cartão estreito com etiqueta longa ("Em partida", "Iniciantes ok"), o número do lobby sai
-   antes de a etiqueta cortar: região e ping ficam. Com etiqueta curta ("Falta 2") o número fica. */
-.lc-b {
-  container-type: inline-size;
+/* o carimbo: fundo escuro translúcido e contorno de latão a 50% */
+.lc-no {
+  flex: none;
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: 3px;
+  color: var(--tx);
+  background: color-mix(in srgb, var(--sky-1) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent);
 }
 
-@container (max-width: 280px) {
-  .lc-meta:has(.tag.is-wide) .lc-num {
-    display: none;
-  }
-}
-
-/* a unidade fica em minúscula ("ms"), fora da caixa alta do rótulo */
-.lc-id .num {
-  letter-spacing: inherit;
-  text-transform: none;
-}
-
-.lc-meta .tag {
-  display: block;
+.lc-st {
+  margin-left: auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 20px;
+  color: var(--tx-2);
 }
 
-.lc-meta .tag > .dot,
-.lc-meta .tag > .ico {
-  display: inline-block;
-  margin-right: var(--sp-1);
-  vertical-align: middle;
+.lc-st.is-acc {
+  color: var(--acc-tx);
+}
+
+/* o placar, sobre a base da arte: o formato, "10/12" e os rostos */
+.lc-score {
+  position: absolute;
+  z-index: 1;
+  left: var(--sp-4);
+  right: var(--sp-4);
+  top: calc(var(--lc-art) - var(--sp-3));
+  translate: 0 -100%;
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+  min-width: 0;
+  pointer-events: none;
+}
+
+.lc-fmt {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* 1.4 e não 1: com o overflow do reticências, a linha justa cortava o acento de "ÂMBAR" */
+  font: 600 var(--fs-2xs) / 1.4 var(--f-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tx-2);
+}
+
+.lc-fmt .amb {
+  color: var(--amb);
+}
+
+.lc-fmt .saf {
+  color: var(--saf);
+}
+
+.lc-fmt .x {
+  margin: 0 0.5em;
+  letter-spacing: 0;
+  color: var(--tx-3);
+}
+
+.lc-big {
+  font: 800 2.75rem/0.9 var(--f-placar);
+  color: var(--tx);
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-big small {
+  margin-left: 2px;
+  font-size: 1.375rem;
+  color: var(--tx-3);
+}
+
+.lc-b {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+}
+
+.lc-head {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
 }
 
 .lc-t {
@@ -230,9 +318,7 @@
   gap: var(--sp-2);
   min-width: 0;
   min-height: 24px;
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  line-height: 22px;
+  font: 600 var(--fs-18) / 1.25 var(--f-ui);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,8 +368,8 @@
 
 .lc-m {
   min-width: 0;
-  font-size: var(--fs-xs);
-  line-height: 16px;
+  font-size: var(--fs-sm);
+  line-height: 18px;
   color: var(--tx-2);
   white-space: nowrap;
   overflow: hidden;
@@ -299,49 +385,63 @@
   font-weight: 600;
 }
 
-.lc-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-2);
-  height: 24px;
-  margin-top: 0;
-  min-width: 0;
-}
-
-.lc-row .bulbs {
-  flex-wrap: nowrap;
-  overflow: hidden;
-  min-width: 0;
-}
-
-.lc-row .stack {
-  padding-right: var(--sp-1);
-}
-
-/* a pilha leva o fio da cor do painel, como no kit */
-.lc-row .stack > .av svg circle {
-  stroke: var(--s2);
-  stroke-width: 2;
-}
-
+/* o canhoto: o picote tracejado com dois recortes nas bordas; embaixo, região e ping e a ação */
 .lc-f {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
-  margin-top: auto;
+  gap: var(--sp-3);
   min-width: 0;
+  min-height: 32px;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1.5px dashed color-mix(in srgb, var(--tx) 22%, transparent);
 }
 
-.lc-cnt {
+.lc-f::before,
+.lc-f::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg);
+  pointer-events: none;
+}
+
+.lc-f::before {
+  left: -28px;
+}
+
+.lc-f::after {
+  right: -28px;
+}
+
+.lc-where {
   min-width: 0;
-  font-size: var(--fs-xs);
-  line-height: 16px;
-  color: var(--tx-2);
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  color: var(--tx-3);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+.lc-where b {
+  font-weight: 500;
+  color: var(--tx-2);
+}
+
+/* sem vaga e sem entrada no meio: o aviso no lugar do botão */
+.lc-note {
+  flex: none;
+  font-size: var(--fs-sm);
+  line-height: 32px;
+  color: var(--tx-2);
+  text-align: right;
 }
 
 .lc-act {
@@ -360,15 +460,9 @@
   --h: 32px;
 }
 
-/* cheio, em partida fechado ou com convite: a arte e o nome apagam (o .apagado do design) */
-.lc.dim .lc-art,
-.lc.dim .lc-n {
-  opacity: 0.62;
-}
-
-/* "Criar lobby": o cartão vazado do design */
+/* "Criar lobby": o cartão vazado */
 .lc-create {
-  border-radius: var(--r-xl);
+  border-radius: 14px;
   box-shadow: inset 0 0 0 1px var(--line-2);
   display: flex;
   flex-direction: column;
@@ -382,7 +476,7 @@
 }
 
 .lc-create:hover {
-  background: var(--s2);
+  background: var(--s1);
 }
 
 .lc-create .pl {
@@ -390,103 +484,13 @@
 }
 
 .lc-create b {
-  font: 400 1.5rem/32px var(--f-display);
-  letter-spacing: -0.01em;
+  font: 500 1.375rem/32px var(--f-ui);
 }
 
 .lc-create small {
   color: var(--tx-2);
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   max-width: 28ch;
-}
-
-/* ───────── Compacto: a linha do design (.cp) ───────── */
-
-.lgrid.list {
-  grid-template-columns: 1fr;
-  gap: var(--sp-1);
-}
-
-.lgrid.list .lc {
-  grid-template-columns: 56px minmax(0, 1fr);
-  min-height: 56px;
-  border-radius: var(--r-lg);
-}
-
-.lgrid.list .lc-art .strip {
-  display: none;
-}
-
-.lgrid.list .lc-art .med {
-  left: 14px;
-  width: 32px;
-  height: 32px;
-}
-
-.lgrid.list .lc-b {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) 176px 160px auto;
-  grid-template-areas: 'name tag ping meter act';
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
-}
-
-.lgrid.list .lc-meta {
-  display: contents;
-}
-
-.lgrid.list .lc-id {
-  grid-area: ping;
-  font-size: var(--fs-15);
-}
-
-.lgrid.list .lc-meta .tag {
-  grid-area: tag;
-  justify-self: start;
-  display: block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 20px;
-}
-
-.lgrid.list .lc-t {
-  grid-area: name;
-}
-
-.lgrid.list .lc-n {
-  font-size: var(--fs-md);
-}
-
-.lgrid.list .fav,
-.lgrid.list .lc-m,
-.lgrid.list .lc-row .stack {
-  display: none;
-}
-
-.lgrid.list .lc-row {
-  grid-area: meter;
-  margin: 0;
-}
-
-.lgrid.list .lc-f {
-  grid-area: act;
-  margin: 0;
-}
-
-.lgrid.list .lc-cnt {
-  display: none;
-}
-
-.lgrid.list .lc-create {
-  min-height: 56px;
-  flex-direction: row;
-  gap: var(--sp-3);
-}
-
-.lgrid.list .lc-create b {
-  font-size: var(--fs-18);
 }
 
 .more-row {
@@ -495,7 +499,7 @@
   margin-top: var(--sp-1);
 }
 
-/* vazio: o EmptyState da base (título na serifa de título, uma linha, a ação) ocupando a grade toda */
+/* vazio: o EmptyState da base (título, uma linha, a ação) ocupando a grade toda */
 .lb-empty {
   grid-column: 1 / -1;
 }
@@ -514,32 +518,130 @@
   gap: var(--sp-1) var(--sp-3);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .lc:hover .lc-art .cover > svg {
+    transform: none;
+  }
+}
+
+/* ───────── Compacto: a linha (fora do celular; no celular é sempre cartão) ───────── */
+
+@media (min-width: 761px) {
+  .lgrid.list {
+    grid-template-columns: 1fr;
+    gap: var(--sp-1);
+  }
+
+  .lgrid.list .lc {
+    --lc-art: 44px;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1.4fr) minmax(0, 1fr) 76px minmax(0, 140px) 184px;
+    grid-template-areas: 'art head st score where act';
+    align-items: center;
+    column-gap: var(--sp-4);
+    min-height: 64px;
+    padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+    border-radius: var(--r-card);
+  }
+
+  .lgrid.list .lc-art {
+    grid-area: art;
+    border-radius: var(--r-ctl);
+  }
+
+  .lgrid.list .lc-art::after {
+    display: none;
+  }
+
+  .lgrid.list .lc-top,
+  .lgrid.list .lc-score {
+    position: static;
+    translate: none;
+    display: block;
+    min-width: 0;
+  }
+
+  .lgrid.list .lc-top {
+    grid-area: st;
+  }
+
+  .lgrid.list .lc-score {
+    grid-area: score;
+  }
+
+  .lgrid.list .lc-no,
+  .lgrid.list .lc-fmt,
+  .lgrid.list .lc-score .stack {
+    display: none;
+  }
+
+  .lgrid.list .lc-st {
+    display: block;
+    margin: 0;
+  }
+
+  .lgrid.list .lc-big {
+    font-size: 1.5rem;
+  }
+
+  .lgrid.list .lc-big small {
+    font-size: var(--fs-md);
+  }
+
+  .lgrid.list .lc-b,
+  .lgrid.list .lc-f {
+    display: contents;
+  }
+
+  .lgrid.list .lc-head {
+    grid-area: head;
+  }
+
+  .lgrid.list .lc-n {
+    font-size: var(--fs-15);
+  }
+
+  .lgrid.list .lc-where {
+    grid-area: where;
+  }
+
+  .lgrid.list .lc-act,
+  .lgrid.list .lc-note {
+    grid-area: act;
+    justify-self: end;
+  }
+
+  .lgrid.list .lc-create {
+    min-height: 64px;
+    flex-direction: row;
+    gap: var(--sp-3);
+  }
+
+  .lgrid.list .lc-create b {
+    font-size: var(--fs-18);
+  }
+}
+
 /* ───────── Pontos de quebra ───────── */
 
 @media (max-width: 1366px) {
-  .lc,
-  .lc-create,
-  .lc-sk {
-    min-height: 160px;
-  }
-
   .lc-act .btn-sm {
     padding: 0 var(--sp-2);
     font-size: var(--fs-xs);
   }
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 1239px) {
   .lgrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .lgrid.list .lc-b {
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 160px) 176px auto;
-    grid-template-areas: 'name tag ping act';
+  .lgrid.list .lc {
+    grid-template-columns: 72px minmax(0, 1.4fr) minmax(0, 1fr) 64px 184px;
+    grid-template-areas: 'art head st score act';
   }
 
-  .lgrid.list .lc-row {
+  .lgrid.list .lc-where {
     display: none;
   }
 }
@@ -557,7 +659,7 @@
     min-width: var(--hit, 44px);
   }
 
-  /* a estrela ganha área de 44 px (o cartão já é o link: lobbies.css, acima) */
+  /* a estrela ganha área de 44 px (o cartão já é o link: acima) */
   .fav {
     width: var(--hit, 44px);
     height: var(--hit, 44px);
@@ -598,57 +700,10 @@
 
   .lgrid {
     grid-template-columns: 1fr;
-    gap: var(--sp-2);
   }
 
-  /* no celular o cartão encolhe para a linha do design (.lcm): medalhão de 56, nome e uma ação */
-  .lc,
-  .lgrid.list .lc {
-    grid-template-columns: 72px minmax(0, 1fr);
-    min-height: 0;
-  }
-
-  .lc-art {
-    overflow: hidden;
-    background: var(--sky-1);
-  }
-
-  /* a faixa da capa do modo ocupa a coluna da arte (era um bloco preto só com o medalhão) */
-  .lc-art .strip {
-    width: 100%;
-  }
-
-  .lc-art .med,
-  .lgrid.list .lc-art .med {
-    left: 8px;
-    width: 56px;
-    height: 56px;
-  }
-
-  .lc-b,
-  .lgrid.list .lc-b {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-1);
-    padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-2);
-  }
-
-  .lgrid.list .lc-meta {
-    display: flex;
-  }
-
-  .lc-m,
-  .lc-row {
-    display: none;
-  }
-
-  /* a estrela também no celular (a aba Favoritos depende dela) */
-  .lgrid.list .fav {
-    display: grid;
-  }
-
-  .lgrid.list .lc-cnt {
-    display: inline;
+  .lc {
+    --lc-art: 180px;
   }
 
   .lc-create {

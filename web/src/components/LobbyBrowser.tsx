@@ -5,18 +5,21 @@ import { useFavorites, useFriends, usePref } from '../hooks';
 import { useServerStatus } from '../hooks/useServerStatus';
 import { useLobbyFilters, type BrowseTab } from '../hooks/useFilters';
 import { t } from '../i18n';
+import { cartao as K } from '../i18n/cartao';
 import { live as L } from '../i18n/live';
 import { filterLobbies, hasFriends, LOW_PING_MS, nearestAlternatives, REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { Chip, CreateReason, EmptyState, Skeleton } from './Common';
 import { Icon } from './Icon';
-import { CreateCard, LobbyCard, orderLobbies } from './LobbyCard';
+import { LobbyCard, orderLobbies } from './LobbyCard';
 
 /**
- * A lista da home ("Jogar agora", ou o nome do modo filtrado): abas Todos / Sua lista / Favoritos
+ * A lista da home ("Lobbies abertos" com a contagem): abas Todos / Sua lista / Favoritos
  * com a região ao lado, chips de filtro na URL, cartões ↔ compacto, o cartão "Criar lobby",
  * "Mostrar os outros N lobbies", o esqueleto, os estados vazios e o anúncio resumido para leitor de tela.
  * No celular as abas e a região viram chips na mesma fileira dos filtros.
+ * Sem nenhum lobby na cidade (e com a conexão ok) a seção inteira some: a placa do topo cuida
+ * desse caso. Carregando, offline e erro continuam aqui.
  */
 
 /** Oito cartões e o "Criar lobby": três fileiras cheias na grade de três. */
@@ -55,7 +58,7 @@ const TABS: { id: BrowseTab; label: string }[] = [
 ];
 
 export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; now: number }) {
-  const { lobbies, user, signIn, openHost, requestJoin, lobbyCtx } = useSession();
+  const { lobbies, user, signIn, openHost, lobbyCtx } = useSession();
   const { status, retry, createBlocked } = useServerStatus();
   const friends = useFriends();
   const { f, tab, params, update, setTab, clearAll } = useLobbyFilters();
@@ -123,26 +126,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
       </EmptyState>
     );
   } else if (results.length === 0 && status === 'ok') {
-    if (pool.length === 0) {
-      empty = (
-        <EmptyState
-          className="lb-empty"
-          title={t.lobbies.emptyNoneTitle}
-          action={
-            <div>
-              <button type="button" className="btn btn-p" onClick={() => create()}>
-                {t.lobbies.create}
-              </button>
-              <button type="button" className="btn btn-g" onClick={() => requestJoin({ kind: 'bots' })}>
-                {t.lobbies.emptyBots}
-              </button>
-            </div>
-          }
-        >
-          {t.lobbies.emptyNoneBody}
-        </EmptyState>
-      );
-    } else if (tab === 'friends' && !signedIn) {
+    if (tab === 'friends' && !signedIn) {
       empty = (
         <EmptyState
           className="lb-empty"
@@ -220,11 +204,15 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
 
   const activeTab = TABS.findIndex((x) => x.id === tab);
 
+  // A cidade vazia não ganha seção: nem título, nem abas, nem filtros, nem estado vazio.
+  if (pool.length === 0 && status === 'ok') return null;
+
   return (
     <section className="sec lb" id="lobbies" aria-labelledby="lobbies-title">
       <div className="sec-h lb-h">
-        <h2 className="display" id="lobbies-title">
-          {modeName ?? t.home.play}
+        <h2 id="lobbies-title">
+          {K.title}
+          {pool.length > 0 && <span className="c">{pool.length}</span>}
         </h2>
         <span className="sp" />
         <button
@@ -342,7 +330,6 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
               {visible.map((l) => (
                 <LobbyCard key={l.id} lobby={l} env={env} fav={favs.has(l.id)} onFav={toggle} />
               ))}
-              <CreateCard onCreate={create} />
             </>
           ))
         )}

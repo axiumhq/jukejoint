@@ -1,0 +1,20 @@
+export const enMesa = {
+  marquee: 'Community modes for Deadlock',
+  label: 'Best lobby for you',
+  lastSlot: 'Last spot',
+  missing: (n: number) => (n === 1 ? '1 needed' : `${n} needed`),
+  full: 'Full',
+  bestForYou: 'best lobby for you',
+  openedBy: (name: string) => `hosted by ${name}`,
+  and: 'and',
+  friendsTail: (friends: number, others: number) =>
+    `, from your friends list, ${friends === 1 ? 'is' : 'are'} in${others > 0 ? ` with ${others} more ${others === 1 ? 'player' : 'players'}` : ''}.`,
+  amber: 'Amber',
+  sapphire: 'Sapphire',
+  versus: '×',
+  sidesDrawn: 'sides drawn at the start',
+  emptyMarquee: 'The house is opening',
+  emptyTitle: 'No one has opened a lobby yet.',
+  emptyBody: 'Open the first one tonight. When the table fills, the app launches Deadlock with the mode and puts everyone on the same server.',
+  you: 'you',
+};

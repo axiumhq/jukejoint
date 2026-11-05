@@ -1,0 +1,165 @@
+/* Modos da home: lista compacta com lobbies; cartões com a cena quando a cidade está vazia. */
+.ml {
+  margin-top: var(--sp-8);
+}
+
+.ml-h {
+  margin: 0 0 var(--sp-3);
+  font: 500 22px/1.1 var(--f-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ml-sub {
+  margin: -6px 0 18px;
+  color: var(--tx-2);
+}
+
+.ml-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ml-list.is-cards {
+  gap: 20px;
+}
+
+.ml-list > li {
+  display: flex;
+}
+
+.ml-row,
+.ml-card {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ml-row {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 2px 14px;
+  align-content: start;
+  padding: 16px 0;
+  border-top: 1px solid color-mix(in srgb, var(--tx) 8%, transparent);
+}
+
+.ml-row .ml-ic {
+  grid-row: span 3;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--tx-2);
+}
+
+.ml-row b {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.ml-row .ml-ln {
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.ml-row .ml-nums {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+.ml-nums em {
+  font-style: normal;
+  font-weight: 500;
+  color: var(--tx);
+}
+
+.ml-row:hover b,
+.ml-row[aria-pressed='true'] b {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--tx) 30%, transparent);
+}
+
+.ml-row[aria-pressed='true'] .ml-ic {
+  color: var(--tx);
+}
+
+.ml-card {
+  display: grid;
+  align-content: start;
+  padding: 0;
+}
+
+.ml-art {
+  position: relative;
+  display: block;
+  height: 112px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--sky-1);
+}
+
+.ml-art .cover {
+  position: absolute;
+  inset: 0;
+}
+
+.ml-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(10 8 8 / 0.75), transparent 60%);
+}
+
+.ml-art b {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  z-index: 1;
+  font: 600 19px/1.1 var(--f-ui);
+  color: #fff;
+}
+
+.ml-card .ml-ln {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.ml-card .ml-nums {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+.ml-row:focus-visible,
+.ml-card:focus-visible {
+  outline-offset: 4px;
+}
+
+@media (max-width: 1240px) {
+  .ml-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .ml-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-art .cover {
+    transition: none;
+  }
+}
