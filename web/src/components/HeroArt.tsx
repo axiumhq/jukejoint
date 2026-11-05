@@ -1,5 +1,8 @@
 import { useId, useMemo } from 'react';
 import { HERO_ASPECT, HERO_VIEWBOX, heroScene } from '../lib/hero';
+import { FOCO_DESTAQUE, pintura } from '../lib/pintura';
+
+const DESTAQUE = pintura('destaque');
 
 /**
  * A cena do destaque da Home (lib/hero.ts): a avenida e a faixa tracejada que vira a trilha até a
@@ -7,6 +10,18 @@ import { HERO_ASPECT, HERO_VIEWBOX, heroScene } from '../lib/hero';
  * repinta), as lâmpadas estáticas. Decorativa; ids e classes ganham o prefixo da instância.
  */
 export function HeroScene() {
+  // A cena pintada (fixa, não repinta por tema), ancorada à direita; sem ela, o SVG de antes.
+  if (DESTAQUE) {
+    return (
+      <div className="hero-scene" aria-hidden="true">
+        <img src={DESTAQUE} alt="" decoding="async" fetchPriority="high" style={{ objectPosition: FOCO_DESTAQUE }} />
+      </div>
+    );
+  }
+  return <HeroSceneSvg />;
+}
+
+function HeroSceneSvg() {
   const prefix = `jjh${useId().replace(/[^\w-]/g, '')}_`;
   const scene = useMemo(() => heroScene(prefix), [prefix]);
   return (
