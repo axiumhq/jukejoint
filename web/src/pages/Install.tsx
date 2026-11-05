@@ -109,7 +109,7 @@ function DownloadCard() {
               <>
                 <p className="ih-name">{r.fileName}</p>
                 <p className="ih-meta">
-                  {t.install.version} <span className="num">{r.version}</span> · <span className="num">{r.sizeMb.toLocaleString('pt-BR')}</span> MB ·{' '}
+                  {t.install.version} <span className="num">{r.version}</span> · <span className="num">{r.sizeMb.toLocaleString('pt-BR')}</span>&nbsp;MB ·{' '}
                   <time dateTime={r.releasedAt}>{formatDate(r.releasedAt)}</time>
                 </p>
               </>

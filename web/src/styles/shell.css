@@ -791,6 +791,8 @@ html.is-desktop .frame {
   height: calc(100dvh - var(--titlebar) - var(--tb));
   overflow-y: auto;
   overflow-x: hidden;
+  /* rolar até o fim do painel (ou da folha, no celular) não arrasta a página de trás */
+  overscroll-behavior: contain;
   /* à direita, o mesmo recuo da barra do topo: os blocos terminam onde a conta termina */
   padding: var(--sp-4) var(--gut) var(--sp-4) 0;
   scrollbar-width: none;

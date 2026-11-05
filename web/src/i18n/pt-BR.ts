@@ -86,7 +86,7 @@ export const ptBR = {
   },
   search: {
     label: 'Buscar',
-    placeholder: 'Buscar lobby, modo ou pessoa',
+    placeholder: 'Buscar lobby, modo ou pessoa…',
     open: 'Abrir a busca',
     hint: 'Digite o nome de um lobby, de um modo ou de alguém.',
     none: (q: string) => `Nada com "${q}".`,
@@ -527,7 +527,7 @@ export const ptBR = {
     body: (host: string) => `Esse lobby é só com convite. ${host} recebe seu pedido e decide se abre a porta.`,
     privacy: 'Lobby com convite mostra só a contagem, sem os nomes de quem está dentro.',
     message: 'Recado para quem abriu (opcional)',
-    messagePlaceholder: 'Ex.: jogo de suporte, tenho call',
+    messagePlaceholder: 'Ex.: jogo de suporte, tenho call…',
     send: 'Bater na porta',
     cancel: 'Agora não',
     signIn: 'Para bater na porta, faça login com a Steam: quem abriu o lobby precisa saber quem é você.',

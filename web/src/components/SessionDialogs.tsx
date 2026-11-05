@@ -335,8 +335,10 @@ export function KnockDialog() {
             </label>
             <input
               id="knock-msg"
+              name="knock-message"
               className="dlg-input"
               type="text"
+              autoComplete="off"
               maxLength={80}
               value={message}
               placeholder={t.knock.messagePlaceholder}
@@ -485,8 +487,10 @@ export function HostDialog() {
             </div>
             <input
               id="host-name"
+              name="lobby-name"
               className="dlg-input"
               type="text"
+              autoComplete="off"
               value={name}
               placeholder={placeholder}
               maxLength={40}
