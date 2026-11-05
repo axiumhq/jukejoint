@@ -10,7 +10,8 @@
 // merge patch sobre o tauri.conf.json; o arquivo do repositório não muda).
 //
 // `build:live` roda `tauri build --no-bundle` e monta `out/<Marca>/` para mandar a um amigo: o
-// exe, o modlock.exe (conferido pelo SHA-256 fixado), `modos/hello` e um LEIA-ME.txt.
+// exe, o modlock.exe (conferido pelo SHA-256 fixado), `modos/` (o `hello` e os modos de verdade
+// de `REAL_PROJECTS`, em src-tauri/src/engine/catalog.rs) e um LEIA-ME.txt.
 // Processos sem shell: o CLI do Tauri roda pelo próprio Node.
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -117,9 +118,18 @@ if (mode === 'dev') process.exit(0);
 const out = join(desktop, 'out', brand);
 const exe = join(tauriDir, 'target', 'release', 'app-desktop.exe');
 const modlock = join(repo, 'tools', `modlock-${version}`, 'modlock.exe');
-const hello = join(repo, 'spike', 'mods', 'hello');
+// Os projetos que vão em modos/: o de teste e os de verdade, lidos do catálogo do app para as
+// duas listas nunca divergirem.
+const catalogRs = readFileSync(join(tauriDir, 'src', 'engine', 'catalog.rs'), 'utf8');
+const realList = catalogRs.match(/pub const REAL_PROJECTS: &\[&str\] = &\[([^\]]*)\];/);
+if (!realList) {
+  console.error('Não achei REAL_PROJECTS em src-tauri/src/engine/catalog.rs.');
+  process.exit(1);
+}
+const projects = ['hello', ...[...realList[1].matchAll(/"([a-z0-9-]+)"/g)].map((m) => m[1])];
+const projectDirs = projects.map((p) => [p, join(repo, 'spike', 'mods', p)]);
 
-for (const [what, p] of [['o exe do build', exe], [`o modlock.exe ${version} (scripts/install-modlock.ps1 baixa)`, modlock], ['o projeto de teste', hello]]) {
+for (const [what, p] of [['o exe do build', exe], [`o modlock.exe ${version} (scripts/install-modlock.ps1 baixa)`, modlock], ...projectDirs.map(([n, d]) => [`o projeto do modo ${n}`, d])]) {
   if (!existsSync(p)) {
     console.error(`Falta ${what}: ${p}`);
     process.exit(1);
@@ -135,11 +145,14 @@ rmSync(out, { recursive: true, force: true });
 mkdirSync(join(out, 'modos'), { recursive: true });
 copyFileSync(exe, join(out, `${brand}.exe`));
 copyFileSync(modlock, join(out, 'modlock.exe'));
-cpSync(hello, join(out, 'modos', 'hello'), {
-  recursive: true,
-  // Local run logs (server.log) carry paths and peer IDs from this PC: never ship them.
-  filter: (src) => !['node_modules', '.git', 'dist', '.build.lock'].includes(basename(src)) && !src.endsWith('.log'),
-});
+for (const [name, dir] of projectDirs) {
+  cpSync(dir, join(out, 'modos', name), {
+    recursive: true,
+    // Local run logs (server.log) carry paths and peer IDs from this PC: never ship them. The
+    // tests (test/) run in the repository only.
+    filter: (src) => !['node_modules', '.git', 'dist', '.build.lock', 'test'].includes(basename(src)) && !src.endsWith('.log'),
+  });
+}
 
 const leiaMe = `${brand}: cópia de teste do app
 ==============================
@@ -156,7 +169,7 @@ Antes de abrir
   3. Mantenha as 3 coisas juntas, na mesma pasta:
        ${brand}.exe     o app
        modlock.exe      o motor
-       modos\\          os modos (por enquanto só o de teste, hello)
+       modos\\          os modos (o Duelo à Meia-Noite e o de teste, hello)
 
 Abrir
   Dê dois cliques em ${brand}.exe. O Windows (SmartScreen) pode avisar que o app é de um editor
@@ -182,5 +195,5 @@ const tar = join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
 const z = existsSync(tar) ? spawnSync(tar, ['-a', '-c', '-f', zip, brand], { cwd: join(desktop, 'out'), stdio: 'inherit' }) : null;
 const zipped = z && !z.error && z.status === 0 && existsSync(zip);
 
-console.log(`\nPronto: ${out}\n  ${brand}.exe, modlock.exe (SHA-256 conferido), modos\\hello, LEIA-ME.txt`);
+console.log(`\nPronto: ${out}\n  ${brand}.exe, modlock.exe (SHA-256 conferido), modos\\{${projects.join(',')}}, LEIA-ME.txt`);
 console.log(zipped ? `Zip para mandar: ${zip}` : 'O zip não foi gerado (falta o tar.exe do Windows): zipe a pasta acima.');

@@ -160,11 +160,22 @@ export function useEngineHandoff({ view, meId, request, pushToast }: Options) {
     setAttempt((n) => n + 1);
   }, []);
 
-  /** Quem hospeda encerra a partida: fecha a sessão do app e reabre a sala. */
+  /**
+   * Quem hospeda encerra a partida: reabre a sala e fecha a sessão do app. O motor espera a
+   * partida fechar dentro do jogo (até uns 20 s), então os avisos dizem quando ela acabou mesmo.
+   */
   const endMatch = useCallback(() => {
-    stop();
+    const t = tracked.current;
+    tracked.current = null;
+    started.current = null;
     void request({ type: 'end_match' });
-  }, [request, stop]);
+    if (!t) return;
+    pushToast(D.endingMatch);
+    desktop.stop().then(
+      () => pushToast(D.endedMatch),
+      () => pushToast(D.endFailed),
+    );
+  }, [pushToast, request]);
 
   const mine = key !== null && local.key === key;
   return {
