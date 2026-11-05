@@ -1,5 +1,5 @@
 import { Fragment, createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { BRAND_NAME } from '@web/config/brand';
+import { Wordmark } from '@web/components/Brand';
 import {
   api,
   errorOf,
@@ -193,6 +193,9 @@ export function Install() {
   // Problemas primeiro (a recuperação do antivírus na frente, se o motor sumiu), depois o resto na
   // ordem de sempre. "O que o app não faz" fica sempre por último.
   const rank = (s: Block) => (s.problem ? (s.lead ? 0 : 1) : 2);
+  // "N de M conferidos": as seções que o app confere (o passo a passo do antivírus não entra na conta).
+  const counted = blocks.filter((s) => s.id !== 'antivirus');
+  const tally = { done: counted.filter((s) => !s.problem).length, total: counted.length };
   const ordered = blocks.map((s, i) => ({ s, i })).sort((a, z) => rank(a.s) - rank(z.s) || a.i - z.i).map((x) => x.s);
 
   return (
@@ -200,12 +203,16 @@ export function Install() {
       <div className="ins">
         <header className="ins-head">
           <div className="ins-brand">
-            <span className="ins-mark" aria-hidden="true" />
-            <span className="display ins-word">{BRAND_NAME}</span>
-            <span className="lbl">app desktop {app?.version ?? ''}</span>
-            {app && <span className="fine">{app.apiUrl ? `API ${app.apiUrl}` : 'build sem API'}</span>}
+            <Wordmark height={20} />
+            <span className="ins-ver num">app desktop v{app?.version ?? ''}</span>
           </div>
           <div className="ins-act">
+            {app && (
+              <span className="ins-api">
+                <span className={app.apiUrl ? 'dot is-on' : 'dot'} aria-hidden="true" />
+                {app.apiUrl ? 'API conectada' : 'build sem API'}
+              </span>
+            )}
             {checkedAt && (
               <span className="fine">
                 Verificado às <span className="num">{checkedAt.toLocaleTimeString('pt-BR')}</span>
@@ -229,28 +236,9 @@ export function Install() {
                 : 'Abrimos esta tela porque a checagem feita ao abrir o app encontrou algo que impede hospedar ou entrar. O resumo abaixo diz o quê e como resolver.'}
             </p>
           )}
-          <h1 className="display two ins-title">
-            O que o app <em>toca</em>
-          </h1>
-          <p className="ins-lead">
-            Tudo o que este app usa no seu PC, com caminho e hash para você conferir. A tela só lê o estado; a única ação aqui é ligar ou parar o serviço do
-            motor.
-          </p>
           {!inApp && <p className="ins-note">Prévia fora do app: os dados abaixo são de exemplo.</p>}
 
-          <Summary report={r} checkError={checkError} actionError={actionError} />
-
-          {ordered.length > 0 && (
-            <nav className="ins-toc" aria-label="Seções">
-              {ordered.map((s) => (
-                <a key={s.id} href={`#${s.id}`} className={s.problem ? 'is-pb' : undefined}>
-                  {s.name}
-                  {s.problem && <span className="sr-only"> (precisa de atenção)</span>}
-                </a>
-              ))}
-              <a href="#nao-faz">O que não faz</a>
-            </nav>
-          )}
+          <Summary report={r} checkError={checkError} actionError={actionError} tally={tally} />
 
           {ordered.map((s) => (
             <Fragment key={s.id}>{s.node}</Fragment>
@@ -645,16 +633,17 @@ function Summary({
   report,
   checkError,
   actionError,
+  tally,
 }: {
   report: CheckReport | null;
   checkError: EngineError | null;
   actionError: { action: Action; error: EngineError } | null;
+  tally: { done: number; total: number };
 }) {
   if (!report && !checkError) {
     return (
       <section className="sum" aria-busy="true">
-        <span className="sum-sig is-wait" aria-hidden="true" />
-        <p className="sum-t">Verificando…</p>
+        <h1 className="sum-t display">Verificando…</h1>
       </section>
     );
   }
@@ -664,11 +653,20 @@ function Summary({
   const ok = !!report?.ready && problems.length === 0 && !checkError && !actionError;
   return (
     <section className={ok ? 'sum is-ok' : 'sum'} aria-labelledby="sum-t">
-      <span className="sum-sig" aria-hidden="true" />
       <div className="sum-b">
-        <p className="sum-t" id="sum-t">
+        <h1 className="sum-t display" id="sum-t">
           {headline(report, checkError, !!actionError)}
-        </p>
+        </h1>
+        {report && tally.total > 0 && (
+          <p className="sum-bu">
+            <span className="bu" aria-hidden="true">
+              {Array.from({ length: tally.total }, (_, i) => (
+                <i key={i} className={i < tally.done ? 'on' : undefined} />
+              ))}
+            </span>
+            {tally.done} de {tally.total} conferidos
+          </p>
+        )}
         {checkError && <Problem p={checkError} />}
         {actionError && (
           <div className="sum-act">

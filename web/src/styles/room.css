@@ -1,55 +1,72 @@
 /*
- * A sala do lobby (/sala/:id), v8 (prototipos/v8/sala.html).
- * Cabeçalho com a capa larga e a fase, grade de vagas, barra PRONTO fixa e o trilho da sala.
- * Um acento só: --acc para agir (PRONTO, etapa feita), --acc-tx para estado (Confirmou, fase).
- * Movimento só como estado: a vaga estala ao confirmar, a etapa ativa pulsa só durante ela.
+ * A sala do lobby (/sala/:id), do Claude Design (Sala, Sala-Barras, Sala-Mobile).
+ * Cabeçalho com o medalhão do modo, a fase em quatro passos, a grade de vagas, a barra de ação
+ * fixa embaixo (de ponta a ponta, por baixo do painel) e o painel da sala em blocos.
+ * Um acento só: latão para agir e para a fase; presença (--live) para quem confirmou.
+ * Movimento só como estado: a vaga pula ao confirmar.
  */
 
-/* a barra PRONTO é fixa: o rodapé da coluna precisa de folga para não ficar embaixo dela */
-.app:has(.room-page) > .foot {
-  padding-bottom: 132px;
+/* a barra é fixa: o rodapé da coluna e o painel ganham folga para não ficar embaixo dela */
+.col:has(.room-page) > .foot {
+  padding-bottom: calc(var(--rbar-h, 92px) + 32px);
 }
 
-/* a barra fixa mora dentro da sala: a sala fica acima do rodapé da coluna para a barra não ir para baixo dele */
+/* a barra fixa mora dentro da sala: a sala fica acima do rodapé da coluna */
 .main > .room-page {
   z-index: 2;
 }
 
 /* os avisos sobem para não cobrir a barra; --rbar-h vem da altura medida dela (Room.tsx) */
 body:has(.rbar) .toasts {
-  bottom: calc(var(--rbar-h, 80px) + 32px);
+  bottom: calc(var(--rbar-h, 92px) + var(--bn) + 16px);
+}
+
+@media (min-width: 961px) {
+  .frame:has(.rbar) > .rail {
+    padding-bottom: calc(var(--rbar-h, 92px) + 16px);
+  }
+}
+
+.room-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 4px;
 }
 
 /* ───────── Cabeçalho ───────── */
 
 .rh {
-  position: relative;
-  height: 236px;
-  border-radius: var(--r-xl);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.rh-art {
+  width: 88px;
+  height: 88px;
+  flex: none;
   overflow: hidden;
-  background: var(--k0);
-  box-shadow: 0 0 0 1px var(--line) inset;
+  border-radius: var(--r-xl);
+  background: linear-gradient(180deg, var(--sky-1), var(--sky-2));
 }
 
-.rh > .cover {
-  z-index: 0;
+.rh-art {
+  display: grid;
+  place-items: center;
 }
 
-.rh-shade {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background:
-    linear-gradient(90deg, hsl(from var(--k0) h s l / 0.95) 0, hsl(from var(--k0) h s l / 0.7) 40%, transparent 72%),
-    linear-gradient(0deg, hsl(from var(--k0) h s l / 0.7), transparent 50%);
+/* o disco ocupa uns 70% do quadro, com o céu em volta (como no design) */
+.rh-art .med {
+  width: 72%;
+  height: 72%;
 }
 
-.rh-body {
-  position: absolute;
-  z-index: 2;
-  inset: 18px 26px 22px;
+.rh-t {
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -57,181 +74,159 @@ body:has(.rbar) .toasts {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 10px 0 8px;
-  border-radius: var(--r-sm);
-  font-size: 0.75rem;
-  font-weight: 550;
+  gap: 4px;
+  border-radius: var(--r-xs);
+  font-size: var(--fs-sm);
+  line-height: 18px;
   color: var(--tx-2);
-  background: hsl(0 0% 0% / 0.35);
-  transition:
-    color var(--t-fast),
-    background var(--t-fast);
+  transition: color var(--t-fast);
+}
+
+.rh-back .ico {
+  width: 14px;
+  height: 14px;
 }
 
 .rh-back:hover {
   color: var(--tx);
-  background: hsl(0 0% 0% / 0.55);
 }
 
 .rh h1 {
-  margin: auto 0 12px;
-  max-width: 62%;
-  font-size: 3.375rem;
+  font-size: var(--fs-h1);
+  line-height: 42px;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
 .rh-lock {
   display: inline-block;
-  width: 22px;
-  height: 22px;
-  margin-left: 12px;
-  vertical-align: 0.12em;
-  color: var(--tx-2);
+  width: 20px;
+  height: 20px;
+  margin-left: 10px;
+  vertical-align: 0.1em;
+  color: var(--tx-3);
 }
 
 .rh-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 4px 14px;
+  font-size: var(--fs-sm);
+  line-height: 18px;
   color: var(--tx-2);
-  font-size: 0.78125rem;
-}
-
-.rh-meta > i {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: var(--tx-3);
 }
 
 .rh-meta .who {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--tx);
-  font-weight: 550;
+  gap: 5px;
 }
 
-.rh-meta .tag.line {
-  color: var(--tx-2);
+.rh-meta .who .ico {
+  width: 15px;
+  height: 15px;
+  color: var(--acc);
 }
 
-/* a fase: canto superior direito, vidro só aqui (fica sobre a capa) */
-.rphase {
-  position: absolute;
-  z-index: 2;
-  right: 18px;
-  top: 18px;
-  width: 296px;
-  padding: 12px 14px;
-  border-radius: var(--r-lg);
-  background: hsl(from var(--k0) h s l / 0.62);
-  backdrop-filter: blur(14px) saturate(140%);
-  box-shadow: 0 0 0 1px hsl(0 0% 100% / 0.07) inset;
-}
-
-.rphase-t {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 0.75rem;
-  color: var(--tx-3);
-}
-
-.rphase-t .num {
-  font-size: 0.75rem;
-  letter-spacing: 0.04em;
+.rh-meta .num {
+  font-size: 0.9375rem;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-.rphase-bar {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
-  margin: 10px 0 9px;
+/* ───────── Fase ───────── */
+
+.rphase {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.rphase-bar i {
-  height: 3px;
-  border-radius: 3px;
-  background: hsl(0 0% 100% / 0.12);
-  transition: background var(--t-slow) var(--e-out);
+.rphase-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.rphase-bar i.on {
-  background: var(--acc-tx);
+.rphase-n {
+  font-weight: 600;
 }
 
 .rphase-v {
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  color: var(--tx-2);
+  text-align: right;
 }
 
-.rphase-v span {
-  color: var(--tx-3);
-  font-weight: 450;
+.rphase-steps {
+  display: flex;
+  gap: 8px;
 }
 
-/* ───────── Botão da folha (celular) ───────── */
-
-.rsheet {
-  display: none;
-  width: 100%;
-  align-items: center;
-  gap: 12px;
-  margin-top: 14px;
-  padding: 12px 14px;
-  border-radius: var(--r-xl);
-  background: var(--s2);
-  box-shadow: 0 0 0 1px var(--line) inset;
-  text-align: left;
-  transition: background var(--t-fast);
-}
-
-.rsheet:hover {
-  background: var(--s3);
-}
-
-.rsheet .ri {
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  flex: none;
-  border-radius: var(--r-md);
-  background: var(--acc-soft);
-  color: var(--acc-tx);
-}
-
-.rsheet .t {
+.rphase-steps li {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  color: var(--tx-2);
 }
 
-.rsheet .t b {
+.rphase-steps i {
   display: block;
-  font-size: 0.875rem;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--s3);
+  transition: background-color var(--t-slow) var(--e-out);
+}
+
+.rphase-steps li.on i {
+  background: var(--acc);
+}
+
+.rphase-steps li.at {
   font-weight: 600;
 }
 
-.rsheet .t span {
-  font-size: 0.75rem;
-  color: var(--tx-3);
-}
-
-.rsheet > .ico {
-  color: var(--tx-3);
+.rphase-steps span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ───────── Vagas ───────── */
 
+.rseats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rseats-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rseats-h h2 {
+  font: 600 var(--fs-lg) / 22px var(--f-ui);
+}
+
+.rseats-h .btn {
+  --h: 28px;
+  padding: 0 8px;
+}
+
 .seats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .seat-li {
@@ -243,305 +238,840 @@ body:has(.rbar) .toasts {
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 112px;
-  padding: 14px;
+  min-height: 136px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
   border-radius: var(--r-lg);
   background: var(--s2);
-  box-shadow: 0 0 0 1px var(--line) inset;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  transition:
-    box-shadow var(--t-mid) var(--e-out),
-    background var(--t-mid);
+  transition: box-shadow var(--t-mid) var(--e-out);
 }
 
-.seat:hover {
-  background: var(--s3);
-}
-
-.seat.is-ok {
-  box-shadow: 0 0 0 1px var(--line-2) inset;
-  background: linear-gradient(180deg, hsl(from var(--acc) h s l / 0.07), transparent 62%), var(--s2);
-}
-
-/* fio de acento no topo de quem confirmou */
-.seat.is-ok::before {
-  content: '';
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--acc-tx), transparent);
-  opacity: 0.8;
+/* o ponto de presença do design: 11 px, cheio */
+.seat .pres {
+  --d: 11px;
 }
 
 .seat.is-me {
-  box-shadow:
-    0 0 0 1px var(--line-2) inset,
-    0 0 0 1px var(--tx-3);
+  box-shadow: inset 0 0 0 1px var(--acc);
 }
 
-.seat.is-me.is-ok {
-  box-shadow:
-    0 0 0 1px var(--acc-tx) inset,
-    0 12px 30px -18px hsl(0 0% 0% / 0.6);
-}
-
-/* estala ao confirmar */
+/* pula ao confirmar */
 .seat.is-pop {
-  animation: seat-pop var(--t-slow) var(--e-out);
+  animation: seat-pop 0.32s var(--e-out);
 }
 
 @keyframes seat-pop {
   40% {
-    transform: scale(1.03);
+    transform: translateY(-5px);
   }
 }
 
-.seat-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.seat-top .tag {
-  backdrop-filter: none;
-}
-
 .seat-t {
-  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
 }
 
 .seat-n {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-width: 0;
+}
+
+.seat-n b {
+  min-width: 0;
+  max-width: 100%;
   font-weight: 600;
-  font-size: 0.84375rem;
-  letter-spacing: -0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.seat-s {
-  display: flex;
+.seat-crown {
+  width: 14px;
+  height: 14px;
+  color: var(--acc);
+}
+
+/* marca curta em Barlow: "Você" (latão) e "Sua lista" */
+.mk {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  font-size: 0.75rem;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-2xs);
+  background: var(--s3);
+  font: 600 var(--fs-sm) / 1 var(--f-num);
+  letter-spacing: 0.03em;
+  color: var(--tx-2);
+  white-space: nowrap;
+}
+
+.mk.is-you {
+  background: var(--acc);
+  color: var(--acc-ink);
+}
+
+.seat-s {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  line-height: 16px;
   color: var(--tx-3);
 }
 
 .seat-s .ico {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
 }
 
 .seat.is-ok .seat-s {
-  color: var(--acc-tx);
-  font-weight: 550;
-}
-
-.seat-s .ring {
-  width: 12px;
-  height: 12px;
-  flex: none;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1.4px currentColor inset;
+  color: var(--live);
 }
 
 .seat.is-me:not(.is-ok) .seat-s {
   color: var(--tx);
-  font-weight: 550;
+  font-weight: 600;
 }
 
-/* vaga livre: tracejado; vira acento no hover porque convida */
-.seat.is-empty {
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  text-align: center;
-  background: transparent;
-  box-shadow: none;
-  border: 1px dashed var(--line-2);
+.seat-kick {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--r-xs);
+  font-size: var(--fs-xs);
   color: var(--tx-3);
   transition:
-    border-color var(--t-fast),
-    color var(--t-fast),
-    background var(--t-fast);
+    background-color var(--t-fast),
+    color var(--t-fast);
 }
 
-button.seat.is-empty:hover {
-  border-color: var(--acc-line);
-  color: var(--acc-tx);
-  background: var(--acc-soft);
+.seat-kick:hover {
+  background: var(--s3);
+  color: var(--warn);
 }
 
-.seat.is-empty.is-static:hover {
+/* vaga livre: só o fio; convida no hover */
+.seat.is-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  text-align: center;
   background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--tx-2);
+  transition:
+    background-color var(--t-fast),
+    color var(--t-fast);
 }
 
 .seat.is-empty b {
-  font-size: 0.78125rem;
   font-weight: 600;
-  color: inherit;
 }
 
 .seat.is-empty small {
-  font-size: 0.75rem;
-  opacity: 0.8;
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  color: var(--tx-3);
 }
 
-.seat.is-empty .plus {
-  width: 30px;
-  height: 30px;
+button.seat.is-empty:hover {
+  background: var(--s2);
+  color: var(--tx);
+}
+
+.seat.is-empty.is-static {
+  color: var(--tx-3);
+}
+
+/* ───────── Botão da folha (celular) ───────── */
+
+.rsheet {
+  display: none;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-lg);
+  background: var(--s2);
+  text-align: left;
+  transition: background-color var(--t-fast);
+}
+
+.rsheet:hover {
+  background: var(--s3);
+}
+
+.rsheet .t {
+  flex: 1;
+  min-width: 0;
   display: grid;
-  place-items: center;
-  border-radius: 50%;
-  box-shadow: 0 0 0 1px currentColor inset;
-  opacity: 0.8;
 }
 
-/* ───────── Barra PRONTO ───────── */
+.rsheet .t b {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.rsheet .t span {
+  font-size: var(--fs-xs);
+  color: var(--tx-3);
+}
+
+.rsheet > .ico {
+  color: var(--tx-3);
+}
+
+/* ───────── Barra de ação ───────── */
 
 .rbar {
   position: fixed;
   z-index: 30;
-  left: var(--gut);
-  right: calc(var(--rail) + var(--gut));
-  bottom: 16px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 22px;
-  padding: 12px 12px 12px 20px;
-  border-radius: var(--r-xl);
-  background: hsl(from var(--s2) h s l / 0.97);
-  backdrop-filter: blur(16px) saturate(140%);
-  box-shadow:
-    0 0 0 1px var(--line-2) inset,
-    0 24px 50px -20px hsl(0 0% 0% / 0.8);
-}
-
-.rb-n {
+  /* da barra lateral até a borda: passa por baixo do painel, como no design */
+  left: var(--side-w, 0px);
+  right: 0;
+  bottom: var(--bn);
+  min-height: 92px;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  white-space: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 12px 28px;
+  background: var(--s2);
+  box-shadow: inset 0 1px 0 var(--line);
 }
 
-.rb-n b {
-  font-size: 1.625rem;
+.rbar.is-fail {
+  box-shadow: inset 0 2px 0 var(--warn);
+}
+
+.rb-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* o número da contagem, em Bodoni */
+.rb-cd {
+  min-width: 1ch;
+  font-size: 3.5rem;
+  line-height: 60px;
+  color: var(--acc);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.rb-txt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rb-tx {
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.03em;
 }
 
-.rb-n > span {
+.rb-sub {
+  font-size: var(--fs-sm);
+  line-height: 18px;
   color: var(--tx-2);
-  font-size: 0.8125rem;
 }
 
-.rb-n .rb-k {
-  color: var(--tx-3);
-  font-size: 0.75rem;
-}
-
+/* o medidor: uma lâmpada por pessoa na sala; a do mínimo é mais alta */
 .rb-ticks {
   display: flex;
+  align-items: flex-end;
   gap: 3px;
-  margin-top: 9px;
+  height: 20px;
 }
 
 .rb-ticks i {
-  position: relative;
-  width: 16px;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--s4);
-  transition: background var(--t-mid);
+  width: 14px;
+  height: 8px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--s3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  transition:
+    background-color var(--t-mid),
+    box-shadow var(--t-mid);
 }
 
 .rb-ticks i.on {
-  background: var(--acc-tx);
+  background: var(--bulb);
+  box-shadow: 0 0 6px rgb(232 190 120 / 0.45);
+}
+
+.rb-ticks i.th {
+  height: 18px;
 }
 
 /* vaga que ainda nem foi ocupada (o mínimo é maior que quem está na sala) */
 .rb-ticks i.gap {
   background: transparent;
-  box-shadow: 0 0 0 1px var(--line-2) inset;
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-/* o traço do mínimo: "começa com K" */
-.rb-ticks i.th::after {
-  content: '';
-  position: absolute;
-  right: -2.5px;
-  top: -4px;
-  width: 1px;
-  height: 11px;
-  background: var(--tx-2);
+/* as etapas do app: feita (presença), atual (latão), por vir */
+.rb-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.rb-mid {
-  min-width: 0;
+.rb-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  background: var(--s3);
+  font-size: var(--fs-sm);
+  color: var(--tx-3);
+  white-space: nowrap;
 }
 
-.rb-hint {
+.rb-steps li .ico {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.8;
+}
+
+.rb-steps li.is-done {
+  color: var(--live);
+}
+
+.rb-steps li.is-on {
+  background: var(--acc);
+  color: var(--acc-ink);
+  font-weight: 600;
+}
+
+/* dentro do app: o projeto de teste no lugar do modo, dito na própria barra */
+.rb-steps li.rb-test {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--tx-2);
+}
+
+.rb-act {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 0;
-  color: var(--tx-3);
-  font-size: 0.75rem;
-  line-height: 1.4;
+  flex: none;
 }
 
-.rb-hint > span {
+.rb-ready .kbd {
+  letter-spacing: 0;
+}
+
+/* depois de confirmar: fica na cor de presença e desmarca no clique */
+.rb-ready.is-on {
+  background: var(--s3);
+  color: var(--live);
+}
+
+.rb-ready.is-on:hover {
+  background: var(--s4);
+}
+
+.rb-go {
+  display: contents;
+}
+
+.rb-go .btn {
+  --h: 60px;
+  padding: 0 28px;
+  font-size: 1.125rem;
+  letter-spacing: 0.02em;
+}
+
+.rb-help {
+  gap: 0.3em;
+  font-weight: 500;
+}
+
+.rb-help u {
+  text-decoration-color: var(--line-2);
+  text-underline-offset: 3px;
+}
+
+.rb-help:hover u {
+  text-decoration-color: currentColor;
+}
+
+/* o detalhe técnico da falha: sobe da barra, à direita */
+.rb-tech {
+  position: absolute;
+  right: 28px;
+  bottom: calc(100% + 8px);
+  width: min(520px, calc(100% - 56px));
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--s2);
+  box-shadow: var(--sh-pop);
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  color: var(--tx-2);
+}
+
+.rb-tech[hidden] {
+  display: none;
+}
+
+.rb-tech code {
+  max-height: 160px;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font: 400 var(--fs-xs) / 16px var(--f-code);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ───────── Painel da sala ───────── */
+
+.rroom-h {
+  margin-bottom: 10px;
+  font-size: 1.5rem;
+  line-height: 32px;
+}
+
+.rrules {
+  display: grid;
+  gap: 2px;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  color: var(--tx-2);
+  text-wrap: pretty;
+}
+
+.rrules-all {
+  align-self: flex-start;
+}
+
+.rinv-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rinv-in {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  font-size: 0.9375rem;
+  letter-spacing: 0.02em;
+  color: var(--tx-2);
+}
+
+.rinv-in:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.rinv-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+}
+
+.rinv-list .btn {
+  flex: none;
+}
+
+.rail-sec .rinv-list .btn-sm,
+.rknock-act .btn-sm {
+  --h: 30px;
+}
+
+.rinv-out {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+  font-size: var(--fs-sm);
+  color: var(--tx-3);
+}
+
+.rknocks {
+  display: grid;
+  gap: 12px;
+}
+
+.rknock {
+  display: grid;
+  gap: 6px;
+}
+
+.rknock p {
+  font-size: var(--fs-sm);
+  line-height: 18px;
+}
+
+.rknock p b {
+  font-weight: 600;
+}
+
+.rknock p span {
+  color: var(--tx-2);
+}
+
+.rknock-act {
+  display: flex;
+  gap: 8px;
+}
+
+.ract {
+  display: grid;
+  gap: 6px;
+}
+
+.ract-i {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--fs-sm);
+  line-height: 18px;
+  color: var(--tx-2);
+  animation: act-in var(--t-slow) var(--e-out);
+}
+
+.ract-t {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.rb-hint.is-count {
-  gap: 12px;
-  color: var(--tx-2);
-}
-
-.rb-hint.is-count > span {
-  white-space: normal;
-}
-
-.rb-cd {
-  font-size: 1.625rem;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--acc-tx);
-  min-width: 1ch;
-}
-
-/* o app trabalhando (entrada e handoff): só a etapa atual, em texto; o progresso numerado é o do cabeçalho */
-.rb-work {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.rb-hint.is-work {
-  color: var(--tx-2);
-}
-
-.rb-hint.is-work b {
+.ract-i b {
+  font-weight: 500;
   color: var(--tx);
-  font-weight: 600;
 }
 
-/* o anel da etapa ativa: gira só enquanto o app trabalha */
+.ract-i .t {
+  flex: none;
+  font-size: 0.875rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+
+@keyframes act-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+/* ───────── Conectando e sala fechada ───────── */
+
+.room-wait {
+  display: grid;
+  gap: 16px;
+  padding-top: 12px;
+}
+
+.room-wait h1 {
+  font-size: 2rem;
+  line-height: 40px;
+}
+
+.room-skel {
+  min-height: 136px;
+  border-radius: var(--r-lg);
+}
+
+.room-gone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 60vh;
+  text-align: center;
+}
+
+.room-gone h1 {
+  font-size: 2.5rem;
+  line-height: 48px;
+}
+
+.room-gone p {
+  color: var(--tx-2);
+}
+
+.room-gone .btn {
+  margin-top: 10px;
+}
+
+/* ───────── Pontos de quebra ───────── */
+
+@media (max-width: 1100px) {
+  .seats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rb-txt {
+    gap: 4px;
+  }
+}
+
+@media (max-width: 960px) {
+  .rbar {
+    left: 0;
+  }
+
+  .rsheet {
+    display: flex;
+  }
+
+  .rroom-h {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .rbar {
+    gap: 16px;
+    padding: 12px 16px;
+  }
+
+  .rb-steps li {
+    height: 24px;
+    padding: 0 8px;
+    font-size: var(--fs-xs);
+  }
+}
+
+/* celular (Sala-Mobile): cabeçalho curto, vagas em duas colunas sem avatar, barra empilhada */
+@media (max-width: 640px) {
+  .room-page {
+    gap: 10px;
+    padding-top: 0;
+  }
+
+  .rh {
+    gap: 10px;
+  }
+
+  .rh-art {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--r-md);
+  }
+
+  .rh-back {
+    font-size: var(--fs-xs);
+    line-height: 16px;
+  }
+
+  .rh h1 {
+    font-size: 1.5rem;
+    line-height: 28px;
+  }
+
+  .rh-meta {
+    gap: 2px 10px;
+    font-size: var(--fs-xs);
+    line-height: 16px;
+  }
+
+  .rh-meta .who .ico {
+    width: 13px;
+    height: 13px;
+  }
+
+  .rh-meta .num {
+    font-size: 0.8125rem;
+  }
+
+  .rh-meta .hide-sm {
+    display: none;
+  }
+
+  .rphase {
+    gap: 4px;
+  }
+
+  .rphase-h {
+    font-size: var(--fs-sm);
+  }
+
+  .rphase-steps {
+    gap: 4px;
+  }
+
+  .rphase-steps span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .rseats {
+    gap: 8px;
+  }
+
+  .rseats-h h2 {
+    font-size: var(--fs-sm);
+    line-height: 18px;
+  }
+
+  .seats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .seat {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 0;
+    min-height: 56px;
+    padding: 6px 10px;
+    border-radius: var(--r-md);
+  }
+
+  .seat .pres {
+    display: none;
+  }
+
+  .seat-n b {
+    font-size: var(--fs-sm);
+  }
+
+  .seat.is-empty {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .seats .seat .seat-kick {
+    top: 50%;
+    translate: 0 -50%;
+  }
+
+  .rbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    min-height: 0;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .rb-main {
+    gap: 12px;
+  }
+
+  .rb-cd {
+    font-size: 2.5rem;
+    line-height: 44px;
+  }
+
+  .rb-tx {
+    font-size: var(--fs-sm);
+    line-height: 18px;
+  }
+
+  .rb-sub {
+    font-size: var(--fs-xs);
+    line-height: 16px;
+  }
+
+  .rbar .rb-ticks {
+    display: none;
+  }
+
+  .rb-act .btn {
+    --h: 52px;
+  }
+
+  .rb-act .btn-xl,
+  .rb-go .btn,
+  .rb-act > .btn-o:only-child {
+    flex: 1;
+    padding: 0 16px;
+    font-size: var(--fs-md);
+  }
+
+  .rb-act .rb-help {
+    --h: 36px;
+    margin-inline: auto;
+  }
+
+  .rbar .kbd {
+    display: none;
+  }
+
+  .rb-tech {
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+
+  .room-gone h1 {
+    font-size: 2rem;
+    line-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat.is-pop,
+  .ract-i {
+    animation: none;
+  }
+}
+
+/* live.css também desenha os pedidos e o Remover: aqui valem os do design */
+.rknocks .rknock {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  padding: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.rknocks .rknock-act {
+  grid-column: auto;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.seat .seat-kick {
+  top: 6px;
+  right: 6px;
+  bottom: auto;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: var(--r-xs);
+}
+
+/* o anel do app trabalhando (também no diálogo de entrada, SessionDialogs) */
 .rb-spin {
   width: 14px;
   height: 14px;
@@ -558,404 +1088,12 @@ button.seat.is-empty:hover {
   }
 }
 
+/* a etapa ativa pulsa (Jogar agora, abaixo) */
 @keyframes step-pulse {
   to {
     box-shadow:
       0 0 0 1.5px var(--acc-tx) inset,
       0 0 0 4px var(--acc-soft);
-  }
-}
-
-.rb-help {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  min-height: 24px;
-  font-size: 0.75rem;
-  color: var(--tx-3);
-  white-space: nowrap;
-}
-
-.rb-help u {
-  color: var(--tx-2);
-  text-decoration-color: var(--line-2);
-  text-underline-offset: 3px;
-}
-
-.rb-help:hover u {
-  color: var(--tx);
-  text-decoration-color: currentColor;
-}
-
-/* dentro do app: o projeto de teste no lugar do modo, dito na própria barra */
-.rb-test {
-  flex: none;
-}
-
-/* dentro do app: hospedar ou entrar falhou (a frase do app e o detalhe técnico recolhido) */
-.rb-fail {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  color: var(--tx-2);
-  font-size: 0.75rem;
-  line-height: 1.4;
-}
-
-.rb-fail > .ico {
-  flex: none;
-  margin-top: 1px;
-  color: var(--warn);
-}
-
-.rb-fail-t {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.rb-fail-t > b {
-  color: var(--tx);
-  font-weight: 600;
-}
-
-.rb-fail .dlg-tech code {
-  max-height: 96px;
-  overflow: auto;
-}
-
-.rb-act {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.rb-ready,
-.rb-go .btn {
-  --h: 50px;
-  min-width: 196px;
-  padding: 0 22px;
-  border-radius: var(--r-md);
-  font-size: 0.875rem;
-  font-weight: 650;
-}
-
-/* só o PRONTO em caixa alta ganha o espaçamento largo */
-.rb-ready.is-caps {
-  font-size: 0.9375rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.rb-ready .kbd {
-  letter-spacing: 0;
-}
-
-.rb-ready.is-on {
-  background: var(--s4);
-  color: var(--acc-tx);
-  box-shadow: 0 0 0 1.5px var(--acc-tx) inset;
-}
-
-.rb-ready.is-on:hover {
-  background: var(--s3);
-}
-
-.rb-ready.btn-p:disabled {
-  background: var(--s3);
-  color: var(--tx-3);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
-  opacity: 1;
-}
-
-.rb-ready[aria-disabled='true'] {
-  color: var(--tx-3);
-  opacity: 1;
-}
-
-.rb-go {
-  display: contents;
-}
-
-/* ───────── Trilho da sala ───────── */
-
-.rrules {
-  display: grid;
-  gap: 6px;
-}
-
-.rrule {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: var(--r-md);
-  background: var(--s2);
-  box-shadow: 0 0 0 1px var(--line) inset;
-  font-size: 0.78125rem;
-  line-height: 1.4;
-  text-wrap: pretty;
-}
-
-.rrule .ri {
-  width: 30px;
-  height: 30px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-sm);
-  background: var(--acc-soft);
-  color: var(--acc-tx);
-}
-
-.rrule > span:last-child {
-  align-self: center;
-}
-
-.rinv-link {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  margin-bottom: 10px;
-  padding: 0 4px 0 12px;
-  border-radius: var(--r-md);
-  background: var(--s1);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
-}
-
-.rinv-link code {
-  flex: 1;
-  min-width: 0;
-  font-size: 0.75rem;
-  color: var(--tx-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rinv-out {
-  display: grid;
-  gap: 10px;
-  justify-items: start;
-  color: var(--tx-3);
-  font-size: 0.78125rem;
-}
-
-.ract-i {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 6px 0;
-  font-size: 0.75rem;
-  color: var(--tx-2);
-  animation: act-in var(--t-slow) var(--e-out);
-}
-
-.ract-t {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.ract-i b {
-  color: var(--tx);
-  font-weight: 600;
-}
-
-.ract-ico {
-  width: 20px;
-  height: 20px;
-  flex: none;
-  display: grid;
-  place-items: center;
-  color: var(--tx-3);
-}
-
-.ract-ico .ico {
-  width: 14px;
-  height: 14px;
-}
-
-.ract-i .t {
-  margin-left: auto;
-  flex: none;
-  font-size: 0.75rem;
-  color: var(--tx-3);
-  white-space: nowrap;
-}
-
-@keyframes act-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-}
-
-/* ───────── Sala fechada ───────── */
-
-.room-gone {
-  display: grid;
-  justify-items: start;
-  gap: 14px;
-  max-width: 560px;
-  margin: 48px 0 24px;
-  padding: 28px;
-  border-radius: var(--r-xl);
-  background: var(--s1);
-  box-shadow: 0 0 0 1px var(--line) inset;
-}
-
-.room-gone h1 {
-  font-size: 2.75rem;
-}
-
-.room-gone p {
-  color: var(--tx-2);
-  font-size: 0.84375rem;
-  max-width: 46ch;
-}
-
-.room-gone .btn {
-  margin-top: 6px;
-}
-
-/* ───────── Pontos de quebra ───────── */
-
-@media (max-width: 1100px) {
-  .seats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .rphase {
-    display: none;
-  }
-
-  .rh h1 {
-    max-width: none;
-  }
-}
-
-@media (max-width: 960px) {
-  .rbar {
-    right: var(--gut);
-  }
-
-  .rsheet {
-    display: flex;
-  }
-
-  .rh-meta .hide-md {
-    display: none;
-  }
-
-  .rh-meta .vh-md {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 760px) {
-  .app:has(.room-page) > .foot {
-    padding-bottom: 176px;
-  }
-
-  body:has(.rbar) .toasts {
-    bottom: calc(var(--rbar-h, 118px) + 32px);
-  }
-}
-
-@media (max-width: 640px) {
-  .rh {
-    height: 196px;
-  }
-
-  .rh-body {
-    inset: 12px 16px 14px;
-  }
-
-  .rh h1 {
-    margin-bottom: 8px;
-    font-size: 2.375rem;
-  }
-
-  .rh-meta {
-    gap: 6px 8px;
-    font-size: 0.75rem;
-  }
-
-  .seats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .seat {
-    min-height: 96px;
-    padding: 12px;
-  }
-
-  .rbar {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px 12px;
-    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-    border-radius: 16px 16px 0 0;
-  }
-
-  .rb-mid {
-    grid-column: 1 / -1;
-    order: 3;
-  }
-
-  .rb-hint > span {
-    white-space: normal;
-  }
-
-  .rb-act .btn-g {
-    display: none;
-  }
-
-  .rb-ready,
-  .rb-go .btn {
-    --h: 48px;
-    min-width: 132px;
-    padding: 0 16px;
-  }
-
-  .rb-ticks i {
-    width: 11px;
-  }
-
-  .rb-n b {
-    font-size: 1.375rem;
-  }
-
-  .rb-work {
-    flex-wrap: wrap;
-    gap: 6px 12px;
-  }
-
-  .room-gone {
-    padding: 20px;
-  }
-
-  .room-gone h1 {
-    font-size: 2.125rem;
-  }
-}
-
-@media (max-width: 400px) {
-  .rb-n .rb-k {
-    display: none;
   }
 }
 

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { CopyField, SectionTitle } from '../components/Common';
 import { Icon } from '../components/Icon';
-import { PageHead } from '../components/PageHead';
+import { HeroArt } from '../components/HeroArt';
 import { Rail } from '../components/Rail';
 import { APP_RELEASE } from '../config/brand';
 import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
@@ -11,6 +11,7 @@ import { useDocumentTitle } from '../hooks';
 import { formatDate, formatShortDate, t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
 import { useSession } from '../state/session';
+import '../styles/info.css';
 
 /**
  * /instalar no v8: página de confiança, precisa e calma. Ordem: o instalador (versão, tamanho,
@@ -89,50 +90,44 @@ function AppStatus() {
 function DownloadCard() {
   const { pushToast, desktop } = useSession();
   return (
-    <section className="dl" id="baixar" aria-labelledby="dl-title">
-      <div className="dl-main">
-        <h2 className="sr-only" id="dl-title">
-          {t.install.downloadTitle}
-        </h2>
-        <p className="dl-file display">{APP_RELEASE.fileName}</p>
-        <dl className="dl-meta">
-          <div>
-            <dt className="lbl">{t.install.version}</dt>
-            <dd className="num">{APP_RELEASE.version}</dd>
-          </div>
-          <div>
-            <dt className="lbl">{t.install.size}</dt>
-            <dd>
-              <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB
-            </dd>
-          </div>
-          <div>
-            <dt className="lbl">{t.install.date}</dt>
-            <dd>
-              <time dateTime={APP_RELEASE.releasedAt}>{formatDate(APP_RELEASE.releasedAt)}</time>
-            </dd>
-          </div>
-        </dl>
-        <button type="button" className="btn btn-p btn-lg dl-btn" onClick={() => pushToast(t.install.downloadToast)}>
-          <Icon name="download" />
-          <span className="dl-btn-t">{t.install.download(APP_RELEASE.fileName)}</span>
-        </button>
-        <p className="dl-req">{t.install.requirements}</p>
-        <p className="dl-req mobile-note">{t.install.mobileNote}</p>
-      </div>
-      <div className="dl-side">
-        <div className="dl-hash" id="hash">
-          <h3 className="dl-h">{t.install.hashTitle}</h3>
-          <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
-          <p className="dl-note">{t.install.hashHelp}</p>
+    <>
+      <section className="ih" id="baixar" aria-labelledby="dl-title">
+        <HeroArt />
+        <div className="ih-top">
+          <h1 className="ih-title display" id="dl-title">
+            {t.install.titleWords[0]} {t.install.titleWords[1]}
+          </h1>
+          <span className="ih-sub">{t.install.platformMeta}</span>
         </div>
-        <p className="dl-src">
-          <Icon name="link" />
+        <div className="ih-band">
+          <div className="ih-file">
+            <p className="ih-name">{APP_RELEASE.fileName}</p>
+            <p className="ih-meta">
+              {t.install.version} <span className="num">{APP_RELEASE.version}</span> · <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB ·{' '}
+              <time dateTime={APP_RELEASE.releasedAt}>{formatDate(APP_RELEASE.releasedAt)}</time>
+            </p>
+          </div>
+          <button type="button" className="btn btn-p btn-lg ih-btn" onClick={() => pushToast(t.install.downloadToast)}>
+            <Icon name="download" />
+            <span>{t.install.downloadShort}</span>
+          </button>
+        </div>
+      </section>
+
+      <div className="ih-hash" id="hash">
+        <h2 className="ih-k">{t.install.hashTitle}</h2>
+        <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
+        <p className="ih-src">
           {t.install.source} <span>({t.install.sourceNote})</span>
         </p>
+        <p className="ih-help">{t.install.hashHelp}</p>
       </div>
-      <div className="dl-status">{desktop ? <AppStatusInApp /> : <AppStatus />}</div>
-    </section>
+
+      <div className="ih-status">{desktop ? <AppStatusInApp /> : <AppStatus />}</div>
+      <p className="ih-req">
+        {t.install.requirements} {t.install.mobileNote}
+      </p>
+    </>
   );
 }
 
@@ -303,7 +298,6 @@ export function Install() {
 
   return (
     <>
-      <PageHead words={t.install.titleWords} meta={t.install.platformMeta} lead={t.install.lead} />
       <DownloadCard />
       <Steps />
 

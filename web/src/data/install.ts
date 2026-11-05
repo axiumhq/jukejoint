@@ -14,7 +14,7 @@ export const installedItems: InstalledItem[] = [
 ];
 
 export const appDoes: string[] = [
-  'Abre o Deadlock com os arquivos do modo escolhido.',
+  'Abre o jogo com os arquivos do modo escolhido.',
   'Baixa modos sob demanda, só quando você entra num lobby deles.',
   'Conecta este site ao jogo para o botão Entrar funcionar.',
   'Procura atualizações ao abrir e baixa a nova versão em segundo plano.',

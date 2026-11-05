@@ -1,23 +1,26 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Region } from '../data/modes';
-import { useFavorites, useFriends, useLiveStats, usePref } from '../hooks';
+import { useFavorites, useFriends, usePref } from '../hooks';
 import { useLobbyFilters, type BrowseTab } from '../hooks/useFilters';
 import { t } from '../i18n';
 import { live as L } from '../i18n/live';
 import { filterLobbies, hasFriends, LOW_PING_MS, nearestAlternatives, REGIONS } from '../lib/lobbies';
-import { liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
-import { Chip, SectionTitle } from './Common';
+import { Chip, EmptyState, Skeleton } from './Common';
 import { Icon } from './Icon';
 import { CreateCard, LobbyCard, orderLobbies } from './LobbyCard';
 
 /**
- * "Lobbies abertos": abas (Todos / Amigos / Favoritos), chips de filtro na URL, cartões ↔ compacto,
- * "Mostrar os outros N", os estados vazios e o anúncio resumido para leitor de tela.
+ * A lista da home ("Jogar agora", ou o nome do modo filtrado): abas Todos / Sua lista / Favoritos
+ * com a região ao lado, chips de filtro na URL, cartões ↔ compacto, o cartão "Criar lobby",
+ * "Mostrar os outros N lobbies", o esqueleto, os estados vazios e o anúncio resumido para leitor de tela.
+ * No celular as abas e a região viram chips na mesma fileira dos filtros.
  */
 
-const PAGE = 9;
+/** Oito cartões e o "Criar lobby": três fileiras cheias na grade de três. */
+const PAGE = 8;
+const SKELETONS = 6;
 
 /** Anúncio resumido para leitor de tela: no máximo um a cada 15 s, nunca por cartão. */
 function useActivityAnnouncer(lobbies: Lobby[]) {
@@ -38,7 +41,7 @@ function useActivityAnnouncer(lobbies: Lobby[]) {
   return message;
 }
 
-/** Faixa de ping por região, para o chip ("BR/SA 12–58 ms"). */
+/** Faixa de ping por região, para a região ("BR/SA 12–58 ms"). */
 function pingRange(list: Lobby[], r: Region) {
   const ps = list.filter((l) => l.region === r).map((l) => l.ping);
   return ps.length ? t.browse.pingRange(Math.min(...ps), Math.max(...ps)) : null;
@@ -60,8 +63,6 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
   const signedIn = !!user;
   /** ?vazio=1 simula a cidade sem nenhum lobby (para revisar o estado vazio). */
   const pool = params.get('vazio') === '1' ? [] : lobbies;
-  const live = useLiveStats();
-  const stats = pool === lobbies ? live : liveStats(pool);
   const announcement = useActivityAnnouncer(pool);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -70,7 +71,7 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
   useEffect(() => setShown(PAGE), [key]);
 
   const filtered = useMemo(() => filterLobbies(pool, f, signedIn, lobbyCtx, now), [pool, f, signedIn, lobbyCtx, now]);
-  // Amigos sem login: não há lista para filtrar, então a aba mostra o convite para entrar.
+  // Sua lista sem login: não há lista para filtrar, então a aba mostra o convite para o login.
   const results = tab === 'fav' ? filtered.filter((l) => favs.has(l.id)) : tab === 'friends' && !signedIn ? [] : filtered;
   const anyChip = !!f.mode || f.regions.length > 0 || f.slotsOnly || f.beginners || f.playing || f.lowPing || f.q !== '';
   const narrowed = anyChip || tab !== 'all';
@@ -88,6 +89,9 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
   const env = { ctx: lobbyCtx, signedIn, me: user?.name ?? t.lobbies.you, friends, now };
   const create = () => openHost(f.mode || undefined);
   const toggleRegion = (r: Region) => update({ regions: f.regions.includes(r) ? f.regions.filter((x) => x !== r) : [...f.regions, r] });
+  // A faixa de ping aparece na região marcada; sem marca, na mais perto (menor ping).
+  const nearest = pool.length ? pool.reduce((a, b) => (b.ping < a.ping ? b : a)).region : null;
+  const toggleTab = (id: BrowseTab) => setTab(tab === id ? 'all' : id);
 
   const onTabKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     const n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1 : null;
@@ -98,95 +102,100 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
     tabRefs.current[next]?.focus();
   };
 
+  const loading = results.length === 0 && !synced;
   let empty: ReactNode = null;
-  if (results.length === 0) {
-    if (!synced) {
-      // Ao vivo, antes da primeira lista: vazio ainda não quer dizer "0 lobbies".
+  if (results.length === 0 && synced) {
+    if (pool.length === 0) {
       empty = (
-        <div className="lb-empty lb-loading" aria-busy="true">
-          <p>{L.loadingLobbies}</p>
-        </div>
-      );
-    } else if (pool.length === 0) {
-      empty = (
-        <div className="lb-empty">
-          <Icon name="lobbies" />
-          <b>{t.lobbies.emptyNoneTitle}</b>
-          <p>{t.lobbies.emptyNoneBody}</p>
-          <div>
-            <button type="button" className="btn btn-p" onClick={() => openHost()}>
-              <Icon name="plus" />
-              {t.lobbies.create}
-            </button>
-            <button type="button" className="btn btn-s" onClick={() => requestJoin({ kind: 'bots' })}>
-              {t.lobbies.emptyBots}
-            </button>
-          </div>
-        </div>
+        <EmptyState
+          className="lb-empty"
+          title={t.lobbies.emptyNoneTitle}
+          action={
+            <div>
+              <button type="button" className="btn btn-p" onClick={() => openHost()}>
+                {t.lobbies.create}
+              </button>
+              <button type="button" className="btn btn-g" onClick={() => requestJoin({ kind: 'bots' })}>
+                {t.lobbies.emptyBots}
+              </button>
+            </div>
+          }
+        >
+          {t.lobbies.emptyNoneBody}
+        </EmptyState>
       );
     } else if (tab === 'friends' && !signedIn) {
       empty = (
-        <div className="lb-empty">
-          <Icon name="users" />
-          <b>{t.browse.friendsOutTitle}</b>
-          <p>{t.browse.friendsOutBody}</p>
-          <div>
-            <button type="button" className="btn btn-s" onClick={signIn}>
-              <Icon name="user" />
+        <EmptyState
+          className="lb-empty"
+          title={t.browse.friendsOutTitle}
+          action={
+            <button type="button" className="btn btn-p" onClick={signIn}>
               {t.account.signIn}
             </button>
-          </div>
-        </div>
+          }
+        >
+          {t.browse.friendsOutBody}
+        </EmptyState>
       );
     } else if (tab === 'fav' && counts.fav === 0) {
       empty = (
-        <div className="lb-empty">
-          <Icon name="star" />
-          <b>{t.browse.favEmptyTitle}</b>
-          <p>{t.browse.favEmptyBody}</p>
-          <div>
-            <button type="button" className="btn btn-s" onClick={() => setTab('all')}>
+        <EmptyState
+          className="lb-empty"
+          title={t.browse.favEmptyTitle}
+          action={
+            <button type="button" className="btn btn-p" onClick={() => setTab('all')}>
               {t.browse.all}
             </button>
-          </div>
-        </div>
+          }
+        >
+          {t.browse.favEmptyBody}
+        </EmptyState>
       );
     } else if (tab === 'friends' && !anyChip) {
       empty = (
-        <div className="lb-empty">
-          <Icon name="users" />
-          <b>{t.browse.friendsEmptyTitle}</b>
-          <p>{t.browse.friendsEmptyBody}</p>
-          <div>
+        <EmptyState
+          className="lb-empty"
+          title={t.browse.friendsEmptyTitle}
+          action={
             <button type="button" className="btn btn-p" onClick={create}>
-              <Icon name="plus" />
               {t.lobbies.create}
             </button>
-          </div>
-        </div>
+          }
+        >
+          {t.browse.friendsEmptyBody}
+        </EmptyState>
       );
     } else {
+      // Uma ação (Limpar filtros); o vizinho mais próximo vira o atalho da linha de texto.
       const suggestions = nearestAlternatives(pool, f, signedIn);
       empty = (
-        <div className="lb-empty">
-          <Icon name="search" />
-          <b>{t.lobbies.emptyFilteredTitle}</b>
-          <p>{t.browse.filteredBody}</p>
-          <div>
-            {suggestions.map((s) => (
-              <button key={s.label} type="button" className="btn btn-s" onClick={() => update(s.patch)}>
-                {s.label}
+        <EmptyState
+          className="lb-empty"
+          title={t.lobbies.emptyFilteredTitle}
+          action={
+            <div>
+              <button type="button" className="btn btn-p" onClick={clearAll}>
+                {t.lobbies.clear}
               </button>
-            ))}
-            <button type="button" className="btn btn-s" onClick={clearAll}>
-              {t.lobbies.clear}
-            </button>
-            <button type="button" className="btn btn-p" onClick={create}>
-              <Icon name="plus" />
-              {t.lobbies.create}
-            </button>
-          </div>
-        </div>
+              <button type="button" className="btn btn-g" onClick={create}>
+                {t.lobbies.create}
+              </button>
+            </div>
+          }
+        >
+          {suggestions.length > 0 ? (
+            <span className="lb-sug">
+              {suggestions.map((s) => (
+                <button key={s.label} type="button" className="link" onClick={() => update(s.patch)}>
+                  {s.label}.
+                </button>
+              ))}
+            </span>
+          ) : (
+            t.browse.filteredBody
+          )}
+        </EmptyState>
       );
     }
   }
@@ -194,20 +203,20 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
   const activeTab = TABS.findIndex((x) => x.id === tab);
 
   return (
-    <section className="sec" id="lobbies" aria-labelledby="lobbies-title">
-      <SectionTitle
-        id="lobbies-title"
-        words={t.home.lobbiesTitle}
-        meta={narrowed ? t.home.lobbiesFiltered(results.length, stats.lobbies, modeName) : t.home.lobbiesMeta(stats.lobbies, stats.withRoom)}
-      >
-        <button type="button" className="btn btn-s" onClick={create} aria-label={t.lobbies.create}>
+    <section className="sec lb" id="lobbies" aria-labelledby="lobbies-title">
+      <div className="sec-h lb-h">
+        <h2 className="display" id="lobbies-title">
+          {modeName ?? t.home.play}
+        </h2>
+        <span className="sp" />
+        <button type="button" className="btn btn-s" onClick={create}>
           <Icon name="plus" />
-          <span className="t">{t.lobbies.create}</span>
+          {t.lobbies.create}
         </button>
-      </SectionTitle>
+      </div>
 
-      <div className="ctl">
-        <div className="lb-tabs" role="tablist" aria-label={t.browse.tabs}>
+      <div className="lb-bar">
+        <div className="utabs lb-tabs" role="tablist" aria-label={t.browse.tabs}>
           {TABS.map((x, i) => (
             <button
               key={x.id}
@@ -224,16 +233,39 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
               onKeyDown={(e) => onTabKey(e, i)}
             >
               {x.label}
-              {counts[x.id] != null && <span className="c num">{counts[x.id]}</span>}
+              {counts[x.id] != null && <span className="c">{counts[x.id]}</span>}
             </button>
           ))}
         </div>
+        <div className="seg lb-reg" role="group" aria-label={t.lobbies.region}>
+          {REGIONS.map((r) => {
+            const range = pingRange(pool, r);
+            return (
+              <button key={r} type="button" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
+                {t.regions[r]}
+                {range && (f.regions.length ? f.regions.includes(r) : r === nearest) && <span className="c">{range}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="lb-row">
         <div className="fchips" role="group" aria-label={t.browse.chips}>
+          {/* celular: a região e as abas entram na fileira de chips */}
           {REGIONS.map((r) => (
-            <Chip key={r} pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)} count={pingRange(pool, r)}>
+            <Chip key={r} className="only-m" pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
               {t.regions[r]}
             </Chip>
           ))}
+          <Chip className="only-m" pressed={tab === 'friends'} onClick={() => toggleTab('friends')} count={counts.friends}>
+            {t.browse.friends}
+          </Chip>
+          {(counts.fav > 0 || tab === 'fav') && (
+            <Chip className="only-m" pressed={tab === 'fav'} onClick={() => toggleTab('fav')} count={counts.fav}>
+              {t.browse.favorites}
+            </Chip>
+          )}
           <Chip pressed={f.slotsOnly} onClick={() => update({ slotsOnly: !f.slotsOnly })}>
             {t.browse.slots}
           </Chip>
@@ -253,27 +285,47 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
             </Chip>
           )}
         </div>
-        <div className="end">
-          <div className="vt" role="group" aria-label={t.browse.view}>
-            <button type="button" aria-pressed={view === 'grid'} aria-label={t.browse.grid} title={t.browse.grid} onClick={() => setView('grid')}>
-              <Icon name="grid" />
-            </button>
-            <button type="button" aria-pressed={view === 'list'} aria-label={t.browse.list} title={t.browse.list} onClick={() => setView('list')}>
-              <Icon name="rows" />
-            </button>
-          </div>
+        <div className="seg lb-view" role="group" aria-label={t.browse.view}>
+          <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>
+            {t.browse.grid}
+          </button>
+          <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
+            {t.browse.list}
+          </button>
         </div>
       </div>
 
-      <div id="lobby-grid" className={view === 'list' ? 'lgrid list' : 'lgrid'} role="tabpanel" aria-labelledby={`lb-tab-${TABS[activeTab]!.id}`}>
-        {empty ?? visible.map((l) => <LobbyCard key={l.id} lobby={l} env={env} fav={favs.has(l.id)} onFav={toggle} />)}
-        {!empty && rest <= 0 && <CreateCard onCreate={create} />}
+      <div
+        id="lobby-grid"
+        className={view === 'list' ? 'lgrid list' : 'lgrid'}
+        role="tabpanel"
+        aria-labelledby={`lb-tab-${TABS[activeTab]!.id}`}
+        aria-busy={loading || undefined}
+      >
+        {loading ? (
+          <>
+            {Array.from({ length: SKELETONS }, (_, i) => (
+              <Skeleton key={i} className="lc-sk" />
+            ))}
+            <p className="sr-only" role="status">
+              {L.loadingLobbies}
+            </p>
+          </>
+        ) : (
+          (empty ?? (
+            <>
+              {visible.map((l) => (
+                <LobbyCard key={l.id} lobby={l} env={env} fav={favs.has(l.id)} onFav={toggle} />
+              ))}
+              <CreateCard onCreate={create} />
+            </>
+          ))
+        )}
       </div>
-      {rest > 0 && (
+      {rest > 0 && !empty && (
         <div className="more-row">
-          <button type="button" className="btn btn-s" onClick={() => setShown(ordered.length)}>
+          <button type="button" className="btn btn-g" onClick={() => setShown(ordered.length)}>
             {t.browse.more(rest)}
-            <Icon name="chev" />
           </button>
         </div>
       )}

@@ -360,7 +360,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
     async (d: HostDraft) => {
       const ack = await request({
         type: 'create',
-        lobby: { name: d.name, modeSlug: d.modeSlug, region: d.region, slots: d.slots, minPlayers: d.minPlayers, locked: d.locked },
+        lobby: { name: d.name, modeSlug: d.modeSlug, region: d.region, slots: d.slots, minPlayers: d.minPlayers, locked: d.locked, beginners: d.beginners, joinInProgress: d.joinInProgress },
       });
       if (!ack?.lobbyId) return;
       setHostDialog({ open: false });

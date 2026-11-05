@@ -35,7 +35,7 @@ export const modes: Mode[] = [
     name: 'Círculo Profano',
     tagline: 'Até doze num anel ritual que fecha a cada minuto. Do lado de fora, ninguém dura.',
     description: [
-      'Até doze jogadores começam num anel ritual no centro do mapa. A cada minuto o círculo fecha um pouco e quem fica do lado de fora perde vida rápido.',
+      'Até doze pessoas começam num anel ritual no centro do mapa. A cada minuto o círculo fecha um pouco e quem fica do lado de fora perde vida rápido.',
       'Não tem loja nem farm: cada abate dá um item aleatório do mesmo nível para todo mundo. Partidas curtas, decididas no posicionamento.',
     ],
     rules: [
@@ -95,13 +95,13 @@ export const modes: Mode[] = [
     name: 'Neblina',
     tagline: 'Doze metros de visão, um caçador e três minutos para não ser pego.',
     description: [
-      'A cidade é coberta por uma névoa que reduz a visão a poucos metros. Um jogador vira o caçador; os outros têm três minutos para sobreviver.',
+      'A cidade é coberta por uma névoa que reduz a visão a poucos metros. Uma pessoa vira o caçador; as demais têm três minutos para sobreviver.',
       'Quem é pego vira caçador também. Sons de passos aparecem no mapa do caçador a cada 20 segundos.',
     ],
     rules: [
-      'De 5 a 10 jogadores. Um caçador sorteado por rodada.',
+      'De 5 a 10 pessoas. Um caçador sorteado por rodada.',
       'Visão limitada a 12 metros para todos.',
-      'Jogadores pegos passam para o time do caçador.',
+      'Quem for pego passa para o time do caçador.',
       'Sobreviventes ao fim de três minutos pontuam. Cinco rodadas por partida.',
     ],
     format: 'Caçador contra todos',
@@ -125,8 +125,8 @@ export const modes: Mode[] = [
     name: 'Duelo à Meia-Noite',
     tagline: 'x1, mesmo herói, melhor de cinco. Perdeu, volta para a fila.',
     description: [
-      'Duelos rápidos para treinar mecânica. Os dois jogadores recebem o mesmo herói, sorteado a cada rodada, com itens fixos.',
-      'Quem vencer três rodadas leva. Há fila de espera: perdedores voltam para o fim da fila do lobby.',
+      'Duelos rápidos para treinar mecânica. Os dois participantes recebem o mesmo herói, sorteado a cada rodada, com itens fixos.',
+      'Quem vencer três rodadas leva. Há fila de espera: quem perde volta para o fim da fila do lobby.',
     ],
     rules: [
       'Um contra um, melhor de cinco rodadas.',
@@ -187,10 +187,10 @@ export const modes: Mode[] = [
     tagline: 'Todos os itens liberados, bots no seu ritmo e nenhum placar olhando.',
     description: [
       'Um mapa aberto para testar heróis e combinações de itens sem pressão. Todos os itens liberados, cooldowns opcionais e bots que ficam parados, andam ou atacam, como você escolher.',
-      'Funciona sozinho ou com amigos. É também o modo usado em "Jogar com bots".',
+      'Funciona sozinho ou com contatos. É também o modo usado em "Jogar com bots".',
     ],
     rules: [
-      'De 1 a 6 jogadores, sem placar.',
+      'De 1 a 6 pessoas, sem placar.',
       'Todos os itens disponíveis desde o início.',
       'Comandos de chat para ajustar bots, cooldown e vida.',
     ],
