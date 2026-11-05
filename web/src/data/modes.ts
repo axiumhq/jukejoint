@@ -32,7 +32,7 @@ export interface Mode {
 export const modes: Mode[] = [
   {
     slug: 'circulo-profano',
-    line: 'Doze num anel ritual que fecha a cada minuto.',
+    line: 'Doze num anel ritual que fecha a cada minuto. Sem loja: cada abate dá um item.',
     name: 'Círculo Profano',
     tagline: 'Até doze num anel ritual que fecha a cada minuto. Do lado de fora, ninguém dura.',
     description: [
@@ -62,7 +62,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'ultimo-bonde',
-    line: 'Escolte o bonde até o fim da linha antes da meia-noite.',
+    line: 'Âmbar escolta o bonde até o fim da linha; Safira tem até a meia-noite para parar.',
     name: 'Último Bonde',
     tagline: 'Escolte o bonde até o fim da linha antes da meia-noite.',
     description: [
@@ -122,7 +122,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'duelo-meia-noite',
-    line: 'x1 com o mesmo herói, melhor de cinco.',
+    line: 'x1 com o mesmo herói, melhor de cinco. Quem perde vai para o fim da fila.',
     name: 'Duelo à Meia-Noite',
     tagline: 'x1, mesmo herói, melhor de cinco. Perdeu, volta para a fila.',
     description: [
@@ -183,7 +183,7 @@ export const modes: Mode[] = [
   },
   {
     slug: 'campo-de-treino',
-    line: 'Todos os itens, bots no seu ritmo e nenhum placar.',
+    line: 'Todos os itens, almas à vontade e bots no seu ritmo.',
     name: 'Campo de Treino',
     tagline: 'Todos os itens liberados, bots no seu ritmo e nenhum placar olhando.',
     description: [
@@ -208,7 +208,7 @@ export const modes: Mode[] = [
 
 const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'rules' | 'format'>> = {
   'circulo-profano': {
-    line: 'Survive the ritual ring as it closes every minute.',
+    line: 'Twelve players in a ritual ring that closes every minute. No shop: every kill drops an item.',
     tagline: 'Up to twelve players in a ritual ring that closes every minute. Stay outside and you will not last.',
     description: [
       'Up to twelve players start in a ritual ring at the center of the map. Every minute the circle closes in, and anyone outside quickly loses health.',
@@ -223,7 +223,7 @@ const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'ru
     format: 'Free-for-all',
   },
   'ultimo-bonde': {
-    line: 'Escort the tram to the end of the line before midnight.',
+    line: 'Amber escorts the tram to the end of the line; Sapphire has until midnight to stop it.',
     tagline: 'Escort the tram to the end of the line before midnight.',
     description: [
       'Two teams of six. One escorts a tram along the city tracks while the other tries to stop it. The tram moves only while an attacker is nearby.',
@@ -253,7 +253,7 @@ const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'ru
     format: 'Hunter versus everyone',
   },
   'duelo-meia-noite': {
-    line: '1v1 with the same hero, best of five.',
+    line: '1v1 with the same hero, best of five. The loser goes to the back of the queue.',
     tagline: '1v1, same hero, best of five. Lose and return to the queue.',
     description: [
       'Fast duels to practice mechanics. Both players get the same hero, chosen at random each round, with fixed items.',
@@ -284,7 +284,7 @@ const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'ru
     format: '5v5',
   },
   'campo-de-treino': {
-    line: 'Every item, bots at your pace, and no scoreboard.',
+    line: 'Every item, unlimited souls, and bots at your pace.',
     tagline: 'Every item unlocked, bots at your pace, and no scoreboard watching.',
     description: [
       'An open map to test heroes and item builds without pressure. Every item is unlocked, cooldowns are optional, and you choose whether bots stand still, move, or attack.',

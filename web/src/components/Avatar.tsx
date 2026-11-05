@@ -1,12 +1,38 @@
-import { memo, useEffect, useState, type CSSProperties } from 'react';
-import { avatarGlyph } from '../lib/avatar';
+import { memo, useEffect, useId, useState, type CSSProperties } from 'react';
+import { retrato } from '../lib/retrato';
 
 /**
- * Avatar gerado do nome (lib/avatar.ts `avatarGlyph`), presença e pilha.
- * O desenho do redesign: disco na superfície com o glifo de linha da pessoa em latão (cores em
- * base.css, `.av`), então segue o tema. O que encosta neles (o ponto de presença, o vizinho na
+ * Avatar: a foto da Steam e, sem ela, o retrato em silhueta gerado do nome (lib/retrato.ts), no
+ * estilo das cenas. Presença e pilha. O que encosta neles (o ponto de presença, o vizinho na
  * pilha) abre um recorte de verdade no desenho (máscara), limpo sobre qualquer superfície.
  */
+
+/** A silhueta de reserva. Os ids do gradiente e do recorte são únicos por cópia: um retrato
+ *  repetido dentro de algo escondido (display: none) apagaria o gradiente dos outros. */
+function Silhueta({ name }: { name: string }) {
+  const r = retrato(name);
+  const id = `rt${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  return (
+    <svg className="retrato" viewBox="0 0 40 40" focusable="false">
+      <defs>
+        <radialGradient id={`${id}g`} cx="0.28" cy="0.3" r="0.95">
+          <stop offset="0" stopColor={r.claro} />
+          <stop offset="1" stopColor={r.escuro} />
+        </radialGradient>
+        <clipPath id={`${id}c`}>
+          <circle cx="20" cy="20" r="20" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${id}c)`}>
+        <rect width="40" height="40" fill={`url(#${id}g)`} />
+        <g transform={r.espelho ? 'matrix(-1 0 0 1 40 0)' : undefined}>
+          <path d={r.forma} fill="#e8c88f" opacity="0.42" transform="translate(-0.9 -0.3)" />
+          <path d={r.silhueta} fill="#110d0f" />
+        </g>
+      </g>
+    </svg>
+  );
+}
 
 interface AvatarProps {
   name: string;
@@ -20,7 +46,6 @@ interface AvatarProps {
 }
 
 export const Avatar = memo(function Avatar({ name, size = 28, ring = false, src, className }: AvatarProps) {
-  const d = avatarGlyph(name);
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
   const photo = !!src && !failed;
@@ -30,10 +55,7 @@ export const Avatar = memo(function Avatar({ name, size = 28, ring = false, src,
       {photo ? (
         <img src={src} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
       ) : (
-        <svg viewBox="0 0 32 32" focusable="false">
-          <circle cx="16" cy="16" r="15.5" strokeWidth="1" />
-          <path d={d} />
-        </svg>
+        <Silhueta name={name} />
       )}
     </span>
   );

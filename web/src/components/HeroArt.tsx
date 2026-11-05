@@ -1,3 +1,24 @@
+import { useId, useMemo } from 'react';
+import { HERO_ASPECT, HERO_VIEWBOX, heroScene } from '../lib/hero';
+
+/**
+ * A cena do destaque da Home (lib/hero.ts): a avenida e a faixa tracejada que vira a trilha até a
+ * porta acesa do juke joint, ancorada à direita. Pintada com os tokens do tema (trocar o tema
+ * repinta), as lâmpadas estáticas. Decorativa; ids e classes ganham o prefixo da instância.
+ */
+export function HeroScene() {
+  const prefix = `jjh${useId().replace(/[^\w-]/g, '')}_`;
+  const scene = useMemo(() => heroScene(prefix), [prefix]);
+  return (
+    <div className="hero-scene" aria-hidden="true">
+      <svg viewBox={HERO_VIEWBOX} preserveAspectRatio={HERO_ASPECT} focusable="false">
+        <style>{scene.css}</style>
+        <g dangerouslySetInnerHTML={{ __html: scene.body }} />
+      </svg>
+    </div>
+  );
+}
+
 /** A cidade da capa do Hoje: céu, lua, prédios e chão no tema ativo (as cores vêm das variáveis do tema). */
 export function HeroArt() {
   return (

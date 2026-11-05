@@ -166,7 +166,7 @@ describe('cartão de lobby', () => {
 
   it('etiqueta: falta N, da sua lista (só com login), convite, partida e você', () => {
     const near = lobby({ players: 11 });
-    expect(cardTag(near, lobbyState(near, {}, NOW), true, NOW)).toEqual({ text: 'Falta 1', tone: 'acc' });
+    expect(cardTag(near, lobbyState(near, {}, NOW), true, NOW)).toEqual({ text: 'Última vaga', tone: 'acc' });
     const fr = lobby({ friends: 2 });
     expect(cardTag(fr, lobbyState(fr, {}, NOW), true, NOW)).toEqual({ text: '2 da sua lista', tone: 'soft' });
     expect(cardTag(fr, lobbyState(fr, {}, NOW), false, NOW)).toBeNull();

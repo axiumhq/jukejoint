@@ -1528,3 +1528,12 @@ html.is-desktop .frame {
     display: inline;
   }
 }
+
+/* Celular: o login de teste (só no servidor de desenvolvimento) sai da barra de topo; ele continua no
+   convite de login da aba "Sua lista" e nos diálogos. Com a Jost, os dois botões juntos passavam da tela. */
+@media (max-width: 760px) {
+  .tb .acct-dev,
+  .tb .acct-dev-group {
+    display: none;
+  }
+}

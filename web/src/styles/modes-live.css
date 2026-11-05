@@ -1,0 +1,272 @@
+/* Modos da home: lista compacta com lobbies; cartões com a cena quando a cidade está vazia. */
+.ml {
+  margin-top: var(--sp-8);
+}
+
+.ml-h {
+  margin: 0 0 var(--sp-3);
+  font: 500 22px/1.1 var(--f-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ml-sub {
+  margin: -6px 0 18px;
+  color: var(--tx-2);
+}
+
+.ml-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ml-list.is-cards {
+  gap: 20px;
+}
+
+.ml-list > li {
+  display: flex;
+}
+
+.ml-card {
+  width: 100%;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ml-h small {
+  margin-left: var(--sp-3);
+  font: 400 var(--fs-md) var(--f-ui);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--tx-3);
+}
+
+/* ───────── Arcanos: uma carta de tarô art déco por modo ───────── */
+
+.ml-list.is-arcanos {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+.arcano {
+  --brass: color-mix(in srgb, var(--acc) 38%, transparent);
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  justify-items: center;
+  width: 100%;
+  aspect-ratio: 3 / 5;
+  padding: 18px 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  /* moldura dupla de latão: um fio externo e outro 6 px para dentro */
+  background:
+    radial-gradient(120% 70% at 50% 38%, color-mix(in srgb, var(--acc) 9%, transparent), transparent 60%),
+    linear-gradient(var(--s1), color-mix(in srgb, var(--s1) 70%, #000));
+  box-shadow:
+    inset 0 0 0 1px var(--brass),
+    inset 0 0 0 6px var(--s1),
+    inset 0 0 0 7px color-mix(in srgb, var(--acc) 18%, transparent);
+  transition: box-shadow var(--t-fast);
+}
+
+.arcano:hover,
+.arcano[aria-pressed='true'] {
+  --brass: color-mix(in srgb, var(--acc) 72%, transparent);
+}
+
+.arcano[aria-pressed='true'] {
+  box-shadow:
+    inset 0 0 0 1.5px var(--acc),
+    inset 0 0 0 6px var(--s1),
+    inset 0 0 0 7px color-mix(in srgb, var(--acc) 34%, transparent);
+}
+
+.arcano.is-quiet {
+  opacity: 0.72;
+}
+
+/* cantos escalonados */
+.arcano > i {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 0 solid color-mix(in srgb, var(--acc) 55%, transparent);
+}
+
+.arcano > i:nth-of-type(1) { left: 10px; top: 10px; border-left-width: 1px; border-top-width: 1px; }
+.arcano > i:nth-of-type(2) { right: 10px; top: 10px; border-right-width: 1px; border-top-width: 1px; }
+.arcano > i:nth-of-type(3) { left: 10px; bottom: 10px; border-left-width: 1px; border-bottom-width: 1px; }
+.arcano > i:nth-of-type(4) { right: 10px; bottom: 10px; border-right-width: 1px; border-bottom-width: 1px; }
+
+.arc-num {
+  margin-top: 4px;
+  font: 500 var(--fs-xs) / 1.4 var(--f-ui);
+  letter-spacing: 0.3em;
+  color: var(--acc);
+}
+
+.arc-sig {
+  align-self: center;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  color: var(--acc);
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--acc) 45%, transparent));
+}
+
+.arc-sig svg {
+  width: 100%;
+  height: 100%;
+}
+
+.arc-t b {
+  display: block;
+  font: 600 var(--fs-15) / 1.25 var(--f-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.arc-fmt {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  color: var(--tx-3);
+}
+
+.arc-vivo {
+  width: 80%;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--acc) 22%, transparent);
+  font-size: var(--fs-xs);
+  color: var(--tx-2);
+}
+
+.arc-vivo em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.arcano:focus-visible {
+  outline-offset: 3px;
+}
+
+.ml-card {
+  display: grid;
+  align-content: start;
+  padding: 0;
+}
+
+.ml-art {
+  position: relative;
+  display: block;
+  height: 112px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--sky-1);
+}
+
+.ml-art .cover {
+  position: absolute;
+  inset: 0;
+}
+
+.ml-art::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(10 8 8 / 0.75), transparent 60%);
+}
+
+.ml-art b {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  z-index: 1;
+  font: 600 19px/1.1 var(--f-ui);
+  color: #fff;
+}
+
+.ml-card .ml-ln {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.ml-card .ml-nums {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--tx-3);
+}
+
+.ml-card:focus-visible {
+  outline-offset: 4px;
+}
+
+@media (max-width: 1240px) {
+  .ml-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ml-list.is-arcanos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .arcano {
+    aspect-ratio: 4 / 5;
+  }
+}
+
+@media (max-width: 720px) {
+  .ml-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* celular: as cartas viram uma fileira que rola para o lado */
+  .ml-list.is-arcanos {
+    display: flex;
+    gap: var(--sp-3);
+    margin: 0 calc(var(--sp-4) * -1);
+    padding: 0 var(--sp-4) var(--sp-2);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: var(--sp-4);
+    scrollbar-width: none;
+  }
+
+  .ml-list.is-arcanos > li {
+    flex: none;
+    width: 148px;
+    scroll-snap-align: start;
+  }
+
+  .arcano {
+    aspect-ratio: 3 / 5;
+  }
+
+  .ml-h small {
+    display: block;
+    margin: 4px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ml-art .cover {
+    transition: none;
+  }
+}

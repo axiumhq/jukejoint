@@ -511,7 +511,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
   const modes = s.appCheck?.modes;
   const isTestMode = modes ? (modes.testSlugs ? modes.testSlugs.includes(lobby.modeSlug) : modes.testMode) : false;
   const testNote = s.desktop && modes && isTestMode ? D.testMode(modes.testProject) : null;
-  const countText = `${readyN} ${t.room.readyOf(taken)} · ${t.room.minimum} ${k}`;
+  const countText = t.room.readyCount(readyN, taken, k);
   const helpLink = (
     <Link to="/instalar#antivirus" className="btn btn-g rb-help">
       {t.room.stuck} <u>{t.room.help}</u>
@@ -681,7 +681,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
             {mode && <span className="hide-sm">{mode.name}</span>}
             <span>{t.lobbies.inRoom(lobby.players, lobby.slots)}</span>
             <span className="hide-sm">
-              {t.room.minimum} {k}
+              {t.room.startsWith} {k}
             </span>
             <span className="num">
               {t.regions[lobby.region]} · {t.lobbies.ping(lobby.ping)}

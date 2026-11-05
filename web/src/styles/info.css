@@ -409,6 +409,9 @@ body {
 
   .ih-hash .copy-field code {
     font-size: var(--fs-xs);
+    /* SHA-256 em duas linhas de 32 caracteres */
+    max-width: 34ch;
+    overflow-wrap: anywhere;
   }
 
   .ih-src,

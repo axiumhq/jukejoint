@@ -165,10 +165,19 @@
   --mist: #d8cfc2;
 
   /* tipo */
-  --f-ui: 'Hanken Grotesk', system-ui, sans-serif;
-  --f-display: 'Young Serif', Georgia, serif;
-  /* números, ping, rótulos de dado ("LOBBY 04 · 14 MS"): o nome --f-mono ficou pelo papel (números) */
-  --f-num: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  /* Home v4 (2026-11-05): Jost, a fonte livre do site oficial do Deadlock, em tudo. A de destaque é
+     provisória: Oracle/Pulp só entram com licença; trocar --f-display aqui troca todos os títulos. */
+  --f-ui: 'Jost', 'Hanken Grotesk', system-ui, sans-serif;
+  --f-display: var(--f-ui);
+  /* números, ping, rótulos de dado: a mesma Jost com algarismos tabulares (o nome --f-mono ficou pelo papel) */
+  --f-num: var(--f-ui);
+  /* placar dos cartões de lobby ("10/12", "6 × 6"): letra condensada de cartaz */
+  --f-placar: 'Big Shoulders Display', var(--f-ui);
+
+  /* Os dois lados do jogo, só como cor (Âmbar e Safira); a chama safira também tinge o céu do destaque. */
+  --amb: #e3a45a;
+  --saf: #8db4e6;
+  --saf-glow: #3f6fb0;
   --f-mono: var(--f-num);
   --f-code: 'JetBrains Mono', ui-monospace, Consolas, monospace;
   /* Escala de UI: todo texto de interface usa um destes. Os títulos grandes das capas e dos

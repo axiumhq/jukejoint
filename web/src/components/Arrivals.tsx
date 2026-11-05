@@ -56,10 +56,12 @@ export function Arrivals({ now }: { now: number }) {
     for (const i of items) seen.current.add(i.key);
   }, [items]);
 
+  if (items.length === 0 && !paused) return null;
+
   return (
     <section className="sec home-arrivals" aria-labelledby="arrivals-title">
       <div className="sec-h">
-        <h2 className="display" id="arrivals-title">
+        <h2 className="sec-caps" id="arrivals-title">
           {t.home.arrivalsTitle.join(' ')}
         </h2>
         <span className="sp" />

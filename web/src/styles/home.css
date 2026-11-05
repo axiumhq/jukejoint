@@ -1,7 +1,6 @@
 /*
- * Home do redesign (Main 1440, Home-1366 e Celular-390 do Claude Design): o destaque com a cena e a
- * barra do recomendado, a lista de lobbies (lobbies.css), modos ao vivo, chegando agora e a barra
- * fixa do celular. Em 1366×768 a primeira fileira de lobbies cabe na primeira tela.
+ * Home v4: a cena do topo e a placa da mesa (o melhor lobby, com as cadeiras), a lista de lobbies
+ * (lobbies.css), modos ao vivo, chegando agora e a barra fixa do celular.
  */
 
 .home {
@@ -9,132 +8,276 @@
   flex-direction: column;
 }
 
-/* ───────── 1 · Destaque ───────── */
+/* ───────── 1 · Destaque: a cena e a placa da mesa ───────── */
 
+/* Letreiro: rótulo em caixa-alta espaçada, como placa de época; o latão só no número de vagas. */
+.marq {
+  font: 500 12px/1.2 var(--f-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tx-2);
+}
+
+.marq b {
+  color: var(--acc);
+  font-weight: 600;
+}
+
+/* A cena: a arte (lib/hero.ts) ancorada à direita, o brilho frio de safira e o véu escuro à esquerda. */
 .hero {
-  --hbar-h: 76px;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  height: 220px;
-  border-radius: var(--r-2xl);
+  height: 300px;
+  border-radius: 18px;
   overflow: hidden;
   background: var(--sky-1);
+  isolation: isolate;
 }
 
-/* a arte (lib/hero.ts) é só a faixa acima da barra, que é opaca: a avenida fica presa à base da faixa */
 .hero-scene {
   position: absolute;
-  inset: 0 0 auto;
-  width: 100%;
-  height: calc(100% - var(--hbar-h));
+  inset: 0;
+  z-index: -2;
+}
+
+.hero-scene svg {
   display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.hero-t {
-  position: relative;
-  max-width: 620px;
-  padding: var(--sp-6) var(--sp-8) 0;
-  font-size: var(--fs-hero);
-  line-height: 60px;
-  letter-spacing: -0.02em;
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(60% 90% at 12% 40%, color-mix(in srgb, var(--saf-glow) 34%, transparent), transparent 70%),
+    linear-gradient(to right, color-mix(in srgb, var(--sky-1) 60%, transparent) 0%, transparent 50%),
+    linear-gradient(to top, color-mix(in srgb, var(--bg) 70%, transparent) 0%, transparent 30%);
 }
 
-/* a barra do recomendado: quem, as vagas, as ações */
-.hbar {
+/* o texto fica no centro do que sobra da cena acima da placa (que sobe 44 px sobre a base) */
+.hero-in {
+  position: absolute;
+  left: 44px;
+  right: 44px;
+  top: 50%;
+  transform: translateY(-58%);
+}
+
+.hero .hero-t {
+  margin-top: 14px;
+  max-width: 9.5em;
+  font: 600 62px/0.98 var(--f-display);
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+/* A placa da mesa: latão rebitado, o único leque art déco da tela; sobe sobre a base da cena. */
+.placa {
   position: relative;
+  margin: -44px 28px 0;
+  padding: 30px 32px 26px;
+  border-radius: 14px;
+  background: var(--s1);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--acc) 34%, transparent),
+    0 24px 60px rgb(0 0 0 / 0.35);
+  container-type: inline-size;
+}
+
+/* os quatro rebites: os de cima são ::before e ::after; os de baixo, .rebite */
+.placa::before,
+.placa::after,
+.rebite {
+  content: '';
+  position: absolute;
+  top: 10px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--acc) 60%, transparent);
+}
+
+.placa::before,
+.rebite.e {
+  left: 10px;
+}
+
+.placa::after,
+.rebite.d {
+  right: 10px;
+}
+
+.rebite {
+  top: auto;
+  bottom: 10px;
+}
+
+.leque {
+  --fundo: var(--s1);
+  position: absolute;
+  left: 50%;
+  top: -17px;
+  width: 72px;
+  height: 36px;
+  transform: translateX(-50%);
+  color: var(--acc);
+}
+
+/* três colunas: o texto, as cadeiras, as ações (duas sem cadeiras) */
+.mesa {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: var(--sp-6);
-  height: var(--hbar-h);
-  padding: 0 var(--sp-6) 0 var(--sp-8);
-  background: var(--s2);
+  gap: 32px;
 }
 
-.hb-who {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-5);
+.mesa-2 {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.mesa-txt {
   min-width: 0;
 }
 
-.hb-id {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.mesa .mesa-t {
+  margin-top: 8px;
+  font: 600 28px/1.15 var(--f-ui);
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
 }
 
-.hb-n {
-  font-size: var(--fs-lg);
-  line-height: 22px;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.mesa-txt > .mesa-t:first-child {
+  margin-top: 0;
 }
 
-.hb-m {
-  font-size: var(--fs-xs);
-  line-height: 16px;
+.mesa-meta {
+  margin-top: 4px;
   color: var(--tx-2);
+}
+
+.mesa-meta .num {
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-/* a pilha leva o fio da cor da barra */
-.hb-who .stack > .av svg circle {
-  stroke: var(--s2);
-  stroke-width: 2;
-}
-
-.hb-slots {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-  min-width: 0;
-}
-
-.hb-slots .bulbs {
-  flex-wrap: nowrap;
-}
-
-.hb-cnt {
-  font-size: var(--fs-xs);
-  line-height: 16px;
+.mesa-who {
+  margin-top: 14px;
+  max-width: 46ch;
+  font-size: 14px;
   color: var(--tx-2);
-  white-space: nowrap;
 }
 
-.hb-cnt b {
+.mesa-who b {
   color: var(--tx);
   font-weight: 600;
 }
 
-.hb-cnt .lbl {
-  margin-left: var(--sp-2);
-  line-height: 16px;
-  /* "BR/SA 22 ms": a região já vem em maiúscula; a unidade fica em minúscula */
-  text-transform: none;
+.mesa-copy {
+  margin-top: 8px;
+  max-width: 46ch;
+  color: var(--tx-2);
 }
 
-.hb-act {
+/* modos de time: os dois lados só como rótulo (a API não diz o lado de ninguém) */
+.lados {
+  margin-bottom: 10px;
+}
+
+.lados-t {
+  font: 500 11px/1 var(--f-ui);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--tx-3);
+}
+
+.lados-t .amb {
+  color: var(--amb);
+}
+
+.lados-t .saf {
+  color: var(--saf);
+}
+
+.lados-m {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--tx-3);
+}
+
+/* as cadeiras: no máximo seis por linha */
+.cadeiras {
+  --c: 36px;
+  --g: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--g);
+  max-width: calc(var(--c) * 6 + var(--g) * 5);
+}
+
+.cadeira {
+  width: var(--c);
+  height: var(--c);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.cadeira .av {
+  width: 100%;
+  height: 100%;
+}
+
+.cadeira.vazia {
+  border: 1.5px dashed color-mix(in srgb, var(--tx) 30%, transparent);
+}
+
+/* a sua: a primeira vazia, em latão */
+.cadeira.sua {
+  box-shadow: inset 0 0 0 1.5px var(--acc);
+  background: color-mix(in srgb, var(--acc) 14%, transparent);
+  color: var(--acc);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cadeira.sua .av {
+  outline: 1.5px solid var(--acc);
+  outline-offset: 1.5px;
+}
+
+.mesa-act {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  justify-content: flex-end;
+  gap: 10px;
 }
 
-/* sem lobby: a linha de texto ocupa o lugar das vagas */
-.hbar-none {
-  grid-template-columns: minmax(0, 1fr) auto;
+/* placa média (janela média com a barra lateral): o texto em cima, as cadeiras e as ações embaixo */
+@container (max-width: 860px) {
+  .mesa {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 20px 32px;
+  }
+
+  .mesa > .mesa-txt {
+    grid-column: 1 / -1;
+  }
 }
 
-.hbar-none .hb-who {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0;
+/* placa estreita: uma coluna */
+@container (max-width: 560px) {
+  .mesa,
+  .mesa-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mesa-act {
+    justify-content: flex-start;
+  }
 }
 
 /* ───────── 2 · Lista de lobbies: título e espaços (o resto em lobbies.css) ───────── */
@@ -147,106 +290,6 @@
 
 .lb > .sec-h {
   margin-bottom: 0;
-}
-
-/* ───────── 3 · Modos ao vivo ───────── */
-
-.mv-list {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--sp-3);
-}
-
-.mv {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  min-width: 0;
-  padding: var(--sp-4) var(--sp-2) var(--sp-4);
-  border-radius: var(--r-xl);
-  background: var(--s2);
-  text-align: center;
-  transition: background-color var(--t-fast);
-}
-
-.mv:hover {
-  background: var(--s3);
-}
-
-.mv[aria-pressed='true'] {
-  background: var(--s4);
-}
-
-.mv-ring {
-  position: relative;
-  display: block;
-  width: 108px;
-  height: 108px;
-  margin-bottom: var(--sp-2);
-}
-
-.mv-ring svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke-width: 3;
-}
-
-.mv-ring .bg {
-  stroke: var(--line-2);
-}
-
-.mv-ring .fg {
-  stroke: var(--acc);
-  stroke-linecap: round;
-}
-
-.mv-free {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.mv-free .display {
-  font-size: var(--fs-h1);
-  line-height: 42px;
-}
-
-.mv-free .lbl {
-  color: var(--tx-2);
-  line-height: 16px;
-}
-
-.mv-t {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-  min-width: 0;
-  max-width: 100%;
-}
-
-.mv-t b {
-  font-size: var(--fs-sm);
-  line-height: 18px;
-  font-weight: 600;
-}
-
-.mv-d,
-.mv-m {
-  font-size: var(--fs-xs);
-  line-height: 16px;
-  color: var(--tx-3);
-}
-
-.mv-tile,
-.mv-m {
-  display: none;
 }
 
 /* ───────── 4 · Chegando agora ───────── */
@@ -384,46 +427,11 @@
     border-radius: var(--r-sm);
   }
 
-  .hero {
-    --hbar-h: 68px;
-    height: 176px;
-    border-radius: var(--r-xl);
-  }
-
-  .hero-t {
-    padding: var(--sp-4) var(--sp-6) 0;
-    line-height: 44px;
-  }
-
-  .hbar {
-    gap: var(--sp-4);
-    padding: 0 var(--sp-6);
-  }
 }
 
 @media (max-width: 1240px) {
-  .hb-who .stack {
-    display: none;
-  }
-
   .feed {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 1100px) {
-  .mv-ring {
-    width: 88px;
-    height: 88px;
-  }
-
-  .mv-free .display {
-    font-size: 2rem;
-    line-height: 34px;
-  }
-
-  .hb-act .btn-o {
-    display: none;
   }
 }
 
@@ -438,35 +446,90 @@
     margin-top: var(--sp-2);
   }
 
+  /* a cena vira uma imagem; o letreiro e o slogan ficam embaixo dela, fora da arte */
   .hero {
     order: 1;
     height: auto;
     border-radius: 0;
     overflow: visible;
     background: none;
+    isolation: auto;
   }
 
-  .hbar {
+  .hero::before {
     display: none;
   }
 
-  /* a arte vira uma faixa embaixo do slogan (nada por cima): o corte à direita mostra a trilha e a porta */
   .hero-scene {
     position: relative;
-    order: 1;
-    height: 84px;
-    margin-top: var(--sp-3);
-    border-radius: var(--r-lg);
+    inset: auto;
+    z-index: auto;
+    height: 132px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--sky-1);
   }
 
-  .hero-t {
-    padding: 0;
-    font-size: var(--fs-hero);
-    line-height: 36px;
+  .hero-in {
+    position: static;
+    transform: none;
+    margin-top: 16px;
+  }
+
+  .hero .hero-t {
+    margin-top: 6px;
+    font-size: 34px;
+  }
+
+  /* a placa ocupa a largura toda, sem subir sobre a cena; "Jogar agora" primeiro, com 48 px */
+  .placa {
+    order: 1;
+    margin: 24px 0 0;
+    padding: 24px 16px 18px;
+  }
+
+  .mesa,
+  .mesa-2 {
+    gap: 16px;
+  }
+
+  .mesa .mesa-t {
+    font-size: 22px;
+  }
+
+  .mesa-who {
+    display: none;
+  }
+
+  .cadeiras {
+    --c: 30px;
+    --g: 5px;
+  }
+
+  .cadeira.sua {
+    font-size: 10px;
+  }
+
+  .mesa-act {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .mesa-act.p-first {
+    flex-direction: column;
+  }
+
+  .mesa-act .btn {
+    --h: 48px;
+    width: 100%;
+  }
+
+  .mesa-act kbd {
+    display: none;
   }
 
   .home-modes {
-    order: 2;
+    order: 4;
     margin-top: var(--sp-3);
   }
 
@@ -477,17 +540,7 @@
   }
 
   .home-arrivals {
-    order: 4;
-  }
-
-  /* o título dos modos fica só para o leitor de tela; o "Jogar agora" aparece, com o botão ao lado */
-  .home-modes > .sec-h {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    order: 5;
   }
 
   /* o "Jogar agora" e o "Criar lobby" na mesma linha (o botão não fica mais sozinho à direita) */
@@ -499,74 +552,18 @@
     margin: 0;
   }
 
-  .lb > .lb-h > h2 {
+  /* em caixa-alta espaçada, 20 px quebrava "LOBBIES ABERTOS" em duas linhas ao lado do botão */
+  .lb > .lb-h > h2,
+  .home .sec-caps,
+  .home .ml-h {
     margin: 0;
-    font-size: var(--fs-h3);
+    font-size: var(--fs-lg);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
 
   .lb > .lb-h > .btn {
     margin-left: auto;
-  }
-
-  .mv-list {
-    display: flex;
-    gap: var(--sp-2);
-    margin: 0 calc(var(--sp-4) * -1);
-    padding: 0 var(--sp-4);
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-padding-left: 16px;
-    scrollbar-width: none;
-  }
-
-  .mv-list::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mv {
-    flex: none;
-    flex-direction: row;
-    width: 212px;
-    min-height: 60px;
-    gap: var(--sp-3);
-    padding: var(--sp-2) var(--sp-3);
-    text-align: left;
-    scroll-snap-align: start;
-  }
-
-  .mv-ring,
-  .mv-d {
-    display: none;
-  }
-
-  .mv-tile {
-    position: relative;
-    display: grid;
-    place-items: center;
-    flex: none;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--r-md);
-    background: linear-gradient(var(--sky-1), var(--sky-2));
-  }
-
-  .mv-tile .med {
-    width: 38px;
-    height: 38px;
-  }
-
-  .mv-t {
-    gap: 0;
-  }
-
-  .mv-t b {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .mv-m {
-    display: block;
   }
 
   .feed {
@@ -598,4 +595,11 @@
   .fe.is-new {
     animation: none;
   }
+}
+
+/* Título de seção da Home v4 em caixa-alta (o mesmo de "LOBBIES ABERTOS" e "MODOS"). */
+.sec-caps {
+  font: 500 1.375rem/1.2 var(--f-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }

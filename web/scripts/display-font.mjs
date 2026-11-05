@@ -26,6 +26,12 @@ const INSTANCES = [
     file: 'hanken-grotesk.woff2',
     axes: { wght: { min: 400, max: 600, default: 400 } },
   },
+  // Jost (OFL): a fonte livre do site oficial do Deadlock. Interface e destaque desde a Home v4.
+  {
+    from: '@fontsource-variable/jost/files/jost-latin-wght-normal.woff2',
+    file: 'jost.woff2',
+    axes: { wght: { min: 400, max: 600, default: 400 } },
+  },
 ];
 
 /** Estáticos: cópia direta do subconjunto latino. */
@@ -34,6 +40,8 @@ const COPIES = [
   ['@fontsource/barlow-condensed/files/barlow-condensed-latin-500-normal.woff2', 'barlow-condensed-500.woff2'],
   ['@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2', 'barlow-condensed-600.woff2'],
   ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2', 'jetbrains-mono-500.woff2'],
+  // Big Shoulders Display (OFL): só o placar dos cartões ("10/12", "6 × 6"), letra de cartaz.
+  ['@fontsource/big-shoulders-display/files/big-shoulders-display-latin-800-normal.woff2', 'big-shoulders-display-800.woff2'],
 ];
 
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
