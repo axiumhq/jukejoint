@@ -43,7 +43,7 @@ export const releases: Release[] = [
     tldr: 'Último Bonde ganhou uma segunda linha de trilhos e o Campo de Treino aceita comandos de chat para configurar bots.',
     changes: [
       { category: 'novo', scope: 'ultimo-bonde', text: 'Nova rota: Linha do Porto, com três estações e uma ponte levadiça.' },
-      { category: 'novo', scope: 'campo-de-treino', text: 'Comandos !bots, !cooldown e !vida no chat do lobby.' },
+      { category: 'novo', scope: 'campo-de-treino', text: 'Comandos /bot, /semRecarga e /vida no chat do jogo.' },
       { category: 'balanceamento', scope: 'ultimo-bonde', text: 'Raio de escolta reduzido de 10 para 8 metros.' },
       { category: 'correcao', scope: 'ultimo-bonde', text: 'O bonde não trava mais na curva da segunda estação. Ele pede desculpas pelo atraso.' },
       { category: 'correcao', scope: 'plataforma', text: 'O ping da região BR/SA agora mede até o servidor de São Paulo, e não até Miami. Se o seu número parecia alto demais, era isso.' },
