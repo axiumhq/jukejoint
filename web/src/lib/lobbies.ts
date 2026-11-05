@@ -80,7 +80,8 @@ export interface LobbyContext {
 
 export type LobbyKind = 'open' | 'joining' | 'mine' | 'joined' | 'private' | 'knocking' | 'invited' | 'full' | 'playing-open' | 'playing-closed';
 
-export type LobbyActionKind = 'join' | 'joining' | 'invite' | 'leave' | 'knock' | 'knock-pending' | 'notify-slot' | 'notify-end';
+/** `open`: você já está no lobby (seu ou em que entrou): a ação é ir para a sala, não entrar de novo. */
+export type LobbyActionKind = 'join' | 'joining' | 'open' | 'knock' | 'knock-pending' | 'notify-slot' | 'notify-end';
 
 export interface LobbyState {
   kind: LobbyKind;
@@ -91,8 +92,8 @@ export interface LobbyState {
   /** Texto do botão principal. */
   verb: string;
   action: LobbyActionKind;
-  /** Segunda ação (só no seu lobby: fechar). */
-  secondary: 'close' | null;
+  /** Segunda ação, discreta, ao lado de "Abrir a sala": fechar (o seu lobby) ou sair (o que você entrou). */
+  secondary: 'close' | 'leave' | null;
   /** O clique principal leva para dentro do lobby. */
   canJoin: boolean;
   /** A conta simulada está dentro. */
@@ -123,10 +124,10 @@ export function lobbyState(l: Lobby, ctx: LobbyContext = {}, now = Date.now()): 
     return { ...base, kind: 'joining', label: null, stamp: null, verb: S.joining, action: 'joining' };
   }
   if (l.mine) {
-    return { ...base, kind: 'mine', label: S.here, stamp: S.here, verb: S.invite, action: 'invite', secondary: 'close', you: true };
+    return { ...base, kind: 'mine', label: S.here, stamp: S.here, verb: S.open, action: 'open', secondary: 'close', you: true };
   }
   if (ctx.hereId === l.id) {
-    return { ...base, kind: 'joined', label: S.here, stamp: S.here, verb: S.leave, action: 'leave', you: true };
+    return { ...base, kind: 'joined', label: S.here, stamp: S.here, verb: S.open, action: 'open', secondary: 'leave', you: true };
   }
   if (l.status === 'cheio' || (l.status === 'aberto' && freeSlots(l) === 0)) {
     return { ...base, kind: 'full', label: S.full, stamp: S.full, verb: notifyOn ? S.notifyOn : S.notifySlot, action: 'notify-slot' };

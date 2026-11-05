@@ -17,9 +17,12 @@ import { ModeMedallion, ModeStrip } from './ModeCover';
 
 /**
  * O cartão de lobby do redesign (Design-System, `.lc`): à esquerda a faixa de céu com a silhueta
- * do modo e o medalhão; à direita "LOBBY 04 · BR/SA · 14 MS" com a etiqueta de estado, o nome
- * (leva para a sala), "Modo, de quem abriu", as lâmpadas de vaga com quem está dentro, e embaixo
- * "N de M na sala" com UMA ação. A linha compacta é o mesmo cartão com outra grade (lobbies.css).
+ * do modo e o medalhão; à direita "LOBBY 04 · BR/SA · 14 MS" com a etiqueta de estado, o nome,
+ * "Modo, de quem abriu", as lâmpadas de vaga com quem está dentro, e embaixo "N de M na sala" com
+ * UMA ação. A linha compacta é o mesmo cartão com outra grade (lobbies.css).
+ * O cartão inteiro leva para a sala: o nome é o único link e se estica por cima do cartão (CSS);
+ * a estrela e a ação ficam por cima dele, fora do link. No lobby em que você está, a ação é
+ * "Abrir a sala", com "Sair" (ou o X de fechar, no seu) ao lado.
  */
 
 export interface CardEnv {
@@ -100,7 +103,8 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
         <div className="lc-f">
           <span className="lc-cnt">
             <span className="sr-only">{t.lobbies.slots(l.players, l.slots, friendNames.length)}</span>
-            <span aria-hidden="true">{t.lobbies.inRoom(l.players, l.slots)}</span>
+            {/* No lobby em que você está, a linha divide espaço com "Sair": só "N de M", como na pílula da sala. */}
+            <span aria-hidden="true">{st.you ? `${l.players} de ${l.slots}` : t.lobbies.inRoom(l.players, l.slots)}</span>
           </span>
           <span className="lc-act">
             <LobbyAction lobby={l} state={st} describedBy={nameId} primary={featured && st.canJoin && !st.you} compact />

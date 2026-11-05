@@ -224,10 +224,31 @@ body:has(.rbar) .toasts {
   padding: 0 var(--sp-2);
 }
 
+/*
+ * As colunas das vagas seguem a largura da própria seção, não a da janela: a moldura (lateral e
+ * painel) é a mesma em toda tela, então quem decide é o espaço que sobra para a sala.
+ * Vaga com uns 170 px no mínimo: 4 colunas, 3, depois 2 (o celular tem o seu desenho abaixo).
+ */
+.rseats {
+  container-type: inline-size;
+}
+
 .seats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-3);
+}
+
+@container (max-width: 715px) {
+  .seats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 530px) {
+  .seats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .seat-li {
@@ -466,7 +487,7 @@ button.seat.is-empty:hover {
   min-width: 0;
 }
 
-/* o número da contagem, em Bodoni */
+/* o número da contagem, na serifa de título */
 .rb-cd {
   min-width: 1ch;
   font-size: 3.5rem;
@@ -650,8 +671,15 @@ button.seat.is-empty:hover {
 
 /* ───────── Painel da sala ───────── */
 
+/*
+ * "Sala", no topo do painel: ocupa a faixa da barra de topo (--tb) e fica centrado nela, na mesma
+ * linha da busca e da conta. O painel tem --sp-4 de folga em cima; a faixa começa no topo da tela.
+ */
 .rroom-h {
-  margin-bottom: var(--sp-3);
+  display: flex;
+  align-items: center;
+  height: var(--tb);
+  margin: calc(var(--sp-4) * -1) 0 0;
   font-size: 1.5rem;
   line-height: 32px;
 }
@@ -833,10 +861,6 @@ button.seat.is-empty:hover {
 /* ───────── Pontos de quebra ───────── */
 
 @media (max-width: 1100px) {
-  .seats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .rb-txt {
     gap: var(--sp-1);
   }

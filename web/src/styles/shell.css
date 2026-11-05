@@ -3,7 +3,7 @@
  * topo e, quando a tela traz <Rail>, o painel dela à direita.
  *   acima de 1366: lateral 248, topo 72, margem 32, painel 352
  *   até 1366:      lateral 224, topo 56, margem 24, painel 320
- *   até 1240:      painel 288 e, em tela com painel, a lateral recolhe para só ícones (72)
+ *   até 1240:      painel 288; a lateral NÃO recolhe (a mesma em toda tela, sala incluída)
  *   até 960:       sem lateral; barra de abas embaixo (64); painel e sua lista viram folha
  *   até 760:       margem 16
  * Medidas em tokens.css.
@@ -20,10 +20,6 @@
   min-height: 100dvh;
   /* a cor da lateral desce a página inteira (a lateral é fixa, a página rola) */
   background: linear-gradient(90deg, var(--s1) var(--side-w), transparent 0);
-}
-
-.frame.is-compact {
-  --side-w: var(--side-c);
 }
 
 .frame.has-rail {
@@ -101,56 +97,8 @@
 }
 
 .side-nav .ico {
-  width: 18px;
-  height: 18px;
-}
-
-/* recolhida (a sala, e telas com painel abaixo de 1240): só o JJ e os ícones */
-.is-compact .side {
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-4) 0;
-}
-
-.is-compact .side-brand {
-  align-self: center;
-  height: auto;
-  padding: 0;
-  margin-bottom: var(--sp-3);
-}
-
-.is-compact .side-nav {
-  gap: var(--sp-1);
-}
-
-.is-compact .side-nav a {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  justify-content: center;
-}
-
-/* recolhida, cada ícone guarda o rótulo curto embaixo (Jogar, Modos, Hoje, Instalar): reconhecer, não lembrar */
-.is-compact .side-nav a {
-  width: 64px;
-  height: auto;
-  min-height: 52px;
-  flex-direction: column;
-  gap: var(--sp-1);
-  padding: var(--sp-2) 0;
-}
-
-.is-compact .side-nav .nav-t.sr-only {
-  position: static !important;
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  overflow: hidden;
-  clip: auto;
-  clip-path: none;
-  font-size: var(--fs-xs);
-  line-height: 16px;
-  text-overflow: ellipsis;
+  width: 20px;
+  height: 20px;
 }
 
 /* a sua lista na lateral: o desenho do kit (sem cartão, linhas de 44 px) */
@@ -274,7 +222,12 @@
 
 /* ───────── Barra de topo ───────── */
 
+/*
+ * Uma altura de controle para a barra toda (busca, ao vivo, pílula da sala, tema e conta), em toda
+ * tela: --ctl, 36 px no mouse e o --hit (44 px) no toque.
+ */
 .tb {
+  --ctl: 36px;
   position: sticky;
   top: 0;
   z-index: 40;
@@ -304,20 +257,16 @@
   flex: 1;
 }
 
-/* o menu de tema da barra só aparece quando a lateral não mostra as amostras */
+/* o menu de tema da barra só aparece quando a lateral não existe (até 960 px) */
 .tb-theme {
   display: none;
-}
-
-.is-compact .tb-theme {
-  display: flex;
 }
 
 .live-count {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  min-height: 36px;
+  height: var(--ctl, 36px);
   padding: 0 var(--sp-2);
   border-radius: var(--r-sm);
   color: var(--tx-3);
@@ -341,7 +290,7 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  height: 36px;
+  height: var(--ctl, 36px);
   min-width: 0;
   padding: 0 var(--sp-3) 0 var(--sp-2);
   border-radius: var(--r-sm);
@@ -389,8 +338,8 @@
 .acct {
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: var(--ctl, 36px);
+  height: var(--ctl, 36px);
   border-radius: 50%;
   transition: background-color var(--t-fast);
 }
@@ -535,9 +484,16 @@
   display: block;
 }
 
+.tb .icon-btn {
+  width: var(--ctl, 36px);
+  height: var(--ctl, 36px);
+}
+
+/* o campo da base tem piso de 44 px: na barra ele segue a altura dos outros controles */
 .search input {
   width: 100%;
-  height: 36px;
+  height: var(--ctl, 36px);
+  min-height: 0;
   border-radius: var(--r-sm);
   border: 0;
   background: var(--s2);
@@ -564,7 +520,8 @@
 .search-field > .ico {
   position: absolute;
   left: 14px;
-  top: 9px;
+  top: 50%;
+  translate: 0 -50%;
   width: 18px;
   height: 18px;
   color: var(--tx-3);
@@ -574,7 +531,8 @@
 .search-field > kbd {
   position: absolute;
   right: 12px;
-  top: 10px;
+  top: 50%;
+  translate: 0 -50%;
   color: var(--tx-2);
   pointer-events: none;
 }
@@ -1137,6 +1095,14 @@
   .search {
     flex-basis: 260px;
   }
+
+  /*
+   * Com painel, a coluna do meio fica estreita (a lateral não recolhe mais): a pílula da sala
+   * mostra só os rostos e as vagas. O nome da sala segue no aria-label dela.
+   */
+  .has-rail .room-pill .rp-name {
+    display: none;
+  }
 }
 
 @media (max-width: 1080px) {
@@ -1401,6 +1367,10 @@
  * Onde o desenho é pequeno de propósito (estrela, nome do lobby), cresce a área de toque, não o visual.
  */
 @media (max-width: 760px), (pointer: coarse) {
+  .tb {
+    --ctl: var(--hit, 44px);
+  }
+
   .icon-btn,
   .live-count,
   .room-pill,

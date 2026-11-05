@@ -89,9 +89,48 @@
   background: color-mix(in srgb, var(--s2), #fff 4%);
 }
 
-/* você está aqui: o fio de latão em volta */
-.lc.is-you {
+/*
+ * O cartão inteiro é um link só: o nome (o único link, com o nome do lobby como nome acessível)
+ * se estica por cima do cartão. A estrela e a ação ficam por cima dele e seguem clicáveis.
+ * Nada interativo mora dentro do link.
+ */
+.lc-n::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+.lc-act,
+.fav {
+  position: relative;
+  z-index: 1;
+}
+
+/* o foco do nome desenha o anel no cartão todo, que é a área do link */
+.lc-n:focus-visible {
+  outline: 0;
+}
+
+.lc:has(.lc-n:focus-visible) {
+  outline: 2px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.lc:has(.lc-n:hover) .lc-n {
+  color: var(--acc);
+}
+
+/* você está aqui: o fio de latão em volta, por cima da arte (a faixa cobria o lado esquerdo) */
+.lc.is-you::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
   box-shadow: inset 0 0 0 1px var(--acc);
+  pointer-events: none;
 }
 
 .lc-art {
@@ -185,10 +224,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.lc-n:hover {
-  color: var(--acc);
 }
 
 .lc-n .ico {
@@ -288,16 +323,25 @@
 }
 
 .lc-cnt {
+  min-width: 0;
   font-size: var(--fs-xs);
   line-height: 16px;
   color: var(--tx-2);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lc-act {
   display: flex;
   gap: var(--sp-2);
   flex: none;
+}
+
+/* "Sair" (ou o X de fechar) e "Abrir a sala": o par do lobby em que você está */
+.lc-act .btn-pair {
+  display: flex;
+  gap: var(--sp-2);
 }
 
 .lc-act .btn-sm {
@@ -439,7 +483,7 @@
   margin-top: var(--sp-1);
 }
 
-/* vazio: o EmptyState da base (título em Bodoni, uma linha, a ação) ocupando a grade toda */
+/* vazio: o EmptyState da base (título na serifa de título, uma linha, a ação) ocupando a grade toda */
 .lb-empty {
   grid-column: 1 / -1;
 }
@@ -501,20 +545,8 @@
     min-width: var(--hit, 44px);
   }
 
-  /* o nome do lobby é o link do cartão inteiro; a estrela e o verbo ficam por cima */
-  .lc-n::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-  }
-
-  .lc-act {
-    position: relative;
-    z-index: 1;
-  }
-
+  /* a estrela ganha área de 44 px (o cartão já é o link: lobbies.css, acima) */
   .fav {
-    z-index: 1;
     width: var(--hit, 44px);
     height: var(--hit, 44px);
     margin: calc(var(--sp-2) * -1) calc(var(--sp-3) * -1) calc(var(--sp-2) * -1) 0;

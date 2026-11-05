@@ -46,14 +46,19 @@ describe('lobbyState: a tabela de estados do brief v4', () => {
     expect(s).toMatchObject({ kind: 'open', label: null, verb: 'Entrar', canJoin: true });
   });
 
-  it('seu lobby: "Você está aqui" com Convidar e Fechar, nunca Entrar', () => {
+  it('seu lobby: "Você está aqui" com Abrir a sala e Fechar ao lado, nunca Entrar', () => {
     const s = lobbyState(lobby({ mine: true }), {}, NOW);
-    expect(s).toMatchObject({ kind: 'mine', label: 'Você está aqui', verb: 'Convidar', secondary: 'close', canJoin: false, you: true });
+    expect(s).toMatchObject({ kind: 'mine', label: 'Você está aqui', verb: 'Abrir a sala', action: 'open', secondary: 'close', canJoin: false, you: true });
   });
 
-  it('já entrou: "Você está aqui" com Sair', () => {
+  it('já entrou: "Você está aqui" com Abrir a sala e Sair como ação secundária', () => {
     const s = lobbyState(lobby({ id: 'a' }), { hereId: 'a' }, NOW);
-    expect(s).toMatchObject({ kind: 'joined', label: 'Você está aqui', verb: 'Sair', action: 'leave', canJoin: false });
+    expect(s).toMatchObject({ kind: 'joined', label: 'Você está aqui', verb: 'Abrir a sala', action: 'open', secondary: 'leave', canJoin: false, you: true });
+  });
+
+  it('entrando: o verbo é o passo, sem segunda ação (ainda não está dentro)', () => {
+    const s = lobbyState(lobby({ id: 'a' }), { joiningId: 'a' }, NOW);
+    expect(s).toMatchObject({ kind: 'joining', action: 'joining', secondary: null, you: false });
   });
 
   it('privado: "Com convite" e Bater na porta; não entra direto', () => {

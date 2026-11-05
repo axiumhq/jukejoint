@@ -1,3 +1,4 @@
+import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { t } from '../i18n';
 import { lobbyState, notifyKey, type LobbyState } from '../lib/lobbies';
@@ -18,11 +19,11 @@ interface LobbyActionProps {
 
 /**
  * A ação de um lobby, saída direto da tabela de estados (lib/lobbies.ts `lobbyState`):
- * Entrar, Entrar no meio, Convidar (seu, com Fechar ao lado), Sair, Bater na porta,
- * Pedido enviado, Avisar quando vagar ou quando acabar. Um botão por cartão.
+ * Entrar, Entrar no meio, Abrir a sala (onde você está, com Sair ou Fechar discreto ao lado),
+ * Bater na porta, Pedido enviado, Avisar quando vagar ou quando acabar. Uma ação principal por cartão.
  */
 export function LobbyAction({ lobby, describedBy, primary = false, state: given, compact = false }: LobbyActionProps) {
-  const { requestJoin, joiningStep, toggleNotify, lobbyCtx, leaveLobby, closeLobby, inviteTo, openKnock } = useSession();
+  const { requestJoin, joiningStep, toggleNotify, lobbyCtx, leaveLobby, closeLobby, openKnock } = useSession();
   const st = given ?? lobbyState(lobby, lobbyCtx);
   const sm = compact ? ' btn-sm' : '';
   const join = primary ? `btn btn-p${sm}` : `btn btn-s${sm}${compact ? ' go' : ''}`;
@@ -48,24 +49,24 @@ export function LobbyAction({ lobby, describedBy, primary = false, state: given,
           {st.verb}
         </button>
       );
-    case 'invite':
+    case 'open':
+      // Você já está aqui: a ação é ir para a sala. Sair (ou Fechar, no seu) fica ao lado, discreto.
       return (
-        <span className="btn-pair lc-act">
-          <button type="button" className={`${quiet} btn-act`} aria-label={t.lobbies.inviteLabel(lobby.name)} onClick={() => inviteTo(lobby)}>
-            {ico('link')}
+        <span className="btn-pair">
+          {st.secondary === 'leave' && (
+            <button type="button" className={`btn btn-g${sm}`} aria-label={t.lobbies.leaveLabel(lobby.name)} onClick={leaveLobby}>
+              {t.lobbyState.leave}
+            </button>
+          )}
+          {st.secondary === 'close' && (
+            <button type="button" className={`btn btn-g${sm} btn-square`} aria-label={t.lobbies.closeLabel(lobby.name)} onClick={() => closeLobby(lobby.id)}>
+              <Icon name="x" size={14} />
+            </button>
+          )}
+          <Link to={`/sala/${encodeURIComponent(lobby.id)}`} className={`${join} btn-act`} aria-label={t.lobbies.openLabel(lobby.name)}>
             {st.verb}
-          </button>
-          <button type="button" className={`btn btn-g${sm} btn-square`} aria-label={t.lobbies.closeLabel(lobby.name)} onClick={() => closeLobby(lobby.id)}>
-            <Icon name="x" size={14} />
-          </button>
+          </Link>
         </span>
-      );
-    case 'leave':
-      return (
-        <button type="button" className={`${quiet} btn-act`} aria-label={t.lobbies.leaveLabel(lobby.name)} onClick={leaveLobby}>
-          {ico('exit')}
-          {st.verb}
-        </button>
       );
     case 'knock':
       return (
