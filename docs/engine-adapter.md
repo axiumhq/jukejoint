@@ -31,7 +31,7 @@ O `cmd/modlock` é `package main` e não é importável. A "cola" dos comandos `
 |---|---|---|
 | `ensureInstalled()` | `install-modlock.ps1` (SHA-256 fixado) | idem + `session.DownloadHost` com verificação de hash |
 | `startDaemon(origin)` / `stopDaemon()` | `comum.ps1` (lock de `daemon.lock`, `daemon stop`) | `daemon.Connect`/`daemon.Stop` com o nosso `start` (sempre com `--origin`) |
-| `host(mod, opts)` → código | `modlock host --no-lobby` | `PeerNet.Host` stream → `HostEvent.join_code` |
+| `host(mod, opts)` → código | `modlock play --host` (até a v0.1.68, `modlock host --no-lobby`) | `PeerNet.Host` stream → `HostEvent.join_code` |
 | `join(code, opts)` | `modlock join` | `PeerNet.Join` stream → `content*`, `address`, `arrived` |
 | `dev(mod)` / `play(mods)` | `modlock dev` | `session.StartHost` + `Control` |
 | `build/check/publish(mod)` | `modlock build/publish --origin` | `check` + `publish` |

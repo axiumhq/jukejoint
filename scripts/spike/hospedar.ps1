@@ -19,7 +19,7 @@ Push-Location $Mod
 try {
     $extra = @()
     if ($SemJogo) { $extra += '--no-game' }
-    & $Modlock host --no-lobby @(UiArgs $UiRelay) @extra
+    & $Modlock play --host @(UiArgs $UiRelay) @extra
 } finally {
     Pop-Location
 }

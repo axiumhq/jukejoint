@@ -31,10 +31,12 @@ pub fn daemon_stop() -> Vec<String> {
     owned(&["--json", "daemon", "stop"])
 }
 
-/// `modlock host` só por código (sem lobby no hyperline.gg) e sem a UI dentro do jogo, que hoje
-/// carregaria a página-ponte do hyperline.gg. Roda com o diretório atual no projeto.
+/// `modlock play --host`: hospeda só por código de convite (sem lobby no hyperline.gg) e sem a UI
+/// dentro do jogo, que hoje carregaria a página-ponte do hyperline.gg. Roda com o diretório atual
+/// no projeto. Até a v0.1.68 isso era `modlock host --no-lobby`; a v0.1.73 tirou o comando `host`
+/// e o `play --host` manda o mesmo evento `hosting` com o código.
 pub fn host() -> Vec<String> {
-    owned(&["--json", "host", "--no-lobby", "--ui-port", "0"])
+    owned(&["--json", "play", "--host", "--ui-port", "0"])
 }
 
 /// `modlock join` pelo código, com a nossa origem para links e sem a UI dentro do jogo.
@@ -71,8 +73,10 @@ mod tests {
     }
 
     #[test]
-    fn host_matches_spike_plus_json() {
-        assert_eq!(host(), ["--json", "host", "--no-lobby", "--ui-port", "0"]);
+    fn host_is_play_by_join_code() {
+        // A v0.1.73 não tem mais `host`: chamar `modlock host` falha antes de hospedar.
+        assert_eq!(host(), ["--json", "play", "--host", "--ui-port", "0"]);
+        assert!(!host().iter().any(|a| a == "host" || a == "--no-lobby"));
     }
 
     #[test]

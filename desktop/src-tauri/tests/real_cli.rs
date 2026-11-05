@@ -11,6 +11,7 @@
 use std::sync::Arc;
 
 use app_desktop_lib::engine::{
+    args,
     modlock::{EngineConfig, ModlockCli},
     DaemonState, EngineAdapter,
 };
@@ -44,4 +45,37 @@ fn check_start_and_stop_daemon() {
     assert!(report.daemon_was_running);
     assert_eq!(report.daemon.state, DaemonState::Parado, "o socket deveria sumir com daemon stop");
     assert!(!std::path::Path::new(&report.daemon.socket_path).exists());
+}
+
+/// O `modlock.exe` fixado precisa aceitar cada comando que o app chama. A v0.1.73 tirou o
+/// `host`, e o app só descobriu na hora de hospedar: este teste pega isso na atualização.
+#[test]
+#[ignore = "precisa do modlock.exe real (MODLOCK_BIN)"]
+fn pinned_cli_accepts_the_commands_the_app_runs() {
+    let bin = std::env::var("MODLOCK_BIN").expect("defina MODLOCK_BIN");
+    let help = |cmd: &str| {
+        let out = std::process::Command::new(&bin)
+            .args([cmd, "--help"])
+            .env("MODLOCK_NO_UPDATE_CHECK", "1")
+            .output()
+            .expect("rodar o modlock");
+        let text = String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
+        // Um comando que não existe responde "No help topic" e sai com erro (a v0.1.73 com `host`).
+        assert!(out.status.success() && !text.contains("No help topic"), "o modlock fixado não tem o comando {cmd}:
+{text}");
+        text
+    };
+    // Cada chamada do app: o comando (primeiro argumento depois de --json) e as opções que ele passa.
+    let code = app_desktop_lib::engine::validate::JoinCode::parse("k7Qx-29_zz").unwrap();
+    for call in [args::host(), args::join(&code, "https://sinal.example")] {
+        let words: Vec<&str> = call.iter().map(String::as_str).filter(|a| *a != "--json").collect();
+        let text = help(words[0]);
+        for flag in words.iter().filter(|a| a.starts_with("--")) {
+            assert!(text.contains(flag), "`modlock {}` não aceita {flag}", words[0]);
+        }
+    }
+    let daemon = help("daemon");
+    for flag in args::daemon_start("https://sinal.example").iter().filter(|a| a.starts_with("--")) {
+        assert!(daemon.contains(flag.as_str()), "`modlock daemon` não aceita {flag}");
+    }
 }
