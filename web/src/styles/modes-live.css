@@ -166,6 +166,108 @@
   outline-offset: 3px;
 }
 
+/* ───────── Com pintura: a face da carta é a cena, e o sigilo vira um selo de latão ───────── */
+
+.arcano.has-art {
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--s1);
+  box-shadow: none;
+}
+
+.arc-art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.arc-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+  transition: transform var(--t-slow) var(--e-out);
+}
+
+.arcano.has-art:hover .arc-art img {
+  transform: scale(1.03);
+}
+
+/* a moldura vai por cima da pintura, junto com o véu que escurece a parte do texto */
+.arcano.has-art::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(to top, rgb(10 8 8 / 0.92) 0%, rgb(10 8 8 / 0.78) 34%, transparent 58%);
+  box-shadow:
+    inset 0 0 0 1px var(--brass),
+    inset 0 0 0 6px rgb(10 8 8 / 0.55),
+    inset 0 0 0 7px color-mix(in srgb, var(--acc) 22%, transparent);
+  transition: box-shadow var(--t-fast);
+}
+
+.arcano.has-art[aria-pressed='true']::before {
+  box-shadow:
+    inset 0 0 0 1.5px var(--acc),
+    inset 0 0 0 6px rgb(10 8 8 / 0.55),
+    inset 0 0 0 7px color-mix(in srgb, var(--acc) 40%, transparent);
+}
+
+.arcano.has-art > :not(.arc-art) {
+  z-index: 1;
+}
+
+.arcano.has-art > span:not(.arc-art):not(.arc-sig) {
+  position: relative;
+}
+
+.arcano.has-art .arc-num {
+  color: var(--tx);
+  text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
+}
+
+/* o selo: disco escuro com aro de latão, sempre logo acima do nome (uma ou duas linhas) */
+.arcano.has-art .arc-sig {
+  --selo: 30px;
+  position: relative;
+  grid-row: 2;
+  align-self: end;
+  display: grid;
+  place-items: center;
+  width: var(--selo);
+  height: var(--selo);
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: rgb(14 11 10 / 0.92);
+  box-shadow: inset 0 0 0 1px var(--acc);
+  filter: none;
+}
+
+.arcano.has-art .arc-sig svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* o texto fica preso às duas últimas linhas da grade, embaixo da pintura */
+.arcano.has-art .arc-t {
+  grid-row: 3;
+}
+
+.arcano.has-art .arc-vivo {
+  grid-row: 4;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 6px;
+}
+
+.arcano.has-art .arc-t b {
+  font-size: var(--fs-md);
+}
+
 .ml-card {
   display: grid;
   align-content: start;
@@ -251,7 +353,7 @@
 
   .ml-list.is-arcanos > li {
     flex: none;
-    width: 148px;
+    width: 164px;
     scroll-snap-align: start;
   }
 
@@ -266,7 +368,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ml-art .cover {
+  .ml-art .cover,
+  .arc-art img {
     transition: none;
+  }
+
+  .arcano.has-art:hover .arc-art img {
+    transform: none;
   }
 }

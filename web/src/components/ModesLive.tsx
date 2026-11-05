@@ -3,6 +3,7 @@ import { getModes } from '../data/modes';
 import { useLobbyFilters } from '../hooks/useFilters';
 import { useServerStatus } from '../hooks/useServerStatus';
 import { modosHome as M } from '../i18n/modos-home';
+import { pintura } from '../lib/pintura';
 import { useSession } from '../state/session';
 import { ModeCover, ModeIcon } from './ModeCover';
 import '../styles/modes-live.css';
@@ -62,9 +63,22 @@ export function ModesLive() {
             );
           }
           const c = byMode[m.slug];
+          const art = pintura(`arcano-${m.slug}`);
+          const art45 = pintura(`arcano-${m.slug}-45`);
           return (
             <li key={m.slug}>
-              <button type="button" className={c ? 'arcano' : 'arcano is-quiet'} aria-pressed={f.mode === m.slug} onClick={() => pick(m.slug)}>
+              <button
+                type="button"
+                className={['arcano', art && 'has-art', !c && 'is-quiet'].filter(Boolean).join(' ')}
+                aria-pressed={f.mode === m.slug}
+                onClick={() => pick(m.slug)}
+              >
+                {art && (
+                  <picture className="arc-art" aria-hidden="true">
+                    {art45 && <source media="(min-width: 721px) and (max-width: 1240px)" srcSet={art45} />}
+                    <img src={art} alt="" loading="lazy" decoding="async" />
+                  </picture>
+                )}
                 <i aria-hidden="true" />
                 <i aria-hidden="true" />
                 <i aria-hidden="true" />
@@ -82,7 +96,8 @@ export function ModesLive() {
                 <span className="arc-vivo">
                   {c ? (
                     <>
-                      <em>{M.lobbies(c.lobbies)}</em> · {M.playing(c.players)}
+                      <em>{M.lobbies(c.lobbies)}</em>
+                      <span className="arc-play"> · {M.playing(c.players)}</span>
                     </>
                   ) : (
                     M.none
