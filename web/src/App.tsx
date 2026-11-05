@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState, type ComponentType } from 'react';
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router';
 import { Layout } from './components/Shell';
 import { t } from './i18n';
+import { useLocale } from './i18n/useLocale';
 import { Home } from './pages/Home';
 import { NotFound } from './pages/NotFound';
 import { SessionProvider } from './state/session';
@@ -102,6 +103,11 @@ function ToBrowser() {
 }
 
 export function App() {
+  const { locale } = useLocale();
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   return (
     <BrowserRouter>
       <ThemeProvider>

@@ -8,7 +8,7 @@ import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../da
 import { PLATFORM_SCOPE, releases } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
 import { RELEASES_URL, SOURCE_URL, useLatestRelease } from '../lib/release';
-import { formatDate, formatShortDate, t } from '../i18n';
+import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
 import { useSession } from '../state/session';
 import '../styles/info.css';
@@ -109,7 +109,7 @@ function DownloadCard() {
               <>
                 <p className="ih-name">{r.fileName}</p>
                 <p className="ih-meta">
-                  {t.install.version} <span className="num">{r.version}</span> · <span className="num">{r.sizeMb.toLocaleString('pt-BR')}</span> MB ·{' '}
+                  {t.install.version} <span className="num">{r.version}</span> · <span className="num">{formatNumber(r.sizeMb)}</span> MB ·{' '}
                   <time dateTime={r.releasedAt}>{formatDate(r.releasedAt)}</time>
                 </p>
               </>

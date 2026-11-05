@@ -1,8 +1,9 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { modes } from '../data/modes';
+import { getModes } from '../data/modes';
 import { useFriends } from '../hooks';
 import { t } from '../i18n';
+import { useLocale } from '../i18n/useLocale';
 import { flatHits, fold, searchAll, type SearchHit } from '../lib/search';
 import { useSession } from '../state/session';
 import { Avatar } from './Avatar';
@@ -53,6 +54,7 @@ function Marked({ text, q }: { text: string; q: string }) {
 }
 
 export function Search({ open, onOpenChange }: SearchProps) {
+  const { locale } = useLocale();
   const { lobbies, user } = useSession();
   const friends = useFriends();
   const navigate = useNavigate();
@@ -72,7 +74,7 @@ export function Search({ open, onOpenChange }: SearchProps) {
   const listId = useId();
   const optId = (i: number) => `${listId}-o${i}`;
 
-  const groups = useMemo(() => searchAll(q, lobbies, modes, friends, !!user), [q, lobbies, friends, user]);
+  const groups = useMemo(() => searchAll(q, lobbies, getModes(), friends, !!user), [q, lobbies, friends, user, locale]);
   const hits = useMemo(() => flatHits(groups), [groups]);
   const expanded = (focused || open) && q.trim() !== '';
   const showPop = focused || open;

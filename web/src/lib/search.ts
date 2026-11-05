@@ -23,7 +23,7 @@ export interface SearchGroups {
 export const SEARCH_LIMITS = { lobbies: 5, modes: 3, players: 5 } as const;
 
 /** Minúsculas e sem acento: "circulo" acha "Círculo". */
-export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
+export const fold = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
 /** 0 = começa com, 1 = alguma palavra começa com, 2 = contém, -1 = não bate. */
 function rank(text: string, q: string) {
@@ -37,7 +37,7 @@ function top<T extends { label: string }>(items: T[], q: string, n: number): T[]
   return items
     .map((it) => ({ it, r: rank(it.label, q) }))
     .filter((x) => x.r >= 0)
-    .sort((a, b) => a.r - b.r || a.it.label.localeCompare(b.it.label, 'pt-BR'))
+    .sort((a, b) => a.r - b.r || a.it.label.localeCompare(b.it.label))
     .slice(0, n)
     .map((x) => x.it);
 }

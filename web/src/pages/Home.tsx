@@ -5,7 +5,7 @@ import { Icon } from '../components/Icon';
 import { LobbyBrowser } from '../components/LobbyBrowser';
 import { ModeMedallion } from '../components/ModeCover';
 import { MobilePlayBar, RecommendedCard } from '../components/Recommended';
-import { modes } from '../data/modes';
+import { getModes } from '../data/modes';
 import { useDocumentTitle, usePref } from '../hooks';
 import { useFeaturedLobby } from '../hooks/useFeatured';
 import { useLobbyFilters } from '../hooks/useFilters';
@@ -49,6 +49,7 @@ const RING = 226.2;
  * No celular o mesmo botão vira a fileira de medalhões acima dos filtros.
  */
 function ModesLive() {
+  const modes = getModes();
   const { lobbies } = useSession();
   const { f, update } = useLobbyFilters();
   const byMode = useMemo(() => {

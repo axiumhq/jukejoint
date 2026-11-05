@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
 import type { Lobby } from '../data/lobbies';
-import { getMode, modes, type Region } from '../data/modes';
+import { getMode, getModes, type Region } from '../data/modes';
 import { useCannotRunApp } from '../hooks';
 import { t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
@@ -400,6 +400,7 @@ function Stepper({
 }
 
 export function HostDialog() {
+  const modes = getModes();
   const { hostDialog, closeHost, createLobby, user } = useSession();
   const [modeSlug, setModeSlug] = useState(modes[0]!.slug);
   const [name, setName] = useState('');

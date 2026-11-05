@@ -12,6 +12,7 @@ import { useTheme } from '../state/theme';
 import { DevSignIn, SignInPending } from './AppLogin';
 import { Presence } from './Avatar';
 import { Icon } from './Icon';
+import { LocaleSelect } from './LocaleSelect';
 import { useRail, useRailSignIn } from './Rail';
 import '../styles/social.css';
 
@@ -114,6 +115,7 @@ function SheetSettings() {
   const { openMenu } = useTheme();
   return (
     <section className="rail-sec" aria-label={t.social.settings}>
+      <LocaleSelect />
       <button
         type="button"
         className="link"

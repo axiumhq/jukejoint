@@ -197,7 +197,7 @@ export function reduce(s: LiveState, m: ServerMsg, now: number): LiveState {
       return { ...s, friends: m.friends };
     case 'friend': {
       const others = s.friends.filter((f) => f.id !== m.friend.id);
-      return { ...s, friends: [...others, m.friend].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR')) };
+      return { ...s, friends: [...others, m.friend].sort((a, b) => a.name.localeCompare(b.name)) };
     }
     case 'friend_gone':
       return { ...s, friends: s.friends.filter((f) => f.id !== m.id) };

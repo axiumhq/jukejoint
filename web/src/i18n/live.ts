@@ -2,7 +2,10 @@
  * Textos do modo ao vivo (API real, `VITE_API_URL`). Ficam fora de pt-BR.ts para não disputar o
  * arquivo com o trabalho visual. Sobre outras pessoas, sempre neutro ("confirmaram", "quem abriu").
  */
-export const live = {
+import { enLive } from './en-live';
+import { getLocale } from './locale';
+
+const ptBRLive = {
   connecting: 'Conectando ao servidor…',
   loadingLobbies: 'Buscando os lobbies abertos…',
   offline: 'Sem conexão com o servidor. Tentando de novo…',
@@ -46,3 +49,9 @@ export const live = {
   pingNote: 'Ping estimado pela região até o app medir.',
   friendsNote: 'Contatos da Steam online aqui. Lista privada na Steam aparece vazia.',
 };
+
+export const live = new Proxy(ptBRLive, {
+  get(_target, property, receiver) {
+    return Reflect.get(getLocale() === 'en' ? enLive : ptBRLive, property, receiver);
+  },
+});
