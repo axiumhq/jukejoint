@@ -129,11 +129,10 @@ main:focus {
   letter-spacing: 0.02em;
 }
 
-/* Bodoni Moda: só títulos (página, seção, diálogo, destaque). Peso 400, opsz automático. */
+/* Young Serif: só títulos (página, seção, diálogo, destaque). Só existe o peso 400. */
 .display {
   font-family: var(--f-display);
   font-weight: 400;
-  font-optical-sizing: auto;
   letter-spacing: -0.01em;
   line-height: 1.15;
 }
@@ -677,7 +676,7 @@ kbd,
   }
 }
 
-/* Estado vazio: painel com título em Bodoni, uma linha e uma ação. */
+/* Estado vazio: painel com título na serifa de título, uma linha e uma ação. */
 .empty {
   display: flex;
   flex-direction: column;

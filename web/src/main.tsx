@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App, preloadRoute } from './App';
-// Sistema de tipo do redesign: Bodoni Moda (títulos), Hanken Grotesk (interface), Barlow Condensed
+// Sistema de tipo do redesign: Young Serif (títulos), Hanken Grotesk (interface), Barlow Condensed
 // (números e rótulos de dado) e JetBrains Mono (código). Servidas de src/fonts (scripts/display-font.mjs
 // gera os arquivos do @fontsource), subconjunto latino, poucas dezenas de kB cada.
 import './fonts/display.css';

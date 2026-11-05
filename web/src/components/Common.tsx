@@ -96,7 +96,7 @@ interface EmptyStateProps {
   className?: string;
 }
 
-/** Estado vazio do design: painel, título em Bodoni, uma linha e uma ação. */
+/** Estado vazio do design: painel, título na serifa de título, uma linha e uma ação. */
 export function EmptyState({ title, children, action, className }: EmptyStateProps) {
   return (
     <div className={className ? `empty ${className}` : 'empty'}>
@@ -119,7 +119,7 @@ interface SectionTitleProps {
   children?: ReactNode;
 }
 
-/** Cabeçalho de seção: título em Bodoni (as duas palavras no mesmo tom, como no design). */
+/** Cabeçalho de seção: título na serifa de título (as duas palavras no mesmo tom, como no design). */
 export function SectionTitle({ id, words, meta, badge, children }: SectionTitleProps) {
   return (
     <div className="sec-h">

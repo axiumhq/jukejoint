@@ -1,7 +1,7 @@
 /*
  * Diálogos (components/Dialog.tsx e SessionDialogs.tsx): entrar / abrir o app, trocar de lobby,
  * bater na porta e criar lobby. A base é a do design: superfície da barra lateral (--s1), cantos
- * de 16, sombra --sh-dlg, título em Bodoni 26/32. Um acento: a escolha marcada e a ação primária.
+ * de 16, sombra --sh-dlg, título na serifa de título 26/32. Um acento: a escolha marcada e a ação primária.
  */
 
 .dlg {
@@ -65,7 +65,7 @@
   min-width: 0;
 }
 
-/* título em Bodoni 26/32 (o .h3d do design) */
+/* título na serifa de título 26/32 (o .h3d do design) */
 .dlg-h h2 {
   font-size: var(--fs-h3);
   line-height: 32px;

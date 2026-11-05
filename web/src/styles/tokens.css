@@ -164,7 +164,7 @@
 
   /* tipo */
   --f-ui: 'Hanken Grotesk', system-ui, sans-serif;
-  --f-display: 'Bodoni Moda', Georgia, serif;
+  --f-display: 'Young Serif', Georgia, serif;
   /* números, ping, rótulos de dado ("LOBBY 04 · 14 MS"): o nome --f-mono ficou pelo papel (números) */
   --f-num: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --f-mono: var(--f-num);
