@@ -3,8 +3,8 @@ rem Friend's entry point: installs the pinned Modlock once, then joins the sessi
 cd /d "%~dp0"
 title Teste de sessao - entrar
 
-if not exist "tools\modlock-v0.1.68\modlock.exe" (
-  echo Instalando o Modlock v0.1.68 ^(confere o hash oficial^)...
+if not exist "tools\modlock-v0.1.73\modlock.exe" (
+  echo Instalando o Modlock v0.1.73 ^(confere o hash oficial^)...
   powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\install-modlock.ps1" || goto :erro
 )
 
