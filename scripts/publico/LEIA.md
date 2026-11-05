@@ -1,75 +1,63 @@
-# Teste com um amigo pela internet
+# Teste com duas pessoas pela internet
 
-A partida é P2P: o jogo vai direto de um PC para o outro. Do seu PC saem só os dois pontos de encontro, publicados no seu domínio por um túnel da Cloudflare (sem abrir porta no roteador):
+A partida é P2P: o jogo vai direto de um PC para o outro. Os dois pontos de encontro rodam no Raspberry Pi do `axiumhq/infra-pi`, publicados pelo túnel da Cloudflare dele (sem abrir porta no roteador):
 
-| Endereço | O que é | Roda em |
-|---|---|---|
-| `https://api.jukejoint.app` | A API: login pela Steam, lobbies, salas | `127.0.0.1:8291` |
-| `https://signal.jukejoint.app` | A sinalização: os dois PCs trocam o endereço um do outro e depois se ligam direto | `127.0.0.1:8080` |
+| Endereço | O que é |
+|---|---|
+| `https://api.jukejoint.app` | A API: login pela Steam, lobbies, salas |
+| `https://signal.jukejoint.app` | A sinalização: os dois PCs trocam o endereço um do outro e depois se ligam direto |
 
-Os comandos abaixo rodam no PowerShell, na pasta do repositório.
+Ninguém precisa deixar servidor ligado no próprio PC. Os comandos abaixo rodam no PowerShell, na pasta do repositório.
 
-## Uma vez só: o domínio na Cloudflare
+## Antes do teste: o servidor está no ar?
 
-### Se o domínio está na conta de outra pessoa
+```powershell
+curl.exe -s https://api.jukejoint.app/healthz; curl.exe -s https://signal.jukejoint.app/healthz
+```
 
-1. Mande `scripts\publico\PARA-O-DONO-DO-DOMINIO.md` para quem tem a conta. A pessoa cria o túnel pelo painel dela (os dois endereços ficam configurados lá) e te manda o token, no privado.
-2. Guarde o token (ele não aparece na tela e fica em `tools\cloudflared\token`, fora do git):
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\publico\guardar-token.ps1
-   ```
-3. Pronto: o `ligar.ps1` usa o token sozinho. Pule para "O app".
+Os dois têm de responder. Se um falhar, fale com quem cuida do Pi: a correção é lá, não no seu PC.
 
-### Se o domínio está na sua conta
+Cada build do `main` publica imagens novas e abre um PR de versões no `infra-pi`. Quando esse PR entra, o Pi reinicia a API. Combine com quem cuida do Pi para não fazer isso durante o teste: o login continua valendo depois do reinício, mas os lobbies abertos somem.
 
-1. Crie uma conta grátis em dash.cloudflare.com e adicione o site `jukejoint.app` (plano Free).
-2. A Cloudflare mostra dois *nameservers*. No lugar onde você comprou o domínio, troque os nameservers por esses dois. Espere o site aparecer como **Ativo** no painel (de minutos a algumas horas).
-3. Rode:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\publico\configurar-tunel.ps1
-   ```
-   O navegador abre: entre na Cloudflare e escolha `jukejoint.app`. O script cria o túnel `jukejoint`, aponta `api.` e `signal.` para ele e grava a configuração em `tools\cloudflared\` (fora do git). As credenciais do túnel ficam em `%USERPROFILE%\.cloudflared`: não mande essa pasta para ninguém.
-
-## O app (você e o amigo usam o mesmo zip)
+## O app (as duas pessoas usam o mesmo zip)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\publico\gerar-app.ps1
 ```
 
-Sai `desktop\out\Jukejoint.zip` (uns 40 MB), com os dois endereços já dentro do app. Mande pelo Google Drive ou parecido (o Discord grátis não aceita arquivo desse tamanho). O `LEIA-ME.txt` do zip explica tudo para o amigo: extrair antes de abrir, antivírus, o aviso do SmartScreen e o login.
+O comando gera `desktop\out\Jukejoint.zip` (uns 40 MB), com os dois endereços já dentro do app. Mande pelo Google Drive ou parecido, porque o Discord grátis não aceita arquivo desse tamanho. O `LEIA-ME.txt` do zip explica o resto: extrair antes de abrir, antivírus, o aviso do SmartScreen e o login.
 
-Você também usa o zip: extraia numa pasta sua (não rode de `desktop\out`, que o próximo build apaga). O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
+Você também usa o zip: extraia numa pasta sua e não rode de `desktop\out`, que o próximo build apaga. O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
 
 ## No dia do teste
 
-1. **No seu PC, ligue tudo** e deixe a janela aberta até o fim:
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\publico\ligar.ps1
-   ```
-   Espere `Tudo no ar`. O script confere os dois endereços públicos antes de dizer isso.
-2. **Os dois abrem o Jukejoint e clicam em Login.** O navegador abre a Steam; depois de entrar, aceite abrir o Jukejoint.
-3. **Você cria o lobby** (qualquer modo: por enquanto todos abrem o modo de teste `hello`). O amigo acha o lobby na lista e entra. O "Copiar convite" dá um link `jukejoint://join/...`, que funciona colado no navegador do amigo, mas o Discord não deixa clicar nele.
-4. **Deadlock fechado nos dois PCs.** Os dois marcam pronto, você inicia, e o app abre o jogo em cada PC.
-5. **Deu certo quando** os dois estão no mesmo servidor e o comando `/hello` responde para os dois.
+1. **Confira o servidor** com o comando acima.
+2. **As duas pessoas abrem o Jukejoint e clicam em Login.** O navegador abre a Steam; depois de entrar, aceite abrir o Jukejoint.
+3. **Uma pessoa cria o lobby**, em qualquer modo, porque por enquanto todos abrem o modo de teste `hello`. A outra acha o lobby na lista e entra. O "Copiar convite" gera um link `jukejoint://join/...`, que funciona colado no navegador, mas o Discord não deixa clicar nele.
+4. **Deadlock fechado nos dois PCs.** As duas pessoas marcam pronto, quem criou inicia, e o app abre o jogo em cada PC.
+5. **Deu certo quando** as duas pessoas estão no mesmo servidor e o comando `/hello` responde para as duas.
 6. **No fim**, feche a sala pelo app e depois feche o app. Nunca encerre o `modlock.exe` pelo Gerenciador de Tarefas: isso deixa um arquivo travado até reiniciar o PC.
 
 ## Se der errado
 
-- **O amigo não consegue entrar na sala, mas os dois estão logados:** a ligação direta entre os PCs não fechou. A causa mais provável é CGNAT ou NAT restritivo numa das redes. Ainda não temos servidor de retransmissão (TURN), então a saída é tentar de outra rede (por exemplo, um dos dois no roteador de casa em vez de 4G).
-- **Login não volta para o app:** abra o Jukejoint de novo pela pasta extraída (isso refaz o registro do link) e tente outra vez.
-- **Logs para me mandar:**
-  - seus servidores: `tools\publico-logs\` (`api.log`, `signal.log`, `tunel.log`);
-  - o motor, nos dois PCs: `%APPDATA%\modlock\state\daemon-app.log`.
+- **A segunda pessoa não consegue entrar na sala, mas as duas estão logadas:** a ligação direta entre os PCs não fechou. A causa mais provável é CGNAT ou NAT restritivo numa das redes. Ainda não temos servidor de retransmissão (TURN), então a saída é tentar de outra rede (por exemplo, uma das pessoas no roteador de casa em vez de 4G).
+- **O login não volta para o app:** abra o Jukejoint de novo pela pasta extraída (isso refaz o registro do link) e tente outra vez.
+- **O lobby sumiu no meio do teste:** a API reiniciou no Pi. Entrem de novo (o login continua valendo) e criem outro lobby.
+- **Logs para juntar:**
+  - o motor, nos dois PCs: `%APPDATA%\modlock\state\daemon-app.log`;
+  - a API e a sinalização: com quem cuida do Pi (`docker logs` dos containers do projeto `pi-infra-jukejoint`).
 
-## Para conferir sem a Cloudflare
+## Rodar os servidores no seu PC (só para desenvolvimento)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\publico\ligar.ps1 -SemTunel
 ```
 
-Sobe só a API e a sinalização neste PC, para ver se compilam e respondem.
+Sobe a API e a sinalização neste PC, em `127.0.0.1:8291` e `127.0.0.1:8080`, para ver se compilam e respondem. O app do zip não usa esses servidores: ele fala com os endereços públicos.
+
+O `ligar.ps1` sem `-SemTunel`, o `configurar-tunel.ps1`, o `guardar-token.ps1` e o `PARA-O-DONO-DO-DOMINIO.md` são do tempo em que o servidor rodava num PC. Os endereços `api.` e `signal.` agora apontam para o túnel do Pi, então um túnel ligado no seu PC não recebe nada. Para voltar a esse modo, alguém teria de apontar os endereços de novo para o túnel antigo na Cloudflare.
 
 ## Limites conhecidos
 
-- **O seu PC precisa ficar ligado** durante o teste. Depois, os dois servidores vão para o Raspberry Pi do pi-infra, como imagens Docker (`.github/workflows/images.yml`).
-- **Reiniciar a API desloga todo mundo e fecha os lobbies:** o estado fica só na memória.
+- **Os lobbies ficam só na memória da API.** Um reinício no Pi fecha todos eles; o login sobrevive, porque a chave da sessão fica gravada no volume do container.
+- **Sem TURN**, duas redes com CGNAT não se ligam.
