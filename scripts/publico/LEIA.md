@@ -17,17 +17,19 @@ curl.exe -s https://api.jukejoint.app/healthz; curl.exe -s https://signal.jukejo
 
 Os dois têm de responder. Se um falhar, fale com quem cuida do Pi: a correção é lá, não no seu PC.
 
-Cada build do `main` publica imagens novas e abre um PR de versões no `infra-pi`. Quando esse PR entra, o Pi reinicia a API. Combine com quem cuida do Pi para não fazer isso durante o teste: o login continua valendo depois do reinício, mas os lobbies abertos somem.
+Cada build do `main` e cada release publicam imagens novas e abrem um PR de versões no `infra-pi`. Quando esse PR entra, o Pi reinicia a API. Combine com quem cuida do Pi para não fazer isso durante o teste: o login continua valendo depois do reinício, mas os lobbies abertos somem.
 
 ## O app (as duas pessoas usam o mesmo zip)
+
+Baixe `Jukejoint-vX.Y.Z-windows-x64.zip` na página **Releases** do GitHub e mande o arquivo para a outra pessoa. Ele já traz o app, o Modlock fixado e o modo de teste `hello`, com os endereços de produção configurados. Ninguém precisa compilar o app.
+
+As duas pessoas extraem o zip inteiro numa pasta própria e abrem `Jukejoint.exe`. O `LEIA-ME.txt` que vem junto explica o aviso do SmartScreen, o login e como preparar o jogo. O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
+
+Para testar uma mudança que ainda não virou release, gere o mesmo zip no seu PC. Ele sai em `desktop\out\Jukejoint.zip`, que o próximo build apaga, então extraia numa pasta sua:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\publico\gerar-app.ps1
 ```
-
-O comando gera `desktop\out\Jukejoint.zip` (uns 40 MB), com os dois endereços já dentro do app. Mande pelo Google Drive ou parecido, porque o Discord grátis não aceita arquivo desse tamanho. O `LEIA-ME.txt` do zip explica o resto: extrair antes de abrir, antivírus, o aviso do SmartScreen e o login.
-
-Você também usa o zip: extraia numa pasta sua e não rode de `desktop\out`, que o próximo build apaga. O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
 
 ## No dia do teste
 
