@@ -132,21 +132,21 @@ main:focus {
 
 /* ───────── Tipo ───────── */
 
-/* Números e rótulos de dado: Barlow Condensed (ping, vagas, contagens). */
+/* Números e rótulos de dado (ping, vagas, contagens): desde a Home v4, a Jost com algarismos tabulares. */
 .num,
 .mono {
   font-family: var(--f-num);
   font-weight: 500;
   font-variant-numeric: tabular-nums lining-nums;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
-/* Young Serif: só títulos (página, seção, diálogo, destaque). Só existe o peso 400. */
+/* Títulos (página, seção, diálogo, destaque): Jost 600 desde a Home v4 (antes, Young Serif 400). */
 .display {
   font-family: var(--f-display);
-  font-weight: 400;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  line-height: 1.12;
 }
 
 /* compat: os títulos em dois tons do v8 viram um tom só (o design não pinta palavra de título) */
@@ -765,21 +765,18 @@ kbd,
   border-radius: 50%;
 }
 
-.av svg circle {
-  fill: var(--s3);
-  stroke: var(--line-2);
+/* A foto da Steam ocupa o disco inteiro. A silhueta de reserva (Avatar.tsx) traz as próprias cores. */
+.av img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.av svg path {
-  fill: none;
-  stroke: var(--acc);
-  stroke-width: 1.2;
-  stroke-linejoin: round;
-}
-
-/* anel de acento: alguém da sua lista. O contorno segue o círculo e o vão é transparente. */
+/* anel de presença: alguém da sua lista (verde, como o ponto de online; o latão fica para a ação). */
 .av.ring {
-  outline: 1.5px solid var(--acc);
+  outline: 1.5px solid var(--live);
   outline-offset: 1.5px;
 }
 
