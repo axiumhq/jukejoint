@@ -181,6 +181,18 @@
   white-space: nowrap;
 }
 
+/* num cartão estreito com etiqueta longa ("Em partida", "Iniciantes ok"), o número do lobby sai
+   antes de a etiqueta cortar: região e ping ficam. Com etiqueta curta ("Falta 2") o número fica. */
+.lc-b {
+  container-type: inline-size;
+}
+
+@container (max-width: 280px) {
+  .lc-meta:has(.tag.is-wide) .lc-num {
+    display: none;
+  }
+}
+
 /* a unidade fica em minúscula ("ms"), fora da caixa alta do rótulo */
 .lc-id .num {
   letter-spacing: inherit;
@@ -597,11 +609,13 @@
   }
 
   .lc-art {
+    overflow: hidden;
     background: var(--sky-1);
   }
 
+  /* a faixa da capa do modo ocupa a coluna da arte (era um bloco preto só com o medalhão) */
   .lc-art .strip {
-    display: none;
+    width: 100%;
   }
 
   .lc-art .med,

@@ -15,7 +15,7 @@ export const ptBR = {
     lobbies: `Lobbies | ${BRAND_NAME}`,
     modes: `Modos | ${BRAND_NAME}`,
     install: `Instalar o app | ${BRAND_NAME}`,
-    news: `Novidades | ${BRAND_NAME}`,
+    news: `Hoje | ${BRAND_NAME}`,
     quickPlay: `Jogar agora | ${BRAND_NAME}`,
     notFound: `Página não encontrada | ${BRAND_NAME}`,
     mode: (name: string) => `${name} | ${BRAND_NAME}`,
@@ -613,6 +613,19 @@ export const ptBR = {
     rangeShort: (min: number, max: number) => `${min} a ${max}`,
     lobbiesCount: (n: number) => (n === 1 ? '1 lobby' : `${n} lobbies`),
     withRoom: (n: number) => (n === 1 ? '1 com vaga' : `${n} com vaga`),
+    /** /modos, ao lado do total de lobbies: "todos com vaga" no lugar de "5 · 5 com vaga". */
+    withRoomOf: (n: number, total: number) =>
+      total === 0
+        ? 'nenhum aberto'
+        : total === 1
+          ? n === 1
+            ? 'tem vaga'
+            : 'cheio'
+          : n === total
+            ? 'todos com vaga'
+            : n === 0
+              ? 'nenhum com vaga'
+              : `${n} com vaga`,
     /** /modos: "5 com vaga", o número antes (a dica "Lobbies" fica no rótulo). */
     withRoomUnit: 'com vaga',
     withRoomLabel: 'Com vaga',
