@@ -2,7 +2,10 @@
  * Textos do site dentro do app desktop (lib/desktop.ts). Como os de live.ts, ficam fora de
  * pt-BR.ts. As mensagens de erro do motor vêm prontas do app (Rust): aqui só o que o site diz.
  */
-export const desktop = {
+import { enDesktop } from './en-desktop';
+import { getLocale } from './locale';
+
+const ptBRDesktop = {
   checking: 'Conferindo o app…',
   ready: 'O app está pronto. Quando a partida começar, ele abre o jogo e coloca você no lobby.',
   problemsTitle: (n: number) => (n === 1 ? 'O app precisa de um ajuste antes da partida' : `O app precisa de ${n} ajustes antes da partida`),
@@ -29,3 +32,9 @@ export const desktop = {
   statusInApp: (v: string) => (v ? `Você está no app (versão ${v})` : 'Você está no app'),
   statusInAppHelp: 'Este site está aberto dentro do app. O motor, o serviço e o antivírus ficam na tela Instalação.',
 };
+
+export const desktop = new Proxy(ptBRDesktop, {
+  get(_target, property, receiver) {
+    return Reflect.get(getLocale() === 'en' ? enDesktop : ptBRDesktop, property, receiver);
+  },
+});

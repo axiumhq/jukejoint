@@ -101,6 +101,7 @@ export const ptBR = {
   theme: {
     title: 'Tema',
     button: 'Tema',
+    language: 'Idioma',
     changed: (name: string) => `Tema ${name}.`,
   },
   /** Aviso dispensável do topo da home. */

@@ -283,7 +283,7 @@ export function pickReasons(l: Lobby, now = Date.now()): string[] {
   if (belowQuorum(l)) out.push(R.quorum(l.minPlayers - l.players));
   else if (free <= 2) out.push(R.almostFull(free));
   const h = heat(l, now);
-  if (h && h !== 'quieto' && out.length < 2) out.push(t.heat[h].toLocaleLowerCase('pt-BR'));
+  if (h && h !== 'quieto' && out.length < 2) out.push(t.heat[h].toLocaleLowerCase());
   out.push(R.ping(l.ping));
   return out.slice(0, 3);
 }
@@ -298,7 +298,7 @@ function stateRank(l: Lobby, ctx: LobbyContext) {
 }
 
 function matches(l: Lobby, f: LobbyFilters, signedIn: boolean) {
-  const q = f.q.trim().toLocaleLowerCase('pt-BR');
+  const q = f.q.trim().toLocaleLowerCase();
   if (f.mode && l.modeSlug !== f.mode) return false;
   if (f.regions.length > 0 && !f.regions.includes(l.region)) return false;
   if (f.slotsOnly && !hasRoom(l)) return false;
@@ -306,7 +306,7 @@ function matches(l: Lobby, f: LobbyFilters, signedIn: boolean) {
   if (f.beginners && !l.beginners) return false;
   if (f.playing && l.status !== 'em-partida') return false;
   if (f.lowPing && l.ping >= LOW_PING_MS) return false;
-  if (q && !`${l.name} ${l.host}`.toLocaleLowerCase('pt-BR').includes(q)) return false;
+  if (q && !`${l.name} ${l.host}`.toLocaleLowerCase().includes(q)) return false;
   return true;
 }
 

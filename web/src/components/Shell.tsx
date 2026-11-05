@@ -39,14 +39,12 @@ interface NavItem {
   webOnly?: boolean;
 }
 
-const NAV: NavItem[] = [
+const navItems = (): NavItem[] => [
   { to: '/', label: t.header.nav.play, icon: 'navPlay' },
   { to: '/modos', label: t.header.nav.modes, icon: 'navModes' },
   { to: '/novidades', label: t.header.nav.today, icon: 'navToday' },
   { to: '/instalar', label: t.header.nav.install, icon: 'navInstall', webOnly: true },
 ];
-
-const NAV_HERE = IN_DESKTOP ? NAV.filter((n) => !n.webOnly) : NAV;
 
 /**
  * A pílula "Na sala": substitui a contagem ao vivo quando você está numa sala.
@@ -239,7 +237,7 @@ function usePlayActive() {
 }
 
 /** Os links de Jogar, Modos, Hoje e Instalar (só no site), sempre com ícone e rótulo. */
-function NavItems({ items = NAV_HERE }: { items?: NavItem[] }) {
+function NavItems({ items = IN_DESKTOP ? navItems().filter((n) => !n.webOnly) : navItems() }: { items?: NavItem[] }) {
   const play = usePlayActive();
   return (
     <>
@@ -287,7 +285,7 @@ function BottomNav({ inert }: { inert?: boolean }) {
   const { openSheet, sheetOpen, sheetKind } = useRail();
   return (
     <nav className="bn" aria-label={t.a11y.mainNav} inert={inert}>
-      <NavItems items={NAV.filter((n) => !n.webOnly)} />
+      <NavItems items={navItems().filter((n) => !n.webOnly)} />
       <button
         type="button"
         className="bn-list"

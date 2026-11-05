@@ -4,10 +4,11 @@ import { Chip, Tag, type TagTone } from '../components/Common';
 import { HeroArt } from '../components/HeroArt';
 import { Icon } from '../components/Icon';
 import { APP_RELEASE } from '../config/brand';
-import { getMode, modes } from '../data/modes';
+import { getMode, getModes } from '../data/modes';
 import { PLATFORM_SCOPE, releases, type Change, type ChangeCategory, type Release } from '../data/patches';
 import { useDocumentTitle, useLiveStats } from '../hooks';
-import { formatDate, formatNumber, LOCALE, t } from '../i18n';
+import { formatDate, formatNumber, t } from '../i18n';
+import { getLocale } from '../i18n/locale';
 import { busiestMode } from '../lib/stats';
 import '../styles/info.css';
 
@@ -23,10 +24,10 @@ const DAY = 86_400_000;
 
 const scopeName = (scope: string) => (scope === PLATFORM_SCOPE ? t.news.platform : (getMode(scope)?.name ?? scope));
 
-const dayMonth = new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'short', timeZone: 'UTC' });
-/** "28 out" (sem o "de" nem o ponto da abreviação). */
+/** Compact day and month in the selected locale. */
 function shortDay(iso: string) {
-  const parts = dayMonth.formatToParts(new Date(iso));
+  const locale = getLocale() === 'pt-BR' ? 'pt-BR' : 'en-US';
+  const parts = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' }).formatToParts(new Date(iso));
   const d = parts.find((p) => p.type === 'day')?.value ?? '';
   const m = (parts.find((p) => p.type === 'month')?.value ?? '').replace('.', '');
   return `${d} ${m}`;
@@ -145,6 +146,7 @@ function Entry({ release, changes, open }: { release: Release; changes: Change[]
 }
 
 export function News() {
+  const modes = getModes();
   useDocumentTitle(t.meta.news);
   const [params, setParams] = useSearchParams();
   const [cats, setCats] = useState<ChangeCategory[]>([]);
