@@ -99,7 +99,7 @@ pub fn origin(raw: &str) -> Result<String, EngineError> {
     Ok(s.to_string())
 }
 
-/// Pasta de um projeto de mod para `modlock host`: absoluta, existente e com `mod.json`.
+/// Pasta de um projeto de mod para `modlock play --host`: absoluta, existente e com `mod.json`.
 /// Devolve o caminho canônico.
 pub fn project_dir(raw: &Path) -> Result<PathBuf, EngineError> {
     let bad = |why: &str| EngineError::new("projeto_invalido", format!("Projeto inválido ({why}): {}", raw.display()));

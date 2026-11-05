@@ -714,7 +714,7 @@ impl ModlockCli {
     }
 
     /// Fecha a entrada padrão (com `--json`, o servidor para quando ela fecha) e espera.
-    /// Se o cliente não sair, ele é encerrado: é o processo `modlock host/join`, não o daemon.
+    /// Se o cliente não sair, ele é encerrado: é o processo `modlock play --host` ou `join`, não o daemon.
     fn end_session(&self) -> (Option<SessionInfo>, bool) {
         let Some(mut s) = self.session.lock().unwrap().take() else { return (None, false) };
         s.shared.lock().unwrap().stopping = true;
