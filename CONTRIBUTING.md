@@ -10,7 +10,9 @@ Jukejoint is proprietary software, even though its repository is public for insp
 4. Do not include credentials, personal data, local files from `tools/`, or third-party content without a compatible license.
 5. Run the relevant checks for the paths you changed. Pull request CI will select checks as well.
 
-Use Brazilian Portuguese for user-facing product text. Follow the project's existing accessibility, security, and gender-neutral language practices.
+## Localization
+
+The current interface is written in Brazilian Portuguese. Jukejoint is intended to support additional languages through a user-selectable localization system. Keep user-facing strings in the localization layer where one exists, and avoid tying product logic to a specific language. When adding or changing copy, preserve the existing accessibility and gender-neutral language practices.
 
 ## Rights to contributions
 
