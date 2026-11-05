@@ -97,7 +97,14 @@ pub fn run() {
                     if let Err(e) = check_startup_update(&h).await {
                         eprintln!("não foi possível atualizar ao iniciar: {e}");
                     }
-                    if let Err(e) = create_main_window(&h, &start) {
+                    let mut startup_path = start;
+                    let pending = std::mem::take(&mut *h.state::<PendingLinks>().0.lock().unwrap());
+                    for url in pending {
+                        if let Ok(Link::Join(id)) = deeplink::parse(&url, SLUG) {
+                            startup_path = format!("sala/{}", id.as_str());
+                        }
+                    }
+                    if let Err(e) = create_main_window(&h, &startup_path) {
                         eprintln!("não foi possível abrir o app: {e}");
                         h.exit(1);
                         return;
