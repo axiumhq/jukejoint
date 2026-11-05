@@ -1,0 +1,11 @@
+{
+  "slug": "duelo-meia-noite",
+  "name": "Duelo à Meia-Noite",
+  "version": "0.2.0",
+  "language": "LANGUAGE_TYPESCRIPT",
+  "metrics": [
+    { "name": "duelo.vitorias", "kind": "KIND_COUNT" },
+    { "name": "duelo.rodadas", "kind": "KIND_COUNT" },
+    { "name": "duelo.sequencia", "kind": "KIND_MAX" }
+  ]
+}

@@ -67,7 +67,7 @@ Na fase 2, como a cola do `join` é nossa:
 
 ## Política de versão
 
-- Uma versão fixa do Modlock por release do app (hoje v0.1.68), com o hash no código.
+- Uma versão fixa do Modlock por release do app (hoje v0.1.73), com o hash no código.
 - Para cada release nova do Modlock: rodar o smoke test (dois daemons + probe + `modlock build` do `hello`). Só sobe a versão fixada se passar.
 - Deadlock atualizou e o Modlock quebrou → esperar a release deles. O app mostra "o modo está em manutenção após a atualização do jogo".
 

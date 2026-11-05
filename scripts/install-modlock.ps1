@@ -2,8 +2,8 @@
 # matches the digest GitHub published for the release asset.
 $ErrorActionPreference = 'Stop'
 
-$version = 'v0.1.68'
-$expected = '4148c2fb2a5e5ac39fef61d7766e7854c3ad6e3c5985bc89433c5914742e3381'
+$version = 'v0.1.73'
+$expected = 'b958895b3a410b7446490318547b6aa9b654983cd7ed710a8a4d49402ad13fa7'
 $url = "https://github.com/paralin/modlock/releases/download/$version/modlock-windows-amd64.exe"
 
 $dir = Join-Path $PSScriptRoot "..\tools\modlock-$version"
