@@ -12,6 +12,7 @@
 /* ───────── 1 · Destaque ───────── */
 
 .hero {
+  --hbar-h: 76px;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -22,11 +23,12 @@
   background: var(--sky-1);
 }
 
+/* a arte (lib/hero.ts) é só a faixa acima da barra, que é opaca: a avenida fica presa à base da faixa */
 .hero-scene {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
   width: 100%;
-  height: 100%;
+  height: calc(100% - var(--hbar-h));
   display: block;
 }
 
@@ -46,7 +48,7 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: var(--sp-6);
-  height: 76px;
+  height: var(--hbar-h);
   padding: 0 var(--sp-6) 0 var(--sp-8);
   background: var(--s2);
 }
@@ -383,6 +385,7 @@
   }
 
   .hero {
+    --hbar-h: 68px;
     height: 176px;
     border-radius: var(--r-xl);
   }
@@ -393,7 +396,6 @@
   }
 
   .hbar {
-    height: 68px;
     gap: var(--sp-4);
     padding: 0 var(--sp-6);
   }
@@ -444,9 +446,17 @@
     background: none;
   }
 
-  .hero-scene,
   .hbar {
     display: none;
+  }
+
+  /* a arte vira uma faixa embaixo do slogan (nada por cima): o corte à direita mostra a trilha e a porta */
+  .hero-scene {
+    position: relative;
+    order: 1;
+    height: 84px;
+    margin-top: var(--sp-3);
+    border-radius: var(--r-lg);
   }
 
   .hero-t {
