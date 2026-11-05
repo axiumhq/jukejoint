@@ -19,13 +19,13 @@ Os dois têm de responder. Se um falhar, fale com quem cuida do Pi: a correção
 
 Cada build do `main` e cada release publicam imagens novas e abrem um PR de versões no `infra-pi`. Quando esse PR entra, o Pi reinicia a API. Combine com quem cuida do Pi para não fazer isso durante o teste: o login continua valendo depois do reinício, mas os lobbies abertos somem.
 
-## O app (as duas pessoas usam o mesmo zip)
+## O app (um instalador para as duas pessoas)
 
-Baixe `Jukejoint-vX.Y.Z-windows-x64.zip` na página **Releases** do GitHub e mande o arquivo para a outra pessoa. Ele já traz o app, o Modlock fixado e o modo de teste `hello`, com os endereços de produção configurados. Ninguém precisa compilar o app.
+Baixe `Jukejoint-vX.Y.Z-windows-x64-setup.exe` na página **Releases** do GitHub e mande esse único arquivo para a outra pessoa. O instalador já traz o app, o Modlock fixado e os modos, com os endereços de produção configurados. Ninguém precisa baixar o Modlock separado nem compilar o app.
 
-As duas pessoas extraem o zip inteiro numa pasta própria e abrem `Jukejoint.exe`. O `LEIA-ME.txt` que vem junto explica o aviso do SmartScreen, o login e como preparar o jogo. O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
+As duas pessoas rodam o instalador e abrem o Jukejoint pelo atalho criado. O Windows pode mostrar o aviso do SmartScreen, porque o instalador ainda não é assinado. O `LEIA-ME.txt` instalado explica o login e como preparar o jogo.
 
-Para testar uma mudança que ainda não virou release, gere o mesmo zip no seu PC. Ele sai em `desktop\out\Jukejoint.zip`, que o próximo build apaga, então extraia numa pasta sua:
+Para testar uma mudança que ainda não virou release, gere o app no seu PC. Ele sai em `desktop\out\Jukejoint.zip`, que o próximo build apaga, então extraia numa pasta sua. O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\publico\gerar-app.ps1
