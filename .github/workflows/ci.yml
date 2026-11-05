@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  detect:
+    name: Detect changes
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    outputs:
+      api: ${{ steps.changes.outputs.api }}
+      signal: ${{ steps.changes.outputs.signal }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+      desktop: ${{ steps.changes.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+        run: |
+          set -euo pipefail
+          git diff --no-renames --name-only "$BASE" "$GITHUB_SHA" > changed-files.txt
+          cat changed-files.txt
+          changed() {
+            if grep -Eq "$1|^\.github/workflows/ci\.yml$" changed-files.txt; then echo true; else echo false; fi
+          }
+          {
+            echo "api=$(changed '^server/')"
+            echo "signal=$(changed '^spike/signal/')"
+            echo "frontend=$(changed '^(web/|desktop/)')"
+            echo "desktop=$(changed '^(web/|desktop/|rust-toolchain\.toml$)')"
+          } >> "$GITHUB_OUTPUT"
+
+  api:
+    name: Go (api)
+    needs: detect
+    if: needs.detect.outputs.api == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - run: go vet ./...
+      - run: go test ./...
+
+  signal:
+    name: Go (signal)
+    needs: detect
+    if: needs.detect.outputs.signal == 'true'
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    defaults:
+      run:
+        working-directory: spike/signal
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: spike/signal/go.mod
+          cache-dependency-path: spike/signal/go.sum
+      - run: go vet ./...
+      - run: go test ./...
+
+  frontend:
+    needs: detect
+    if: needs.detect.outputs.frontend == 'true'
+    name: Web and desktop frontend
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+      - run: npm ci --prefix web
+      - run: npm ci --prefix desktop
+      - run: npm test --prefix web
+      - run: npm run build --prefix web
+      - run: npm run typecheck --prefix desktop
+
+  desktop:
+    needs: detect
+    if: needs.detect.outputs.desktop == 'true'
+    name: Desktop Rust (Windows)
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          target: x86_64-pc-windows-msvc
+          rust-src-dir: desktop/src-tauri
+      - run: npm ci --prefix web
+      - run: npm ci --prefix desktop
+      - run: npm run build:front --prefix desktop
+      - run: cargo check --locked --manifest-path desktop/src-tauri/Cargo.toml
+
+  ci:
+    name: CI
+    if: always()
+    needs: [detect, api, signal, frontend, desktop]
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    steps:
+      - name: Require all checks to pass
+        env:
+          DETECT_RESULT: ${{ needs.detect.result }}
+          API_RESULT: ${{ needs.api.result }}
+          SIGNAL_RESULT: ${{ needs.signal.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          DESKTOP_RESULT: ${{ needs.desktop.result }}
+        run: |
+          test "$DETECT_RESULT" = success
+          for result in "$API_RESULT" "$SIGNAL_RESULT" "$FRONTEND_RESULT" "$DESKTOP_RESULT"; do
+            [ "$result" = success ] || [ "$result" = skipped ] || exit 1
+          done

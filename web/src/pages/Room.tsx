@@ -510,7 +510,10 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
   /* ───── barra de ação: um estado por vez ───── */
   const st = lobbyState(lobby, lobbyCtx, now);
-  const testNote = s.desktop && s.appCheck?.modes?.testMode ? D.testMode(s.appCheck.modes.testProject) : null;
+  // O aviso vale para o modo desta sala: um app mais antigo, sem a lista, só diz se todos são teste.
+  const modes = s.appCheck?.modes;
+  const isTestMode = modes ? (modes.testSlugs ? modes.testSlugs.includes(lobby.modeSlug) : modes.testMode) : false;
+  const testNote = s.desktop && modes && isTestMode ? D.testMode(modes.testProject) : null;
   const countText = `${readyN} ${t.room.readyOf(taken)} · ${t.room.minimum} ${k}`;
   const helpLink = (
     <Link to="/instalar#antivirus" className="btn btn-g rb-help">

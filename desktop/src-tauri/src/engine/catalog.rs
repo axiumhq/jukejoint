@@ -1,9 +1,9 @@
 //! Catálogo de modos: o site manda só o slug do modo (`engine_host { mode }`) e o app resolve a
 //! pasta do projeto dentro de uma raiz configurável. O site nunca manda caminho.
 //!
-//! **Modo de teste:** enquanto não há modos de verdade, todo slug conhecido aponta para o projeto
-//! `hello` (o do spike, `spike/mods/hello`). Quando um modo real existir, a linha dele em [`MODES`]
-//! passa a apontar para a pasta própria e `test` vira `false`.
+//! **Modo de teste:** um modo que ainda não tem projeto próprio aponta para o projeto `hello` (o do
+//! spike, `spike/mods/hello`), com `test: true`. Um modo de verdade aponta para a pasta dele em
+//! `spike/mods` (no app empacotado, em `modos`), com `test: false`.
 
 use std::path::{Path, PathBuf};
 
@@ -18,6 +18,8 @@ pub const ENV_PROJECTS_DIR: &str = "ENGINE_PROJECTS_DIR";
 pub const BESIDE_APP_DIR: &str = "modos";
 /// O projeto de teste (o `hello` do spike).
 pub const TEST_PROJECT: &str = "hello";
+/// Os projetos dos modos de verdade, que o app empacotado leva em `modos` (ver `build-live.mjs`).
+pub const REAL_PROJECTS: &[&str] = &["duelo-meia-noite"];
 
 /// Um modo que o app sabe hospedar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,12 +32,12 @@ pub struct ModeEntry {
 }
 
 /// Os modos do site (`web/src/data/modes.ts`, os mesmos de `server/internal/lobby/lobby.go`).
-/// Todos abrem o projeto de teste por enquanto.
+/// Só o Duelo à Meia-Noite tem projeto próprio; os outros abrem o projeto de teste.
 pub const MODES: &[ModeEntry] = &[
     ModeEntry { slug: "circulo-profano", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "ultimo-bonde", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "neblina", project: TEST_PROJECT, test: true },
-    ModeEntry { slug: "duelo-meia-noite", project: TEST_PROJECT, test: true },
+    ModeEntry { slug: "duelo-meia-noite", project: "duelo-meia-noite", test: false },
     ModeEntry { slug: "cerco-ao-cofre", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "campo-de-treino", project: TEST_PROJECT, test: true },
 ];
@@ -97,6 +99,8 @@ pub struct ModesCheck {
     pub source: Option<String>,
     /// Todos os modos abrem o projeto de teste (`hello`).
     pub test_mode: bool,
+    /// Os modos que ainda abrem o projeto de teste no lugar do conteúdo de verdade.
+    pub test_slugs: Vec<&'static str>,
     pub test_project: &'static str,
     /// A pasta do projeto de teste existe e tem `mod.json`.
     pub test_project_ok: bool,
@@ -165,6 +169,7 @@ impl Catalog {
             root: self.root.as_ref().map(|(r, _)| r.display().to_string()),
             source: self.root.as_ref().map(|(_, s)| s.to_string()),
             test_mode: self.modes.iter().all(|m| m.test),
+            test_slugs: self.modes.iter().filter(|m| m.test).map(|m| m.slug).collect(),
             test_project: TEST_PROJECT,
             test_project_ok,
         }
@@ -183,8 +188,10 @@ mod tests {
     fn tmp_root(tag: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("engine-modes-{tag}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
-        std::fs::create_dir_all(d.join(TEST_PROJECT)).unwrap();
-        std::fs::write(d.join(TEST_PROJECT).join("mod.json"), r#"{"slug":"hello"}"#).unwrap();
+        for project in std::iter::once(TEST_PROJECT).chain(REAL_PROJECTS.iter().copied()) {
+            std::fs::create_dir_all(d.join(project)).unwrap();
+            std::fs::write(d.join(project).join("mod.json"), format!(r#"{{"slug":"{project}"}}"#)).unwrap();
+        }
         d
     }
 
@@ -226,18 +233,34 @@ mod tests {
     }
 
     #[test]
-    fn every_mode_resolves_to_the_test_project() {
+    fn the_duel_opens_its_own_project_and_the_rest_open_the_test_one() {
         let root = tmp_root("ok");
         let cat = Catalog::new(Some((root.clone(), ENV_PROJECTS_DIR)));
         for m in MODES {
             let r = cat.resolve(&ModeSlug::parse(m.slug).unwrap()).unwrap();
-            assert!(r.test);
-            assert!(r.dir.ends_with(TEST_PROJECT));
             assert!(r.dir.starts_with(root.canonicalize().unwrap()));
+            if m.slug == "duelo-meia-noite" {
+                assert!(!r.test);
+                assert!(r.dir.ends_with("duelo-meia-noite"));
+            } else {
+                assert!(r.test);
+                assert!(r.dir.ends_with(TEST_PROJECT));
+            }
         }
         let c = cat.check();
-        assert!(c.test_mode && c.test_project_ok);
+        assert!(!c.test_mode && c.test_project_ok);
+        assert!(!c.test_slugs.contains(&"duelo-meia-noite") && c.test_slugs.len() == MODES.len() - 1);
         std::fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn every_real_project_is_in_the_catalog() {
+        for p in REAL_PROJECTS {
+            assert!(MODES.iter().any(|m| m.project == *p && !m.test), "projeto {p} sem modo no catálogo");
+        }
+        for m in MODES.iter().filter(|m| !m.test) {
+            assert!(REAL_PROJECTS.contains(&m.project), "modo {} sem projeto empacotado", m.slug);
+        }
     }
 
     #[test]

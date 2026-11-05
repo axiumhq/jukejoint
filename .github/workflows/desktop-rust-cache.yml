@@ -43,6 +43,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
           rust-src-dir: desktop/src-tauri
+          cache-shared-key: desktop-release
 
       - name: Install frontend dependencies
         run: |
@@ -54,4 +55,4 @@ jobs:
 
       - name: Compile release dependencies
         working-directory: desktop/src-tauri
-        run: cargo build --release --locked --target x86_64-pc-windows-msvc
+        run: cargo build --release --locked

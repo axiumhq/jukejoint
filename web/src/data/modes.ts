@@ -132,6 +132,7 @@ export const modes: Mode[] = [
       'Um contra um, melhor de cinco rodadas.',
       'Herói sorteado a cada rodada, igual para os dois.',
       'Itens fixos por rodada, sem loja.',
+      'Rodada sem abate em 90 segundos: vence quem tiver mais vida.',
       'Lobby funciona como fila: até 8 pessoas se revezando.',
     ],
     format: '1 contra 1 com fila',
