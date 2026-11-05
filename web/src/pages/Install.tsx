@@ -2,12 +2,12 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { Link } from 'react-router';
 import { CopyField, SectionTitle } from '../components/Common';
 import { Icon } from '../components/Icon';
-import { HeroArt } from '../components/HeroArt';
 import { Rail } from '../components/Rail';
 import { APP_RELEASE } from '../config/brand';
 import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
 import { PLATFORM_SCOPE, releases } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
+import { RELEASES_URL, SOURCE_URL, useLatestRelease } from '../lib/release';
 import { formatDate, formatShortDate, t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
 import { useSession } from '../state/session';
@@ -55,8 +55,8 @@ function AppStatusInApp() {
   );
 }
 
-function AppStatus() {
-  const { appConnected, setAppConnected } = useSession();
+function AppStatus({ version }: { version: string | null }) {
+  const { appConnected, setAppConnected, live } = useSession();
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
     if (appConnected) return;
@@ -69,7 +69,7 @@ function AppStatus() {
       <span className="ast-sig" aria-hidden="true" />
       <div className="ast-t">
         <p className="ast-title" role="status" aria-live="polite">
-          {appConnected ? t.install.statusConnected(APP_RELEASE.version) : t.install.statusWaiting}
+          {appConnected ? t.install.statusConnected(version ?? APP_RELEASE.version) : t.install.statusWaiting}
         </p>
         <p className="ast-help">{appConnected ? t.install.statusConnectedHelp : timedOut ? t.install.statusTimeout : t.install.statusWaitingHelp}</p>
       </div>
@@ -79,20 +79,24 @@ function AppStatus() {
             {t.install.goLobbies}
           </Link>
         )}
-        <button type="button" className="link" onClick={() => setAppConnected(!appConnected)}>
-          {appConnected ? t.install.simulateOff : t.install.simulate} ({t.common.prototype})
-        </button>
+        {/* Só no modo de demonstração (sem API): no site de verdade não há o que simular. */}
+        {!live && (
+          <button type="button" className="link" onClick={() => setAppConnected(!appConnected)}>
+            {appConnected ? t.install.simulateOff : t.install.simulate} ({t.common.prototype})
+          </button>
+        )}
       </div>
     </div>
   );
 }
 
 function DownloadCard() {
-  const { pushToast, desktop } = useSession();
+  const { desktop } = useSession();
+  const rel = useLatestRelease();
+  const r = rel.status === 'ready' ? rel.release : null;
   return (
     <>
-      <section className="ih" id="baixar" aria-labelledby="dl-title">
-        <HeroArt />
+      <section className="ih is-plain" id="baixar" aria-labelledby="dl-title">
         <div className="ih-top">
           <h1 className="ih-title display" id="dl-title">
             {t.install.titleWords[0]} {t.install.titleWords[1]}
@@ -100,30 +104,48 @@ function DownloadCard() {
           <span className="ih-sub">{t.install.platformMeta}</span>
         </div>
         <div className="ih-band">
-          <div className="ih-file">
-            <p className="ih-name">{APP_RELEASE.fileName}</p>
-            <p className="ih-meta">
-              {t.install.version} <span className="num">{APP_RELEASE.version}</span> · <span className="num">{APP_RELEASE.sizeMb.toLocaleString('pt-BR')}</span> MB ·{' '}
-              <time dateTime={APP_RELEASE.releasedAt}>{formatDate(APP_RELEASE.releasedAt)}</time>
-            </p>
+          <div className="ih-file" aria-busy={rel.status === 'loading'}>
+            {r ? (
+              <>
+                <p className="ih-name">{r.fileName}</p>
+                <p className="ih-meta">
+                  {t.install.version} <span className="num">{r.version}</span> · <span className="num">{r.sizeMb.toLocaleString('pt-BR')}</span> MB ·{' '}
+                  <time dateTime={r.releasedAt}>{formatDate(r.releasedAt)}</time>
+                </p>
+              </>
+            ) : rel.status === 'loading' ? (
+              <p className="ih-meta">{t.install.releaseLoading}</p>
+            ) : (
+              <p className="ih-meta">{t.install.releaseUnavailable}</p>
+            )}
           </div>
-          <button type="button" className="btn btn-p btn-lg ih-btn" onClick={() => pushToast(t.install.downloadToast)}>
+          <a className="btn btn-p btn-lg ih-btn" href={r ? r.downloadUrl : RELEASES_URL} rel="noopener">
             <Icon name="download" />
-            <span>{t.install.downloadShort}</span>
-          </button>
+            <span>{r ? t.install.downloadShort : t.install.openReleases}</span>
+          </a>
         </div>
       </section>
 
       <div className="ih-hash" id="hash">
         <h2 className="ih-k">{t.install.hashTitle}</h2>
-        <CopyField value={APP_RELEASE.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
+        {r?.sha256 ? (
+          <CopyField value={r.sha256} label={t.install.hashTitle} copyLabel={t.install.copyHash} />
+        ) : (
+          <p className="ih-help">{rel.status === 'loading' ? t.install.releaseLoading : t.install.hashOnReleases}</p>
+        )}
         <p className="ih-src">
-          {t.install.source} <span>({t.install.sourceNote})</span>
+          <a className="link" href={r ? r.pageUrl : SOURCE_URL} rel="noopener">
+            {r ? t.install.releaseNotes : t.install.source}
+          </a>{' '}
+          ·{' '}
+          <a className="link" href={SOURCE_URL} rel="noopener">
+            {t.install.sourceCode}
+          </a>
         </p>
         <p className="ih-help">{t.install.hashHelp}</p>
       </div>
 
-      <div className="ih-status">{desktop ? <AppStatusInApp /> : <AppStatus />}</div>
+      <div className="ih-status">{desktop ? <AppStatusInApp /> : <AppStatus version={r?.version ?? null} />}</div>
       <p className="ih-req">
         {t.install.requirements} {t.install.mobileNote}
       </p>

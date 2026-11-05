@@ -5,7 +5,10 @@
  */
 export const BRAND_NAME = 'Jukejoint';
 
-/** Dados do app de desktop (mock). */
+/** O repositório público do app no GitHub: as releases (e o instalador) e o código-fonte. */
+export const REPO = 'axiumhq/jukejoint';
+
+/** Dados do app de desktop do modo de demonstração (sem API). A página Instalar lê a release real (lib/release.ts). */
 export const APP_RELEASE = {
   version: '0.9.3',
   fileName: `${BRAND_NAME}-Setup-0.9.3.exe`,

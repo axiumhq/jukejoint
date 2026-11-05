@@ -1,4 +1,4 @@
-import { APP_RELEASE, BRAND_NAME } from '../config/brand';
+import { BRAND_NAME } from '../config/brand';
 
 /**
  * Todas as strings de interface em pt-BR.
@@ -7,7 +7,6 @@ import { APP_RELEASE, BRAND_NAME } from '../config/brand';
  * Conteúdo de dados (nomes de modos, notas de versão) fica em src/data.
  * Regra de texto (v6): frases curtas e literais, sem travessão e sem jargão interno.
  */
-const MB = APP_RELEASE.sizeMb.toLocaleString('pt-BR');
 
 export const ptBR = {
   brand: BRAND_NAME,
@@ -551,7 +550,7 @@ export const ptBR = {
     haveApp: 'Já tenho o app',
     openApp: 'Abrir o app',
     noApp: 'Ainda não tenho',
-    install: `Instalar grátis (${MB} MB)`,
+    install: 'Instalar grátis',
     /** "Código aberto" volta para esta lista quando o repositório estiver público. */
     trust: ['Grátis', 'Hash publicado para conferir o arquivo', 'Ajuda se o antivírus reclamar'],
     // Celular e tablet: o app não roda aqui. Em vez de "Abrir o app", o link para abrir no PC.
@@ -656,9 +655,8 @@ export const ptBR = {
     title: 'Instalar o app',
     titleWords: ['Instalar', 'o app'] as const,
     platformMeta: 'Windows 10 e 11 · 64 bits',
-    lead: `Antes de baixar, veja exatamente o que entra no seu PC. O app é grátis, tem ${MB} MB e faz uma coisa: abrir o jogo com o modo escolhido.`,
+    lead: `Antes de baixar, veja exatamente o que entra no seu PC. O app é grátis e faz uma coisa: abrir o jogo com o modo escolhido.`,
     download: (file: string) => `Baixar ${file}`,
-    downloadToast: 'Protótipo: o download está desativado.',
     downloadShort: 'Baixar',
     version: 'Versão',
     size: 'Tamanho',
@@ -671,8 +669,13 @@ export const ptBR = {
     copied: 'Copiado',
     copyHash: 'Copiar hash SHA-256',
     copyCommand: 'Copiar comando',
-    source: 'Código-fonte',
-    sourceNote: 'link público em breve',
+    source: 'Releases no GitHub',
+    sourceCode: 'Código-fonte',
+    releaseNotes: 'Notas desta versão no GitHub',
+    releaseLoading: 'Lendo a versão mais recente…',
+    releaseUnavailable: 'Não deu para ler a versão agora. O instalador está na página de releases.',
+    openReleases: 'Abrir releases',
+    hashOnReleases: 'O SHA-256 de cada instalador está na página da release, ao lado do arquivo.',
     statusWaiting: 'Aguardando o app…',
     statusWaitingHelp: 'Depois de instalar, abra o app. Esta página detecta sozinha quando ele estiver rodando.',
     statusConnected: (v: string) => `App conectado (versão ${v})`,
@@ -705,7 +708,7 @@ export const ptBR = {
     downloadTitle: 'O instalador',
     stepsWords: ['Em três', 'passos'] as const,
     steps: [
-      { title: 'Baixe o instalador', body: `Um arquivo só, de ${MB} MB. Se quiser, confira o hash antes de abrir.` },
+      { title: 'Baixe o instalador', body: 'Um arquivo só, com o motor e os modos dentro. Se quiser, confira o hash antes de abrir.' },
       { title: 'Execute', body: 'Não precisa de permissão de administrador. Se o Windows avisar, o motivo e o caminho estão logo abaixo.' },
       { title: 'Abra o app', body: 'Esta página detecta sozinha quando ele estiver rodando. Depois é só escolher um lobby e clicar em Entrar.' },
     ],
