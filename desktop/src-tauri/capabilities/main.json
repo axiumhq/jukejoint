@@ -6,6 +6,10 @@
   "permissions": [
     "core:event:allow-listen",
     "core:event:allow-unlisten",
+    "core:window:allow-minimize",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
     "allow-app-info",
     "allow-auth-open-browser",
     "allow-open-install-window",

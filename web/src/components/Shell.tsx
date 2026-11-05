@@ -17,7 +17,6 @@ import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
-import { DesktopUpdateNotice } from './DesktopUpdateNotice';
 import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
 import '../styles/live.css';
 
@@ -211,7 +210,7 @@ export function TopBar({ inert }: { inert?: boolean }) {
       <Link to="/" className="brand" aria-label={t.a11y.home}>
         <Wordmark alt="" height={24} />
       </Link>
-      <span className="tb-sp" />
+      <span className="tb-sp" data-tauri-drag-region={IN_DESKTOP ? '' : undefined} />
       <Search open={searchOpen} onOpenChange={setSearchOpen} />
       {inRoom ? <RoomPill /> : <LiveCount />}
       <button
@@ -228,7 +227,22 @@ export function TopBar({ inert }: { inert?: boolean }) {
         <ThemeMenu />
       </span>
       <Account />
+      {IN_DESKTOP && <WindowControls />}
     </header>
+  );
+}
+
+function WindowControls() {
+  const act = async (action: 'minimize' | 'toggleMaximize' | 'close') => {
+    const { getCurrentWindow } = await import('@tauri-apps/api/window');
+    await getCurrentWindow()[action]();
+  };
+  return (
+    <div className="window-controls">
+      <button type="button" aria-label="Minimizar" onClick={() => void act('minimize')}>─</button>
+      <button type="button" aria-label="Maximizar ou restaurar" onClick={() => void act('toggleMaximize')}>□</button>
+      <button type="button" aria-label="Fechar" onClick={() => void act('close')}>×</button>
+    </div>
   );
 }
 
@@ -395,7 +409,6 @@ function Frame() {
         {!sheet && <Side inert={modal} />}
         <div className="col">
           <TopBar inert={modal} />
-          <DesktopUpdateNotice />
           <LiveStatus />
           <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
             <Outlet />

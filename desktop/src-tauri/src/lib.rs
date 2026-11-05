@@ -8,7 +8,7 @@ pub mod deeplink;
 pub mod engine;
 mod notice;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use deeplink::{Link, LinkError};
 use engine::{
@@ -56,6 +56,9 @@ pub struct AppState {
     pub engine: Arc<ModlockCli>,
 }
 
+#[derive(Default)]
+struct PendingLinks(Mutex<Vec<String>>);
+
 pub fn run() {
     let app = tauri::Builder::default()
         // Precisa ser o primeiro plugin: uma segunda execução repassa os argumentos (o link) para
@@ -71,6 +74,7 @@ pub fn run() {
             let resource_dir = app.path().resource_dir()?;
             let engine = Arc::new(ModlockCli::new(EngineConfig::from_env_with_resources(Some(&resource_dir)), sink));
             app.manage(AppState { engine: engine.clone() });
+            app.manage(PendingLinks::default());
 
             if tauri::is_dev() {
                 allow_install_dev_server(app)?;
@@ -85,7 +89,39 @@ pub fn run() {
                 Some((Ok(Link::Join(id)), _)) => format!("sala/{}", id.as_str()),
                 _ => String::new(),
             };
-            create_main_window(app.handle(), &start)?;
+            if cfg!(windows) && !tauri::is_dev() {
+                create_startup_window(app.handle())?;
+                let h = app.handle().clone();
+                let startup_engine = engine.clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = check_startup_update(&h).await {
+                        eprintln!("não foi possível atualizar ao iniciar: {e}");
+                    }
+                    let mut startup_path = start;
+                    let pending = std::mem::take(&mut *h.state::<PendingLinks>().0.lock().unwrap());
+                    for url in pending {
+                        if let Ok(Link::Join(id)) = deeplink::parse(&url, SLUG) {
+                            startup_path = format!("sala/{}", id.as_str());
+                        }
+                    }
+                    if let Err(e) = create_main_window(&h, &startup_path) {
+                        eprintln!("não foi possível abrir o app: {e}");
+                        h.exit(1);
+                        return;
+                    }
+                    let pending = std::mem::take(&mut *h.state::<PendingLinks>().0.lock().unwrap());
+                    for url in pending {
+                        handle_link(&h, &url);
+                    }
+                    if let Some(window) = h.get_webview_window("startup") {
+                        let _ = window.close();
+                    }
+                    check_engine_on_start(h, startup_engine);
+                });
+            } else {
+                create_main_window(app.handle(), &start)?;
+                check_engine_on_start(app.handle().clone(), engine.clone());
+            }
             match &first {
                 Some((Ok(Link::Auth(_)), _)) => eprintln!("auth link received at cold start: ignored (no verifier)"),
                 Some((Err(LinkError::AuthCode), url)) => eprintln!("deep link ignorado (AuthCode): {}", deeplink::for_log(url)),
@@ -100,14 +136,6 @@ pub fn run() {
             setup_tray(app)?;
 
             // Primeira checagem em segundo plano; se faltar algo, abre a tela Instalação.
-            let h = app.handle().clone();
-            std::thread::spawn(move || {
-                let report = engine.check();
-                if !report.ready {
-                    let _ = open_install_window_for(&h, Some(OPENED_BY_CHECK));
-                }
-                let _ = h.emit(EV_CHECK, &report);
-            });
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -163,9 +191,41 @@ fn init_script() -> String {
 /// cor só aparece num instante antes disso.
 const WINDOW_BG: tauri::window::Color = tauri::window::Color(10, 15, 14, 255);
 
+fn create_startup_window(app: &AppHandle) -> tauri::Result<()> {
+    WebviewWindowBuilder::new(app, "startup", WebviewUrl::App("startup.html".into()))
+        .title(BRAND_NAME)
+        .inner_size(420.0, 180.0)
+        .center()
+        .resizable(false)
+        .closable(false)
+        .background_color(WINDOW_BG)
+        .build()?;
+    Ok(())
+}
+
+async fn check_startup_update(app: &AppHandle) -> tauri_plugin_updater::Result<()> {
+    use tauri_plugin_updater::UpdaterExt;
+    let updater = app.updater_builder().timeout(std::time::Duration::from_secs(15)).build()?;
+    if let Some(update) = updater.check().await? {
+        update.download_and_install(|_, _| {}, || {}).await?;
+    }
+    Ok(())
+}
+
+fn check_engine_on_start(app: AppHandle, engine: Arc<ModlockCli>) {
+    std::thread::spawn(move || {
+        let report = engine.check();
+        if !report.ready {
+            let _ = open_install_window_for(&app, Some(OPENED_BY_CHECK));
+        }
+        let _ = app.emit(EV_CHECK, &report);
+    });
+}
+
 fn create_main_window(app: &AppHandle, path: &str) -> tauri::Result<()> {
     WebviewWindowBuilder::new(app, MAIN, WebviewUrl::App(path.into()))
         .title(BRAND_NAME)
+        .decorations(false)
         .inner_size(1360.0, 860.0)
         .min_inner_size(960.0, 640.0)
         .background_color(WINDOW_BG)
@@ -238,6 +298,14 @@ fn show_main(app: &AppHandle) {
 /// o aviso do link inválido. O aviso nativo fica só para a partida a frio, quando o site ainda não
 /// carregou (ver `run`). O código de login nunca vai para o log.
 fn handle_link(app: &AppHandle, url: &str) {
+    {
+        let pending = app.state::<PendingLinks>();
+        let mut links = pending.0.lock().unwrap();
+        if app.get_webview_window(MAIN).is_none() {
+            links.push(url.to_owned());
+            return;
+        }
+    }
     show_main(app);
     match deeplink::parse(url, SLUG) {
         Ok(Link::Join(id)) => {
