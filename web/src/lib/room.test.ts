@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { lobbies } from '../data/lobbies';
-import { handoffState, missingForQuorum, nextToConfirm, readyCount, roomPhase, roster, ruleIcon } from './room';
+import { handoffState, isReadyKey, missingForQuorum, nextToConfirm, readyCount, roomPhase, roster, ruleIcon } from './room';
 
 const base = { you: 'Corvo', youHere: false, youReady: false, signedIn: false, now: Date.now() + 60_000 };
 
@@ -109,5 +109,20 @@ describe('ruleIcon', () => {
     expect(ruleIcon('Cada abate concede um item aleatório.')).toBe('dice');
     expect(ruleIcon('Cada estação vencida adiciona 90 segundos ao relógio.')).toBe('clock');
     expect(ruleIcon('Todos os itens disponíveis desde o início.')).toBe('info');
+  });
+});
+
+describe('isReadyKey', () => {
+  const k = (o: Partial<{ key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; repeat: boolean }>) => ({ key: 'f', ctrlKey: false, metaKey: false, altKey: false, repeat: false, ...o });
+  it('aceita F, maiúsculo ou não', () => {
+    expect(isReadyKey(k({}))).toBe(true);
+    expect(isReadyKey(k({ key: 'F' }))).toBe(true);
+  });
+  it('ignora outras teclas, modificadores e repetição', () => {
+    expect(isReadyKey(k({ key: 'g' }))).toBe(false);
+    expect(isReadyKey(k({ ctrlKey: true }))).toBe(false);
+    expect(isReadyKey(k({ metaKey: true }))).toBe(false);
+    expect(isReadyKey(k({ altKey: true }))).toBe(false);
+    expect(isReadyKey(k({ repeat: true }))).toBe(false);
   });
 });

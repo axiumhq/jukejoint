@@ -9,7 +9,7 @@ export interface InstalledItem {
 export const installedItems: InstalledItem[] = [
   { item: 'Aplicativo', path: `%LOCALAPPDATA%\\${BRAND_NAME}\\`, size: '31,2 MB' },
   { item: 'Configurações e registros', path: `%APPDATA%\\${BRAND_NAME}\\`, size: 'menos de 1 MB' },
-  { item: 'Modos baixados', path: `Steam\\steamapps\\common\\Deadlock\\game\\citadel\\addons\\${BRAND_NAME.toLowerCase()}\\`, size: '5 a 40 MB por modo' },
+  { item: 'Modos baixados', path: `[pasta do jogo na Steam]\\...\\addons\\${BRAND_NAME.toLowerCase()}\\`, size: '5 a 40 MB por modo' },
   { item: 'Atalho', path: 'Menu Iniciar', size: '1 KB' },
 ];
 

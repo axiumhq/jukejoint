@@ -45,8 +45,8 @@
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 20px 12px 16px;
+  gap: var(--sp-6);
+  padding: var(--sp-5) var(--sp-3) var(--sp-4);
   background: var(--s1);
   overflow-y: auto;
   overflow-x: hidden;
@@ -62,7 +62,7 @@
   display: flex;
   align-items: center;
   height: 44px;
-  padding: 0 10px;
+  padding: 0 var(--sp-3);
   color: var(--tx);
   flex: none;
 }
@@ -70,7 +70,7 @@
 .side-nav {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--sp-1);
   flex: none;
 }
 
@@ -78,8 +78,8 @@
   height: 36px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 10px;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-3);
   border-radius: var(--r-sm);
   color: var(--tx-2);
   font-size: var(--fs-md);
@@ -108,19 +108,19 @@
 /* recolhida (a sala, e telas com painel abaixo de 1240): só o JJ e os ícones */
 .is-compact .side {
   align-items: center;
-  gap: 8px;
-  padding: 16px 0;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0;
 }
 
 .is-compact .side-brand {
   align-self: center;
   height: auto;
   padding: 0;
-  margin-bottom: 12px;
+  margin-bottom: var(--sp-3);
 }
 
 .is-compact .side-nav {
-  gap: 4px;
+  gap: var(--sp-1);
 }
 
 .is-compact .side-nav a {
@@ -130,11 +130,34 @@
   justify-content: center;
 }
 
+/* recolhida, cada ícone guarda o rótulo curto embaixo (Jogar, Modos, Hoje, Instalar): reconhecer, não lembrar */
+.is-compact .side-nav a {
+  width: 64px;
+  height: auto;
+  min-height: 52px;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0;
+}
+
+.is-compact .side-nav .nav-t.sr-only {
+  position: static !important;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  overflow: hidden;
+  clip: auto;
+  clip-path: none;
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  text-overflow: ellipsis;
+}
+
 /* a sua lista na lateral: o desenho do kit (sem cartão, linhas de 44 px) */
 .side-social {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
@@ -148,8 +171,8 @@
 }
 
 .side-social .rail-h {
-  padding: 0 10px;
-  margin-bottom: 10px;
+  padding: 0 var(--sp-3);
+  margin-bottom: var(--sp-2);
 }
 
 .side-social .rail-h .cap {
@@ -170,8 +193,10 @@
   text-transform: none;
 }
 
-.side-social .card {
-  background: var(--s3);
+.side-social .card,
+.side .card,
+.card.rail-signin {
+  background: var(--s1-2, var(--s2));
   box-shadow: none;
 }
 
@@ -179,45 +204,26 @@
   position: relative;
   min-height: 44px;
   margin: 0;
-  padding: 4px 10px;
-  gap: 10px;
+  padding: var(--sp-1) var(--sp-3);
+  gap: var(--sp-3);
 }
 
 .side-social .fr:hover {
   background: var(--s2);
 }
 
-/* a ação da pessoa aparece no hover e no foco (o texto não perde espaço para o botão) */
+/* a ação da pessoa fica sempre à vista ("Entrar", "Chamar"): o nome encurta com reticências */
 .side-social .fr > .btn,
 .side-social .fr > .fr-state {
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  translate: 0 -50%;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--t-fast);
-}
-
-.side-social .fr > .fr-state {
-  padding: 2px 6px;
-  border-radius: var(--r-xs);
-  background: var(--s2);
-}
-
-.side-social .fr:hover > .btn,
-.side-social .fr:focus-within > .btn,
-.side-social .fr:hover > .fr-state {
-  opacity: 1;
-  pointer-events: auto;
+  flex: none;
 }
 
 .side-social .offline {
-  padding: 8px 10px 2px;
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
 }
 
 .side-social .rail-signin {
-  padding: 14px;
+  padding: var(--sp-4);
 }
 
 /* o tema já está no pé da lateral */
@@ -230,8 +236,8 @@
   margin-top: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 10px 0;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-3) 0;
   box-shadow: inset 0 1px 0 var(--line);
   flex: none;
 }
@@ -244,7 +250,7 @@
 
 .theme-sw-row {
   display: flex;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 /* a amostra tem data-theme do próprio tema: a cor sai do --swatch dele */
@@ -276,7 +282,7 @@
   flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   padding: 0 var(--gut);
   background: var(--bg);
 }
@@ -310,9 +316,9 @@
 .live-count {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: var(--sp-2);
   min-height: 36px;
-  padding: 0 8px;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-sm);
   color: var(--tx-3);
   font-size: var(--fs-sm);
@@ -334,10 +340,10 @@
 .room-pill {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--sp-2);
   height: 36px;
   min-width: 0;
-  padding: 0 12px 0 6px;
+  padding: 0 var(--sp-3) 0 var(--sp-2);
   border-radius: var(--r-sm);
   background: var(--s2);
   box-shadow: inset 0 0 0 1px var(--acc);
@@ -409,7 +415,7 @@
   right: 0;
   top: 44px;
   z-index: 60;
-  padding: 6px;
+  padding: var(--sp-2);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: var(--sh-pop);
@@ -424,7 +430,7 @@
 }
 
 .pop > .cap {
-  padding: 8px;
+  padding: var(--sp-2);
 }
 
 .theme-pop {
@@ -440,8 +446,8 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
   border-radius: var(--r-sm);
   text-align: left;
   transition: background-color var(--t-fast);
@@ -489,15 +495,15 @@
 
 .acct-menu {
   width: 260px;
-  padding: 14px;
+  padding: var(--sp-4);
   display: grid;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .acct-who {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .acct-menu p {
@@ -535,7 +541,7 @@
   border-radius: var(--r-sm);
   border: 0;
   background: var(--s2);
-  padding: 0 60px 0 40px;
+  padding: 0 60px 0 var(--sp-10);
   font-size: var(--fs-md);
   text-overflow: ellipsis;
   transition: background-color var(--t-fast);
@@ -569,7 +575,7 @@
   position: absolute;
   right: 12px;
   top: 10px;
-  color: var(--tx-3);
+  color: var(--tx-2);
   pointer-events: none;
 }
 
@@ -581,7 +587,7 @@
   z-index: 60;
   max-height: min(70dvh, 520px);
   overflow-y: auto;
-  padding: 6px;
+  padding: var(--sp-2);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: var(--sh-pop);
@@ -590,11 +596,11 @@
 
 .search-pop .cap {
   display: block;
-  padding: 10px 10px 6px;
+  padding: var(--sp-3) var(--sp-3) var(--sp-2);
 }
 
 .search-hint {
-  padding: 12px 10px;
+  padding: var(--sp-3) var(--sp-3);
   color: var(--tx-3);
   font-size: var(--fs-sm);
 }
@@ -602,9 +608,9 @@
 .sr-opt {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   min-height: 56px;
-  padding: 6px 10px;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   cursor: pointer;
   min-width: 0;
@@ -671,16 +677,17 @@
 .foot {
   position: relative;
   min-width: 0;
-  padding: 0 var(--gut) 40px;
+  padding: 0 var(--gut) var(--sp-10);
 }
 
 .foot > .link {
-  margin-top: 40px;
+  margin-top: var(--sp-10);
 }
 
 .fineprint {
+  max-width: 70ch;
   margin-top: 56px;
-  padding-top: 16px;
+  padding-top: var(--sp-4);
   box-shadow: inset 0 1px 0 var(--line);
   color: var(--tx-3);
   font-size: var(--fs-xs);
@@ -689,14 +696,14 @@
 
 /* seções */
 .sec {
-  margin-top: 36px;
+  margin-top: var(--sp-8);
 }
 
 .sec-h {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
   min-height: 36px;
 }
 
@@ -713,10 +720,10 @@
 .notice {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   min-height: 36px;
-  margin-bottom: 12px;
-  padding: 0 6px 0 14px;
+  margin-bottom: var(--sp-4);
+  padding: 0 var(--sp-1) 0 var(--sp-4);
   border-radius: var(--r-md);
   font-size: var(--fs-sm);
   color: var(--tx-2);
@@ -769,7 +776,7 @@
   height: 100dvh;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 16px 16px 0;
+  padding: var(--sp-4) var(--sp-4) var(--sp-4) 0;
   scrollbar-width: none;
   z-index: 20;
 }
@@ -791,21 +798,21 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px;
-  border-radius: var(--r-lg);
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
   background: var(--s2);
 }
 
 .rail .rail-sec + .rail-sec {
-  margin-top: 10px;
+  margin-top: var(--sp-3);
 }
 
 .rail-h {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .rail .rail-h .cap {
@@ -827,8 +834,8 @@
 .party {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
 }
 
 .party b {
@@ -846,8 +853,8 @@
 .party-slots {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-top: 10px;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
 }
 
 .party-slots .btn {
@@ -882,14 +889,14 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
   overflow: hidden;
 }
 
 .invite-top {
   display: flex;
-  gap: 10px;
+  gap: var(--sp-3);
   align-items: center;
   min-width: 0;
 }
@@ -916,16 +923,16 @@
 .invite-act {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .fr {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-3);
   min-height: 52px;
-  padding: 6px 8px;
-  margin: 0 -8px;
+  padding: var(--sp-2) var(--sp-2);
+  margin: 0 calc(var(--sp-2) * -1);
   border-radius: var(--r-md);
   transition: background-color var(--t-fast);
 }
@@ -984,8 +991,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  margin-top: 6px;
-  padding: 8px 0 2px;
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) 0 var(--sp-1);
   color: var(--tx-3);
   font-size: var(--fs-sm);
   border-radius: var(--r-sm);
@@ -1004,13 +1011,13 @@
 }
 
 .offline-list {
-  margin-top: 6px;
+  margin-top: var(--sp-2);
 }
 
 .rail-signin {
-  padding: 14px;
+  padding: var(--sp-4);
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 /* o login é a ação do bloco (o design usa o primário aqui) */
@@ -1073,8 +1080,9 @@
   bottom: calc(24px + var(--bn));
   z-index: 90;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   justify-items: end;
-  gap: 8px;
+  gap: var(--sp-2);
   width: min(360px, calc(100vw - 32px));
   pointer-events: none;
 }
@@ -1083,8 +1091,8 @@
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 12px 8px 12px 14px;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-2) var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s3);
   box-shadow: var(--sh-pop);
@@ -1096,7 +1104,9 @@
 
 .toast > span {
   flex: 1;
-  padding-top: 3px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding-top: var(--sp-1);
 }
 
 .toast .btn-icon {
@@ -1123,21 +1133,6 @@
 
 /* ───────── Pontos de quebra ───────── */
 
-@media (max-width: 1366px) {
-  .sec {
-    margin-top: 20px;
-  }
-
-  .sec-h {
-    margin-bottom: 8px;
-  }
-
-  .sec-h h2 {
-    font-size: 1.5rem;
-    line-height: 32px;
-  }
-}
-
 @media (max-width: 1240px) {
   .search {
     flex-basis: 260px;
@@ -1155,7 +1150,7 @@
   }
 
   .search input {
-    padding-right: 12px;
+    padding-right: var(--sp-3);
   }
 
   .room-pill .rp-name {
@@ -1173,8 +1168,8 @@
   }
 
   .tb {
-    padding: 0 8px 0 16px;
-    gap: 4px;
+    padding: 0 var(--sp-2) 0 var(--sp-4);
+    gap: var(--sp-1);
   }
 
   .tb-theme {
@@ -1182,7 +1177,7 @@
   }
 
   .main {
-    padding-bottom: 8px;
+    padding-bottom: var(--sp-2);
   }
 
   /* o painel (ou a sua lista) vira folha de baixo */
@@ -1194,7 +1189,7 @@
     bottom: 0;
     height: auto;
     max-height: calc(100dvh - var(--tb));
-    padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+    padding: 0 var(--sp-4) calc(var(--sp-4) + env(safe-area-inset-bottom));
     z-index: 80;
     border-radius: var(--r-2xl) var(--r-2xl) 0 0;
     background: var(--s1);
@@ -1218,8 +1213,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    margin: 0 -12px 0 0;
-    padding: 14px 0 4px;
+    margin: 0 calc(var(--sp-3) * -1) 0 0;
+    padding: var(--sp-4) 0 var(--sp-1);
     background: var(--s1);
   }
 
@@ -1246,7 +1241,7 @@
 
   /* na folha os blocos ficam soltos, sem painel */
   .rail .rail-sec {
-    padding: 12px 0;
+    padding: var(--sp-3) 0;
     background: none;
   }
 
@@ -1278,7 +1273,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: var(--sp-1);
     min-width: 0;
     color: var(--tx-3);
     font-size: var(--fs-xs);
@@ -1307,11 +1302,11 @@
   }
 
   .foot > .link {
-    margin-top: 32px;
+    margin-top: var(--sp-8);
   }
 
   .fineprint {
-    margin-top: 24px;
+    margin-top: var(--sp-6);
   }
 
   .toasts {
@@ -1331,7 +1326,7 @@
     left: 0;
     right: 0;
     top: var(--tb);
-    padding: 12px;
+    padding: var(--sp-3);
     background: var(--s1);
     border-radius: 0 0 var(--r-2xl) var(--r-2xl);
     z-index: 61;
@@ -1339,7 +1334,7 @@
 
   .search.is-open input {
     height: 44px;
-    padding-right: 12px;
+    padding-right: var(--sp-3);
     font-size: 1rem;
   }
 
@@ -1349,7 +1344,7 @@
 
   .search.is-open .search-pop {
     position: static;
-    margin-top: 8px;
+    margin-top: var(--sp-2);
     padding: 0;
     box-shadow: none;
     background: none;
@@ -1372,14 +1367,6 @@
     margin-left: auto;
   }
 
-  .sec {
-    margin-top: 28px;
-  }
-
-  .sec-h h2 {
-    font-size: 1.5rem;
-  }
-
   .room-pill .rp-name {
     display: none;
   }
@@ -1396,7 +1383,7 @@
 
   .notice {
     align-items: flex-start;
-    padding: 8px 4px 8px 12px;
+    padding: var(--sp-2) var(--sp-1) var(--sp-2) var(--sp-3);
     line-height: 18px;
   }
 
@@ -1413,38 +1400,46 @@
  * Toque: alvos maiores. O piso é 24 px em tudo; os controles principais do celular chegam a 44 px.
  * Onde o desenho é pequeno de propósito (estrela, nome do lobby), cresce a área de toque, não o visual.
  */
-@media (pointer: coarse) {
+@media (max-width: 760px), (pointer: coarse) {
   .icon-btn,
   .live-count,
-  .room-pill {
-    min-width: 44px;
-    min-height: 44px;
+  .room-pill,
+  .brand {
+    min-width: var(--hit, 44px);
+    min-height: var(--hit, 44px);
   }
 
   .icon-btn {
-    width: 44px;
-    height: 44px;
+    width: var(--hit, 44px);
+    height: var(--hit, 44px);
   }
 
   .btn {
-    --h: 44px;
-  }
-
-  .btn-sm {
-    --h: 36px;
+    --h: var(--hit, 44px);
   }
 
   .chip {
-    height: 44px;
+    height: var(--hit, 44px);
   }
 
   .link {
-    min-height: 36px;
+    min-height: var(--hit, 44px);
+  }
+
+  .notice .icon-btn,
+  .toast .btn-icon {
+    width: var(--hit, 44px);
+    height: var(--hit, 44px);
+  }
+
+  .bn a,
+  .bn-list {
+    min-height: var(--hit, 44px);
   }
 
   .rail-h .link {
-    padding: 8px;
-    margin: -6px -4px;
+    padding: var(--sp-2);
+    margin: calc(var(--sp-2) * -1) calc(var(--sp-1) * -1);
   }
 
   .side-nav a {
@@ -1456,7 +1451,7 @@
 @media (max-width: 480px) {
   .room-pill {
     flex: none;
-    padding: 0 12px;
+    padding: 0 var(--sp-3);
   }
 
   .room-pill .stack {

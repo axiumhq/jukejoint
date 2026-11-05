@@ -56,6 +56,8 @@ export interface SessionValue {
   /** `true` com a API real. */
   live: boolean;
   connection: ConnectionState;
+  /** Ao vivo: tenta conectar de novo agora ("Tentar de novo"). Simulado: não faz nada. */
+  reconnect: () => void;
   /** Já chegou a lista de lobbies (simulado: sempre). Antes disso, lista vazia não quer dizer "0 lobbies". */
   synced: boolean;
   /** O servidor aceita o login de teste (DEV_LOGIN=1, só de localhost). */

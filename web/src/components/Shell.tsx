@@ -334,7 +334,7 @@ function RailAside({ sheet }: { sheet: boolean }) {
           </button>
         </div>
         <div ref={ref} className="rail-in" hidden={social && slots > 0} />
-        {social && <SocialRail />}
+        {social && <SocialRail sheet />}
       </aside>
       <div className={open ? 'scrim is-on' : 'scrim'} onClick={closeSheet} aria-hidden="true" />
     </>

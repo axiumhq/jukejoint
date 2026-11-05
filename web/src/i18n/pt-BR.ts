@@ -12,7 +12,7 @@ const MB = APP_RELEASE.sizeMb.toLocaleString('pt-BR');
 export const ptBR = {
   brand: BRAND_NAME,
   meta: {
-    home: `${BRAND_NAME} | Modos grátis da comunidade para Deadlock`,
+    home: `${BRAND_NAME} | Lobbies e modos grátis da comunidade`,
     lobbies: `Lobbies | ${BRAND_NAME}`,
     modes: `Modos | ${BRAND_NAME}`,
     install: `Instalar o app | ${BRAND_NAME}`,
@@ -161,7 +161,7 @@ export const ptBR = {
     slots: 'Com vaga',
     beginners: 'Iniciantes ok',
     playing: 'Em partida',
-    lowPing: (ms: number) => `Ping < ${ms}`,
+    lowPing: (ms: number) => `Ping < ${ms} ms`,
     pingRange: (lo: number, hi: number) => (lo === hi ? `${lo} ms` : `${lo}–${hi} ms`),
     removeMode: (name: string) => `Tirar o filtro ${name}`,
     view: 'Visualização',
@@ -333,6 +333,8 @@ export const ptBR = {
     cancelledLive: 'Contagem cancelada.',
     ready: 'Pronto',
     readyCta: 'PRONTO',
+    /** O atalho F só vale com o foco dentro da barra de ação (WCAG 2.1.4). */
+    keyHint: 'Com o foco nesta barra, a tecla F faz o mesmo',
     cancel: 'Cancelar',
     readyLabel: 'Marcar pronto',
     unreadyLabel: 'Desmarcar pronto',
@@ -741,7 +743,7 @@ export const ptBR = {
         a: 'O app é só para Windows 10 ou 11 (64 bits). No celular dá para ver lobbies e salas pelo site; para jogar, abra no PC.',
       },
       { q: 'O app fica rodando depois que eu fecho o jogo?', a: 'Não. Ele não roda em segundo plano depois que você fecha o jogo.' },
-      { q: 'Como atualizo?', a: 'O app procura atualizações ao abrir e baixa a nova versão em segundo plano. Quando o download termina, clique em “Reiniciar e atualizar”. Se você instalou pelo Inno Setup antigo, desinstale essa versão e instale esta uma vez. Depois, o app atualiza sozinho.' },
+      { q: 'Como atualizo?', a: 'O app procura atualizações ao abrir e baixa a nova versão em segundo plano. Quando o download termina, clique em “Reiniciar e atualizar”. Se você instalou uma versão antiga do app, desinstale-a e instale esta uma vez. Depois, o app atualiza sozinho.' },
       { q: 'O antivírus disse que é vírus. E agora?', a: 'Confira o hash e siga o passo a passo do seu antivírus, na seção acima.' },
     ],
     toc: 'Nesta página',

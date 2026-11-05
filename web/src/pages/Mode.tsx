@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
-import { SectionTitle, Tag } from '../components/Common';
+import { CreateReason, SectionTitle, Tag } from '../components/Common';
 import { FriendRow, FriendStep } from '../components/Friends';
 import { Icon } from '../components/Icon';
 import { CreateCard, LobbyCard, orderLobbies, type CardEnv } from '../components/LobbyCard';
@@ -12,8 +12,10 @@ import { getMode, modes, type Mode, type Region } from '../data/modes';
 import { releases } from '../data/patches';
 import { useDocumentTitle, useFriends, useLiveStats } from '../hooks';
 import { useFeaturedLobby } from '../hooks/useFeatured';
+import { useCreateBlocked } from '../hooks/useServerStatus';
 import { useNow } from '../hooks/useNow';
 import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { EMPTY_FILTERS, filterLobbies, REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
@@ -206,6 +208,7 @@ export function ModePage() {
   const { slug } = useParams();
   const mode = getMode(slug);
   const { lobbies, requestJoin, openHost, lobbyCtx, user } = useSession();
+  const createBlocked = useCreateBlocked();
   const friends = useFriends();
   const stats = useLiveStats();
   const now = useNow(5000);
@@ -293,10 +296,17 @@ export function ModePage() {
               <span className="t-short">{t.modes.playNowShort}</span>
             </button>
           )}
-          <button type="button" className={featured ? 'btn btn-s btn-lg' : 'btn btn-p btn-lg'} onClick={() => openHost(mode.slug)}>
+          <button
+            type="button"
+            className={featured ? 'btn btn-s btn-lg' : 'btn btn-p btn-lg'}
+            aria-disabled={createBlocked || undefined}
+            title={createBlocked ? L.createBlocked : undefined}
+            onClick={() => !createBlocked && openHost(mode.slug)}
+          >
             <Icon name="plus" />
             <span className="t-long">{t.modes.hostHere}</span>
             <span className="t-short">{t.modes.hostShort}</span>
+            <CreateReason blocked={createBlocked} />
           </button>
         </div>
       </div>

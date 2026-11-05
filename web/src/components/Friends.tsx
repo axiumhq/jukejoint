@@ -108,46 +108,22 @@ function SignInPrompt() {
   );
 }
 
-function Party() {
-  const { user, lobbies, hereId, pushToast } = useSession();
+/** Só na folha do celular: o acesso aos ajustes (na barra lateral do desktop o tema tem o seu lugar). */
+function SheetSettings() {
   const { closeSheet } = useRail();
   const { openMenu } = useTheme();
-  const here = hereId ? lobbies.find((l) => l.id === hereId) : undefined;
-  const hint = () => pushToast(t.social.partyHint);
   return (
-    <section className="rail-sec rail-party" aria-labelledby="rail-party">
-      <div className="rail-h">
-        <h2 className="cap" id="rail-party">
-          {t.social.party} · <b>1 de 5</b>
-        </h2>
-        <button
-          type="button"
-          className="link"
-          onClick={() => {
-            closeSheet();
-            openMenu();
-          }}
-        >
-          {t.social.settings}
-        </button>
-      </div>
-      <div className="card party">
-        <Presence name={user!.name} size={40} status={here ? 'lobby' : 'menu'} />
-        <div>
-          <b>{user!.name}</b>
-          <small>{here ? t.social.inRoom(here.name) : t.social.alone}</small>
-        </div>
-      </div>
-      <div className="party-slots">
-        {[0, 1, 2, 3].map((i) => (
-          <button key={i} type="button" className="slot-e" aria-label={t.social.callToParty} onClick={hint}>
-            <Icon name="plus" />
-          </button>
-        ))}
-        <button type="button" className="btn btn-g btn-sm" onClick={hint}>
-          {t.social.call}
-        </button>
-      </div>
+    <section className="rail-sec" aria-label={t.social.settings}>
+      <button
+        type="button"
+        className="link"
+        onClick={() => {
+          closeSheet();
+          openMenu();
+        }}
+      >
+        {t.social.settings}
+      </button>
     </section>
   );
 }
@@ -309,7 +285,10 @@ function Online() {
   );
 }
 
-export function SocialRail() {
+/**
+ * RF-63: o "Seu grupo" do protótipo era falso e fica fora do redesign (nem no DOM, nem no celular).
+ */
+export function SocialRail({ sheet = false }: { sheet?: boolean }) {
   const { user } = useSession();
   const { closeSheet } = useRail();
   const { openMenu } = useTheme();
@@ -337,7 +316,7 @@ export function SocialRail() {
   }
   return (
     <>
-      <Party />
+      {sheet && <SheetSettings />}
       <Invite />
       <Online />
     </>

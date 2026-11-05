@@ -2,13 +2,15 @@ import { memo, useMemo } from 'react';
 import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode } from '../data/modes';
+import { useCreateBlocked } from '../hooks/useServerStatus';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { friendsIn, type FriendPresence } from '../lib/friends';
 import { cardTag, isNearFull, lobbyNum } from '../lib/lobbyCard';
 import { lobbyState, type LobbyContext } from '../lib/lobbies';
 import { roster } from '../lib/room';
 import { AvatarStack } from './Avatar';
-import { SlotMeter, Tag } from './Common';
+import { CreateReason, SlotMeter, Tag } from './Common';
 import { Icon } from './Icon';
 import { LobbyAction } from './LobbyAction';
 import { ModeMedallion, ModeStrip } from './ModeCover';
@@ -110,12 +112,22 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
 });
 
 export function CreateCard({ onCreate }: { onCreate: () => void }) {
+  const createBlocked = useCreateBlocked();
   return (
-    <button type="button" className="lc-create" onClick={onCreate}>
+    <button
+      type="button"
+      className="lc-create"
+      aria-disabled={createBlocked || undefined}
+      title={createBlocked ? L.createBlocked : undefined}
+      onClick={() => !createBlocked && onCreate()}
+    >
       <span className="pl">
         <Icon name="plus" />
       </span>
-      <b>{t.lobbies.create}</b>
+      <b>
+        {t.lobbies.create}
+        <CreateReason blocked={createBlocked} />
+      </b>
       <small>{t.browse.createHint}</small>
     </button>
   );

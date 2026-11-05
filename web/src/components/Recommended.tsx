@@ -3,14 +3,16 @@ import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode } from '../data/modes';
 import { useFriends } from '../hooks';
+import { useServerStatus } from '../hooks/useServerStatus';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { friendsIn } from '../lib/friends';
 import { isNearFull } from '../lib/lobbyCard';
 import { freeSlots, lobbyState } from '../lib/lobbies';
 import { roster } from '../lib/room';
 import { useSession } from '../state/session';
 import { AvatarStack } from './Avatar';
-import { SlotMeter } from './Common';
+import { CreateReason, SlotMeter } from './Common';
 import { Icon } from './Icon';
 
 /**
@@ -89,6 +91,7 @@ export function RecommendedCard({ lobby, now, onCreate }: { lobby: Lobby | undef
   const { user, lobbyCtx, requestJoin, hereId } = useSession();
   const friends = useFriends();
   const signedIn = !!user;
+  const { status, retry, createBlocked } = useServerStatus();
 
   // Enter com o foco na página (fora de campos e botões) = Jogar agora.
   useEffect(() => {
@@ -121,13 +124,38 @@ export function RecommendedCard({ lobby, now, onCreate }: { lobby: Lobby | undef
         </h1>
         <div className="hbar hbar-none">
           <div className="hb-who">
-            <b className="hb-n">{t.home.noneTitle}</b>
-            <span className="hb-m">{t.home.noneBody}</span>
+            {status === 'ok' ? (
+              <>
+                <b className="hb-n">{t.home.noneTitle}</b>
+                <span className="hb-m">{t.home.noneBody}</span>
+              </>
+            ) : status === 'failed' ? (
+              <>
+                <b className="hb-n">{L.serverFail}</b>
+                <span className="hb-m">{L.serverFailBody}</span>
+              </>
+            ) : (
+              <>
+                <b className="hb-n">{L.loadingLobbies}</b>
+              </>
+            )}
           </div>
           <div className="hb-act">
-            <button type="button" className="btn btn-p btn-lg" onClick={onCreate}>
+            {status === 'failed' && (
+              <button type="button" className="btn btn-o" onClick={retry}>
+                {L.retry}
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn btn-p btn-lg"
+              aria-disabled={createBlocked || undefined}
+              title={createBlocked ? L.createBlocked : undefined}
+              onClick={() => !createBlocked && onCreate()}
+            >
               <Icon name="plus" />
               {t.lobbies.create}
+              <CreateReason blocked={createBlocked} />
             </button>
           </div>
         </div>

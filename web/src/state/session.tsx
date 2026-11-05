@@ -119,9 +119,8 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
     (message: string) => {
       const id = ++toastId.current;
       setToasts((list) => [...list.slice(-2), { id, message }]);
-      window.setTimeout(() => dismissToast(id), 5200);
     },
-    [dismissToast],
+    [],
   );
 
   // Dentro do app desktop, "app aberto" vem dele (e a partida continua simulada aqui); fora, é a simulação da /instalar.
@@ -442,6 +441,7 @@ function MockSessionProvider({ children }: { children: ReactNode }) {
     () => ({
       live: false,
       connection: 'mock',
+      reconnect: noop,
       synced: true,
       devLogin: false,
       signInDev: signIn,

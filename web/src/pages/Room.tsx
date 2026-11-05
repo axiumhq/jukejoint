@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
 import { Presence } from '../components/Avatar';
 import { Tag } from '../components/Common';
@@ -10,15 +10,18 @@ import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Mode } from '../data/modes';
 import { useDocumentTitle, useFriends, useMediaQuery, useReducedMotion } from '../hooks';
+import { useServerStatus } from '../hooks/useServerStatus';
 import { useNow } from '../hooks/useNow';
 import { t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
 import { live as L } from '../i18n/live';
 import type { EngineError } from '../lib/desktop';
 import { friendsIn } from '../lib/friends';
+import { ROOM_TIMEOUT_MS } from '../lib/connection';
 import { lobbyState, roundText } from '../lib/lobbies';
-import { handoffState, readyCount, roomPhase, roster, type RoomPhaseKey, type Seat } from '../lib/room';
+import { handoffState, isReadyKey, readyCount, roomPhase, roster, type RoomPhaseKey, type Seat } from '../lib/room';
 import { useSession } from '../state/session';
+import '../styles/states.css';
 import { inviteLink, inviteLinkLabel } from '../lib/invite';
 
 /**
@@ -461,26 +464,20 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     [sheet, openSheet, reduced],
   );
 
-  /* PRONTO e a tecla F (nunca enquanto se digita, nem com diálogo ou folha aberta) */
+  /* PRONTO e a tecla F: só com o foco dentro da barra de ação (WCAG 2.1.4), nunca digitando */
   const canToggle = here && !lobby.mine && !playing && !handoff;
   const onReady = useCallback(() => {
     toggleReady();
     setAnnounce(ready ? t.room.unreadyLabel : t.room.readyLive(readyN + 1, taken, k));
   }, [toggleReady, ready, readyN, taken, k]);
-  useEffect(() => {
-    if (!canToggle || sheetOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'f' && e.key !== 'F') return;
-      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
-      const el = e.target as HTMLElement | null;
-      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-      if (document.querySelector('dialog[open]')) return;
-      e.preventDefault();
-      onReady();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [canToggle, sheetOpen, onReady]);
+  const onBarKey = (e: KeyboardEvent<HTMLElement>) => {
+    if (!canToggle || sheetOpen || !isReadyKey(e)) return;
+    const el = e.target as HTMLElement | null;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    if (document.querySelector('dialog[open]')) return;
+    e.preventDefault();
+    onReady();
+  };
 
   /* o detalhe técnico da falha (só dentro do app) */
   const [techOpen, setTechOpen] = useState(false);
@@ -605,7 +602,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         {t.room.cancel}
       </button>
     ) : (
-      <button type="button" className="btn btn-o btn-lg" aria-keyshortcuts="F" aria-label={t.room.cancelLabel} onClick={onReady}>
+      <button type="button" className="btn btn-o btn-lg" aria-keyshortcuts="F" title={t.room.keyHint} aria-label={t.room.cancelLabel} onClick={onReady}>
         {t.room.cancel}
         <span className="kbd" aria-hidden="true">
           F
@@ -640,6 +637,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
           type="button"
           className={`btn btn-xl rb-main-btn rb-ready ${ready ? 'is-on' : 'btn-p is-caps'}`}
           aria-keyshortcuts="F"
+          title={t.room.keyHint}
           aria-label={ready ? t.room.unreadyLabel : t.room.readyLabel}
           onClick={onReady}
         >
@@ -750,7 +748,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         <Icon name="chev" />
       </button>
 
-      <div className={bar === 'fail' ? 'rbar is-fail' : 'rbar'} data-state={bar} role="region" aria-label={t.dock.label} ref={barRef}>
+      <div className={bar === 'fail' ? 'rbar is-fail' : 'rbar'} data-state={bar} role="region" aria-label={t.dock.label} ref={barRef} onKeyDown={onBarKey}>
         <div className="rb-main">
           {num !== null && (
             <span className="rb-cd display" aria-hidden="true">
@@ -787,8 +785,27 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 export function Room() {
   const { id = '' } = useParams();
   const { lobbies, synced } = useSession();
+  const { status, retry } = useServerStatus(ROOM_TIMEOUT_MS);
   const lobby = lobbies.find((l) => l.id === id);
   useDocumentTitle(t.room.meta(lobby?.name ?? t.room.goneTitle));
+
+  // Ao vivo, sem conexão ou sem a lista no prazo: falha com saída, não "Conectando" para sempre.
+  if (!lobby && !synced && status === 'failed') {
+    return (
+      <div className="room-gone">
+        <h1 className="display">{L.roomFail}</h1>
+        <p>{L.roomFailBody}</p>
+        <div className="room-gone-act">
+          <button type="button" className="btn btn-p" onClick={retry}>
+            {L.retry}
+          </button>
+          <Link to="/#lobbies" className="btn btn-g">
+            {L.seeLobbies}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   // Ao vivo, antes da primeira lista: ainda não dá para dizer que a sala sumiu.
   if (!lobby && !synced) {

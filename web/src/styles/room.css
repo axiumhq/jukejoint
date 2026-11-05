@@ -8,7 +8,7 @@
 
 /* a barra é fixa: o rodapé da coluna e o painel ganham folga para não ficar embaixo dela */
 .col:has(.room-page) > .foot {
-  padding-bottom: calc(var(--rbar-h, 92px) + 32px);
+  padding-bottom: calc(var(--rbar-h, 92px) + var(--sp-8));
 }
 
 /* a barra fixa mora dentro da sala: a sala fica acima do rodapé da coluna */
@@ -23,15 +23,15 @@ body:has(.rbar) .toasts {
 
 @media (min-width: 961px) {
   .frame:has(.rbar) > .rail {
-    padding-bottom: calc(var(--rbar-h, 92px) + 16px);
+    padding-bottom: calc(var(--rbar-h, 92px) + var(--sp-4));
   }
 }
 
 .room-page {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding-top: 4px;
+  gap: var(--sp-6);
+  padding-top: var(--sp-1);
 }
 
 /* ───────── Cabeçalho ───────── */
@@ -39,7 +39,7 @@ body:has(.rbar) .toasts {
 .rh {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
@@ -66,7 +66,7 @@ body:has(.rbar) .toasts {
 .rh-t {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
@@ -74,7 +74,7 @@ body:has(.rbar) .toasts {
   align-self: flex-start;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   border-radius: var(--r-xs);
   font-size: var(--fs-sm);
   line-height: 18px;
@@ -93,7 +93,7 @@ body:has(.rbar) .toasts {
 
 .rh h1 {
   font-size: var(--fs-h1);
-  line-height: 42px;
+  line-height: 46px;
   overflow-wrap: anywhere;
   text-wrap: balance;
 }
@@ -102,7 +102,7 @@ body:has(.rbar) .toasts {
   display: inline-block;
   width: 20px;
   height: 20px;
-  margin-left: 10px;
+  margin-left: var(--sp-3);
   vertical-align: 0.1em;
   color: var(--tx-3);
 }
@@ -111,7 +111,7 @@ body:has(.rbar) .toasts {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
+  gap: var(--sp-1) var(--sp-4);
   font-size: var(--fs-sm);
   line-height: 18px;
   color: var(--tx-2);
@@ -120,7 +120,7 @@ body:has(.rbar) .toasts {
 .rh-meta .who {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--sp-1);
 }
 
 .rh-meta .who .ico {
@@ -129,10 +129,11 @@ body:has(.rbar) .toasts {
   color: var(--acc);
 }
 
+/* "18 ms": a unidade em minúscula, como no resto do produto */
 .rh-meta .num {
   font-size: 0.9375rem;
   letter-spacing: 0.03em;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 /* ───────── Fase ───────── */
@@ -140,14 +141,14 @@ body:has(.rbar) .toasts {
 .rphase {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .rphase-h {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .rphase-n {
@@ -163,7 +164,7 @@ body:has(.rbar) .toasts {
 
 .rphase-steps {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .rphase-steps li {
@@ -171,7 +172,7 @@ body:has(.rbar) .toasts {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-2);
   font-size: var(--fs-xs);
   line-height: 16px;
   color: var(--tx-2);
@@ -204,14 +205,14 @@ body:has(.rbar) .toasts {
 .rseats {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 .rseats-h {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .rseats-h h2 {
@@ -220,13 +221,13 @@ body:has(.rbar) .toasts {
 
 .rseats-h .btn {
   --h: 28px;
-  padding: 0 8px;
+  padding: 0 var(--sp-2);
 }
 
 .seats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  gap: var(--sp-3);
 }
 
 .seat-li {
@@ -238,13 +239,13 @@ body:has(.rbar) .toasts {
   position: relative;
   flex: 1;
   min-width: 0;
-  min-height: 136px;
+  min-height: 88px;
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr);
   align-items: center;
-  gap: 14px;
-  padding: 12px;
-  border-radius: var(--r-lg);
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-xl);
   background: var(--s2);
   transition: box-shadow var(--t-mid) var(--e-out);
 }
@@ -272,7 +273,7 @@ body:has(.rbar) .toasts {
 .seat-t {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
@@ -280,7 +281,7 @@ body:has(.rbar) .toasts {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
@@ -304,7 +305,7 @@ body:has(.rbar) .toasts {
   display: inline-flex;
   align-items: center;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 var(--sp-1);
   border-radius: var(--r-2xs);
   background: var(--s3);
   font: 600 var(--fs-sm) / 1 var(--f-num);
@@ -321,7 +322,7 @@ body:has(.rbar) .toasts {
 .seat-s {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   font-size: var(--fs-xs);
   line-height: 16px;
   color: var(--tx-3);
@@ -347,7 +348,7 @@ body:has(.rbar) .toasts {
   right: 6px;
   top: 6px;
   height: 24px;
-  padding: 0 6px;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-xs);
   font-size: var(--fs-xs);
   color: var(--tx-3);
@@ -402,8 +403,8 @@ button.seat.is-empty:hover {
   display: none;
   width: 100%;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s2);
   text-align: left;
@@ -447,8 +448,9 @@ button.seat.is-empty:hover {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 12px 28px;
+  gap: var(--sp-6);
+  /* o texto da barra começa na mesma borda do conteúdo (lateral + margem) */
+  padding: var(--sp-3) var(--gut);
   background: var(--s2);
   box-shadow: inset 0 1px 0 var(--line);
 }
@@ -460,7 +462,7 @@ button.seat.is-empty:hover {
 .rb-main {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sp-4);
   min-width: 0;
 }
 
@@ -476,7 +478,7 @@ button.seat.is-empty:hover {
 .rb-txt {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--sp-2);
   min-width: 0;
 }
 
@@ -494,7 +496,7 @@ button.seat.is-empty:hover {
 .rb-ticks {
   display: flex;
   align-items: flex-end;
-  gap: 3px;
+  gap: var(--sp-1);
   height: 20px;
 }
 
@@ -529,15 +531,15 @@ button.seat.is-empty:hover {
 .rb-steps {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .rb-steps li {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   height: 28px;
-  padding: 0 10px;
+  padding: 0 var(--sp-3);
   border-radius: 14px;
   background: var(--s3);
   font-size: var(--fs-sm);
@@ -571,7 +573,7 @@ button.seat.is-empty:hover {
 .rb-act {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   flex: none;
 }
 
@@ -595,7 +597,7 @@ button.seat.is-empty:hover {
 
 .rb-go .btn {
   --h: 60px;
-  padding: 0 28px;
+  padding: 0 var(--sp-8);
   font-size: 1.125rem;
   letter-spacing: 0.02em;
 }
@@ -617,12 +619,12 @@ button.seat.is-empty:hover {
 /* o detalhe técnico da falha: sobe da barra, à direita */
 .rb-tech {
   position: absolute;
-  right: 28px;
-  bottom: calc(100% + 8px);
+  right: var(--gut);
+  bottom: calc(100% + var(--sp-2));
   width: min(520px, calc(100% - 56px));
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s2);
   box-shadow: var(--sh-pop);
@@ -638,7 +640,7 @@ button.seat.is-empty:hover {
 .rb-tech code {
   max-height: 160px;
   overflow: auto;
-  padding: 8px 10px;
+  padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-sm);
   background: var(--bg);
   font: 400 var(--fs-xs) / 16px var(--f-code);
@@ -649,15 +651,15 @@ button.seat.is-empty:hover {
 /* ───────── Painel da sala ───────── */
 
 .rroom-h {
-  margin-bottom: 10px;
+  margin-bottom: var(--sp-3);
   font-size: 1.5rem;
   line-height: 32px;
 }
 
 .rrules {
   display: grid;
-  gap: 2px;
-  padding-left: 18px;
+  gap: var(--sp-1);
+  padding-left: var(--sp-4);
   list-style: disc;
   font-size: var(--fs-sm);
   line-height: 18px;
@@ -672,14 +674,14 @@ button.seat.is-empty:hover {
 .rinv-link {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .rinv-in {
   flex: 1;
   min-width: 0;
   height: 36px;
-  padding: 0 10px;
+  padding: 0 var(--sp-3);
   border: 0;
   border-radius: var(--r-sm);
   background: var(--bg);
@@ -696,7 +698,7 @@ button.seat.is-empty:hover {
 .rinv-list {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 2px;
+  gap: var(--sp-1);
 }
 
 .rinv-list .btn {
@@ -710,7 +712,7 @@ button.seat.is-empty:hover {
 
 .rinv-out {
   display: grid;
-  gap: 10px;
+  gap: var(--sp-3);
   justify-items: start;
   font-size: var(--fs-sm);
   color: var(--tx-3);
@@ -718,12 +720,12 @@ button.seat.is-empty:hover {
 
 .rknocks {
   display: grid;
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .rknock {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .rknock p {
@@ -741,19 +743,19 @@ button.seat.is-empty:hover {
 
 .rknock-act {
   display: flex;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .ract {
   display: grid;
-  gap: 6px;
+  gap: var(--sp-2);
 }
 
 .ract-i {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--sp-3);
   font-size: var(--fs-sm);
   line-height: 18px;
   color: var(--tx-2);
@@ -774,9 +776,9 @@ button.seat.is-empty:hover {
 
 .ract-i .t {
   flex: none;
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
   letter-spacing: 0.03em;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--tx-3);
 }
 
@@ -791,18 +793,18 @@ button.seat.is-empty:hover {
 
 .room-wait {
   display: grid;
-  gap: 16px;
-  padding-top: 12px;
+  gap: var(--sp-4);
+  padding-top: var(--sp-3);
 }
 
 .room-wait h1 {
-  font-size: 2rem;
-  line-height: 40px;
+  font-size: var(--fs-h1);
+  line-height: 46px;
 }
 
 .room-skel {
-  min-height: 136px;
-  border-radius: var(--r-lg);
+  min-height: 88px;
+  border-radius: var(--r-xl);
 }
 
 .room-gone {
@@ -810,14 +812,14 @@ button.seat.is-empty:hover {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--sp-2);
   min-height: 60vh;
   text-align: center;
 }
 
 .room-gone h1 {
-  font-size: 2.5rem;
-  line-height: 48px;
+  font-size: var(--fs-h1);
+  line-height: 46px;
 }
 
 .room-gone p {
@@ -825,7 +827,7 @@ button.seat.is-empty:hover {
 }
 
 .room-gone .btn {
-  margin-top: 10px;
+  margin-top: var(--sp-3);
 }
 
 /* ───────── Pontos de quebra ───────── */
@@ -836,7 +838,7 @@ button.seat.is-empty:hover {
   }
 
   .rb-txt {
-    gap: 4px;
+    gap: var(--sp-1);
   }
 }
 
@@ -856,26 +858,46 @@ button.seat.is-empty:hover {
 
 @media (max-width: 760px) {
   .rbar {
-    gap: 16px;
-    padding: 12px 16px;
+    gap: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
   }
 
   .rb-steps li {
     height: 24px;
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
     font-size: var(--fs-xs);
+  }
+}
+
+/* toque: voltar, remover, o campo do convite e os botões pequenos chegam a 44 px (--hit) */
+@media (max-width: 760px), (pointer: coarse) {
+  .rh-back,
+  .seat-kick,
+  .seats .seat .seat-kick,
+  .rinv-in {
+    min-height: var(--hit, 44px);
+  }
+
+  .rh-back {
+    align-self: flex-start;
+  }
+
+  .rseats-h .btn,
+  .rail-sec .rinv-list .btn-sm,
+  .rknock-act .btn-sm {
+    --h: var(--hit, 44px);
   }
 }
 
 /* celular (Sala-Mobile): cabeçalho curto, vagas em duas colunas sem avatar, barra empilhada */
 @media (max-width: 640px) {
   .room-page {
-    gap: 10px;
+    gap: var(--sp-3);
     padding-top: 0;
   }
 
   .rh {
-    gap: 10px;
+    gap: var(--sp-3);
   }
 
   .rh-art {
@@ -895,7 +917,7 @@ button.seat.is-empty:hover {
   }
 
   .rh-meta {
-    gap: 2px 10px;
+    gap: var(--sp-1) var(--sp-3);
     font-size: var(--fs-xs);
     line-height: 16px;
   }
@@ -914,7 +936,7 @@ button.seat.is-empty:hover {
   }
 
   .rphase {
-    gap: 4px;
+    gap: var(--sp-1);
   }
 
   .rphase-h {
@@ -922,7 +944,7 @@ button.seat.is-empty:hover {
   }
 
   .rphase-steps {
-    gap: 4px;
+    gap: var(--sp-1);
   }
 
   .rphase-steps span {
@@ -934,7 +956,7 @@ button.seat.is-empty:hover {
   }
 
   .rseats {
-    gap: 8px;
+    gap: var(--sp-2);
   }
 
   .rseats-h h2 {
@@ -944,7 +966,7 @@ button.seat.is-empty:hover {
 
   .seats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    gap: var(--sp-2);
   }
 
   .seat {
@@ -954,7 +976,7 @@ button.seat.is-empty:hover {
     align-items: stretch;
     gap: 0;
     min-height: 56px;
-    padding: 6px 10px;
+    padding: var(--sp-2) var(--sp-3);
     border-radius: var(--r-md);
   }
 
@@ -979,13 +1001,13 @@ button.seat.is-empty:hover {
   .rbar {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: var(--sp-2);
     min-height: 0;
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom));
   }
 
   .rb-main {
-    gap: 12px;
+    gap: var(--sp-3);
   }
 
   .rb-cd {
@@ -1015,7 +1037,7 @@ button.seat.is-empty:hover {
   .rb-go .btn,
   .rb-act > .btn-o:only-child {
     flex: 1;
-    padding: 0 16px;
+    padding: 0 var(--sp-4);
     font-size: var(--fs-md);
   }
 
@@ -1050,7 +1072,7 @@ button.seat.is-empty:hover {
 /* live.css também desenha os pedidos e o Remover: aqui valem os do design */
 .rknocks .rknock {
   grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
+  gap: var(--sp-2);
   padding: 0;
   background: none;
   box-shadow: none;
@@ -1059,7 +1081,7 @@ button.seat.is-empty:hover {
 .rknocks .rknock-act {
   grid-column: auto;
   justify-content: flex-start;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .seat .seat-kick {
@@ -1067,7 +1089,7 @@ button.seat.is-empty:hover {
   right: 6px;
   bottom: auto;
   height: 24px;
-  padding: 0 6px;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-xs);
 }
 
@@ -1109,7 +1131,7 @@ button.seat.is-empty:hover {
 .qp-page {
   display: grid;
   justify-items: center;
-  padding-top: 32px;
+  padding-top: var(--sp-8);
 }
 
 .qp {
@@ -1149,14 +1171,14 @@ button.seat.is-empty:hover {
   position: relative;
   z-index: 2;
   display: grid;
-  gap: 18px;
+  gap: var(--sp-4);
   margin-top: -44px;
-  padding: 0 24px 22px;
+  padding: 0 var(--sp-6) var(--sp-6);
 }
 
 .qp-h {
   display: grid;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 .qp-h h1 {
@@ -1165,15 +1187,15 @@ button.seat.is-empty:hover {
 
 .qp-steps {
   display: grid;
-  gap: 8px;
-  font-size: 0.8125rem;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
   color: var(--tx-3);
 }
 
 .qp-step {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--sp-3);
   transition: color var(--t-mid);
 }
 
@@ -1222,8 +1244,8 @@ button.seat.is-empty:hover {
 .qp-found {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 16px;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
   background: linear-gradient(180deg, var(--acc-soft), transparent 80%), var(--s1);
   box-shadow: 0 0 0 1px var(--acc-line) inset;
@@ -1232,14 +1254,14 @@ button.seat.is-empty:hover {
 
 .qp-found-t {
   display: grid;
-  gap: 4px;
+  gap: var(--sp-1);
   flex: 1;
   min-width: 0;
 }
 
 .qp-found-t b {
-  font-size: 1.0625rem;
-  font-weight: 650;
+  font-size: var(--fs-lg);
+  font-weight: 600;
   letter-spacing: -0.015em;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1250,7 +1272,7 @@ button.seat.is-empty:hover {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 2px 9px;
+  gap: var(--sp-1) var(--sp-2);
   font-size: 0.75rem;
   color: var(--tx-2);
 }
@@ -1265,8 +1287,8 @@ button.seat.is-empty:hover {
 .qp-why {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
 }
 
 .qp-why .tag {
@@ -1275,8 +1297,8 @@ button.seat.is-empty:hover {
 
 .qp-none {
   display: grid;
-  gap: 4px;
-  padding: 14px 16px;
+  gap: var(--sp-1);
+  padding: var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--s1);
   box-shadow: 0 0 0 1px var(--line) inset;
@@ -1289,14 +1311,14 @@ button.seat.is-empty:hover {
 
 .qp-none p {
   color: var(--tx-2);
-  font-size: 0.78125rem;
+  font-size: var(--fs-sm);
 }
 
 .qp-act {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 10px;
+  gap: var(--sp-3);
 }
 
 @media (max-width: 640px) {
@@ -1305,7 +1327,7 @@ button.seat.is-empty:hover {
   }
 
   .qp-body {
-    padding: 0 16px 18px;
+    padding: 0 var(--sp-4) var(--sp-4);
   }
 
   .qp-h h1 {

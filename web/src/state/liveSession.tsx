@@ -59,14 +59,14 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   // No app desktop o cookie da API não viaja: a sessão é um token Bearer (lib/appAuth.ts).
   const token = useRef<string | null>(IN_DESKTOP ? loadToken() : null);
 
+  const reconnect = useCallback(() => client.current?.reconnect(), []);
   const dismissToast = useCallback((id: number) => setToasts((list) => list.filter((x) => x.id !== id)), []);
   const pushToast = useCallback(
     (message: string) => {
       const id = ++toastId.current;
       setToasts((list) => [...list.slice(-2), { id, message }]);
-      window.setTimeout(() => dismissToast(id), 5200);
     },
-    [dismissToast],
+    [],
   );
 
   // Dentro do app desktop, "app aberto" vem dele; fora, é o botão de simulação da /instalar.
@@ -458,6 +458,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
     () => ({
       live: true,
       connection,
+      reconnect,
       synced: state.synced,
       devLogin,
       signInDev,
@@ -523,6 +524,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
     }),
     [
       connection,
+      reconnect,
       devLogin,
       signInDev,
       authPending,
