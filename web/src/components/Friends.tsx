@@ -118,7 +118,7 @@ function Party() {
     <section className="rail-sec rail-party" aria-labelledby="rail-party">
       <div className="rail-h">
         <h2 className="cap" id="rail-party">
-          {t.social.party} · <b>1/5</b>
+          {t.social.party} · <b>1 de 5</b>
         </h2>
         <button
           type="button"
