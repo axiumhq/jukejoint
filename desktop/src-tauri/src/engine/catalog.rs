@@ -19,7 +19,7 @@ pub const BESIDE_APP_DIR: &str = "modos";
 /// O projeto de teste (o `hello` do spike).
 pub const TEST_PROJECT: &str = "hello";
 /// Os projetos dos modos de verdade, que o app empacotado leva em `modos` (ver `build-live.mjs`).
-pub const REAL_PROJECTS: &[&str] = &["duelo-meia-noite"];
+pub const REAL_PROJECTS: &[&str] = &["duelo-meia-noite", "campo-de-treino"];
 
 /// Um modo que o app sabe hospedar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,14 +32,14 @@ pub struct ModeEntry {
 }
 
 /// Os modos do site (`web/src/data/modes.ts`, os mesmos de `server/internal/lobby/lobby.go`).
-/// Só o Duelo à Meia-Noite tem projeto próprio; os outros abrem o projeto de teste.
+/// O Duelo à Meia-Noite e o Campo de Treino têm projeto próprio; os outros abrem o projeto de teste.
 pub const MODES: &[ModeEntry] = &[
     ModeEntry { slug: "circulo-profano", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "ultimo-bonde", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "neblina", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "duelo-meia-noite", project: "duelo-meia-noite", test: false },
     ModeEntry { slug: "cerco-ao-cofre", project: TEST_PROJECT, test: true },
-    ModeEntry { slug: "campo-de-treino", project: TEST_PROJECT, test: true },
+    ModeEntry { slug: "campo-de-treino", project: "campo-de-treino", test: false },
 ];
 
 /// Slug de modo como o site manda: `[a-z0-9]` e hífens simples, de 1 a 64, começando e
@@ -233,23 +233,27 @@ mod tests {
     }
 
     #[test]
-    fn the_duel_opens_its_own_project_and_the_rest_open_the_test_one() {
+    fn real_modes_open_their_own_project_and_the_rest_open_the_test_one() {
         let root = tmp_root("ok");
         let cat = Catalog::new(Some((root.clone(), ENV_PROJECTS_DIR)));
         for m in MODES {
             let r = cat.resolve(&ModeSlug::parse(m.slug).unwrap()).unwrap();
             assert!(r.dir.starts_with(root.canonicalize().unwrap()));
-            if m.slug == "duelo-meia-noite" {
-                assert!(!r.test);
-                assert!(r.dir.ends_with("duelo-meia-noite"));
+            assert_eq!(r.test, m.test, "{}", m.slug);
+            if m.test {
+                assert!(r.dir.ends_with(TEST_PROJECT), "{}", m.slug);
             } else {
-                assert!(r.test);
-                assert!(r.dir.ends_with(TEST_PROJECT));
+                assert_eq!(m.project, m.slug, "um modo de verdade abre a pasta com o nome dele");
+                assert!(r.dir.ends_with(m.slug), "{}", m.slug);
             }
+        }
+        for real in ["duelo-meia-noite", "campo-de-treino"] {
+            assert!(MODES.iter().any(|m| m.slug == real && !m.test), "{real} deveria ser de verdade");
         }
         let c = cat.check();
         assert!(!c.test_mode && c.test_project_ok);
-        assert!(!c.test_slugs.contains(&"duelo-meia-noite") && c.test_slugs.len() == MODES.len() - 1);
+        let expected: Vec<&str> = MODES.iter().filter(|m| m.test).map(|m| m.slug).collect();
+        assert_eq!(c.test_slugs, expected);
         std::fs::remove_dir_all(&root).unwrap();
     }
 
