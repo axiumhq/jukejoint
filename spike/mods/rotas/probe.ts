@@ -1,11 +1,12 @@
 // O autoteste das Rotas, no servidor do jogo. Iniciado com o argumento probe
 // (`modlock dev --no-game --arg probe`), o modo põe um bot perto das caixas da lane em
-// dl_midtown, roda /caixas para ele e tira as caixas na ordem do plano: o damage da SDK recusa
-// props, e a caixa não tem a entrada Break, então o autoteste usa a entrada Kill, que tira a
-// entidade do mapa como uma caixa quebrada. Confere que cada uma sai da lista e que o tempo fecha.
+// dl_midtown, roda /caixas para ele e quebra as caixas na ordem do plano com a arma do bot
+// (drive com o tiro apertado, mirando na caixa): o damage da SDK recusa props e a caixa não tem
+// a entrada Break. A caixa que não quebra a tiro sai com a entrada Kill. Confere que cada uma
+// sai da lista e que o tempo fecha.
 // Depois grava uma rota levando o bot por três pernas, salva, corre por ela mais rápido e
 // confere o tempo. No fim apaga a rota do autoteste e sai com PASS ou FAIL.
-import { addBot, fireInput, ground, heroes, log, type Player, ProbeRun, readField, readFile, writeFile } from 'modlock'
+import { addBot, Buttons, entityPosition, fireInput, ground, heroes, log, type Player, ProbeRun, readField, readFile, trace, vector, writeFile } from 'modlock'
 
 import { comprimento, distancia, interpola, type Ponto } from './comum'
 import { arquivoDoMapa, escreveArquivo } from './percurso'
@@ -45,9 +46,19 @@ export class Probe {
   private chave = ''
   private total = 0
   private batida: { id: number; em: number; kill: boolean } | undefined
-  private porBreak = 0
+  private porTiro = 0
   private porKill = 0
-  private breakRecusado = false
+  private tirosFalhos = 0
+  private ficaramNoMapa = 0
+  private diagnosticou = false
+  private readonly golpes = { total: 0, vitimas: new Map<number, number>(), naCaixa(id: number) { return this.vitimas.get(id) ?? 0 } }
+
+  /** Cada golpe que o jogo aplicou, para saber se o tiro do bot chega na caixa. */
+  golpe(vitima: number, atacante: number): void {
+    if (atacante !== this.bot?.pawn()?.entity) return
+    this.golpes.total += 1
+    this.golpes.vitimas.set(vitima, (this.golpes.vitimas.get(vitima) ?? 0) + 1)
+  }
   private caminho: Ponto[] = []
   private iniciado = false
 
@@ -120,44 +131,60 @@ export class Probe {
         const s = estado.sessoes.get(this.bot!.slot)!
         const proxima = s.caixas?.corrida.proxima()
         if (this.batida && this.batida.id !== proxima?.caixa.id) {
-          // O modo já tirou da lista a caixa batida: ela sumiu do mapa.
+          // O modo já tirou da lista a caixa batida. Se foi a tiro, vê se a entidade ficou no mapa
+          // (então quem avisou foi o propBroken) ou sumiu.
           if (this.batida.kill) this.porKill += 1
-          else this.porBreak += 1
+          else {
+            this.porTiro += 1
+            if (entityPosition(this.batida.id) !== undefined) this.ficaramNoMapa += 1
+          }
           this.batida = undefined
           this.desde = agora
         }
         if (!s.caixas) {
+          this.bot!.drive()
           const tempo = estado.recordesDeCaixas.melhor(`Bot Rotas|${this.chave}`)
           // Uma caixa que some junto com a vizinha conta no total, mas não foi batida.
-          log('caixas quebradas', this.total, 'por Break', this.porBreak, 'por Kill', this.porKill, 'sem batida', this.total - this.porBreak - this.porKill, 'tempo', tempo?.toFixed(2))
+          log('caixas quebradas', this.total, 'a tiro', this.porTiro, 'por Kill', this.porKill, 'sem batida', this.total - this.porTiro - this.porKill, 'ficaram no mapa depois do tiro', this.ficaramNoMapa, 'propBroken', estado.anunciadas, 'tempo', tempo?.toFixed(2))
           if (tempo === undefined || !(tempo > 0)) return `a rota de caixas terminou sem tempo (${tempo})`
+          if (this.porTiro === 0) log('nenhuma caixa quebrou a tiro: só o Kill provou a contagem')
           return this.comecaGravacao(agora)
         }
         if (!proxima) return false
-        const id = proxima.caixa.id
+        const { id, p: alvo } = proxima.caixa
         if (!this.batida) {
-          if (agora - this.desde < 0.25) return false
-          // O damage da SDK recusa props (o cliente cai com o dano neles); a entrada Break quebra
-          // a caixa como um golpe faria. Se ela não sumir, Kill tira a entidade do mapa.
-          // No servidor v0.1.73 a caixa não tem a entrada Break: depois da primeira recusa, o
-          // autoteste vai direto ao Kill.
-          const usaKill = this.breakRecusado
-          const ok = fireInput(id, usaKill ? 'Kill' : 'Break')
+          if (agora - this.desde < 0.2) return false
+          // O damage da SDK recusa props e a caixa não tem a entrada Break: o bot atira nela, como
+          // uma pessoa. Se três caixas seguidas não quebram a tiro, o resto sai com Kill.
+          const usaKill = this.tirosFalhos >= 3 && this.porTiro === 0
+          if (usaKill) fireInput(id, 'Kill')
+          else {
+            const aqui = this.bot!.pawn()?.position ?? alvo
+            const longe = Math.max(1, Math.hypot(aqui.x - alvo.x, aqui.y - alvo.y))
+            const lado = { x: alvo.x + ((aqui.x - alvo.x) / longe) * 220, y: alvo.y + ((aqui.y - alvo.y) / longe) * 220, z: alvo.z + 100 }
+            this.bot!.teleport(ground(lado, { above: 64, below: 512 }) ?? { ...lado, z: alvo.z }, { pitch: 0, yaw: 0, roll: 0 }, { x: 0, y: 0, z: 0 })
+          }
           this.batida = { id, em: agora, kill: usaKill }
-          if (!ok && !usaKill) {
-            this.breakRecusado = true
-            log('Break recusado na caixa', id, '- as próximas vão por Kill')
+          return false
+        }
+        if (!this.batida.kill) {
+          const pawn = this.bot!.pawn()
+          if (pawn) this.bot!.drive({ facing: vector.aimAt(pawn.eyePosition, { x: alvo.x, y: alvo.y, z: alvo.z + 25 }), forward: 0, left: 0, held: Buttons.attack, pressed: 0n })
+          if (pawn && !this.diagnosticou && agora - this.batida.em > 2) {
+            this.diagnosticou = true
+            const linha = trace({ start: pawn.eyePosition, end: { x: alvo.x, y: alvo.y, z: alvo.z + 25 }, ignore: [pawn.entity] })
+            log('diagnóstico caixa', id, 'trace acerta', linha?.entity, 'em', Math.round(distancia(pawn.eyePosition, linha?.position ?? pawn.eyePosition)), 'de', Math.round(distancia(pawn.eyePosition, alvo)), 'botões', String(this.bot!.buttons()), 'golpes do bot', this.golpes.total, 'golpes na caixa', this.golpes.naCaixa(id))
+          }
+          if (agora - this.batida.em > 4) {
+            this.tirosFalhos += 1
+            log('caixa', id, 'não quebrou a tiro em 4 s; tirando com Kill')
+            this.bot!.drive()
+            fireInput(id, 'Kill')
+            this.batida = { id, em: agora, kill: true }
           }
           return false
         }
-        // Quem confere se a caixa sumiu é o próprio modo, que a tira da lista.
-        if (!this.batida.kill && agora - this.batida.em > 0.6) {
-          log('caixa', id, 'ficou depois do Break; tentando Kill')
-          fireInput(id, 'Kill')
-          this.batida = { id, em: agora, kill: true }
-          return false
-        }
-        if (agora - this.batida.em > 2) return `a caixa ${id} não sumiu nem com Break nem com Kill`
+        if (agora - this.batida.em > 2) return `a caixa ${id} não sumiu nem a tiro nem com Kill`
         return false
       }
       case 'gravar': {

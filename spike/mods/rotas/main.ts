@@ -5,7 +5,7 @@
 //
 // Comandos no chat: /caixas [raio], /parar, /gravar, /fim, /correr [nome], /salvar <nome>,
 // /rotas e /ajuda.
-import { command, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld } from 'modlock'
+import { command, onDamaged, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld } from 'modlock'
 
 import { drawHud, esqueceHud } from './hud'
 import { Probe } from './probe'
@@ -22,6 +22,7 @@ onPlayerLeave((e) => {
   saiu(e.connection.player)
   esqueceHud(e.connection.player.slot)
 })
+onDamaged((hit) => probe?.golpe(hit.victim, hit.attacker))
 onFrame((f) => {
   quadro(f.timeSeconds, f.movement)
   drawHud()

@@ -55,7 +55,7 @@ A faixa do topo (`hud.tsx`) mostra o que está rodando: caixas quebradas e reló
 
 ## Rotas salvas
 
-As rotas ficam em `rotas-<mapa>.json` pela API de arquivos da SDK (`readFile` e `writeFile`), até 50 por mapa, cada uma com o recorde e quem o fez. O host guarda esses arquivos fora do mod (`--files %APPDATA%\modlock\files`), e eles sobrevivem a um servidor novo: o autoteste grava um contador em `autoteste.txt`, e três execuções seguidas contaram 1, 2 e 3, cada uma lendo o número da anterior. Se o host recusar a escrita, o chat avisa que a rota vale só até o servidor fechar, e ela continua valendo na memória. Os recordes de caixas não vão para arquivo: são desta sessão.
+As rotas ficam em `rotas-<mapa>.json` pela API de arquivos da SDK (`readFile` e `writeFile`), até 50 por mapa, cada uma com o recorde e quem o fez. O host guarda esses arquivos fora do mod (`--files %APPDATA%\modlock\files`), e eles sobrevivem a um servidor novo: o autoteste grava um contador em `autoteste.txt`, e seis execuções seguidas contaram de 1 a 6, cada uma lendo o número da anterior. Se o host recusar a escrita, o chat avisa que a rota vale só até o servidor fechar, e ela continua valendo na memória. Os recordes de caixas não vão para arquivo: são desta sessão.
 
 ## Testar
 
@@ -78,15 +78,17 @@ node ..\..\..\web\node_modules\typescript\bin\tsc -p tsconfig.json
 ..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe
 ```
 
-O autoteste põe um bot no trecho de lane em (-1000, -3000), roda `/caixas` para ele e confere que o plano não sai pior que a ordem do mapa e que cada caixa ganhou a marca. Depois tira as caixas na ordem do plano e confere que o tempo fecha e vira recorde. Em seguida grava uma rota levando o bot por três pernas a 600 unidades/s, salva, corre por ela a 800 unidades/s e confere que a corrida termina mais rápido que a gravação. No fim, apaga a rota do autoteste do arquivo.
+O autoteste põe um bot no trecho de lane em (-1000, -3000), roda `/caixas` para ele e confere que o plano não sai pior que a ordem do mapa e que cada caixa ganhou a marca. Depois vai de caixa em caixa na ordem do plano: põe o bot a 220 unidades e atira nela (`drive` com o tiro apertado, mirando do olho do bot). A caixa que não quebra em 4 segundos sai com a entrada `Kill`; depois de três seguidas sem quebrar a tiro, o resto vai direto por `Kill`. Confere que o tempo fecha e vira recorde. Em seguida grava uma rota levando o bot por três pernas a 600 unidades/s, salva, corre por ela a 800 unidades/s e confere que a corrida termina mais rápido que a gravação. No fim, apaga a rota do autoteste do arquivo.
 
-Rodou em 05/11/2026 no servidor do Modlock v0.1.73, mapa `dl_midtown`: **PASS** em cerca de 24 segundos. 30 caixas no raio; caminho planejado de 12 645 unidades, contra 13 981 do vizinho mais próximo sozinho e 54 072 da ordem do mapa; 30 marcas criadas; as 30 caixas tiradas na ordem, tempo 9,52 s. A rota de movimento mediu 2282 unidades (2300 esperadas), 5 pontos, gravação de 3,24 s; a corrida fechou em 2,44 s.
+Rodou em 05/11/2026 no servidor do Modlock v0.1.73, mapa `dl_midtown`: **PASS** em cerca de 31 segundos. 30 caixas no raio; caminho planejado de 12 694 unidades, contra 13 981 do vizinho mais próximo sozinho e 58 203 da ordem do mapa (essa muda a cada execução, porque segue os handles das entidades); 30 marcas criadas; as 30 caixas tiradas na ordem, sem nenhuma fora da ordem, tempo 14,44 s. A rota de movimento mediu 2411 unidades (2300 esperadas), 5 pontos, gravação de 3,22 s; a corrida fechou em 2,44 s.
 
 No jogo, com o Deadlock fechado: `modlock dev --watch` nesta pasta abre o jogo num servidor local.
 
 ## O que o autoteste mostrou sobre a SDK
 
-- `damage` recusa props (a SDK diz que o cliente cai com o dano neles), e `citadel_breakable_prop` não tem a entrada `Break`. Por isso o autoteste tira as caixas com a entrada `Kill`, que remove a entidade. Isso prova a contagem por sumiço, o plano, as marcas e o relógio, mas não prova que uma caixa **quebrada no jogo** some do mapa do mesmo jeito.
+- `damage` recusa props (a SDK diz que o cliente cai com o dano neles), e `citadel_breakable_prop` não tem a entrada `Break` ("has no input Break").
+- O tiro do bot não chegou nas caixas no servidor sem jogo: com o tiro apertado e a mira na caixa, o jogo não registrou nenhum golpe do bot (`onDamaged`), nenhum `propBroken`, e um `trace` do olho do bot até a caixa não acerta nada (a caixa não responde às camadas padrão do trace). Nenhuma das 30 quebrou a tiro.
+- Por isso as caixas saíram com a entrada `Kill`, que remove a entidade. Isso prova a contagem por sumiço, o plano, as marcas e o relógio, mas não prova que uma caixa **quebrada no jogo** some do mapa do mesmo jeito.
 - `m_iHealth` da caixa lê 0 mesmo de pé, então a vida não diz se a caixa quebrou. O modo não usa esse campo.
 - Perguntar a posição de uma caixa que sumiu deixa uma linha "no live entity has that handle" no log do host, uma por caixa.
 - `writeFile` funciona no `modlock dev` e o arquivo sobrevive entre execuções.
@@ -99,5 +101,6 @@ No jogo, com o Deadlock fechado: `modlock dev --watch` nesta pasta abre o jogo n
 - Se as caixas voltam depois de quebradas e em quanto tempo. Se voltarem, a rota seguinte pega as novas sem problema.
 - Se os números no mundo ficam legíveis a 2500 unidades, e se a altura de 70 acima da caixa é boa.
 - Se as ações de movimento (deslize, pulo com dash, tirolesa) chegam em `FrameEvent.movement` como a SDK descreve: o bot do autoteste é teleportado e não anuncia nenhuma.
+- Se o tiro e o golpe de uma pessoa quebram as caixas e geram o `propBroken` (no servidor sem jogo, o tiro do bot não acertou nenhuma).
 - Se 150 unidades de partida e 200 de toque são justos com heróis rápidos e lentos.
 - Se a escolha de herói do jogo abre normalmente com este modo rodando.

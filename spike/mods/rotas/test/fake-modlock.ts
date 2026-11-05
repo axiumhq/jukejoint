@@ -163,6 +163,8 @@ export const entityPosition = (id: number) => {
   return e ? { position: { ...e.p }, facing: { pitch: 0, yaw: 0, roll: 0 } } : undefined
 }
 export const removeEntities = () => 0
+export const onDamaged = () => {}
+export const trace = () => undefined
 export const createText = (options: { text: string; position: P }) => {
   if (world.refuseTexts) return undefined
   const t = new FakeText(options)
@@ -184,6 +186,8 @@ export const fireInput = () => false
 export const readField = () => undefined
 export const ground = (p: P) => p
 export class ProbeRun { tick() {} }
+export const Buttons = { attack: 1n }
+export const vector = { aimAt: () => ({ pitch: 0, yaw: 0, roll: 0 }) }
 
 // HUD: show guarda a última árvore de cada pessoa; os componentes são marcadores simples.
 export const show = (p: FakePlayer, root: unknown) => { p.ui = root; return true }

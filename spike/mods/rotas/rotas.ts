@@ -145,6 +145,8 @@ export const estado = {
   arquivo: { versao: 1, rotas: {} } as ArquivoDeRotas,
   /** persiste diz se o último writeFile deu certo; undefined antes de tentar. */
   persiste: undefined as boolean | undefined,
+  /** anunciadas conta os avisos propBroken do jogo, de quem tem rota de caixas. */
+  anunciadas: 0,
 }
 
 function nomeDe(player: Player): string {
@@ -455,7 +457,12 @@ export function quadro(t: number, movimento: readonly MovementSample[]): void {
     const s = estado.sessoes.get(amostra.player.slot)
     if (!s) continue
     if (s.gravacao) for (const a of amostra.actions) if (eTecnica(a)) s.gravacao.acoes.push({ t, acao: a })
-    if (s.caixas) for (const i of amostra.interactions) if (i.kind === 'propBroken') s.caixas.quebradasAgora.push(i.entity)
+    if (s.caixas)
+      for (const i of amostra.interactions)
+        if (i.kind === 'propBroken') {
+          s.caixas.quebradasAgora.push(i.entity)
+          estado.anunciadas += 1
+        }
   }
   for (const s of estado.sessoes.values()) {
     if (s.caixas) passoDasCaixas(s, t)
