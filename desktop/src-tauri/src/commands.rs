@@ -32,7 +32,7 @@ pub fn app_info() -> AppInfo {
     AppInfo {
         name: BRAND_NAME,
         scheme: SLUG,
-        version: env!("CARGO_PKG_VERSION"),
+        version: env!("APP_VERSION"),
         modlock_version: MODLOCK_VERSION,
         api_url: auth::api_url(),
         dev: tauri::is_dev(),

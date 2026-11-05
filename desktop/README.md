@@ -273,10 +273,21 @@ pelo navegador), e zipa tudo em `desktop/out/Jukejoint.zip` (o `tar.exe` do Wind
 `modlock.exe` e a pasta `modos\` são procurados ao lado do executável, então a pasta funciona como
 está.
 
+## Atualizações e instalador de release
+
+O workflow de release gera um instalador NSIS e o pacote assinado do updater. O app consulta a
+release mais recente ao abrir, baixa a atualização em segundo plano e oferece **Reiniciar e
+atualizar** quando termina. A instalação é passiva e reabre o app. Para publicar, cadastre no
+GitHub Actions o secret `TAURI_SIGNING_PRIVATE_KEY` com o conteúdo de `tools/jukejoint-updater.key`;
+essa chave privada não entra no git e precisa ser guardada em backup. A senha da chave é vazia, então
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` pode ficar sem valor.
+
+As versões instaladas pelo Inno Setup antigo não têm o código do updater e ficam em outra pasta.
+Desinstale essa versão e instale manualmente o novo `*-windows-x64-setup.exe` uma vez; as releases
+seguintes atualizam pelo próprio app.
+
 ## Ainda não feito
 
-- **Instalador** (NSIS/WiX), que também registraria o esquema do link e colocaria o `modlock.exe`
-  ao lado do app (`bundle.externalBin`).
 - **Assinatura de código** do executável (reduz os alertas do SmartScreen e de antivírus; a
   pasta do `build:live` avisa no LEIA-ME que o Windows pode reclamar).
 - **Login a frio:** um `jukejoint://auth/...` que abre o app do zero é ignorado (o verifier era da
@@ -284,7 +295,6 @@ está.
 - **Teste do login com a Steam de verdade** no exe (`build:live` + servidor com
   `WEB_ORIGIN=http://tauri.localhost`): o caminho foi montado e conferido em partes (link, URL,
   CSP), não ponta a ponta.
-- **Atualização automática** do app.
 - **`/bridge.html` no nosso domínio** para `--ui-relay`: até lá a UI dentro do jogo fica
   desligada (`--ui-port 0`).
 - **`publish`** do `EngineAdapter` e a fase 2 (sidecar Go com eventos protobuf).

@@ -74,6 +74,10 @@ pub struct EngineConfig {
 
 impl EngineConfig {
     pub fn from_env() -> Self {
+        Self::from_env_with_resources(None)
+    }
+
+    pub fn from_env_with_resources(resource_dir: Option<&Path>) -> Self {
         let exe_dir = std::env::current_exe().ok().and_then(|p| p.parent().map(Path::to_path_buf));
         // Só em build de desenvolvimento: a pasta tools/ do repositório (fora do git).
         let dev_tools = cfg!(debug_assertions).then(|| {
@@ -84,7 +88,17 @@ impl EngineConfig {
                 .join(format!("modlock-{MODLOCK_VERSION}"))
                 .join("modlock.exe")
         });
-        let env = |k: &str| std::env::var(k).ok();
+        let env = |k: &str| {
+            std::env::var(k).ok().or_else(|| {
+                let asset = match k {
+                    ENV_BIN => resource_dir.map(|d| d.join("modlock.exe")),
+                    catalog::ENV_PROJECTS_DIR => resource_dir.map(|d| d.join("modos")),
+                    _ => None,
+                }?;
+                let exists = if k == ENV_BIN { asset.is_file() } else { asset.is_dir() };
+                exists.then(|| asset.to_string_lossy().into_owned())
+            })
+        };
         let mut cfg = Self::resolve(&env, exe_dir.as_deref(), dev_tools, Some(BUILD_ORIGIN));
         // Só em build de desenvolvimento: sem ENGINE_PROJECTS_DIR, os projetos vêm de spike/mods.
         let dev_mods = cfg!(debug_assertions).then(|| Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..").join("spike").join("mods"));
