@@ -1,11 +1,16 @@
-PROPRIETARY SOFTWARE NOTICE
+PROPRIETARY SOURCE CODE NOTICE
 
 Copyright in each part of this project remains with its respective rights holder.
 
-This repository and its contents are made available for public inspection only.
-No license is granted to use, copy, modify, create derivative works from,
-distribute, sublicense, or sell any part of this software without prior written
-permission from the applicable copyright holder.
+The source code in this repository is made available for public inspection and
+release transparency. This notice does not grant permission to copy, modify,
+create derivative works from, distribute, sublicense, or sell the source code
+without prior written permission from the applicable copyright holder.
+
+The Jukejoint app is free to download and use. Some app features may require a
+paid subscription. Permission to use the app does not grant permission to reuse
+its source code. App access and subscription terms are separate from this
+source code notice.
 
 Submitting a contribution is subject to the terms in CONTRIBUTING.md. Third-party
 components remain subject to their own licenses, which are not replaced by this

@@ -17,7 +17,7 @@
 
 The game runs on the lobby host's computer. Other players connect directly over P2P. Jukejoint's API handles sign-in, lobby listings, and the signaling players need to find each other. The app uses [Modlock](https://github.com/paralin/modlock), pinned to a specific version and verified by SHA-256.
 
-> Jukejoint is proprietary software. Its source code is public for inspection and release transparency. Making this repository public does not grant permission to use, modify, or redistribute the software. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).
+> Jukejoint is proprietary software. Its source code is public for inspection and release transparency; this does not grant permission to copy, modify, or redistribute the source code. The app is free to download and use, though some features may require a paid subscription. See [LICENSE](LICENSE) for source code terms and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution terms.
 
 Jukejoint is not affiliated with Valve. Deadlock is a trademark of Valve Corporation.
 
