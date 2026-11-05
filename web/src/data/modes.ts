@@ -186,7 +186,7 @@ export const modes: Mode[] = [
     name: 'Campo de Treino',
     tagline: 'Todos os itens liberados, bots no seu ritmo e nenhum placar olhando.',
     description: [
-      'Um mapa aberto para testar heróis e combinações de itens sem pressão. Todos os itens liberados, cooldowns opcionais e bots com dificuldade ajustável.',
+      'Um mapa aberto para testar heróis e combinações de itens sem pressão. Todos os itens liberados, cooldowns opcionais e bots que ficam parados, andam ou atacam, como você escolher.',
       'Funciona sozinho ou com amigos. É também o modo usado em "Jogar com bots".',
     ],
     rules: [
