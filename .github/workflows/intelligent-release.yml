@@ -16,7 +16,7 @@ on:
       dry_run:
         description: Analyze without creating a release or tag
         type: boolean
-        default: true
+        default: false
       direct_impact:
         description: Optional override for an ambiguous batch of direct commits
         type: choice
@@ -38,7 +38,7 @@ jobs:
       baseline_version: '0.0.0'
       stabilization_seconds: ${{ inputs.stabilization_seconds }}
       force: ${{ inputs.force || false }}
-      dry_run: ${{ github.event_name == 'push' || inputs.dry_run }}
+      dry_run: ${{ inputs.dry_run || false }}
       direct_impact: ${{ inputs.direct_impact || 'auto' }}
     secrets:
       CI_APP_ID: ${{ secrets.CI_APP_ID }}

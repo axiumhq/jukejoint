@@ -1,0 +1,70 @@
+name: release desktop app
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing release tag to attach the Windows build to
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-desktop-${{ github.event.release.tag_name || inputs.release_tag }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Build Windows download
+    runs-on: windows-2025
+    timeout-minutes: 60
+    env:
+      RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+          persist-credentials: false
+
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+
+      - name: Set up Rust
+        # actions-rust-lang/setup-rust-toolchain v2.0.1
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+
+      - name: Install frontend dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Install pinned Modlock
+        shell: pwsh
+        run: ./scripts/install-modlock.ps1
+
+      - name: Build portable app
+        shell: pwsh
+        run: |
+          $env:APP_API_URL = 'https://api.jukejoint.app'
+          $env:APP_ENGINE_ORIGIN = 'https://signal.jukejoint.app'
+          npm run build:live --prefix desktop
+          if ($LASTEXITCODE -ne 0) { throw 'O build do app falhou.' }
+          $asset = "desktop/out/Jukejoint-$env:RELEASE_TAG-windows-x64.zip"
+          Move-Item desktop/out/Jukejoint.zip $asset -Force
+          if (-not (Test-Path $asset)) { throw "Pacote não encontrado: $asset" }
+
+      - name: Attach download to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$env:RELEASE_TAG" "desktop/out/Jukejoint-$env:RELEASE_TAG-windows-x64.zip" --repo "$env:GITHUB_REPOSITORY" --clobber

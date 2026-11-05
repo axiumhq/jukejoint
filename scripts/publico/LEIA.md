@@ -32,13 +32,9 @@ Os comandos abaixo rodam no PowerShell, na pasta do repositório.
 
 ## O app (você e o amigo usam o mesmo zip)
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\publico\gerar-app.ps1
-```
+Baixe `Jukejoint-vX.Y.Z-windows-x64.zip` na página **Releases** do GitHub e mande esse arquivo para o amigo. Ele já inclui o app, o Modlock fixado e o modo de teste `hello`, com os endereços de produção configurados. Não precisa compilar o app para cada release.
 
-Sai `desktop\out\Jukejoint.zip` (uns 40 MB), com os dois endereços já dentro do app. Mande pelo Google Drive ou parecido (o Discord grátis não aceita arquivo desse tamanho). O `LEIA-ME.txt` do zip explica tudo para o amigo: extrair antes de abrir, antivírus, o aviso do SmartScreen e o login.
-
-Você também usa o zip: extraia numa pasta sua (não rode de `desktop\out`, que o próximo build apaga). O app registra o link `jukejoint://` para a pasta de onde ele abriu por último.
+Os dois extraem o zip inteiro numa pasta própria e abrem `Jukejoint.exe`. O `LEIA-ME.txt` incluído explica o aviso do SmartScreen, o login e como preparar o jogo.
 
 ## No dia do teste
 
