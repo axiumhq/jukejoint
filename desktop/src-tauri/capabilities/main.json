@@ -10,6 +10,7 @@
     "core:window:allow-toggle-maximize",
     "core:window:allow-close",
     "core:window:allow-start-dragging",
+    "core:window:allow-is-maximized",
     "allow-app-info",
     "allow-auth-open-browser",
     "allow-open-install-window",

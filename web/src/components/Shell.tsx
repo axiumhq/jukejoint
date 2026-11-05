@@ -18,6 +18,7 @@ import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
 import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
+import { TitleBar } from './TitleBar';
 import '../styles/live.css';
 
 /*
@@ -210,7 +211,7 @@ export function TopBar({ inert }: { inert?: boolean }) {
       <Link to="/" className="brand" aria-label={t.a11y.home}>
         <Wordmark alt="" height={24} />
       </Link>
-      <span className="tb-sp" data-tauri-drag-region={IN_DESKTOP ? '' : undefined} />
+      <span className="tb-sp" />
       <Search open={searchOpen} onOpenChange={setSearchOpen} />
       {inRoom ? <RoomPill /> : <LiveCount />}
       <button
@@ -227,22 +228,7 @@ export function TopBar({ inert }: { inert?: boolean }) {
         <ThemeMenu />
       </span>
       <Account />
-      {IN_DESKTOP && <WindowControls />}
     </header>
-  );
-}
-
-function WindowControls() {
-  const act = async (action: 'minimize' | 'toggleMaximize' | 'close') => {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    await getCurrentWindow()[action]();
-  };
-  return (
-    <div className="window-controls">
-      <button type="button" aria-label="Minimizar" onClick={() => void act('minimize')}>─</button>
-      <button type="button" aria-label="Maximizar ou restaurar" onClick={() => void act('toggleMaximize')}>□</button>
-      <button type="button" aria-label="Fechar" onClick={() => void act('close')}>×</button>
-    </div>
   );
 }
 
@@ -385,7 +371,8 @@ function Frame() {
     if (prevPath.current === pathname) return;
     prevPath.current = pathname;
     if (hash) return;
-    window.scrollTo(0, 0);
+    // No app a página rola dentro da moldura, abaixo da faixa de título (html.is-desktop).
+    (IN_DESKTOP ? document.querySelector('.frame') : null)?.scrollTo(0, 0) ?? window.scrollTo(0, 0);
     main.current?.focus({ preventScroll: true });
   }, [pathname, hash]);
 
@@ -405,6 +392,7 @@ function Frame() {
         {t.a11y.skip}
       </a>
       <CoverDefs />
+      {IN_DESKTOP && <TitleBar />}
       <div className={cls}>
         {!sheet && <Side inert={modal} />}
         <div className="col">

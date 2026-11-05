@@ -11,6 +11,34 @@
 
 /* ───────── Moldura ───────── */
 
+/*
+ * Dentro do app (html.is-desktop, main.tsx) a janela não tem moldura: a faixa de título fica fixa
+ * no topo e a moldura vira a área que rola, logo abaixo dela. Assim a barra de rolagem começa
+ * embaixo da faixa e os botões da janela ficam no canto. No site nada disso muda.
+ */
+:root {
+  --titlebar: 0px;
+}
+html.is-desktop {
+  --titlebar: 32px;
+}
+html.is-desktop,
+html.is-desktop body {
+  height: 100%;
+  overflow: hidden;
+}
+html.is-desktop .frame {
+  position: fixed;
+  inset: var(--titlebar) 0 0 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+html.is-desktop .side,
+html.is-desktop .rail {
+  height: calc(100dvh - var(--titlebar));
+}
+
 .frame {
   --side-w: var(--side);
   --rail-w: 0px;

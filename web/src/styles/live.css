@@ -130,8 +130,33 @@
 .login-pending > small {
   color: var(--tx-3);
 }
-.window-controls { display: flex; align-self: stretch; margin-left: 8px; }
-.window-controls button { width: 42px; border: 0; background: transparent; color: inherit; font-size: 18px; cursor: pointer; }
-.window-controls button:hover { background: var(--surface-hover, rgba(255, 255, 255, .1)); }
-.window-controls button:last-child:hover { background: #c42b1c; color: white; }
-.window-controls button:focus-visible { outline: 2px solid currentColor; outline-offset: -3px; }
+/* A faixa de título do app (TitleBar.tsx): a janela inteira de largura, arrasta em qualquer ponto
+   e os botões no canto direito, na ordem e no tamanho do Windows. */
+.titlebar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--titlebar);
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  background: var(--s1);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.titlebar-drag { flex: 1; }
+.window-controls { display: flex; flex: none; }
+.window-controls button {
+  width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tx-2);
+  cursor: default;
+}
+.window-controls svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1; }
+.window-controls button:hover { background: var(--s3, rgba(255, 255, 255, .08)); color: var(--tx); }
+.window-controls button.is-close:hover { background: #c42b1c; color: #fff; }
+.window-controls button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
