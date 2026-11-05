@@ -7,7 +7,7 @@
 .live-status {
   position: sticky;
   top: var(--tb);
-  z-index: 35;
+  z-index: var(--z-status);
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -69,7 +69,7 @@
   background: transparent;
   color: var(--tx-3);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   cursor: pointer;
 }
 .seat-kick:hover,
@@ -136,7 +136,7 @@
   position: fixed;
   inset: 0 0 auto 0;
   height: var(--titlebar);
-  z-index: 1000;
+  z-index: var(--z-titlebar);
   display: flex;
   align-items: stretch;
   background: var(--s1);
@@ -158,5 +158,5 @@
 }
 .window-controls svg { width: 10px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1; }
 .window-controls button:hover { background: var(--s3, rgba(255, 255, 255, .08)); color: var(--tx); }
-.window-controls button.is-close:hover { background: #c42b1c; color: #fff; }
+.window-controls button.is-close:hover { background: var(--win-close); color: #fff; }
 .window-controls button:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }

@@ -131,7 +131,7 @@ body:has(.rbar) .toasts {
 
 /* "18 ms": a unidade em minúscula, como no resto do produto */
 .rh-meta .num {
-  font-size: 0.9375rem;
+  font-size: var(--fs-15);
   letter-spacing: 0.03em;
   text-transform: none;
 }
@@ -460,7 +460,7 @@ button.seat.is-empty:hover {
 
 .rbar {
   position: fixed;
-  z-index: 30;
+  z-index: var(--z-bar);
   /* da barra lateral até a borda: passa por baixo do painel, como no design */
   left: var(--side-w, 0px);
   right: 0;
@@ -535,7 +535,7 @@ button.seat.is-empty:hover {
 
 .rb-ticks i.on {
   background: var(--bulb);
-  box-shadow: 0 0 6px rgb(232 190 120 / 0.45);
+  box-shadow: 0 0 6px rgb(from var(--bulb-ray) r g b / 0.45);
 }
 
 .rb-ticks i.th {
@@ -619,7 +619,7 @@ button.seat.is-empty:hover {
 .rb-go .btn {
   --h: 60px;
   padding: 0 var(--sp-8);
-  font-size: 1.125rem;
+  font-size: var(--fs-18);
   letter-spacing: 0.02em;
 }
 
@@ -713,7 +713,7 @@ button.seat.is-empty:hover {
   border: 0;
   border-radius: var(--r-sm);
   background: var(--bg);
-  font-size: 0.9375rem;
+  font-size: var(--fs-15);
   letter-spacing: 0.02em;
   color: var(--tx-2);
 }
@@ -952,7 +952,7 @@ button.seat.is-empty:hover {
   }
 
   .rh-meta .num {
-    font-size: 0.8125rem;
+    font-size: var(--fs-sm);
   }
 
   .rh-meta .hide-sm {
@@ -1035,7 +1035,7 @@ button.seat.is-empty:hover {
   }
 
   .rb-cd {
-    font-size: 2.5rem;
+    font-size: var(--fs-h1);
     line-height: 44px;
   }
 
@@ -1230,7 +1230,7 @@ button.seat.is-empty:hover {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   font-weight: 600;
   box-shadow: 0 0 0 1px var(--line-2) inset;
   transition:
@@ -1297,7 +1297,7 @@ button.seat.is-empty:hover {
   align-items: center;
   flex-wrap: wrap;
   gap: var(--sp-1) var(--sp-2);
-  font-size: 0.75rem;
+  font-size: var(--fs-xs);
   color: var(--tx-2);
 }
 
@@ -1329,7 +1329,7 @@ button.seat.is-empty:hover {
 }
 
 .qp-none b {
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
   font-weight: 600;
 }
 

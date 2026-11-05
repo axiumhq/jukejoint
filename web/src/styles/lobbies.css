@@ -426,7 +426,7 @@
 
 .lgrid.list .lc-id {
   grid-area: ping;
-  font-size: 0.9375rem;
+  font-size: var(--fs-15);
 }
 
 .lgrid.list .lc-meta .tag {
@@ -474,7 +474,7 @@
 }
 
 .lgrid.list .lc-create b {
-  font-size: 1.125rem;
+  font-size: var(--fs-18);
 }
 
 .more-row {

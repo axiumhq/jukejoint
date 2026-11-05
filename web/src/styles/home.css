@@ -214,7 +214,7 @@
 }
 
 .mv-free .display {
-  font-size: 2.5rem;
+  font-size: var(--fs-h1);
   line-height: 42px;
 }
 
@@ -334,7 +334,7 @@
 .mbar {
   display: none;
   position: fixed;
-  z-index: 45;
+  z-index: var(--z-actionbar);
   left: 0;
   right: 0;
   bottom: calc(var(--bn) + env(safe-area-inset-bottom));

@@ -162,7 +162,7 @@
   }
 
   .search.is-open .sr-gt {
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 }
 
@@ -225,7 +225,7 @@
   top: 72px;
   right: 16px;
   bottom: 16px;
-  z-index: 50;
+  z-index: var(--z-nav);
   display: flex;
   flex-direction: column;
   width: 380px;
