@@ -147,7 +147,7 @@ export function RecommendedCard({ lobby, now, onCreate }: { lobby: Lobby | undef
           <span className="hb-cnt">
             <b>
               {t.lobbies.inRoom(lobby.players, lobby.slots)}
-              {free > 0 && `, ${t.home.missing(free)}`}
+              {free > 0 && ` · ${t.home.missing(free)}`}
             </b>
             <span className="lbl">
               {t.regions[lobby.region]} {t.lobbies.ping(lobby.ping)}
@@ -190,7 +190,7 @@ export function MobilePlayBar({ lobby }: { lobby: Lobby | undefined }) {
         <div className="mbar-t">
           <b>{mine.name}</b>
           <span>
-            {joining ? t.lobbyState.joining : t.lobbyState.here} · <span className="num">{`${mine.players} de ${mine.slots}`}</span>
+            {joining ? t.lobbyState.joining : t.lobbyState.here} · <span className="num">{t.lobbies.ofCount(mine.players, mine.slots)}</span>
           </span>
         </div>
         <Link to={roomTo(mine)} className="btn btn-p">
@@ -207,7 +207,7 @@ export function MobilePlayBar({ lobby }: { lobby: Lobby | undefined }) {
       <div className="mbar-t">
         <b>{lobby.name}</b>
         <span>
-          <span className="num">{`${lobby.players} de ${lobby.slots} · ${t.lobbies.ping(lobby.ping)}`}</span>
+          <span className="num">{`${t.lobbies.ofCount(lobby.players, lobby.slots)} · ${t.lobbies.ping(lobby.ping)}`}</span>
           {free > 0 && ` · ${t.home.missing(free)}`}
         </span>
       </div>

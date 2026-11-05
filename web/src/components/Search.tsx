@@ -160,7 +160,7 @@ export function Search({ open, onOpenChange }: SearchProps) {
     let sub: string;
     let lead;
     if (h.kind === 'lobby') {
-      sub = `${h.mode?.name ?? ''} · ${h.lobby.players} de ${h.lobby.slots} · ${t.regions[h.lobby.region]}`;
+      sub = `${h.mode?.name ?? ''} · ${t.lobbies.ofCount(h.lobby.players, h.lobby.slots)} · ${t.regions[h.lobby.region]}`;
       lead = (
         <span className="sr-cv">
           <ModeCover slug={h.lobby.modeSlug} />

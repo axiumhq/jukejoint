@@ -4,12 +4,12 @@ import { CopyField, SectionTitle } from '../components/Common';
 import { Icon } from '../components/Icon';
 import { Rail } from '../components/Rail';
 import { APP_RELEASE } from '../config/brand';
-import { appDoes, appDoesnt, avGuides, hashCommand, installedItems } from '../data/install';
 import { PLATFORM_SCOPE, releases } from '../data/patches';
 import { useDocumentTitle } from '../hooks';
-import { RELEASES_URL, SOURCE_URL, useLatestRelease } from '../lib/release';
+import { RELEASES_URL, SOURCE_URL, useLatestRelease, type ReleaseState } from '../lib/release';
 import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
+import { installTexts as I, type AvGuide } from '../i18n/install';
 import { useSession } from '../state/session';
 import '../styles/info.css';
 
@@ -90,9 +90,8 @@ function AppStatus({ version }: { version: string | null }) {
   );
 }
 
-function DownloadCard() {
+function DownloadCard({ rel }: { rel: ReleaseState }) {
   const { desktop } = useSession();
-  const rel = useLatestRelease();
   const r = rel.status === 'ready' ? rel.release : null;
   return (
     <>
@@ -177,7 +176,7 @@ function Steps() {
 }
 
 /** As duas telas do SmartScreen, desenhadas (sem captura nem marca da Microsoft), com os cliques marcados. */
-function SmartScreenFigure() {
+function SmartScreenFigure({ fileName }: { fileName: string }) {
   const m = t.install.smartMock;
   return (
     <figure className="ss">
@@ -200,7 +199,7 @@ function SmartScreenFigure() {
             <b>{m.title}</b>
             <i className="ss-ln" />
             <span className="ss-app">
-              {m.app} <span className="num">{APP_RELEASE.fileName}</span>
+              {m.app} <span className="num">{fileName}</span>
               <span className="ss-mark num">2</span>
             </span>
             <span className="ss-btns">
@@ -218,11 +217,11 @@ function SmartScreenFigure() {
   );
 }
 
-function AvTabs() {
+function AvTabs({ guides }: { guides: AvGuide[] }) {
   const [active, setActive] = useState(0);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   function onKey(e: KeyboardEvent) {
-    const n = avGuides.length;
+    const n = guides.length;
     let next = active;
     if (e.key === 'ArrowRight') next = (active + 1) % n;
     else if (e.key === 'ArrowLeft') next = (active - 1 + n) % n;
@@ -236,7 +235,7 @@ function AvTabs() {
   return (
     <div className="av-tabs">
       <div role="tablist" aria-label={t.install.avTabs} className="lb-tabs" onKeyDown={onKey}>
-        {avGuides.map((g, i) => (
+        {guides.map((g, i) => (
           <button
             key={g.id}
             ref={(el) => {
@@ -254,7 +253,7 @@ function AvTabs() {
           </button>
         ))}
       </div>
-      {avGuides.map((g, i) => (
+      {guides.map((g, i) => (
         <div key={g.id} role="tabpanel" id={`panel-${g.id}`} aria-labelledby={`tab-${g.id}`} hidden={active !== i} className="av-panel" tabIndex={0}>
           <ol className="nlist">
             {g.steps.map((s) => (
@@ -317,10 +316,15 @@ function InstallRail() {
 
 export function Install() {
   useDocumentTitle(t.meta.install);
+  // Uma release só para a página toda: a ao vivo quando chegou, a de demonstração enquanto carrega ou se falhar.
+  const rel = useLatestRelease();
+  const live = rel.status === 'ready' ? rel.release : null;
+  const fileName = live?.fileName ?? APP_RELEASE.fileName;
+  const sizeMb = live?.sizeMb ?? APP_RELEASE.sizeMb;
 
   return (
     <>
-      <DownloadCard />
+      <DownloadCard rel={rel} />
       <Steps />
 
       <div className="ins">
@@ -330,12 +334,12 @@ export function Install() {
             <div className="ins-text">
               <p>{t.install.smartWhy}</p>
               <ol className="nlist">
-                {t.install.smartSteps(APP_RELEASE.fileName).map((s) => (
+                {t.install.smartSteps(fileName).map((s) => (
                   <li key={s}>{s}</li>
                 ))}
               </ol>
             </div>
-            <SmartScreenFigure />
+            <SmartScreenFigure fileName={fileName} />
           </div>
         </section>
 
@@ -343,9 +347,9 @@ export function Install() {
           <SectionTitle id="av-title" words={t.install.avWords} />
           <div className="ins-text">
             <p>{t.install.avWhy}</p>
-            <AvTabs />
+            <AvTabs guides={I.avGuides(fileName)} />
             <h3 className="ins-h">{t.install.avVerify}</h3>
-            <CopyField value={hashCommand} label={t.install.avVerify} copyLabel={t.install.copyCommand} />
+            <CopyField value={I.hashCommand(fileName)} label={t.install.avVerify} copyLabel={t.install.copyCommand} />
           </div>
         </section>
 
@@ -361,7 +365,7 @@ export function Install() {
                 </tr>
               </thead>
               <tbody>
-                {installedItems.map((it) => (
+                {I.installedItems(formatNumber(sizeMb)).map((it) => (
                   <tr key={it.item}>
                     <th scope="row">{it.item}</th>
                     <td>
@@ -389,7 +393,7 @@ export function Install() {
             <div>
               <h3 className="ins-h">{t.install.doesTitle}</h3>
               <ul className="ticks-list">
-                {appDoes.map((x) => (
+                {I.appDoes.map((x) => (
                   <li key={x}>
                     <Icon name="check" />
                     {x}
@@ -400,7 +404,7 @@ export function Install() {
             <div>
               <h3 className="ins-h">{t.install.doesntTitle}</h3>
               <ul className="ticks-list is-no">
-                {appDoesnt.map((x) => (
+                {I.appDoesnt.map((x) => (
                   <li key={x}>
                     <Icon name="x" />
                     {x}

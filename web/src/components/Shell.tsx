@@ -77,7 +77,7 @@ function RoomPill() {
         ? t.header.roomPill.playing(lobby.name)
         : t.header.roomPill.here(lobby.name);
   // "N de M": o mesmo jeito de escrever vagas do resto do produto (nunca "N/M").
-  const meta = `${lobby.players} de ${lobby.slots}`;
+  const meta = t.lobbies.ofCount(lobby.players, lobby.slots);
 
   return (
     <Link

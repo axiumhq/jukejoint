@@ -104,7 +104,7 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
           <span className="lc-cnt">
             <span className="sr-only">{t.lobbies.slots(l.players, l.slots, friendNames.length)}</span>
             {/* No lobby em que você está, a linha divide espaço com "Sair": só "N de M", como na pílula da sala. */}
-            <span aria-hidden="true">{st.you ? `${l.players} de ${l.slots}` : t.lobbies.inRoom(l.players, l.slots)}</span>
+            <span aria-hidden="true">{st.you ? t.lobbies.ofCount(l.players, l.slots) : t.lobbies.inRoom(l.players, l.slots)}</span>
           </span>
           <span className="lc-act">
             <LobbyAction lobby={l} state={st} describedBy={nameId} primary={featured && st.canJoin && !st.you} compact />

@@ -523,8 +523,8 @@ export function HostDialog() {
                 value={total}
                 min={mode.minPlayers}
                 max={mode.maxPlayers}
-                less="Menos vagas"
-                more="Mais vagas"
+                less={t.host.slotsLess}
+                more={t.host.slotsMore}
                 onChange={(n) => {
                   setSlots(n);
                   if (quorum > n) setQuorum(n);
@@ -535,7 +535,7 @@ export function HostDialog() {
               <span className="cap" id="host-quorum-l">
                 {t.host.quorum}
               </span>
-              <Stepper value={minNeeded} min={mode.minPlayers} max={total} less="Menos confirmados" more="Mais confirmados" onChange={setQuorum} />
+              <Stepper value={minNeeded} min={mode.minPlayers} max={total} less={t.host.quorumLess} more={t.host.quorumMore} onChange={setQuorum} />
             </div>
           </div>
           <p id="host-quorum-hint" className="dlg-hint">

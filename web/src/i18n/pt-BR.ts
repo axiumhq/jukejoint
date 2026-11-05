@@ -119,7 +119,7 @@ export const ptBR = {
     statBar: 'Sobre o lobby recomendado',
     host: 'Quem abriu',
     slots: 'Vagas',
-    missing: (n: number) => `falta ${n}`,
+    missing: (n: number) => (n === 1 ? 'falta 1' : `faltam ${n}`),
     inside: 'Dentro',
     fromList: (n: number) => `${n} da sua lista`,
     nobodyFromList: 'ninguém da sua lista',
@@ -185,7 +185,7 @@ export const ptBR = {
     playingFull: 'Em partida · lotado',
     inviteOnly: 'Só com convite',
     fromList: (n: number) => `${n} da sua lista`,
-    missing: (n: number) => `Falta ${n}`,
+    missing: (n: number) => (n === 1 ? 'Falta 1' : `Faltam ${n}`),
     beginners: 'Iniciantes ok',
   },
   /** Trilho social v8 (a coluna fixa à direita; folha de baixo no celular). */
@@ -263,8 +263,7 @@ export const ptBR = {
     railTitle: 'Sala',
     opened: 'abriu a sala',
     playersWord: 'pessoas',
-    /** O mínimo de confirmados. Não é "começa com": quem começa é quem abriu a sala. */
-    minimum: 'mínimo de',
+    startsWith: 'começa com',
     title: ['Na', 'sala'] as const,
     seatsMeta: (taken: number, slots: number) => {
       const free = slots - taken;
@@ -312,9 +311,9 @@ export const ptBR = {
       inside: 'você está dentro',
     },
     /** Barra PRONTO. "confirmaram" no lugar de "prontos": neutro em gênero. */
-    readyOf: (total: number) => `de ${total} confirmaram`,
-    readyLive: (n: number, total: number, k: number) => `${n} de ${total} confirmaram. Mínimo de ${k}.`,
-    ticksLabel: (n: number, k: number) => `${n} confirmados, mínimo de ${k}`,
+    readyCount: (n: number, total: number, k: number) => `${n} de ${total} confirmaram · começa com ${k}`,
+    readyLive: (n: number, total: number, k: number) => `${n} de ${total} confirmaram. Começa com ${k}.`,
+    ticksLabel: (n: number, k: number) => `${n} confirmados, começa com ${k}`,
     hint: (k: number) => `Marque PRONTO. Com ${k} confirmados, quem abriu a sala pode começar a partida.`,
     hintQuorum: 'O mínimo já confirmou. Marque PRONTO para jogar esta rodada.',
     hintWaiting: (n: number) =>
@@ -413,6 +412,7 @@ export const ptBR = {
       `${taken} de ${total} vagas ocupadas` + (friends > 0 ? `, ${friends} da sua lista` : ''),
     ping: (ms: number) => `${ms} ms`,
     /** Vagas no texto: sempre "N de M na sala", nunca "N/M". */
+    ofCount: (n: number, max: number) => `${n} de ${max}`,
     inRoom: (n: number, max: number) => `${n} de ${max} na sala`,
     pingLabel: (region: string, ms: number) => `Servidor ${region}, ping de ${ms} milissegundos`,
     locked: 'Com convite',
@@ -500,7 +500,7 @@ export const ptBR = {
     reasons: {
       friends: (n: number) => (n === 1 ? '1 da sua lista dentro' : `${n} da sua lista dentro`),
       hostFriend: 'quem abriu é da sua lista',
-      almostFull: (n: number) => (n === 1 ? 'falta 1' : `faltam ${n}`),
+      almostFull: (n: number) => (n === 1 ? '1 vaga' : `${n} vagas`),
       quorum: (n: number) => (n === 1 ? 'falta 1 para começar' : `faltam ${n} para começar`),
       ping: (ms: number) => `${ms} ms`,
     },
@@ -580,6 +580,10 @@ export const ptBR = {
     region: 'Região',
     slots: 'Vagas',
     quorum: 'Começa com',
+    slotsLess: 'Menos vagas',
+    slotsMore: 'Mais vagas',
+    quorumLess: 'Menos confirmados',
+    quorumMore: 'Mais confirmados',
     quorumHint: 'A partida só começa com esse mínimo de confirmados.',
     access: 'Quem entra',
     accessOpen: 'Qualquer um',

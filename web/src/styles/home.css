@@ -41,6 +41,14 @@
   letter-spacing: -0.02em;
 }
 
+/* No desktop o slogan fica em uma linha, mesmo em inglês; no celular pode quebrar. */
+@media (min-width: 761px) {
+  .hero-t {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 /* a barra do recomendado: quem, as vagas, as ações */
 .hbar {
   position: relative;
