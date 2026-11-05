@@ -1,0 +1,61 @@
+name: Warm desktop Rust cache
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - desktop/src-tauri/Cargo.toml
+      - desktop/src-tauri/Cargo.lock
+      - desktop/src-tauri/build.rs
+      - desktop/src-tauri/tauri.conf.json
+      - desktop/package-lock.json
+      - web/package-lock.json
+      - web/src/config/brand.ts
+      - .github/workflows/release-desktop.yml
+      - .github/workflows/desktop-rust-cache.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  warm-cache:
+    name: Warm Windows release dependencies
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      # actions/setup-node v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - name: Set up Rust
+        # actions-rust-lang/setup-rust-toolchain v2.0.1
+        uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          rust-src-dir: desktop/src-tauri
+
+      - name: Install frontend dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Build frontend assets
+        run: npm run build:front --prefix desktop
+
+      - name: Compile release dependencies
+        working-directory: desktop/src-tauri
+        env:
+          APP_API_URL: https://api.jukejoint.app
+          APP_ENGINE_ORIGIN: https://signal.jukejoint.app
+          APP_VERSION: 1.2.0
+        run: cargo build --release --locked --target x86_64-pc-windows-msvc
