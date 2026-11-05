@@ -132,6 +132,70 @@ describe('Duelo à Meia-Noite', () => {
     expect(a.said('Rodada 1: Ana vence no tempo, com mais vida. Ana 1 × 0 Bia')).toBe(true)
   })
 
+  it('o golpe fatal decide a rodada uma vez só', () => {
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(1.5)
+    untilLive(w)
+    expect(w.hit(b, 10_000)).toBe(false)
+    w.tick(0.3)
+    expect(a.said('Rodada 1: Ana vence no abate. Ana 1 × 0 Bia')).toBe(true)
+    expect(a.said('Ana 2 × 0 Bia')).toBe(false)
+  })
+
+  it('ninguém toma dano na contagem nem entre as rodadas', () => {
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(4)
+    expect(w.hit(b, 100)).toBe(true)
+    untilLive(w)
+    expect(w.hit(b, 100)).toBe(false)
+    kill(b)
+    w.tick(0.3)
+    expect(w.hit(a, 100)).toBe(true)
+  })
+
+  it('o kit são os primeiros itens da build recomendada do herói', () => {
+    for (const hero of ['hero_um', 'hero_dois']) {
+      w.world.builds.set(hero, [
+        { name: 'Começo', description: '', items: ['a', 'b', 'c', 'b'].map((item) => ({ item, annotation: '' })) },
+        { name: 'Meio', description: '', items: ['d', 'e', 'f', 'g'].map((item) => ({ item, annotation: '' })) },
+      ])
+    }
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(1.5)
+    untilLive(w)
+    expect(a.items).toEqual(['a', 'b', 'c', 'd', 'e', 'f'])
+    expect(b.items).toEqual(a.items)
+  })
+
+  it('quem vence ganha as métricas e a sessão aparece no /placar', () => {
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(1.5)
+    for (let r = 0; r < 3; r++) { untilLive(w); kill(b); w.tick(0.3) }
+    expect(a.metrics).toEqual({ 'duelo.rodadas': 3, 'duelo.vitorias': 1, 'duelo.sequencia': 1 })
+    expect(b.metrics).toEqual({})
+    w.type(a, '/placar')
+    expect(a.said('Você nesta sessão: 1 vitórias, 0 derrotas, sequência de 1')).toBe(true)
+    w.type(b, '/placar')
+    expect(b.said('Você nesta sessão: 0 vitórias, 1 derrotas, sequência de 0')).toBe(true)
+  })
+
+  it('o placar na tela mostra os dois nomes e os pontos', () => {
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(1.5)
+    untilLive(w)
+    kill(b)
+    w.tick(0.3)
+    const ui = JSON.stringify(a.ui)
+    expect(ui).toContain('Ana 1 × 0 Bia')
+    expect(ui).toContain('"points":[1,0]')
+    expect(ui).toContain('Ana leva a rodada')
+  })
+
   it('/placar responde para quem pediu', () => {
     const a = w.join('Ana', 0)
     w.tick(1.2)

@@ -8,6 +8,7 @@ export default {
   resolve: {
     alias: [
       { find: /^modlock\/console$/, replacement: fakeSdk },
+      { find: /^modlock\/jsx-(dev-)?runtime$/, replacement: fakeSdk },
       { find: /^modlock$/, replacement: fakeSdk },
     ],
   },
