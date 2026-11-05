@@ -4,7 +4,7 @@
  */
 export const desktop = {
   checking: 'Conferindo o app…',
-  ready: 'O app está pronto. Quando a partida começar, ele abre o Deadlock e coloca você no lobby.',
+  ready: 'O app está pronto. Quando a partida começar, ele abre o jogo e coloca você no lobby.',
   problemsTitle: (n: number) => (n === 1 ? 'O app precisa de um ajuste antes da partida' : `O app precisa de ${n} ajustes antes da partida`),
   problemsHint: 'Dá para entrar na sala agora e resolver isso na tela Instalação antes de a partida começar.',
   checkFailed: 'Não deu para conferir o app agora.',
