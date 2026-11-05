@@ -30,11 +30,11 @@ Os comandos abaixo rodam no PowerShell, na pasta do repositório.
    ```
    O navegador abre: entre na Cloudflare e escolha `jukejoint.app`. O script cria o túnel `jukejoint`, aponta `api.` e `signal.` para ele e grava a configuração em `tools\cloudflared\` (fora do git). As credenciais do túnel ficam em `%USERPROFILE%\.cloudflared`: não mande essa pasta para ninguém.
 
-## O app (você e o amigo usam o mesmo zip)
+## O app (um instalador para os dois)
 
-Baixe `Jukejoint-vX.Y.Z-windows-x64.zip` na página **Releases** do GitHub e mande esse arquivo para o amigo. Ele já inclui o app, o Modlock fixado e o modo de teste `hello`, com os endereços de produção configurados. Não precisa compilar o app para cada release.
+Baixe `Jukejoint-vX.Y.Z-windows-x64-setup.exe` na página **Releases** do GitHub e mande esse único arquivo para o amigo. O instalador já inclui o app, o Modlock fixado e o modo de teste `hello`, com os endereços de produção configurados. Não precisa baixar o Modlock separado nem compilar o app.
 
-Os dois extraem o zip inteiro numa pasta própria e abrem `Jukejoint.exe`. O `LEIA-ME.txt` incluído explica o aviso do SmartScreen, o login e como preparar o jogo.
+Os dois executam o instalador e abrem o Jukejoint pelo atalho criado. O Windows pode mostrar o aviso do SmartScreen porque o instalador ainda não é assinado. O `LEIA-ME.txt` instalado explica o login e como preparar o jogo.
 
 ## No dia do teste
 

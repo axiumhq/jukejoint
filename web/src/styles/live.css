@@ -3,6 +3,37 @@
  * e o login de teste. Só tokens de tokens.css; nada aqui muda o protótipo simulado.
  */
 
+/* aviso de atualização do app desktop, logo abaixo da barra superior */
+.desktop-update {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line-2);
+  background: var(--s2);
+  color: var(--tx);
+  font-size: 0.8125rem;
+}
+
+.desktop-update > span {
+  color: var(--tx-2);
+}
+
+.desktop-update .btn-icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: var(--r-sm);
+  color: var(--tx-2);
+}
+
+.desktop-update .btn-icon:hover {
+  background: var(--s4);
+  color: var(--tx);
+}
+
 /* faixa de conexão (o .fxc do design): logo abaixo da barra de topo, na largura do conteúdo */
 .live-status {
   position: sticky;

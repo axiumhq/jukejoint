@@ -17,6 +17,7 @@ import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
+import { DesktopUpdateNotice } from './DesktopUpdateNotice';
 import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
 import '../styles/live.css';
 
@@ -398,6 +399,7 @@ function Frame() {
         {!sheet && <Side compact={compact} social={!compact} inert={modal} />}
         <div className="col">
           <TopBar inert={modal} />
+          <DesktopUpdateNotice />
           <LiveStatus />
           <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
             <Outlet />
