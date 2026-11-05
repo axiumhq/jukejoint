@@ -62,12 +62,14 @@ pub fn run() {
         // esta e encerra; com a feature deep-link, o link chega em on_open_url.
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| show_main(app)))
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let handle = app.handle().clone();
             let sink: EventSink = Arc::new(move |ev| {
                 let _ = handle.emit(EV_ENGINE, ev);
             });
-            let engine = Arc::new(ModlockCli::new(EngineConfig::from_env(), sink));
+            let resource_dir = app.path().resource_dir()?;
+            let engine = Arc::new(ModlockCli::new(EngineConfig::from_env_with_resources(Some(&resource_dir)), sink));
             app.manage(AppState { engine: engine.clone() });
 
             if tauri::is_dev() {
@@ -145,7 +147,8 @@ fn init_script() -> String {
     let info = serde_json::json!({
         "name": BRAND_NAME,
         "scheme": SLUG,
-        "version": env!("CARGO_PKG_VERSION"),
+        "version": env!("APP_VERSION"),
+        "dev": tauri::is_dev(),
         "modlockVersion": MODLOCK_VERSION,
         "apiUrl": auth::api_url(),
     });

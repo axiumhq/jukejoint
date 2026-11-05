@@ -1,0 +1,679 @@
+/*
+ * Hoje (/novidades), Instalar (/instalar) e 404, no redesign (Hoje.dc, Instalar.dc, Sistema.dc).
+ * Sobrepõe as regras antigas de pages.css: tudo dentro de `body { … }` para ganhar em especificidade
+ * sem depender da ordem em que os chunks das telas carregam o CSS.
+ */
+
+body {
+  /* ───────── capa com ilustração (Hoje e Instalar): céu, cidade, título e a faixa de dados ───────── */
+  .nh,
+  .ih {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 220px;
+    margin: 0 0 32px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: var(--sky-1);
+  }
+
+  .nh-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .nh-title,
+  .ih-title {
+    position: relative;
+    margin: 0;
+    padding: 24px 32px 0;
+    font-size: 3.5rem;
+    line-height: 60px;
+    letter-spacing: -0.02em;
+  }
+
+  /* ───────── Hoje: faixa de dados ───────── */
+  .nh .dbar {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-flow: row;
+    gap: 24px;
+    height: 76px;
+    margin: 0;
+    padding: 0 32px;
+    border-radius: 0;
+    background: var(--s2);
+    box-shadow: none;
+    min-height: 0;
+  }
+
+  .nh .dc {
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+
+  .nh .dc dt {
+    margin: 0;
+    font-family: var(--f-ui);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 16px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--tx-3);
+  }
+
+  .nh .dc dd {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-height: 28px;
+    overflow: hidden;
+  }
+
+  .nh .dc-big,
+  .nh .dc-link {
+    padding: 0;
+    margin: 0;
+    font-family: var(--f-num);
+    font-size: 1.375rem;
+    font-weight: 500;
+    line-height: 28px;
+    letter-spacing: 0.02em;
+    color: var(--tx);
+  }
+
+  .nh .dc-link:hover {
+    color: var(--acc);
+  }
+
+  .nh .dc-sub {
+    font-size: 0.75rem;
+    color: var(--tx-3);
+  }
+
+  /* ───────── Hoje: notas da versão ───────── */
+  .nw-sec {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .nw-h2 {
+    margin: 0;
+    font-size: 1.75rem;
+    line-height: 36px;
+  }
+
+  .nw-sec .nw-ctl {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+
+  .nw-sec .sel select {
+    height: 32px;
+    min-height: 32px;
+    padding: 0 32px 0 12px;
+    border-radius: var(--r-sm);
+    font-size: 0.8125rem;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  .nw-sec .sel select:hover {
+    background: var(--s3);
+  }
+
+  .nw-sec .nw-cats {
+    gap: 8px;
+  }
+
+  .nw-sec .nw-ctl .chip {
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--r-sm);
+    font-size: 0.8125rem;
+  }
+
+  .nw-sec .tline {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nw-sec .tl > article {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 24px;
+    padding: 16px 0;
+    box-shadow: inset 0 1px 0 var(--line);
+  }
+
+  .nw-sec .tl-when {
+    display: flex;
+    align-items: flex-start;
+    justify-items: start;
+    gap: 12px;
+    padding: 0;
+    text-align: left;
+  }
+
+  .nw-sec .tl-wt {
+    display: block;
+    font-family: var(--f-num);
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 22px;
+    letter-spacing: 0.02em;
+    color: var(--tx-2);
+  }
+
+  .nw-sec .tl-day,
+  .nw-sec .tl-meta {
+    display: block;
+    font-family: var(--f-num);
+    font-size: 1rem;
+    line-height: 22px;
+    color: var(--tx-2);
+  }
+
+  /* a lâmpada da versão: acesa na atual */
+  .nw-sec .bulb {
+    flex: none;
+    width: 9px;
+    height: 9px;
+    margin-top: 6px;
+    border-radius: 50%;
+    background: var(--s3);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+
+  .nw-sec .bulb.on {
+    background: var(--bulb);
+    box-shadow: 0 0 6px var(--bulb-glow);
+  }
+
+  .nw-sec .tl-body {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 0;
+    min-width: 0;
+  }
+
+  .nw-sec .tl-hd {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .nw-sec .tl-title {
+    margin: 0;
+    max-width: none;
+    font-family: var(--f-ui);
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 24px;
+    letter-spacing: 0;
+    text-wrap: pretty;
+  }
+
+  .nw-sec .tl-tldr {
+    max-width: 70ch;
+    margin: 0;
+    font-size: 0.8125rem;
+    line-height: 18px;
+    color: var(--tx-2);
+  }
+
+  .nw-sec .tl-ct {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .nw-sec .tl-changes {
+    width: 100%;
+    max-width: none;
+  }
+
+  .nw-sec .tl-changes summary {
+    height: 28px;
+    padding: 0;
+    margin: 0;
+    gap: 6px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--acc);
+    background: none;
+  }
+
+  .nw-sec .tl-changes summary:hover {
+    color: var(--acc-hi);
+    background: none;
+  }
+
+  .nw-sec .tl-changes ul {
+    margin: 4px 0 0;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    list-style: none;
+  }
+
+  .nw-sec .tl-changes li {
+    display: grid;
+    grid-template-columns: 112px minmax(0, 1fr) 150px;
+    gap: 12px;
+    align-items: baseline;
+    padding: 8px 0;
+    border: 0;
+    box-shadow: inset 0 1px 0 var(--line);
+    font-size: 0.8125rem;
+    line-height: 18px;
+  }
+
+  .nw-sec .tl-cat .tag {
+    justify-self: start;
+  }
+
+  .nw-sec .tl-scope {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--tx-3);
+    white-space: normal;
+  }
+
+  .nw-sec .nw-empty {
+    align-items: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 48px 24px;
+    border: 0;
+    border-radius: var(--r-xl);
+    background: var(--s2);
+    text-align: center;
+  }
+
+  /* ───────── Instalar ───────── */
+  .ih {
+    height: 220px;
+  }
+
+  .ih-sub {
+    position: relative;
+    display: block;
+    padding: 0 32px;
+    color: var(--tx-2);
+  }
+
+  .ih-top {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ih-top .ih-title {
+    padding-bottom: 0;
+  }
+
+  .ih-top .ih-sub {
+    margin-top: 0;
+  }
+
+  .ih-band {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 76px;
+    padding: 0 16px 0 32px;
+    background: var(--s2);
+  }
+
+  .ih-file {
+    min-width: 0;
+  }
+
+  .ih-name {
+    margin: 0;
+    overflow: hidden;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 22px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ih-meta {
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--tx-2);
+  }
+
+  .ih-btn {
+    flex: none;
+    height: 44px;
+    padding: 0 32px;
+  }
+
+  .ih-hash {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 12px;
+    margin: -8px 0 16px;
+    padding: 10px 16px;
+    border-radius: var(--r-xl);
+    background: var(--s2);
+  }
+
+  .ih-k {
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .ih-hash .copy-field {
+    grid-column: 2;
+    padding: 4px 4px 4px 10px;
+  }
+
+  .ih-hash .copy-field code {
+    font-size: 0.75rem;
+  }
+
+  .ih-src,
+  .ih-help {
+    grid-column: 2;
+    margin: 0;
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .ih-src {
+    color: var(--acc);
+    text-underline-offset: 3px;
+  }
+
+  .ih-src span {
+    color: var(--tx-3);
+  }
+
+  .ih-status {
+    margin-bottom: 8px;
+  }
+
+  .ih-status .ast {
+    min-height: 60px;
+    border-radius: var(--r-xl);
+    background: var(--s2);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
+  .ih-req {
+    margin: 0 0 32px;
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  /* passos: três cartões com o número em disco */
+  #passos .isteps {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  #passos .istep {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 8px;
+    padding: 14px;
+    border: 0;
+    border-radius: var(--r-xl);
+    background: var(--s2);
+    box-shadow: none;
+  }
+
+  #passos .istep-n {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--s3);
+    box-shadow: none;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--tx);
+  }
+
+  #passos .istep.is-done .istep-n {
+    color: var(--live);
+  }
+
+  #passos .istep h3,
+  #passos .istep p {
+    align-self: stretch;
+    margin: 0;
+    text-align: left;
+  }
+
+  #passos .istep h3 {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 18px;
+  }
+
+  #passos .istep p {
+    font-size: 0.75rem;
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .ins .sec-h h2 {
+    font-size: 1.625rem;
+    line-height: 34px;
+  }
+
+  /* abas de antivírus: o fio de latão embaixo da ativa */
+  .av-tabs .lb-tabs {
+    gap: 24px;
+  }
+
+  /* ───────── 404 ───────── */
+  .nf {
+    min-height: 420px;
+    height: 420px;
+    border-radius: var(--r-2xl);
+    box-shadow: none;
+    background: var(--sky-1);
+  }
+
+  .nf-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .nf-body {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 12px;
+    max-width: none;
+    padding: 0 56px;
+  }
+
+  .nf-code {
+    font-family: var(--f-num);
+    font-size: 1.125rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--tx-2);
+  }
+
+  .nf h1 {
+    font-size: 3.5rem;
+    line-height: 62px;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  .nf-lead {
+    margin: 0;
+    max-width: 44ch;
+    font-size: 0.875rem;
+    color: var(--tx-2);
+  }
+
+  .nf-act {
+    margin-top: 8px;
+  }
+
+  .nf-else {
+    margin-top: 0;
+    gap: 4px 12px;
+  }
+
+  .nf-else a {
+    color: var(--acc);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* a pasta de luz à esquerda: o texto do 404 lê bem sobre os prédios nos quatro temas */
+  .nf::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 88%, transparent) 0, color-mix(in srgb, var(--sky-1) 55%, transparent) 42%, transparent 68%);
+    pointer-events: none;
+  }
+
+  .nf-body {
+    z-index: 1;
+  }
+
+  .nf .nf-code {
+    position: static;
+    inset: auto;
+  }
+
+  @media (max-width: 900px) {
+    .nh,
+    .ih {
+      height: auto;
+      min-height: 220px;
+    }
+
+    .nh-title,
+    .ih-title {
+      font-size: 2.25rem;
+      line-height: 42px;
+      padding: 20px 16px 16px;
+    }
+
+    .nh .dbar {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      height: auto;
+      padding: 12px 16px;
+      gap: 12px;
+    }
+
+    .ih-sub {
+      padding: 0 16px;
+    }
+
+    .ih-band {
+      height: auto;
+      padding: 12px 16px;
+      flex-wrap: wrap;
+    }
+
+    .ih-btn {
+      width: 100%;
+    }
+
+    .ih-hash {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ih-hash .copy-field,
+    .ih-src,
+    .ih-help {
+      grid-column: 1;
+    }
+
+    #passos .isteps {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .nw-sec .tl > article {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .nw-sec .tl-changes li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+
+    /* a cidade ancorada à direita: a lua não fica atrás do título */
+    .nh-art {
+      left: auto;
+      right: -350px;
+      width: 1128px;
+    }
+
+    .nh .dc dd {
+      flex-wrap: wrap;
+      gap: 0 8px;
+    }
+
+    .nf::after {
+      background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 92%, transparent) 0, color-mix(in srgb, var(--sky-1) 70%, transparent) 70%, color-mix(in srgb, var(--sky-1) 45%, transparent) 100%);
+    }
+
+    .nf {
+      height: auto;
+      min-height: 380px;
+    }
+
+    .nf-body {
+      padding: 0 20px;
+    }
+
+    .nf h1 {
+      font-size: 2.25rem;
+      line-height: 42px;
+    }
+  }
+}

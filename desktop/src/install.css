@@ -2,7 +2,6 @@
  * Tela Instalação do app. Lê só os tokens do site (web/src/styles/tokens.css) e usa a base
  * (botões, .lbl, .display, .mono). Mesma linguagem do /instalar: precisa e calma.
  */
-
 .ins {
   min-height: 100dvh;
 }
@@ -14,30 +13,17 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  height: var(--tb);
-  padding: 0 var(--gut);
-  background: hsl(from var(--bg) h s l / 0.86);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1px 0 var(--line);
+  height: 56px;
+  padding: 0 20px;
+  background: var(--s1);
+  backdrop-filter: none;
+  box-shadow: none;
 }
 
 .ins-brand {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.ins-mark {
-  align-self: center;
-  width: 8px;
-  height: 16px;
-  background: var(--acc);
-  border-radius: 1px;
-}
-
-.ins-word {
-  font-size: 22px;
-  line-height: 1;
+  align-items: center;
+  gap: 14px;
 }
 
 .ins-act {
@@ -53,26 +39,14 @@
 }
 
 .ins-main {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 40px var(--gut) 72px;
-}
-
-.ins-title {
-  font-size: var(--fs-h1);
-  margin: 0 0 12px;
-}
-
-.ins-lead {
-  max-width: 62ch;
-  font-size: var(--fs-lead);
-  color: var(--tx-2);
-  margin: 0 0 8px;
+  max-width: none;
+  margin: 0;
+  padding: 24px 24px 56px;
 }
 
 .ins-note {
   display: inline-block;
-  margin: 8px 0 0;
+  margin: 0 0 12px;
   padding: 6px 10px;
   border-radius: var(--r-sm);
   font-size: 12px;
@@ -81,78 +55,26 @@
   box-shadow: 0 0 0 1px var(--acc-line) inset;
 }
 
-/* Navegação: mesma ordem das seções (problemas primeiro). Alvo de 28 px, letra de 13 px. */
-.ins-toc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2px 18px;
-  margin: 24px 0 4px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--line);
-}
-
-.ins-toc a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 28px;
-  font-size: 13px;
-  color: var(--tx-3);
-}
-
-.ins-toc a:hover {
-  color: var(--tx);
-}
-
-.ins-toc a.is-pb {
-  color: var(--tx-2);
-}
-
-.ins-toc a.is-pb::before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--warn);
-}
-
 /* ───────── Resumo ───────── */
-
 .sum {
   margin-top: 28px;
-  display: flex;
+  display: block;
   gap: 14px;
   align-items: flex-start;
-  padding: 16px 18px;
+  padding: 0;
   border-radius: var(--r-lg);
-  background: var(--s2);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
-}
-
-.sum-sig {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  margin-top: 6px;
-  border-radius: 50%;
-  background: var(--warn);
-  box-shadow: 0 0 0 3px hsl(from var(--warn) h s l / 0.16);
-}
-
-.sum.is-ok .sum-sig {
-  background: var(--live);
-  box-shadow: 0 0 0 3px hsl(from var(--live) h s l / 0.16);
+  background: none;
+  box-shadow: none;
+  margin: 0 0 8px;
 }
 
 .sum-t {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.sum-sig.is-wait {
-  background: var(--tx-3);
-  box-shadow: 0 0 0 3px hsl(from var(--tx-3) h s l / 0.16);
+  margin: 0 0 4px;
+  font-size: 36px;
+  font-weight: 400;
+  font-family: var(--f-display);
+  line-height: 44px;
+  letter-spacing: -0.01em;
 }
 
 .sum-b {
@@ -161,11 +83,13 @@
 }
 
 .sum-l {
-  margin: 10px 0 0;
+  margin: 0 0 4px;
   padding-left: 16px;
   color: var(--tx-2);
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
 }
 
 .sum-l li::marker {
@@ -240,27 +164,36 @@
 }
 
 /* ───────── Seções ───────── */
-
 .isec {
-  padding: 32px 0 4px;
+  padding: 0 14px 14px;
   scroll-margin-top: calc(var(--tb) + 12px);
+  margin-top: 8px;
+  border-radius: 10px;
+  background: var(--s2);
 }
 
 .isec-h {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 8px 14px;
+  gap: 8px 12px;
   margin-bottom: 14px;
+  min-height: 48px;
+  margin: 0;
 }
 
 .isec-h h2 {
-  font-size: var(--fs-h2);
+  font-size: 15px;
   margin: 0;
+  font-family: var(--f-ui);
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0;
 }
 
 .isec-h .sp {
   flex: 1;
+  display: none;
 }
 
 .isec > .fine,
@@ -296,6 +229,7 @@
   cursor: pointer;
   font-size: 13px;
   color: var(--tx-2);
+  font-weight: 500;
 }
 
 .more > summary::-webkit-details-marker {
@@ -323,12 +257,6 @@
 
 .more-b {
   padding-top: 6px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .more > summary::before {
-    transition: none;
-  }
 }
 
 .rows {
@@ -428,15 +356,15 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 22px;
+  height: 24px;
   padding: 0 8px;
-  border-radius: 5px;
+  border-radius: 4px;
   font-size: 12px;
-  font-weight: 550;
+  font-weight: 600;
   white-space: nowrap;
   background: var(--s3);
   color: var(--tx-2);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
+  box-shadow: none;
 }
 
 .state::before {
@@ -458,8 +386,8 @@ code {
 
 .state.is-warn {
   color: var(--warn);
-  background: hsl(from var(--warn) h s l / 0.08);
-  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
+  background: var(--s3);
+  box-shadow: none;
 }
 
 .state.is-warn::before {
@@ -614,11 +542,99 @@ code {
 
 /* Motor fora do disco: a recuperação sobe para o topo, com o mesmo tom calmo do aviso */
 .isec.is-first .steps {
-  box-shadow: 0 0 0 1px hsl(from var(--warn) h s l / 0.3) inset;
+  box-shadow: none;
 }
 
 .ins-session {
-  margin-top: 40px;
+  margin-top: 24px;
+}
+
+.ins-ver {
+  font-size: 15px;
+  color: var(--tx-2);
+}
+
+.ins-api {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.ins-api .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--tx-3);
+}
+
+.ins-api .dot.is-on {
+  background: var(--live);
+}
+
+.ins-toc {
+  display: none;
+}
+
+.sum-bu {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--tx-2);
+}
+
+.bu {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bu i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--s3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.bu i.on {
+  background: var(--bulb);
+  box-shadow: 0 0 6px var(--bulb-glow);
+}
+
+.sum .pb {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--s2);
+  max-width: none;
+}
+
+.isec-h .lbl {
+  order: 5;
+  margin-left: auto;
+  font-family: var(--f-ui);
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--tx-3);
+}
+
+.rows,
+.envt,
+.steps,
+.nots {
+  background: var(--bg);
+  box-shadow: none;
+  border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more > summary::before {
+    transition: none;
+  }
 }
 
 @media (max-width: 760px) {

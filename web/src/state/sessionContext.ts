@@ -33,6 +33,10 @@ export interface HostDraft {
   slots: number;
   minPlayers: number;
   locked: boolean;
+  /** "Iniciantes ok". */
+  beginners: boolean;
+  /** "Aceita entrar no meio da partida". */
+  joinInProgress: boolean;
 }
 
 export type JoinTarget = { kind: 'lobby'; lobby: Lobby } | { kind: 'bots' };
@@ -45,7 +49,7 @@ export interface AppCheck {
   status: 'checking' | 'ready' | 'problems';
   /** Já em duas camadas: `message` para quem joga, `detail` técnico. */
   problems: EngineError[];
-  modes?: { testMode: boolean; testProject: string; testProjectOk: boolean };
+  modes?: { testMode: boolean; testSlugs?: string[]; testProject: string; testProjectOk: boolean };
 }
 
 export interface SessionValue {

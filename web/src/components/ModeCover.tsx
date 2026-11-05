@@ -1,38 +1,44 @@
 import { memo, useLayoutEffect, useState, type CSSProperties } from 'react';
-import { coverSprite, globalCoverDefs, spriteById } from '../lib/cover';
+import { coverFraming, loadScene, MEDALLION_DEFS, modeIcon, sceneId, sceneSlug, type CoverVariant, type IconKind, type PreparedScene } from '../lib/cover';
 
 /**
- * A capa de um modo (emblema de oficina oculta), pintada só com variáveis do tema:
- * trocar o tema repinta sem gerar nada de novo. Estática: o único movimento é o zoom de 5%
- * no hover de quem a contém (classe `has-cover`), desligado com movimento reduzido.
- * Preenche o pai (position: absolute); o pai define o tamanho e o canto.
+ * A capa de um modo: a cena noturna do kit (1600×900, foco à direita, faixa calma embaixo à esquerda
+ * para o título), pintada só com variáveis do tema: trocar o tema repinta. Estática: o único
+ * movimento é o zoom de 5% no hover de quem a contém (classe `has-cover`), desligado com movimento
+ * reduzido. Preenche o pai (position: absolute); o pai define o tamanho e o canto.
  *
- * Custo: o desenho de cada modo mora uma vez só no sprite de `<CoverDefs />`; o cartão é um
- * `<svg>` com um `<use>`. `content-visibility: auto` pula estilo, layout e pintura das capas
- * fora da tela (o tamanho vem do pai, então nada muda de lugar quando elas entram).
+ * Custo: cada cena é um chunk próprio, carregado só quando um modo a pede, e mora uma vez só no
+ * sprite de `<CoverDefs />`; a capa é um `<svg>` com um `<use>`. Antes de a cena chegar o contêiner
+ * já tem o tamanho e o fundo (`--k0`), então nada muda de lugar. `content-visibility: auto` pula
+ * estilo, layout e pintura das capas fora da tela.
  */
 interface ModeCoverProps {
   /** Slug do modo (src/data/modes.ts). */
   slug: string;
-  /** Versão larga do herói: a mesma cena com mais campo dos lados. */
+  /** Versão larga do herói: recorte em faixa centrado no foco da cena. */
   wide?: boolean;
   className?: string;
 }
 
-/* ---------- sprites em uso: contagem por id, lida por <CoverDefs /> ---------- */
+/* ---------- cenas carregadas: lidas por <CoverDefs /> ---------- */
 
-const inUse = new Map<string, number>();
+const loaded = new Map<string, PreparedScene>();
+const pending = new Set<string>();
 const listeners = new Set<() => void>();
 let snapshot: readonly string[] = [];
 
-function retain(id: string, delta: 1 | -1) {
-  const n = (inUse.get(id) ?? 0) + delta;
-  if (n > 0) inUse.set(id, n);
-  else inUse.delete(id);
-  const next = [...inUse.keys()].sort();
-  if (next.join() === snapshot.join()) return;
-  snapshot = next;
-  for (const l of listeners) l();
+/** Pede a cena do modo (uma vez só por modo); ao chegar, avisa o sprite. */
+function ensureScene(slug: string) {
+  const s = sceneSlug(slug);
+  if (loaded.has(s) || pending.has(s)) return;
+  pending.add(s);
+  loadScene(s)
+    .then((p) => {
+      loaded.set(s, p);
+      snapshot = [...loaded.keys()].sort();
+      for (const l of listeners) l();
+    })
+    .catch(() => pending.delete(s));
 }
 
 const subscribe = (l: () => void) => {
@@ -41,48 +47,109 @@ const subscribe = (l: () => void) => {
     listeners.delete(l);
   };
 };
-const getSnapshot = () => snapshot;
+
+/** Um `<svg>` com a cena do modo recortada pela variante; usado pela capa e pela faixa do lobby. */
+function SceneSvg({ slug, variant, className }: { slug: string; variant: CoverVariant; className?: string }) {
+  const { viewBox, preserveAspectRatio } = coverFraming(slug, variant);
+  return (
+    <svg className={className} viewBox={viewBox} preserveAspectRatio={preserveAspectRatio} focusable="false" aria-hidden="true">
+      <use href={`#${sceneId(slug)}`} />
+    </svg>
+  );
+}
 
 export const ModeCover = memo(function ModeCover({ slug, wide = false, className }: ModeCoverProps) {
-  const { id, viewBox, shift } = coverSprite(slug, wide);
-  // Efeito de layout: o sprite entra no DOM no mesmo commit, antes da primeira pintura.
-  useLayoutEffect(() => {
-    retain(id, 1);
-    return () => retain(id, -1);
-  }, [id]);
+  // Efeito de layout: o pedido sai no mesmo commit; a cena entra no DOM assim que o chunk chega.
+  useLayoutEffect(() => ensureScene(slug), [slug]);
   return (
-    <div className={className ? `cover ${className}` : 'cover'} style={{ '--m': shift, contentVisibility: 'auto' } as CSSProperties} aria-hidden="true">
-      <svg viewBox={viewBox} preserveAspectRatio="xMidYMid slice" focusable="false">
-        <use href={`#${id}`} />
-      </svg>
+    <div className={className ? `cover ${className}` : 'cover'} style={{ contentVisibility: 'auto' } as CSSProperties} aria-hidden="true">
+      <SceneSvg slug={slug} variant={wide ? 'wide' : 'card'} />
     </div>
   );
 });
 
 /**
- * Os quatro desfoques globais e os sprites das capas em uso. Renderizado uma vez, na casca.
- * Cada sprite fica num `<g class="cover">` com o `--m` do modo: é ali que os gradientes do
- * sprite resolvem as cores (`--m1`/`--m2` vêm da regra `.cover`), as mesmas do cartão.
+ * O ícone do modo, sem disco: glifo 24 (traço `currentColor`, para listas e texto) ou detalhe 48
+ * (duas cores de latão, para medalhões de 40 px ou mais). Decorativo: o rótulo vem do texto ao lado.
+ */
+export function ModeIcon({ slug, kind = 'glyph', size, className }: { slug: string; kind?: IconKind; size?: number; className?: string }) {
+  const { viewBox, attrs, inner } = modeIcon(slug, kind);
+  return (
+    <svg className={className ? `mi ${className}` : 'mi'} viewBox={viewBox} width={size} height={size} aria-hidden="true" focusable="false">
+      <g {...jsxAttrs(attrs)} dangerouslySetInnerHTML={{ __html: inner }} />
+    </svg>
+  );
+}
+
+const jsxAttrs = (a: Record<string, string>) =>
+  Object.fromEntries(Object.entries(a).map(([k, v]) => [k.replace(/-(\w)/g, (_m, c: string) => c.toUpperCase()), v]));
+
+/**
+ * O medalhão do modo (disco com anel de latão e o ícone dentro). Decorativo. O tamanho vem do CSS
+ * (`.med`) ou de `size`: a partir de 40 px usa o detalhe de duas cores; abaixo, o glifo (a classe
+ * `med-sm` também liga o glifo nos contextos pequenos do CSS).
+ */
+export function ModeMedallion({ slug, size, className }: { slug: string; size?: number; className?: string }) {
+  const sm = size != null && size < 40;
+  const g = modeIcon(slug, 'glyph');
+  const d = modeIcon(slug, 'detalhe');
+  return (
+    <svg
+      className={['med', sm ? 'med-sm' : '', className ?? ''].filter(Boolean).join(' ')}
+      viewBox="0 0 84 84"
+      width={size}
+      height={size}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <circle cx="42" cy="42" r="40" fill="url(#jj-med)" stroke="url(#jj-lat)" strokeWidth="2.5" />
+      <svg className="med-d" x="17" y="17" width="50" height="50" viewBox={d.viewBox}>
+        <g {...jsxAttrs(d.attrs)} dangerouslySetInnerHTML={{ __html: d.inner }} />
+      </svg>
+      <svg className="med-g" x="24" y="24" width="36" height="36" viewBox={g.viewBox}>
+        <g {...jsxAttrs(g.attrs)} dangerouslySetInnerHTML={{ __html: g.inner }} />
+      </svg>
+    </svg>
+  );
+}
+
+/** A coluna de arte do cartão de lobby: fatia vertical da cena, centrada no foco. Decorativa. */
+export function ModeStrip({ slug, className }: { slug: string; className?: string }) {
+  useLayoutEffect(() => ensureScene(slug), [slug]);
+  return <SceneSvg slug={slug} variant="strip" className={className ? `strip ${className}` : 'strip'} />;
+}
+
+/**
+ * Os gradientes do medalhão e as cenas já carregadas (estilo + defs + desenho, uma vez cada).
+ * Renderizado uma vez, na casca.
  */
 export function CoverDefs() {
-  // Assinatura no efeito de layout (useSyncExternalStore assina só no passivo, depois da
-  // pintura): a casca vem antes do conteúdo na árvore, então já escuta quando as capas
-  // se registram, e a atualização sai síncrona, antes da primeira pintura.
-  const [ids, setIds] = useState(getSnapshot);
+  // Assinatura no efeito de layout: a casca vem antes do conteúdo na árvore, então já escuta
+  // quando a cena chega, e a atualização sai antes da pintura seguinte.
+  const [ids, setIds] = useState(() => snapshot);
   useLayoutEffect(() => {
-    const update = () => setIds(getSnapshot());
+    const update = () => setIds(snapshot);
     update();
     return subscribe(update);
   }, []);
   return (
     <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
-      <defs dangerouslySetInnerHTML={{ __html: globalCoverDefs() }} />
-      <defs>
-        {ids.map((id) => {
-          const s = spriteById(id);
-          return s ? <g key={id} className="cover" style={{ '--m': s.shift } as CSSProperties} dangerouslySetInnerHTML={{ __html: s.markup }} /> : null;
-        })}
-      </defs>
+      <defs dangerouslySetInnerHTML={{ __html: MEDALLION_DEFS }} />
+      {ids.map((s) => {
+        const p = loaded.get(s);
+        return p ? <SceneSprite key={s} slug={s} scene={p} /> : null;
+      })}
     </svg>
   );
 }
+
+const SceneSprite = memo(function SceneSprite({ slug, scene }: { slug: string; scene: PreparedScene }) {
+  return (
+    <>
+      <style>{scene.css}</style>
+      <defs>
+        <g id={sceneId(slug)} dangerouslySetInnerHTML={{ __html: scene.body }} />
+      </defs>
+    </>
+  );
+});

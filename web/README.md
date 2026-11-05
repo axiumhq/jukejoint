@@ -38,7 +38,7 @@ Os filtros da home (`?modo=…&regiao=BR,NA&vagas=1&amigos=1&favoritos=1&inician
 
 1. **Esqueleto da pele B, pele do Deadlock:** barra superior + coluna principal + trilho social fixo (`components/Shell.tsx`). Abaixo de 960 px o trilho vira folha de baixo; no celular, a barra "Jogar agora" fica fixa embaixo.
 2. **Cinco temas por tokens** (`styles/tokens.css`, `lib/theme.ts`, `state/theme.tsx`): Deadlock (padrão), Carmim, Pergaminho, Gelo e Grafite. O script inline de `index.html` aplica o salvo (`localStorage['lobby.theme']`) antes de pintar; `?theme=<id>` força um tema para captura.
-3. **Capas dos modos em SVG** (`lib/cover.ts`, `components/ModeCover.tsx`) pintadas só com `--k*`/`--m*`: trocar o tema repinta. Estáticas; só o zoom de 5% no hover. Avatares gerados do nome (`lib/avatar.ts`) não mudam com o tema.
+3. **Capas e ícones dos modos em SVG** (`lib/cover.ts`, `components/ModeCover.tsx`; cenas em `src/assets/modes/scenes/*.tokens.svg`, uma por chunk; ícones em `icons/`) inlinados e pintados só com tokens do tema: trocar o tema repinta. Estáticas; só o zoom de 5% no hover.
 4. **Um sistema de tipo:** Roboto Serif condensada só em títulos grandes, logotipo, títulos de seção em dois tons e rótulos `.cap`; Geist na interface (12–13,5 px); Geist Mono nos números.
 5. **Um sistema de acento:** `--acc` para agir, `--acc-tx` para chamar atenção no texto, `--live` só para presença.
 6. **Uma fonte de verdade para as contagens:** `liveStats()` em `src/lib/stats.ts` (hook `useLiveStats()`). Barra superior, modos e lobbies sempre batem; amigos vêm de `friendsOnline()`.

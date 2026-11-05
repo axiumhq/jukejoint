@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router';
-import { Avatar, Presence } from '../components/Avatar';
-import { SectionTitle, Tag } from '../components/Common';
+import { Presence } from '../components/Avatar';
+import { Tag } from '../components/Common';
 import { FriendRow } from '../components/Friends';
-import { Icon, type IconName } from '../components/Icon';
+import { Icon } from '../components/Icon';
 import { LobbyAction } from '../components/LobbyAction';
-import { ModeCover } from '../components/ModeCover';
+import { ModeMedallion } from '../components/ModeCover';
 import { Rail, useRail, useRailSignIn } from '../components/Rail';
-import { EngineProblem } from '../components/SessionDialogs';
 import type { Lobby } from '../data/lobbies';
 import { getMode, type Mode } from '../data/modes';
 import { useDocumentTitle, useFriends, useMediaQuery, useReducedMotion } from '../hooks';
@@ -18,17 +17,17 @@ import { live as L } from '../i18n/live';
 import type { EngineError } from '../lib/desktop';
 import { friendsIn } from '../lib/friends';
 import { lobbyState, roundText } from '../lib/lobbies';
-import { handoffState, readyCount, roomPhase, roster, ruleIcon, type RoomPhaseKey, type Seat } from '../lib/room';
+import { handoffState, readyCount, roomPhase, roster, type RoomPhaseKey, type Seat } from '../lib/room';
 import { useSession } from '../state/session';
 import { inviteLink, inviteLinkLabel } from '../lib/invite';
 
 /**
- * A sala do lobby (/sala/:id), v8 (prototipos/v8/sala.html): cabeçalho com a capa do modo e a fase,
- * a grade de vagas, a barra PRONTO fixa embaixo e o trilho da sala (regras, convite, atividade).
- * A barra tem um botão principal por estado: Entrar (de fora), o app trabalhando (entrando), PRONTO com F,
- * Cancelar (contagem de 5 s), o app abrindo o jogo, Iniciar partida (anfitrião) e Voltar para o Deadlock.
- * O progresso da sala é um só (lib/room.ts `roomPhase`), no cabeçalho; a barra diz o que o app faz agora,
- * sem contador próprio. Quem decide a contagem e o handoff é a sessão (state/session.tsx); a tela só mostra e pede.
+ * A sala do lobby (/sala/:id), do Claude Design (Sala, Sala-Barras, Sala-Mobile): cabeçalho com o
+ * medalhão do modo, a fase em quatro passos, a grade de vagas, a barra de ação fixa embaixo e o
+ * painel da sala (pedidos, regras, convite, atividade).
+ * A barra tem um estado por vez: de fora (Entrar), o app trabalhando (entrada e handoff, em etapas),
+ * PRONTO com F, contagem de 5 s (Cancelar), Iniciar partida (quem abriu), em partida e falha do app.
+ * Quem decide a contagem e o handoff é a sessão (state/session.tsx); a tela só mostra e pede.
  */
 
 /** O que o app faz em cada etapa (entrada e handoff têm as mesmas três). */
@@ -43,41 +42,35 @@ interface FeedItem {
   you?: boolean;
 }
 
-const FEED_ICON: Partial<Record<FeedKind, IconName>> = { countStart: 'play', countCancel: 'x', started: 'pad' };
+type BarState = 'joining' | 'visitor' | 'fail' | 'opening' | 'playing' | 'countdown' | 'host' | 'member';
 
-/* ───────── O app trabalhando (entrada e handoff) ───────── */
+/* ───────── Barra: as etapas do app ───────── */
 
-/** Só a etapa atual, em texto: o progresso numerado da sala já está no cabeçalho. */
-function AppWorking({ step, test }: { step: number; test?: string | null }) {
+/** As três etapas do app em pílulas: feita (presença), atual (acento), por vir (apagada). */
+function AppSteps({ step, test }: { step: number; test?: string | null }) {
   return (
-    <div className="rb-work">
-      <p className="rb-hint is-work">
-        <span className="rb-spin" aria-hidden="true" />
-        <span>
-          <b>{APP_STEPS[step] ?? APP_STEPS[0]}</b> {t.room.keepOpen}
-        </span>
-        {test && (
-          <span className="tag line rb-test" title={test}>
-            {D.testTag}
-          </span>
-        )}
-      </p>
-      <Link to="/instalar#antivirus" className="rb-help">
-        {t.room.stuck} <u>{t.room.help}</u>
-      </Link>
-    </div>
+    <ol className="rb-steps">
+      {APP_STEPS.map((s, i) => (
+        <li key={s} className={i < step ? 'is-done' : i === step ? 'is-on' : undefined} aria-current={i === step ? 'step' : undefined}>
+          {i < step && <Icon name="check" />}
+          {s}
+        </li>
+      ))}
+      {test && (
+        <li className="rb-test" title={test}>
+          {D.testTag}
+        </li>
+      )}
+    </ol>
   );
 }
 
-/** Dentro do app: hospedar ou entrar falhou. A frase do app e, recolhido, o detalhe técnico. */
-function AppFailed({ error, host }: { error: EngineError; host: boolean }) {
+/** Dentro do app: o detalhe técnico da falha, aberto pelo botão "Detalhes técnicos" da barra. */
+function FailDetails({ error, id, open }: { error: EngineError; id: string; open: boolean }) {
   return (
-    <div className="rb-fail" role="alert">
-      <Icon name="info" />
-      <div className="rb-fail-t">
-        <b>{host ? D.failedHost : D.failedJoin}</b>
-        <EngineProblem error={error} />
-      </div>
+    <div className="rb-tech" id={id} hidden={!open}>
+      <p>{error.message}</p>
+      {error.detail && <code>{error.detail}</code>}
     </div>
   );
 }
@@ -107,11 +100,8 @@ function SeatCard({
   if (!seat.name) {
     const body = (
       <>
-        <span className="plus" aria-hidden="true">
-          <Icon name="plus" />
-        </span>
         <b>{visitor ? t.room.free : t.room.invite}</b>
-        <small className="num">{t.room.seatN(index + 1)}</small>
+        <small>{t.room.seatN(index + 1)}</small>
       </>
     );
     return (
@@ -128,20 +118,6 @@ function SeatCard({
   }
 
   const name = seat.you && !signedIn ? t.room.act.you : seat.name;
-  let tag = null;
-  if (seat.you && signedIn) tag = <Tag tone="line">{t.room.you}</Tag>;
-  else if (seat.host)
-    tag = (
-      <span className="tag line" title={t.room.hostTitle}>
-        <Icon name="crown" label={t.room.hostTitle} />
-      </span>
-    );
-  else if (seat.friend)
-    tag = (
-      <span className="tag soft" title={t.room.friendTitle}>
-        <Icon name="users" label={t.room.friendTitle} />
-      </span>
-    );
 
   const state = playing ? (
     <>
@@ -150,27 +126,32 @@ function SeatCard({
     </>
   ) : seat.ready ? (
     <>
-      <Icon name="check" />
       {t.room.confirmed}
+      <Icon name="check" />
     </>
+  ) : seat.you ? (
+    t.room.missingYou
   ) : (
-    <>
-      <span className="ring" aria-hidden="true" />
-      {seat.you ? t.room.missingYou : t.room.notYet}
-    </>
+    t.room.notYet
   );
 
-  const cls = ['seat', seat.ready && 'is-ok', seat.you && 'is-me', pop && 'is-pop'].filter(Boolean).join(' ');
+  const cls = ['seat', seat.ready && !playing && 'is-ok', seat.you && 'is-me', pop && 'is-pop'].filter(Boolean).join(' ');
   return (
     <li className="seat-li">
       <div className={cls}>
-        <div className="seat-top">
-          <Presence name={seat.name} size={40} status="menu" />
-          {tag}
-        </div>
+        <Presence name={seat.name} size={56} status="lobby" />
         <div className="seat-t">
-          <div className="seat-n">{name}</div>
-          <div className="seat-s">{state}</div>
+          <span className="seat-n">
+            <b>{name}</b>
+            {seat.host && <Icon name="crown" className="seat-crown" label={t.room.hostTitle} />}
+            {seat.you && signedIn && <span className="mk is-you">{t.room.act.you}</span>}
+            {seat.friend && !seat.you && (
+              <span className="mk" title={t.room.friendTitle}>
+                {t.room.friendMark}
+              </span>
+            )}
+          </span>
+          <span className="seat-s">{state}</span>
         </div>
         {onKick && (
           <button type="button" className="seat-kick" aria-label={L.kickLabel(seat.name)} onClick={onKick}>
@@ -182,7 +163,7 @@ function SeatCard({
   );
 }
 
-/* ───────── Trilho da sala ───────── */
+/* ───────── Painel da sala ───────── */
 
 function InviteFriends({ lobby }: { lobby: Lobby }) {
   const { user, signIn, pushToast, live, callFriend } = useSession();
@@ -204,14 +185,14 @@ function InviteFriends({ lobby }: { lobby: Lobby }) {
   const list = friends.filter((f) => f.lobbyId !== lobby.id);
   if (list.length === 0) return <p className="rail-empty">{t.room.inviteNone}</p>;
   return (
-    <ul>
+    <ul className="rinv-list">
       {list.map((f) => {
         const done = invited.has(f.name);
         return (
           <FriendRow key={f.name} friend={f}>
             <button
               type="button"
-              className={`btn btn-sm ${f.lobbyId ? 'btn-s' : 'btn-g'}`}
+              className={`btn btn-sm ${done ? 'btn-done' : 'btn-s'}`}
               disabled={done}
               aria-label={done ? undefined : t.friends.inviteLabel(f.name)}
               onClick={() => {
@@ -224,7 +205,6 @@ function InviteFriends({ lobby }: { lobby: Lobby }) {
                 pushToast(t.friends.invitedToast(f.name));
               }}
             >
-              {done && <Icon name="check" />}
               {done ? t.friends.invited : t.friends.invite}
             </button>
           </FriendRow>
@@ -242,21 +222,21 @@ function Knocks() {
     <section className="rail-sec" aria-labelledby="room-knocks">
       <div className="rail-h">
         <h2 className="cap" id="room-knocks">
-          {L.knocksTitle} · <b className="num">{knocksHere.length}</b>
+          {L.knocksTitle} · <span className="num">{knocksHere.length}</span>
         </h2>
       </div>
       <ul className="rknocks">
         {knocksHere.map((k) => (
           <li key={k.userId} className="rknock">
-            <Avatar name={k.name} size={28} />
-            <b>{k.name}</b>
-            {k.message && <small>{k.message}</small>}
+            <p>
+              <b>{k.name}</b> {k.message && <span>{k.message}</span>}
+            </p>
             <div className="rknock-act">
-              <button type="button" className="btn btn-s btn-sm" aria-label={L.knockDeclineLabel(k.name)} onClick={() => answerKnock(k.userId, false)}>
-                {L.knockDecline}
-              </button>
-              <button type="button" className="btn btn-p btn-sm" aria-label={L.knockAcceptLabel(k.name)} onClick={() => answerKnock(k.userId, true)}>
+              <button type="button" className="btn btn-s btn-sm" aria-label={L.knockAcceptLabel(k.name)} onClick={() => answerKnock(k.userId, true)}>
                 {L.knockAccept}
+              </button>
+              <button type="button" className="btn btn-g btn-sm" aria-label={L.knockDeclineLabel(k.name)} onClick={() => answerKnock(k.userId, false)}>
+                {L.knockDecline}
               </button>
             </div>
           </li>
@@ -272,6 +252,7 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
   const link = inviteLinkLabel(inviteLink(lobby.id));
   return (
     <>
+      <h2 className="display rroom-h">{t.room.railTitle}</h2>
       {lobby.mine && <Knocks />}
       {mode && (
         <section className="rail-sec" aria-labelledby="room-rules">
@@ -279,36 +260,27 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
             <h2 className="cap" id="room-rules">
               {t.room.rules}
             </h2>
-            <Link to={`/modos/${mode.slug}`} className="link" aria-label={t.room.modeLink(mode.name)}>
-              {mode.name}
-            </Link>
           </div>
           <ul className="rrules">
             {mode.rules.slice(0, 3).map((r) => (
-              <li key={r} className="rrule">
-                <span className="ri" aria-hidden="true">
-                  <Icon name={ruleIcon(r)} />
-                </span>
-                <span>{r}</span>
-              </li>
+              <li key={r}>{r}</li>
             ))}
           </ul>
+          <Link to={`/modos/${mode.slug}`} className="link rrules-all">
+            {t.room.allRules}
+          </Link>
         </section>
       )}
 
       <section className="rail-sec" id="room-invite" aria-labelledby="room-invite-h">
         <div className="rail-h">
           <h2 className="cap" id="room-invite-h">
-            {t.room.inviteTitle}
+            {t.room.inviteTitle} · {t.room.freeN(free)}
           </h2>
-          <span className="lbl">{t.room.freeN(free)}</span>
         </div>
         <div className="rinv-link">
-          <code className="num" aria-label={t.room.inviteLink}>
-            {link}
-          </code>
-          <button type="button" className="btn btn-s btn-sm" onClick={() => inviteTo(lobby)}>
-            <Icon name="copy" />
+          <input className="rinv-in num" readOnly value={link} aria-label={t.room.inviteLink} onFocus={(e) => e.currentTarget.select()} />
+          <button type="button" className="btn btn-s" onClick={() => inviteTo(lobby)}>
             {t.room.copy}
           </button>
         </div>
@@ -327,18 +299,11 @@ function RoomRail({ lobby, mode, inside, feed, now }: { lobby: Lobby; mode: Mode
           <ul className="ract">
             {feed.map((it) => {
               const who = it.you ? t.room.act.you : it.name;
-              const icon = FEED_ICON[it.kind];
+              const named = it.kind === 'joined' || it.kind === 'confirmed';
               return (
                 <li key={it.id} className="ract-i">
-                  {who && !icon ? (
-                    <Avatar name={it.you ? (user?.name ?? t.lobbies.you) : who} size={20} />
-                  ) : (
-                    <span className="ract-ico" aria-hidden="true">
-                      <Icon name={icon ?? 'info'} />
-                    </span>
-                  )}
                   <span className="ract-t">
-                    {who && !icon && <b>{who}</b>} {t.room.act[it.kind]}
+                    {named && who && <b>{who}</b>} {t.room.act[it.kind]}
                   </span>
                   <span className="t num">{t.room.ago(Math.max(0, Math.round((now - it.at) / 1000)))}</span>
                 </li>
@@ -446,7 +411,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     return items.sort((a, b) => b.at - a.at).slice(0, 6);
   }, [lobby.joins, confirmedAt, here, log]);
 
-  /* a vaga "estala" quando alguém confirma */
+  /* a vaga "pula" quando alguém confirma */
   const readyKey = seats
     .filter((x) => x.name && x.ready)
     .map((x) => x.name)
@@ -467,7 +432,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
   }, [readyKey]);
   useEffect(() => () => window.clearTimeout(popTimer.current), []);
 
-  /* a barra cresce com erros e etapas: os avisos sobem junto com ela (--rbar-h no root) */
+  /* a barra cresce no celular e com o detalhe da falha: os avisos sobem junto (--rbar-h no root) */
   const barRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = barRef.current;
@@ -481,7 +446,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     };
   }, []);
 
-  /* vaga vazia: abre o convite (folha no celular, trilho no desktop) */
+  /* vaga vazia: abre o convite (folha no celular, painel no desktop) */
   const focusInvite = useCallback(
     (from: HTMLElement) => {
       if (sheet) {
@@ -491,7 +456,7 @@ function RoomView({ lobby }: { lobby: Lobby }) {
       }
       const sec = document.getElementById('room-invite');
       sec?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'center' });
-      sec?.querySelector<HTMLButtonElement>('button')?.focus({ preventScroll: true });
+      sec?.querySelector<HTMLElement>('input, button')?.focus({ preventScroll: true });
     },
     [sheet, openSheet, reduced],
   );
@@ -517,183 +482,175 @@ function RoomView({ lobby }: { lobby: Lobby }) {
     return () => document.removeEventListener('keydown', onKey);
   }, [canToggle, sheetOpen, onReady]);
 
+  /* o detalhe técnico da falha (só dentro do app) */
+  const [techOpen, setTechOpen] = useState(false);
+  useEffect(() => {
+    if (!s.engineError) setTechOpen(false);
+  }, [s.engineError]);
+
   /* ───── cabeçalho ───── */
-  const hostName = lobby.mine ? (user?.name ?? t.lobbies.you) : lobby.host;
   const round = playing ? roundText(lobby, now) : null;
   const phaseDetail = (key: RoomPhaseKey) => {
-    const D = t.room.detail;
+    const P = t.room.detail;
     switch (key) {
       case 'gathering':
-        return D.missingPlayers(k - lobby.players);
+        return P.missingPlayers(k - lobby.players);
       case 'waiting':
-        return D.missingReady(k - readyN);
+        return P.missingReady(k - readyN);
       case 'quorum':
-        return lobby.mine ? D.host : D.any;
+        return lobby.mine ? P.host : P.any;
       case 'countdown':
-        return D.startsIn(secs);
+        return P.startsIn(secs);
       case 'opening':
-        // a etapa do app está na barra, logo abaixo; aqui fica só a fase
-        return '';
+        return P.opening;
       case 'playing':
-        return inside ? D.inside : (round ?? '');
+        return inside ? P.inside : (round ?? t.room.phases.playing);
     }
   };
 
-  /* ───── barra PRONTO: meio e ações por estado ───── */
+  /* ───── barra de ação: um estado por vez ───── */
   const st = lobbyState(lobby, lobbyCtx, now);
-  const testNote = s.desktop && s.appCheck?.modes?.testMode ? D.testMode(s.appCheck.modes.testProject) : null;
-  let mid;
-  let act;
-  if (joining) {
-    mid = <AppWorking step={joiningStep} />;
-    act = (
-      <button type="button" className="btn btn-s rb-ready" aria-disabled="true">
-        {t.room.joiningBtn}
+  // O aviso vale para o modo desta sala: um app mais antigo, sem a lista, só diz se todos são teste.
+  const modes = s.appCheck?.modes;
+  const isTestMode = modes ? (modes.testSlugs ? modes.testSlugs.includes(lobby.modeSlug) : modes.testMode) : false;
+  const testNote = s.desktop && modes && isTestMode ? D.testMode(modes.testProject) : null;
+  const countText = `${readyN} ${t.room.readyOf(taken)} · ${t.room.minimum} ${k}`;
+  const helpLink = (
+    <Link to="/instalar#antivirus" className="btn btn-g rb-help">
+      {t.room.stuck} <u>{t.room.help}</u>
+    </Link>
+  );
+  const exitBtn =
+    lobby.mine && s.live && s.desktop ? (
+      <button type="button" className="btn btn-g" onClick={s.endMatch} aria-label={D.endMatchLabel(lobby.name)}>
+        {D.endMatch}
+      </button>
+    ) : (
+      <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
+        {t.room.leave}
       </button>
     );
+
+  let bar: BarState;
+  let num: number | null = null;
+  let tx: ReactNode;
+  let sub: ReactNode = null;
+  let extra: ReactNode = null;
+  let meter = false;
+  let act: ReactNode = null;
+
+  if (joining) {
+    bar = 'joining';
+    tx = t.room.keepOpen;
+    extra = <AppSteps step={joiningStep} />;
+    act = helpLink;
   } else if (!here) {
-    mid = (
-      <p className="rb-hint">
-        <Icon name="info" />
-        <span>{st.label ? `${st.label}. ${t.room.outside}` : t.room.outside}</span>
-      </p>
-    );
+    bar = 'visitor';
+    tx = t.room.outside;
+    sub = st.label || null;
     act = (
       <div className="rb-go">
         <LobbyAction lobby={lobby} state={st} primary />
       </div>
     );
   } else if (s.engineError && (handoff || playing)) {
-    // Dentro do app: hospedar ou entrar falhou. O erro de verdade, e dá para tentar de novo.
-    mid = <AppFailed error={s.engineError} host={!!lobby.mine} />;
+    // Dentro do app: hospedar ou entrar falhou. A frase do app, o detalhe recolhido e tentar de novo.
+    bar = 'fail';
+    tx = lobby.mine ? D.failedHost : D.failedJoin;
+    extra = <FailDetails error={s.engineError} id="rb-tech" open={techOpen} />;
     act = (
       <>
+        <button type="button" className="btn btn-g" aria-expanded={techOpen} aria-controls="rb-tech" onClick={() => setTechOpen((v) => !v)}>
+          {D.details}
+        </button>
         {lobby.mine ? (
           <button type="button" className="btn btn-g" onClick={s.endMatch} aria-label={D.endMatchLabel(lobby.name)}>
-            <Icon name="x" />
             {D.endMatch}
           </button>
         ) : (
           <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
-            <Icon name="exit" />
             {t.room.leave}
           </button>
         )}
-        <button type="button" className="btn btn-p rb-ready" onClick={s.retryEngine}>
+        <button type="button" className="btn btn-p btn-xl rb-main-btn" onClick={s.retryEngine}>
           {D.retry}
         </button>
       </>
     );
   } else if (handoff) {
-    mid = <AppWorking step={handoffStep!} test={testNote} />;
+    bar = 'opening';
+    tx = t.room.keepOpen;
+    extra = <AppSteps step={handoffStep!} test={testNote} />;
+    act = helpLink;
+  } else if (playing) {
+    bar = 'playing';
+    tx = t.room.playingTitle;
+    sub = t.room.playingNote;
     act = (
-      <button type="button" className="btn btn-s rb-ready" aria-disabled="true">
-        {t.room.opening}
+      <>
+        {exitBtn}
+        <button type="button" className="btn btn-p btn-xl rb-main-btn" onClick={() => pushToast(t.room.reopenToast)}>
+          {t.room.backToGame}
+        </button>
+      </>
+    );
+  } else if (countdown) {
+    // A contagem de 5 s: cancelável. Para quem abriu (ao vivo) é cancelar o início; para o resto, desmarcar o pronto.
+    bar = 'countdown';
+    num = secs;
+    tx = `${t.room.countdownLead} ${t.room.seconds(secs)}.`;
+    sub = t.room.countdownTail;
+    act = lobby.mine ? (
+      <button type="button" className="btn btn-o btn-lg" aria-label={t.room.cancelLabel} onClick={cancelStart}>
+        {t.room.cancel}
+      </button>
+    ) : (
+      <button type="button" className="btn btn-o btn-lg" aria-keyshortcuts="F" aria-label={t.room.cancelLabel} onClick={onReady}>
+        {t.room.cancel}
+        <span className="kbd" aria-hidden="true">
+          F
+        </span>
       </button>
     );
-  } else if (playing) {
-    mid = (
-      <p className="rb-hint">
-        <Icon name="pad" />
-        <span>{t.room.playingNote}</span>
-      </p>
-    );
-    act = (
-      <>
-        {s.live && s.desktop && lobby.mine ? (
-          <button type="button" className="btn btn-g" onClick={s.endMatch} aria-label={D.endMatchLabel(lobby.name)}>
-            <Icon name="x" />
-            {D.endMatch}
-          </button>
-        ) : (
-          <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
-            <Icon name="exit" />
-            {t.room.leave}
-          </button>
-        )}
-        <button type="button" className="btn btn-p rb-ready" onClick={() => pushToast(t.room.reopenToast)}>
-          {t.room.backToGame}
-          <Icon name="arrow" />
-        </button>
-      </>
-    );
-  } else if (lobby.mine && countdown) {
-    // Ao vivo, quem abriu também vê a contagem de 5 s e pode cancelar.
-    mid = (
-      <p className="rb-hint is-count">
-        <span className="rb-cd num" aria-hidden="true">
-          {secs}
-        </span>
-        <span>
-          {t.room.countdownLead} {t.room.seconds(secs)}. {t.room.countdownTail}
-        </span>
-      </p>
-    );
-    act = (
-      <>
-        <button type="button" className="btn btn-g" onClick={() => closeLobby(lobby.id)} aria-label={t.room.closeLabel(lobby.name)}>
-          <Icon name="x" />
-          {t.room.close}
-        </button>
-        <button type="button" className="btn rb-ready is-on" aria-label={t.room.cancelLabel} onClick={cancelStart}>
-          {t.room.cancel}
-        </button>
-      </>
-    );
   } else if (lobby.mine) {
+    bar = 'host';
     const canStart = lobby.players >= k && readyN >= k;
-    mid = (
-      <p className="rb-hint">
-        <Icon name="info" />
-        <span>{lobby.players < k ? t.room.hostGathering(k - lobby.players) : canStart ? t.room.hostReady : t.room.hostWaiting(k - readyN)}</span>
-      </p>
-    );
+    tx = lobby.players < k ? t.room.hostGathering(k - lobby.players) : canStart ? countText : t.room.hostWaiting(k - readyN);
+    meter = true;
     act = (
       <>
-        <button type="button" className="btn btn-g" onClick={() => closeLobby(lobby.id)} aria-label={t.room.closeLabel(lobby.name)}>
-          <Icon name="x" />
+        <button type="button" className="btn btn-o" onClick={() => closeLobby(lobby.id)} aria-label={t.room.closeLabel(lobby.name)}>
           {t.room.close}
         </button>
-        <button type="button" className="btn btn-p rb-ready" disabled={!canStart} onClick={startMatch}>
-          <Icon name="play" />
+        <button type="button" className="btn btn-p btn-xl rb-main-btn" aria-disabled={!canStart} onClick={() => canStart && startMatch()}>
           {t.room.start}
         </button>
       </>
     );
   } else {
-    mid = countdown ? (
-      <p className="rb-hint is-count">
-        <span className="rb-cd num" aria-hidden="true">
-          {secs}
-        </span>
-        <span>
-          {t.room.countdownLead} {t.room.seconds(secs)}. {t.room.countdownTail}
-        </span>
-      </p>
-    ) : (
-      <p className="rb-hint">
-        <Icon name="info" />
-        <span>{ready ? t.room.hintWaiting(k - readyN) : readyN >= k ? t.room.hintQuorum : t.room.hint(k)}</span>
-      </p>
-    );
+    bar = 'member';
+    tx = countText;
+    meter = true;
     act = (
       <>
         <button type="button" className="btn btn-g" onClick={leaveLobby} aria-label={t.room.leaveLabel(lobby.name)}>
-          <Icon name="exit" />
           {t.room.leave}
         </button>
         <button
           type="button"
-          className={`btn rb-ready ${ready ? 'is-on' : 'btn-p is-caps'}`}
+          className={`btn btn-xl rb-main-btn rb-ready ${ready ? 'is-on' : 'btn-p is-caps'}`}
           aria-keyshortcuts="F"
-          aria-label={countdown ? t.room.cancelLabel : ready ? t.room.unreadyLabel : t.room.readyLabel}
+          aria-label={ready ? t.room.unreadyLabel : t.room.readyLabel}
           onClick={onReady}
         >
-          {countdown ? t.room.cancel : ready ? t.room.ready : t.room.readyCta}
-          {ready && !countdown && <Icon name="check" />}
-          <span className="kbd" aria-hidden="true">
-            F
-          </span>
+          {ready ? t.room.ready : t.room.readyCta}
+          {ready ? (
+            <Icon name="check" />
+          ) : (
+            <span className="kbd" aria-hidden="true">
+              F
+            </span>
+          )}
         </button>
       </>
     );
@@ -701,13 +658,15 @@ function RoomView({ lobby }: { lobby: Lobby }) {
 
   const ticks = Math.max(taken, k);
   const free = Math.max(0, lobby.slots - lobby.players);
+  const hostName = lobby.mine ? null : lobby.host;
 
   return (
     <div className="room-page">
-      <section className="rh" aria-labelledby="room-title">
-        <ModeCover slug={lobby.modeSlug} wide />
-        <div className="rh-shade" aria-hidden="true" />
-        <div className="rh-body">
+      <header className="rh" aria-labelledby="room-title">
+        <span className="rh-art" aria-hidden="true">
+          <ModeMedallion slug={lobby.modeSlug} />
+        </span>
+        <div className="rh-t">
           <Link to="/#lobbies" className="rh-back">
             <Icon name="back" />
             {t.room.back}
@@ -718,33 +677,16 @@ function RoomView({ lobby }: { lobby: Lobby }) {
           </h1>
           <p className="rh-meta">
             <span className="who">
-              <Avatar name={hostName} size={22} />
-              {hostName}
-              <span className="tag line">
-                <Icon name="crown" />
-                <span className="vh-md">{t.room.opened}</span>
-              </span>
+              <Icon name="crown" label={t.room.hostTitle} />
+              {hostName ? t.room.by(hostName) : t.room.byYou}
             </span>
-            {mode && (
-              <>
-                <i className="hide-md" aria-hidden="true" />
-                <span className="hide-md">{mode.name}</span>
-              </>
-            )}
-            <i aria-hidden="true" />
-            <span>
-              <span className="num">
-                {lobby.players}/{lobby.slots}
-              </span>{' '}
-              {t.room.playersWord}
+            {mode && <span className="hide-sm">{mode.name}</span>}
+            <span>{t.lobbies.inRoom(lobby.players, lobby.slots)}</span>
+            <span className="hide-sm">
+              {t.room.minimum} {k}
             </span>
-            <i className="hide-md" aria-hidden="true" />
-            <span className="hide-md">
-              {t.room.minimum} <span className="num">{k}</span>
-            </span>
-            <i className="hide-md" aria-hidden="true" />
-            <span className="hide-md">
-              {t.regions[lobby.region]} · <span className="num">{t.lobbies.ping(lobby.ping)}</span>
+            <span className="num">
+              {t.regions[lobby.region]} · {t.lobbies.ping(lobby.ping)}
             </span>
             {inMatch && (
               <Tag tone="warn" className="rh-live">
@@ -753,41 +695,36 @@ function RoomView({ lobby }: { lobby: Lobby }) {
             )}
           </p>
         </div>
-        <div className="rphase" role="group" aria-label={`${t.room.phase} ${t.room.phaseOf(phase.step)}`}>
-          <div className="rphase-t" aria-hidden="true">
-            <span className="cap">{t.room.phase}</span>
-            <span className="num">{t.room.phaseOf(phase.step)}</span>
-          </div>
-          <div className="rphase-bar" aria-hidden="true">
-            {[1, 2, 3, 4].map((i) => (
-              <i key={i} className={i <= phase.step ? 'on' : undefined} />
-            ))}
-          </div>
-          <p className="rphase-v">
-            {t.room.phases[phase.key]}
-            {phaseDetail(phase.key) && <span> · {phaseDetail(phase.key)}</span>}
-          </p>
+      </header>
+
+      <section className="rphase" role="group" aria-label={`${t.room.phase} ${t.room.phaseOf(phase.step)}: ${t.room.phases[phase.key]}`}>
+        <div className="rphase-h">
+          <span className="rphase-n">
+            {t.room.phase} {t.room.phaseOf(phase.step)}
+          </span>
+          <span className="rphase-v">{phaseDetail(phase.key)}</span>
         </div>
+        <ol className="rphase-steps">
+          {t.room.phaseSteps.map((label, i) => (
+            <li key={label} className={[i < phase.step && 'on', i === phase.step - 1 && 'at'].filter(Boolean).join(' ') || undefined} aria-current={i === phase.step - 1 ? 'step' : undefined}>
+              <i aria-hidden="true" />
+              <span>
+                {i + 1} {label}
+              </span>
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <button type="button" className="rsheet" aria-haspopup="dialog" onClick={(e) => openSheet(e.currentTarget)}>
-        <span className="ri" aria-hidden="true">
-          <Icon name="users" />
-        </span>
-        <span className="t">
-          <b>{t.room.sheetBtn}</b>
-          <span>{t.room.sheetSub(Math.min(3, mode?.rules.length ?? 0), free)}</span>
-        </span>
-        <Icon name="chev" />
-      </button>
-
-      <section className="sec" aria-labelledby="room-players">
-        <SectionTitle id="room-players" words={t.room.title} meta={t.room.seatsMeta(lobby.players, lobby.slots)}>
-          <button type="button" className="link" onClick={() => inviteTo(lobby)}>
-            <Icon name="link" />
+      <section className="rseats" aria-labelledby="room-players">
+        <div className="rseats-h">
+          <h2 id="room-players">
+            {t.room.title.join(' ')} · {t.room.seatsMeta(lobby.players, lobby.slots)}
+          </h2>
+          <button type="button" className="btn btn-g btn-sm" onClick={() => inviteTo(lobby)}>
             {t.room.copyInvite}
           </button>
-        </SectionTitle>
+        </div>
         <ul className="seats">
           {seats.map((seat, i) => (
             <SeatCard
@@ -805,23 +742,36 @@ function RoomView({ lobby }: { lobby: Lobby }) {
         </ul>
       </section>
 
-      <div className="rbar" role="region" aria-label={t.dock.label} ref={barRef}>
-        <div className="rb-count">
-          <p className="rb-n" aria-hidden="true">
-            <b className="num">{readyN}</b>
-            <span>{t.room.readyOf(taken)}</span>
-            <span className="rb-k">
-              · {t.room.minimum} <span className="num">{k}</span>
+      <button type="button" className="rsheet" aria-haspopup="dialog" onClick={(e) => openSheet(e.currentTarget)}>
+        <span className="t">
+          <b>{t.room.sheetBtn}</b>
+          <span>{t.room.sheetSub(Math.min(3, mode?.rules.length ?? 0), free)}</span>
+        </span>
+        <Icon name="chev" />
+      </button>
+
+      <div className={bar === 'fail' ? 'rbar is-fail' : 'rbar'} data-state={bar} role="region" aria-label={t.dock.label} ref={barRef}>
+        <div className="rb-main">
+          {num !== null && (
+            <span className="rb-cd display" aria-hidden="true">
+              {num}
             </span>
-          </p>
-          <span className="rb-ticks" role="img" aria-label={t.room.ticksLabel(readyN, k)}>
-            {Array.from({ length: ticks }, (_, i) => (
-              <i key={i} className={[i < readyN && 'on', i === k - 1 && 'th', i >= taken && 'gap'].filter(Boolean).join(' ') || undefined} />
-            ))}
-          </span>
+          )}
+          <div className="rb-txt">
+            <p className="rb-tx">{tx}</p>
+            {sub && <p className="rb-sub">{sub}</p>}
+            {meter && (
+              <span className="rb-ticks" role="img" aria-label={t.room.ticksLabel(readyN, k)}>
+                {Array.from({ length: ticks }, (_, i) => (
+                  <i key={i} className={[i < readyN && 'on', i === k - 1 && 'th', i >= taken && 'gap'].filter(Boolean).join(' ') || undefined} />
+                ))}
+              </span>
+            )}
+            {bar !== 'fail' && extra}
+          </div>
         </div>
-        <div className="rb-mid">{mid}</div>
         <div className="rb-act">{act}</div>
+        {bar === 'fail' && extra}
         <p className="sr-only" role="status" aria-live="polite">
           {announce}
         </p>
@@ -843,9 +793,12 @@ export function Room() {
   // Ao vivo, antes da primeira lista: ainda não dá para dizer que a sala sumiu.
   if (!lobby && !synced) {
     return (
-      <div className="page route-wait" aria-busy="true">
-        <div className="wrap">
-          <p className="fine">{L.connecting}</p>
+      <div className="room-wait" aria-busy="true">
+        <h1 className="display">{L.connecting}</h1>
+        <div className="seats" aria-hidden="true">
+          {Array.from({ length: 12 }, (_, i) => (
+            <div key={i} className="skel room-skel" />
+          ))}
         </div>
       </div>
     );
@@ -854,11 +807,10 @@ export function Room() {
   if (!lobby) {
     return (
       <div className="room-gone">
-        <h1 className="display two">{t.room.goneTitle}</h1>
+        <h1 className="display">{t.room.goneTitle}</h1>
         <p>{t.room.goneBody}</p>
-        <Link to="/#lobbies" className="btn btn-p btn-lg">
+        <Link to="/#lobbies" className="btn btn-p">
           {t.room.goneLink}
-          <Icon name="arrow" />
         </Link>
       </div>
     );

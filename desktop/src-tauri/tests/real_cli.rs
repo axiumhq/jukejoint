@@ -2,7 +2,7 @@
 //! Não abre o jogo nem roda `host`/`join`. Fica fora do `cargo test` normal; para rodar:
 //!
 //! ```powershell
-//! $env:MODLOCK_BIN = '...\tools\modlock-v0.1.68\modlock.exe'
+//! $env:MODLOCK_BIN = '...\tools\modlock-v0.1.73\modlock.exe'
 //! $env:ENGINE_ORIGIN = 'http://127.0.0.1:9'          # porta fechada: o daemon só tenta sinalizar
 //! $env:ENGINE_STATE_DIR = "$env:USERPROFILE\.mlD"    # pasta curta e separada da padrão
 //! cargo test --test real_cli -- --ignored --nocapture

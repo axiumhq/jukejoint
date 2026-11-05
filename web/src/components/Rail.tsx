@@ -2,14 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useLayoutEffect, use
 import { createPortal } from 'react-dom';
 
 /**
- * O trilho da direita (API para as telas).
+ * O painel da tela, à direita (API para as telas).
  *
  *   <Rail title="Sala">…conteúdo…</Rail>
  *
  * Qualquer tela renderiza `<Rail>` em qualquer lugar da sua árvore; o conteúdo vai, por portal,
- * para o trilho fixo da casca. Sem `<Rail>` na tela, a casca mostra o trilho social padrão.
- * Abaixo de 960 px o trilho vira folha de baixo: `useRail().openSheet()` abre (passe o botão
+ * para o painel fixo à direita da casca. Sem `<Rail>` na tela, não há painel: a sua lista (o
+ * social) mora na barra lateral da esquerda.
+ * Abaixo de 960 px o painel vira folha de baixo: `useRail().openSheet()` abre (passe o botão
  * que abriu, para o foco voltar nele); fecha pelo ×, pelo fundo ou com Esc.
+ * `openSheet(el, 'social')` abre a folha com a sua lista no lugar do painel da tela (a aba
+ * "Sua lista" da barra de baixo).
  * `title` é o título da folha no celular (no desktop o trilho não tem cabeçalho).
  */
 
@@ -22,7 +25,9 @@ interface RailValue {
   claim: (title: string) => () => void;
   title: string | null;
   sheetOpen: boolean;
-  openSheet: (opener?: HTMLElement | null) => void;
+  /** O que a folha mostra: o painel da tela ou a sua lista. */
+  sheetKind: SheetKind;
+  openSheet: (opener?: HTMLElement | null, kind?: SheetKind) => void;
   closeSheet: () => void;
   /** Elemento que abriu a folha (para devolver o foco). */
   opener: RefObject<HTMLElement | null>;
@@ -31,12 +36,15 @@ interface RailValue {
   claimSignIn: () => () => void;
 }
 
+export type SheetKind = 'page' | 'social';
+
 const RailContext = createContext<RailValue | null>(null);
 
 export function RailProvider({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [claims, setClaims] = useState<{ id: number; title: string }[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetKind, setSheetKind] = useState<SheetKind>('page');
   const opener = useRef<HTMLElement | null>(null);
   const seq = useRef(0);
 
@@ -46,8 +54,9 @@ export function RailProvider({ children }: { children: ReactNode }) {
     return () => setClaims((c) => c.filter((x) => x.id !== id));
   }, []);
 
-  const openSheet = useCallback((el?: HTMLElement | null) => {
+  const openSheet = useCallback((el?: HTMLElement | null, kind: SheetKind = 'page') => {
     opener.current = el ?? (document.activeElement as HTMLElement | null);
+    setSheetKind(kind);
     setSheetOpen(true);
   }, []);
 
@@ -67,13 +76,14 @@ export function RailProvider({ children }: { children: ReactNode }) {
       claim,
       title: claims.at(-1)?.title ?? null,
       sheetOpen,
+      sheetKind,
       openSheet,
       closeSheet,
       opener,
       signInShown: signIns > 0,
       claimSignIn,
     }),
-    [target, claims, claim, sheetOpen, openSheet, closeSheet, signIns, claimSignIn],
+    [target, claims, claim, sheetOpen, sheetKind, openSheet, closeSheet, signIns, claimSignIn],
   );
   return <RailContext.Provider value={value}>{children}</RailContext.Provider>;
 }
@@ -85,8 +95,8 @@ export function useRail() {
 }
 
 /**
- * Chame em quem mostra um botão de login dentro do trilho: enquanto estiver montado, a barra superior
- * esconde o dela no desktop (no celular o trilho é folha fechada e a barra volta a mostrar).
+ * Chame em quem mostra um botão de login na barra lateral ou no painel: enquanto estiver montado, a
+ * barra superior esconde o dela no desktop (no celular é folha fechada e a barra volta a mostrar).
  */
 export function useRailSignIn() {
   const { claimSignIn } = useRail();

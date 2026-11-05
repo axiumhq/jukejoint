@@ -2,7 +2,7 @@
 $ErrorActionPreference = 'Stop'
 
 $Repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$Modlock = Join-Path $Repo 'tools\modlock-v0.1.68\modlock.exe'
+$Modlock = Join-Path $Repo 'tools\modlock-v0.1.73\modlock.exe'
 $Signal = Join-Path $Repo 'tools\signal.exe'
 $env:MODLOCK_NO_UPDATE_CHECK = '1'
 

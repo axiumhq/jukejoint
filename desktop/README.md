@@ -26,7 +26,7 @@ desktop/
 
 - Rust estável (testado com 1.99.1), MSVC Build Tools 2022, Windows SDK, WebView2.
 - Node 24 e npm.
-- O `modlock.exe` **v0.1.68** (`scripts/install-modlock.ps1` baixa e confere o SHA-256).
+- O `modlock.exe` **v0.1.73** (`scripts/install-modlock.ps1` baixa e confere o SHA-256).
 
 Uma vez:
 
@@ -39,7 +39,7 @@ cd ..\desktop; npm ci
 
 ```powershell
 $env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-$env:MODLOCK_BIN = 'C:\caminho\para\tools\modlock-v0.1.68\modlock.exe'
+$env:MODLOCK_BIN = 'C:\caminho\para\tools\modlock-v0.1.73\modlock.exe'
 $env:ENGINE_ORIGIN = 'http://192.168.0.10:8080'   # o nosso servidor de sinalização
 cd desktop
 npx tauri dev
@@ -94,7 +94,7 @@ As fixtures de `host`/`join` seguem o esquema `modlock.cli.Event` embutido no bi
 Com o CLI real (sobe o daemon numa pasta separada e para com `modlock daemon stop`):
 
 ```powershell
-$env:MODLOCK_BIN = '...\tools\modlock-v0.1.68\modlock.exe'
+$env:MODLOCK_BIN = '...\tools\modlock-v0.1.73\modlock.exe'
 $env:ENGINE_ORIGIN = 'http://127.0.0.1:9'
 $env:ENGINE_STATE_DIR = "$env:USERPROFILE\.mlD"
 cargo test --test real_cli -- --ignored --nocapture
@@ -109,7 +109,7 @@ O nome do app e o esquema do link vêm de **um lugar só**: `BRAND_NAME` em
 
 | Variável | Quem lê | Para quê |
 |---|---|---|
-| `MODLOCK_BIN` | app | Caminho do `modlock.exe`. Sem ela, o app procura `modlock.exe` (ou `modlock-x86_64-pc-windows-msvc.exe`) ao lado do próprio executável; em build de dev, também `tools\modlock-v0.1.68\` do repositório. |
+| `MODLOCK_BIN` | app | Caminho do `modlock.exe`. Sem ela, o app procura `modlock.exe` (ou `modlock-x86_64-pc-windows-msvc.exe`) ao lado do próprio executável; em build de dev, também `tools\modlock-v0.1.73\` do repositório. |
 | `ENGINE_ORIGIN` | app | Origem do servidor de sinalização, passada em `daemon --origin` e `join --origin`. Só `http(s)://host[:porta]`; o hyperline.gg é recusado. Sem ela, vale a `APP_ENGINE_ORIGIN` do build; sem as duas, `host`/`join` não rodam. |
 | `ENGINE_STATE_DIR` | app | Troca o `APPDATA` só dos processos do Modlock (mesmo efeito do `-StateDir` dos scripts do spike). Útil com um socket travado na pasta padrão. Precisa ser curta: o socket AF_UNIX tem limite de ~108 caracteres. |
 | `ENGINE_PROJECTS_DIR` | app | Pasta com os projetos dos modos (uma subpasta por projeto, com `mod.json`). Sem ela: em build de dev, `spike\mods` do repositório; no app empacotado, `modos\` ao lado do executável. Hoje todo modo abre `hello` (modo de teste). |
@@ -123,7 +123,7 @@ O nome do app e o esquema do link vêm de **um lugar só**: `BRAND_NAME` em
 definidas fora do formato, o build para com a mensagem do que está errado. Um `cargo build` sem
 elas continua funcionando (sem API e sem origem padrão).
 
-A versão (`v0.1.68`) e o SHA-256 fixados ficam em `src-tauri/src/engine/mod.rs`, iguais aos de
+A versão (`v0.1.73`) e o SHA-256 fixados ficam em `src-tauri/src/engine/mod.rs`, iguais aos de
 `scripts/install-modlock.ps1`. O app não executa o binário (nem para ler a versão) se o hash não
 bater.
 
@@ -266,17 +266,28 @@ e/ou `http://localhost:5280` (no `dev:live`). Com `DEV_LOGIN=1` dá para testar 
 
 **Pasta para um amigo:** o `build:live` monta `desktop/out/Jukejoint/` (fora do git) com
 `Jukejoint.exe` (o `app-desktop.exe` renomeado; o nome não importa, o app acha as coisas pela
-pasta do próprio exe), `modlock.exe` (copiado de `tools\modlock-v0.1.68\` só se o SHA-256 bater com
+pasta do próprio exe), `modlock.exe` (copiado de `tools\modlock-v0.1.73\` só se o SHA-256 bater com
 o fixado em `engine/mod.rs`; senão o script para), `modos\hello` e um `LEIA-ME.txt` (a API,
 extrair antes de abrir, antivírus, manter as três coisas juntas, o aviso do SmartScreen, o login
 pelo navegador), e zipa tudo em `desktop/out/Jukejoint.zip` (o `tar.exe` do Windows). No exe, o
 `modlock.exe` e a pasta `modos\` são procurados ao lado do executável, então a pasta funciona como
 está.
 
+## Atualizações e instalador de release
+
+O workflow de release gera um instalador NSIS e o pacote assinado do updater. O app consulta a
+release mais recente ao abrir, baixa a atualização em segundo plano e oferece **Reiniciar e
+atualizar** quando termina. A instalação é passiva e reabre o app. Para publicar, cadastre no
+GitHub Actions o secret `TAURI_SIGNING_PRIVATE_KEY` com o conteúdo de `tools/jukejoint-updater.key`;
+essa chave privada não entra no git e precisa ser guardada em backup. A senha da chave é vazia, então
+`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` pode ficar sem valor.
+
+As versões instaladas pelo Inno Setup antigo não têm o código do updater e ficam em outra pasta.
+Desinstale essa versão e instale manualmente o novo `*-windows-x64-setup.exe` uma vez; as releases
+seguintes atualizam pelo próprio app.
+
 ## Ainda não feito
 
-- **Instalador** (NSIS/WiX), que também registraria o esquema do link e colocaria o `modlock.exe`
-  ao lado do app (`bundle.externalBin`).
 - **Assinatura de código** do executável (reduz os alertas do SmartScreen e de antivírus; a
   pasta do `build:live` avisa no LEIA-ME que o Windows pode reclamar).
 - **Login a frio:** um `jukejoint://auth/...` que abre o app do zero é ignorado (o verifier era da
@@ -284,7 +295,6 @@ está.
 - **Teste do login com a Steam de verdade** no exe (`build:live` + servidor com
   `WEB_ORIGIN=http://tauri.localhost`): o caminho foi montado e conferido em partes (link, URL,
   CSP), não ponta a ponta.
-- **Atualização automática** do app.
 - **`/bridge.html` no nosso domínio** para `--ui-relay`: até lá a UI dentro do jogo fica
   desligada (`--ui-port 0`).
 - **`publish`** do `EngineAdapter` e a fase 2 (sidecar Go com eventos protobuf).

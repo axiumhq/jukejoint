@@ -3,7 +3,7 @@ import type { Lobby } from '../data/lobbies';
 import { lobbies } from '../data/lobbies';
 import { modes } from '../data/modes';
 import { avatarArt, hashName } from './avatar';
-import { COVERS, coverMarkup } from './cover';
+import { coverFraming, loadScene, modeIcon, prepareScene, sceneId, sceneSlug, SCENE_SLUGS } from './cover';
 import { friendsOnline, incomingInvite, OFFLINE_FRIENDS } from './friends';
 import { cardTag, lobbyNum } from './lobbyCard';
 import { EMPTY_FILTERS, filterLobbies, isJoinable, lobbyState, nearestAlternatives } from './lobbies';
@@ -36,18 +36,20 @@ function lobby(p: Partial<Lobby> = {}): Lobby {
 }
 
 describe('temas', () => {
-  it('o Deadlock é o padrão e o primeiro da lista', () => {
-    expect(DEFAULT_THEME).toBe('deadlock');
-    expect(THEMES[0]!.id).toBe('deadlock');
-    expect(THEMES.map((x) => x.id)).toEqual(['deadlock', 'carmim', 'pergaminho', 'gelo', 'grafite']);
+  it('o Carvão neutro é o padrão e o primeiro da lista', () => {
+    expect(DEFAULT_THEME).toBe('carvao');
+    expect(THEMES[0]!.id).toBe('carvao');
+    expect(THEMES.map((x) => x.id)).toEqual(['carvao', 'noite', 'ameixa', 'vinho']);
   });
 
   it('?theme= ganha do salvo, o salvo ganha do padrão e lixo cai no padrão', () => {
-    expect(resolveTheme('"gelo"', '?theme=carmim')).toBe('carmim');
-    expect(resolveTheme('"gelo"', '')).toBe('gelo');
-    expect(resolveTheme(null, '')).toBe('deadlock');
-    expect(resolveTheme('"neon"', '?theme=nada')).toBe('deadlock');
-    expect(resolveTheme('{quebrado', '')).toBe('deadlock');
+    expect(resolveTheme('"noite"', '?theme=vinho')).toBe('vinho');
+    expect(resolveTheme('"noite"', '')).toBe('noite');
+    expect(resolveTheme(null, '')).toBe('carvao');
+    expect(resolveTheme('"neon"', '?theme=nada')).toBe('carvao');
+    expect(resolveTheme('{quebrado', '')).toBe('carvao');
+    // ids dos temas antigos (v8) caem no padrão
+    expect(resolveTheme('"deadlock"', '')).toBe('carvao');
   });
 });
 
@@ -66,28 +68,63 @@ describe('avatar gerado', () => {
 });
 
 describe('capas dos modos', () => {
-  it('tem uma capa para cada modo', () => {
-    for (const m of modes) expect(COVERS[m.slug]).toBeDefined();
+  it('tem cena e ícones para cada modo, sem cair no fallback', () => {
+    for (const m of modes) {
+      expect(SCENE_SLUGS).toContain(m.slug);
+      expect(sceneSlug(m.slug)).toBe(m.slug);
+      expect(sceneId(m.slug)).toBe(`jjsc-${m.slug}`);
+      expect(modeIcon(m.slug, 'glyph').viewBox).toBe('0 0 24 24');
+      expect(modeIcon(m.slug, 'detalhe').viewBox).toBe('0 0 48 48');
+      expect(modeIcon(m.slug, 'glyph').inner).toContain('<');
+      expect(modeIcon(m.slug, 'detalhe').inner).toContain('<');
+    }
+    expect(sceneSlug('nao-existe')).toBe('circulo-profano');
   });
 
-  it('é pintada só com tokens do tema (fora o branco da máscara)', () => {
+  it('enquadra por modo: janela dentro da cena, centrada no foco e ancorada à direita nos cartões', () => {
     for (const m of modes) {
-      for (const wide of [false, true]) {
-        const { inner } = coverMarkup(m.slug, 'x', wide);
-        const colors = inner.match(/(#[0-9a-f]{3,6}\b|hsl\(|rgb\()/gi) ?? [];
-        expect(colors.every((c) => c.toLowerCase() === '#fff')).toBe(true);
-        expect(inner).toMatch(/var\(--k0\)/);
+      for (const v of ['card', 'wide', 'strip'] as const) {
+        const [x, y, w, h] = coverFraming(m.slug, v).viewBox.split(' ').map(Number) as [number, number, number, number];
+        expect(x).toBeGreaterThanOrEqual(0);
+        expect(y).toBeGreaterThanOrEqual(0);
+        expect(x + w).toBeLessThanOrEqual(1600);
+        expect(y + h).toBeLessThanOrEqual(900);
       }
     }
+    expect(coverFraming('neblina', 'card').preserveAspectRatio).toBe('xMaxYMid slice');
+    // neblina: a faixa larga centra perto de y 400 (lanterna ~300, cabeça ~465)
+    const [, ny, , nh] = coverFraming('neblina', 'wide').viewBox.split(' ').map(Number) as [number, number, number, number];
+    expect(ny + nh / 2).toBeCloseTo(400, -1);
+    // último bonde: a torre do relógio (x ~1360) fica dentro da faixa larga
+    const [ux, , uw] = coverFraming('ultimo-bonde', 'wide').viewBox.split(' ').map(Number) as [number, number, number];
+    expect(ux + uw).toBeGreaterThan(1400);
   });
 
-  it('ids únicos por instância e saída estável', () => {
-    const a = coverMarkup('neblina', ':r1:');
-    const b = coverMarkup('neblina', ':r2:');
-    expect(a.inner).not.toBe(b.inner);
-    expect(a.inner).not.toContain(':r1:');
-    expect(coverMarkup('neblina', ':r1:')).toEqual(a);
-    expect(coverMarkup('neblina', 'x', true).viewBox).toBe('-300 0 700 240');
+  it('prefixa ids, classes e referências para as cenas conviverem no documento', () => {
+    const raw =
+      '<svg xmlns="x" viewBox="0 0 1600 900"><style>.c0{stop-color:var(--a,#000)}.c1{fill:var(--b,#fff) .5}</style><defs><linearGradient id="g1"><stop class="c0"/></linearGradient></defs><rect class="c1 c0" fill="url(#g1)"/><use href="#g1"/></svg>';
+    const { css, body } = prepareScene(raw, 'p_');
+    expect(css).toBe('.p_c0{stop-color:var(--a,#000)}.p_c1{fill:var(--b,#fff) .5}');
+    expect(body).toContain('id="p_g1"');
+    expect(body).toContain('url(#p_g1)');
+    expect(body).toContain('href="#p_g1"');
+    expect(body).toContain('class="p_c1 p_c0"');
+    expect(body).not.toContain('<style');
+  });
+
+  it('cada cena é pintada com tokens (var com fallback), sem id nem classe repetidos entre cenas', async () => {
+    const ids = new Set<string>();
+    for (const s of SCENE_SLUGS) {
+      const { css, body } = await loadScene(s);
+      expect(css).toMatch(/var\(--[a-z0-9-]+,\s*#/i);
+      expect(body).toContain('<');
+      for (const [, id] of body.matchAll(/\bid="([^"]+)"/g)) {
+        expect(ids.has(id!)).toBe(false);
+        ids.add(id!);
+      }
+      // toda referência url(#x) aponta para um id da própria cena
+      for (const [, ref] of body.matchAll(/url\(#([^)]+)\)/g)) expect(body).toContain(`id="${ref}"`);
+    }
   });
 });
 

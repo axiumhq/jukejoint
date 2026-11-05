@@ -1,12 +1,11 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
 import { Avatar } from '../components/Avatar';
-import { LiveDot, SectionTitle, Tag } from '../components/Common';
+import { SectionTitle, Tag } from '../components/Common';
 import { FriendRow, FriendStep } from '../components/Friends';
 import { Icon } from '../components/Icon';
 import { CreateCard, LobbyCard, orderLobbies, type CardEnv } from '../components/LobbyCard';
-import { ModeCover } from '../components/ModeCover';
-import { PageHead } from '../components/PageHead';
+import { ModeCover, ModeMedallion } from '../components/ModeCover';
 import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
 import { getMode, modes, type Mode, type Region } from '../data/modes';
@@ -18,6 +17,7 @@ import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
 import { EMPTY_FILTERS, filterLobbies, REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
+import '../styles/modes.css';
 
 /**
  * /modos e /modos/:slug no v8. O índice é a vitrine dos seis modos com as contagens ao vivo;
@@ -42,7 +42,7 @@ function RegionsNow({ list }: { list: Lobby[] }) {
     return { r, lobbies: inR.length, players: inR.reduce((n, l) => n + l.players, 0), min: Math.min(...ps), max: Math.max(...ps) };
   }).filter((x) => x.lobbies > 0);
   return (
-    <section className="rail-sec" aria-labelledby="mr-regions">
+    <section className="rail-sec mr-sec" aria-labelledby="mr-regions">
       <div className="rail-h">
         <h2 className="cap" id="mr-regions">
           {t.modes.regionsTitle}
@@ -189,7 +189,7 @@ function RecentChanges({ mode }: { mode: Mode }) {
 function SheetCard({ friends, regions }: { friends: number; regions: number }) {
   const { openSheet } = useRail();
   return (
-    <button type="button" className="mfriends" aria-haspopup="dialog" onClick={(e) => openSheet(e.currentTarget)}>
+    <button type="button" className="md-sheet" aria-haspopup="dialog" onClick={(e) => openSheet(e.currentTarget)}>
       <Icon name="users" />
       <span className="t">
         <b>{t.modes.sheetOpen}</b>
@@ -230,147 +230,138 @@ export function ModePage() {
 
   return (
     <>
-      <section className="mh" aria-labelledby="mode-title">
+      <section className="md-hero" aria-labelledby="mode-title">
         <ModeCover slug={mode.slug} wide />
-        <div className="mh-shade" aria-hidden="true" />
-        <div className="mh-body">
-          <Link to="/modos" className="mh-back">
+        <div className="md-shade" aria-hidden="true" />
+        <div className="md-hb">
+          <Link to="/modos" className="md-back">
             <Icon name="back" />
             {t.modes.back}
           </Link>
           <h1 className="display" id="mode-title">
             {mode.name}
           </h1>
-          <p className="mh-tag">{mode.tagline}</p>
-          <ul className="mh-chips" aria-label={t.modes.facts.format}>
-            <li>
-              <Tag tone="line">{mode.format}</Tag>
-            </li>
-            <li>
-              <Tag tone="line">{t.modes.sizeValue(mode.minPlayers, mode.maxPlayers)}</Tag>
-            </li>
-            <li>
-              <Tag tone="line">{t.modes.durationValue(mode.durationMin)}</Tag>
-            </li>
-            <li className="mh-by">
-              {t.modes.by} <b>{mode.author}</b>
+          <p className="md-tag">{mode.tagline}</p>
+          <ul className="md-chips" aria-label={t.modes.facts.format}>
+            <li className="md-chip">{mode.format}</li>
+            <li className="md-chip">{t.modes.sizeValue(mode.minPlayers, mode.maxPlayers)}</li>
+            <li className="md-chip">{t.modes.durationValue(mode.durationMin)}</li>
+            <li className="md-by">
+              {t.modes.by} {mode.author}
             </li>
           </ul>
         </div>
-        <div className="mh-bar">
-          <dl className="dbar">
-            <div className="dc">
-              <dt className="lbl">{t.modes.facts.players}</dt>
-              <dd>
-                <LiveDot small />
-                <span className="dc-big num">{formatNumber(c.players)}</span>
-              </dd>
-            </div>
-            <div className="dc">
-              <dt className="lbl">{t.modes.facts.lobbies}</dt>
-              <dd>
-                <span className="dc-big num">{formatNumber(c.lobbies)}</span>
-                <span className="dc-sub">{t.modes.withRoom(c.withRoom)}</span>
-              </dd>
-            </div>
-            <div className="dc dc-ping">
-              <dt className="lbl">{t.modes.facts.bestPing}</dt>
-              <dd>
-                {ping ? (
-                  <>
-                    <span className="dc-big num">{ping.ping}</span>
-                    <span className="dc-sub">ms · {t.regions[ping.region]}</span>
-                  </>
-                ) : (
-                  <span className="dc-sub">{t.modes.noPing}</span>
-                )}
-              </dd>
-            </div>
-          </dl>
-          <div className="mh-act">
-            <button type="button" className={featured ? 'btn btn-s btn-lg' : 'btn btn-p btn-lg'} onClick={() => openHost(mode.slug)}>
-              <Icon name="plus" />
-              <span className="t-long">{t.modes.hostHere}</span>
-              <span className="t-short">{t.modes.hostShort}</span>
-            </button>
-            {featured && (
-              <button
-                type="button"
-                className="btn btn-p btn-lg"
-                onClick={() => requestJoin({ kind: 'lobby', lobby: featured })}
-                aria-describedby="mode-join-hint"
-              >
-                <Icon name="bolt" />
-                <span className="t-long">{t.modes.playNow}</span>
-                <span className="t-short">{t.modes.playNowShort}</span>
-              </button>
-            )}
-          </div>
-        </div>
       </section>
-      <p id="mode-join-hint" className="mh-hint">
+
+      <div className="md-bar">
+        <dl className="md-facts">
+          <div>
+            <dt>{t.modes.facts.players}</dt>
+            <dd className="num">{formatNumber(c.players)}</dd>
+          </div>
+          <div>
+            <dt>{t.modes.facts.lobbies}</dt>
+            <dd className="num">{formatNumber(c.lobbies)}</dd>
+          </div>
+          <div>
+            <dt>{t.modes.withRoomLabel}</dt>
+            <dd className="num">{formatNumber(c.withRoom)}</dd>
+          </div>
+          <div>
+            <dt>{t.modes.facts.bestPing}</dt>
+            <dd className="num">
+              {ping ? (
+                <>
+                  {ping.ping} ms <span className="md-sub">{t.regions[ping.region]}</span>
+                </>
+              ) : (
+                t.modes.noPing
+              )}
+            </dd>
+          </div>
+        </dl>
+        <div className="md-act">
+          {featured && (
+            <button
+              type="button"
+              className="btn btn-p btn-lg"
+              onClick={() => requestJoin({ kind: 'lobby', lobby: featured })}
+              aria-describedby="mode-join-hint"
+            >
+              <Icon name="bolt" />
+              <span className="t-long">{t.modes.playNow}</span>
+              <span className="t-short">{t.modes.playNowShort}</span>
+            </button>
+          )}
+          <button type="button" className={featured ? 'btn btn-s btn-lg' : 'btn btn-p btn-lg'} onClick={() => openHost(mode.slug)}>
+            <Icon name="plus" />
+            <span className="t-long">{t.modes.hostHere}</span>
+            <span className="t-short">{t.modes.hostShort}</span>
+          </button>
+        </div>
+      </div>
+      <p id="mode-join-hint" className="md-hint">
         {featured ? t.modes.joinHint(c.withRoom) : t.modes.noLobbies}
       </p>
 
       <SheetCard friends={friendsHere} regions={regionCount} />
 
-      <div className="mode-cols">
-        <section className="sec" aria-labelledby="mode-how">
+      <div className="md-cols">
+        <section className="sec md-sec" aria-labelledby="mode-how">
           <SectionTitle id="mode-how" words={t.modes.howWords} />
-          <div className="mode-prose">
+          <div className="md-prose">
             {mode.description.map((p) => (
               <p key={p}>{p}</p>
             ))}
-            <p className="mode-upd">
+            <p className="md-upd">
               {t.modes.facts.updated} <time dateTime={mode.updatedAt}>{formatDate(mode.updatedAt)}</time>
             </p>
           </div>
         </section>
-        <section className="sec" aria-labelledby="mode-rules">
+        <section className="sec md-sec" aria-labelledby="mode-rules">
           <SectionTitle id="mode-rules" words={t.modes.rulesWords} meta={t.modes.rulesMeta(mode.rules.length)} />
-          <ul className="rules">
-            {mode.rules.map((r) => (
+          <ol className="md-rules">
+            {mode.rules.map((r, i) => (
               <li key={r}>
-                <span className="mdot" aria-hidden="true" />
+                <span className="md-n num" aria-hidden="true">
+                  {i + 1}
+                </span>
                 <span>{r}</span>
               </li>
             ))}
-          </ul>
+          </ol>
         </section>
       </div>
 
-      <section className="sec" aria-labelledby="mode-lobbies">
+      <section className="sec md-sec" aria-labelledby="mode-lobbies">
         <SectionTitle id="mode-lobbies" words={t.modes.lobbiesWords} meta={t.modes.lobbiesMeta(c.lobbies, c.withRoom)}>
           <Link to={`/?modo=${mode.slug}#lobbies`} className="link">
             {t.modes.lobbiesAll}
             <Icon name="arrow" />
           </Link>
         </SectionTitle>
-        <div className="lgrid">
+        <div className="lgrid md-lgrid">
           {ordered.map((l) => (
             <LobbyCard key={l.id} lobby={l} env={env} featured={featured?.id === l.id} />
           ))}
           <CreateCard onCreate={() => openHost(mode.slug)} />
         </div>
-        {ordered.length === 0 && <p className="mode-empty">{t.lobbies.modeListEmpty(mode.name)}</p>}
+        {ordered.length === 0 && <p className="md-empty">{t.lobbies.modeListEmpty(mode.name)}</p>}
       </section>
 
-      <nav className="sec" aria-labelledby="mode-others">
+      <nav className="sec md-sec" aria-labelledby="mode-others">
         <SectionTitle id="mode-others" words={t.modes.othersWords} />
-        <ul className="mode-others">
+        <ul className="md-others">
           {others.map((m) => {
             const oc = stats.byMode[m.slug] ?? EMPTY;
             return (
               <li key={m.slug}>
-                <Link to={`/modos/${m.slug}`} className="mcard has-cover">
-                  <ModeCover slug={m.slug} />
-                  <span className="mcard-b">
-                    <span className="mcard-n display">{m.name}</span>
-                    <span className="mcard-c">
-                      <LiveDot small />
-                      <span>
-                        <span className="num">{formatNumber(oc.players)}</span> {t.header.live}
-                      </span>
+                <Link to={`/modos/${m.slug}`} className="md-oc">
+                  <ModeMedallion slug={m.slug} size={44} />
+                  <span className="md-ob">
+                    <span className="md-on">{m.name}</span>
+                    <span className="md-os">
+                      <span className="num">{formatNumber(oc.players)}</span> {t.header.live}
                     </span>
                   </span>
                 </Link>
@@ -396,52 +387,52 @@ export function ModesIndex() {
   useDocumentTitle(t.meta.modes);
   const stats = useLiveStats();
   return (
-    <>
-      <PageHead words={t.modes.titleWords} meta={t.modes.indexMeta(modes.length, formatNumber(stats.players), stats.lobbies)} lead={t.modes.lead} />
-      <ul className="mx-grid">
+    <div className="mi">
+      <header className="mi-h">
+        <div className="mi-ht">
+          <h1 className="display">{t.modes.title} {t.modes.titleWords[1]}</h1>
+          <span className="mi-meta">{t.modes.indexMeta(modes.length, formatNumber(stats.players), stats.lobbies)}</span>
+        </div>
+        <p className="mi-lead">{t.modes.lead}</p>
+      </header>
+      <ul className="mi-grid">
         {modes.map((m) => {
           const c = stats.byMode[m.slug] ?? EMPTY;
-          const nameId = `mx-${m.slug}`;
           return (
-            <li key={m.slug} className="mx has-cover">
-              <div className="mx-cv">
-                <ModeCover slug={m.slug} />
-                <span className="mx-st">
-                  <Tag>{t.modes.lobbiesCount(c.lobbies)}</Tag>
-                </span>
+            <li key={m.slug} className="mi-card has-cover">
+              <div className="mi-cv">
+                <ModeCover slug={m.slug} wide />
+                <Tag className="mi-st">{t.modes.lobbiesCount(c.lobbies)}</Tag>
               </div>
-              <div className="mx-b">
-                <h2 className="mx-n display" id={nameId}>
-                  <Link to={`/modos/${m.slug}`}>{m.name}</Link>
-                </h2>
-                <p className="mx-l">{m.line}</p>
-                <dl className="mx-d">
+              <div className="mi-b">
+                <div className="mi-t">
+                  <h2 className="mi-n">
+                    <Link to={`/modos/${m.slug}`}>{m.name}</Link>
+                  </h2>
+                  <p className="mi-l">{m.line}</p>
+                </div>
+                <dl className="mi-d">
                   <div>
-                    <dt className="lbl">{t.modes.facts.playing}</dt>
-                    <dd>
-                      <LiveDot small />
-                      <span className="num">{formatNumber(c.players)}</span>
+                    <dt>{t.modes.facts.playing}</dt>
+                    <dd className="num">{formatNumber(c.players)}</dd>
+                  </div>
+                  <div>
+                    <dt>{t.modes.facts.lobbies}</dt>
+                    <dd className="num">
+                      {formatNumber(c.lobbies)} · {t.modes.withRoom(c.withRoom)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="lbl">{t.modes.facts.lobbies}</dt>
-                    <dd>
-                      <span className={c.withRoom ? 'num mx-free' : 'num'}>{formatNumber(c.withRoom)}</span>
-                      <span className="mx-of">{t.modes.withRoomUnit}</span>
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="lbl">{t.modes.facts.duration}</dt>
-                    <dd>{t.modes.durationValue(m.durationMin)}</dd>
+                    <dt>{t.modes.facts.duration}</dt>
+                    <dd className="num">{t.modes.durationValue(m.durationMin)}</dd>
                   </div>
                 </dl>
-                <div className="mx-f">
-                  <span className="mx-fmt">
+                <div className="mi-f">
+                  <span className="mi-fmt">
                     {m.format} · {t.modes.rangeShort(m.minPlayers, m.maxPlayers)}
                   </span>
                   <Link to={`/?modo=${m.slug}#lobbies`} className="btn btn-s btn-sm" aria-label={t.modes.seeLobbiesLabel(m.name)}>
                     {t.modes.seeLobbies}
-                    <Icon name="arrow" />
                   </Link>
                 </div>
               </div>
@@ -449,6 +440,6 @@ export function ModesIndex() {
           );
         })}
       </ul>
-    </>
+    </div>
   );
 }

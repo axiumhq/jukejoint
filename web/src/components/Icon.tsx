@@ -1,5 +1,6 @@
 /**
- * Ícones v8: traço único de 1,4 em grade de 16 (porte do v8.js). Decorativos por padrão (aria-hidden).
+ * Ícones de linha: traço único de 1,4 em grade de 16. Decorativos por padrão (aria-hidden).
+ * Os da navegação (nav*) vêm do redesign, desenhados na grade de 24 e reduzidos.
  * Os nomes antigos do v6 (arrowRight, close, chevronDown) seguem valendo para as telas da fase 2.
  */
 const paths = {
@@ -46,6 +47,13 @@ const paths = {
   dice: '<rect x="2.6" y="2.6" width="10.8" height="10.8" rx="2.4"/><circle cx="5.7" cy="5.7" r=".7" fill="currentColor"/><circle cx="10.3" cy="10.3" r=".7" fill="currentColor"/><circle cx="8" cy="8" r=".7" fill="currentColor"/>',
   clock: '<circle cx="8" cy="8" r="6"/><path d="M8 4.6V8l2.4 1.6"/>',
   pad: '<path d="M4.8 4.6h6.4a3 3 0 0 1 2.9 2.3l.7 3.1a1.8 1.8 0 0 1-3.1 1.6l-1.2-1.3H5.5l-1.2 1.3a1.8 1.8 0 0 1-3.1-1.6l.7-3.1a3 3 0 0 1 2.9-2.3Z"/><path d="M5.4 6.6v2M4.4 7.6h2"/><circle cx="10.6" cy="7.6" r=".6" fill="currentColor"/>',
+  /* navegação do redesign (grade de 24 do design, reduzida para a de 16) */
+  navPlay: '<g transform="scale(.6667)" stroke-width="2.1"><path d="M7 5l12 7-12 7z"/></g>',
+  navModes: '<g transform="scale(.6667)" stroke-width="2.1"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></g>',
+  navToday: '<g transform="scale(.6667)" stroke-width="2.1"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></g>',
+  navInstall: '<g transform="scale(.6667)" stroke-width="2.1"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></g>',
+  navList:
+    '<g transform="scale(.6667)" stroke-width="2.1"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21c0-4 3-6 7-6s7 2 7 6M16 3.5a4 4 0 0 1 0 7M18 15c2.5.5 4 2.5 4 6"/></g>',
   gear: '<circle cx="8" cy="8" r="2.2"/><path d="M8 1.8v1.7M8 12.5v1.7M1.8 8h1.7M12.5 8h1.7M3.6 3.6l1.2 1.2M11.2 11.2l1.2 1.2M3.6 12.4l1.2-1.2M11.2 4.8l1.2-1.2"/><circle cx="8" cy="8" r="4.6"/>',
 } as const;
 
@@ -76,17 +84,5 @@ export function Icon({ name, size, className, label }: IconProps) {
       focusable="false"
       dangerouslySetInnerHTML={{ __html: paths[key] }}
     />
-  );
-}
-
-/** Marca provisória (original): anel aberto com um nó, lido como "porta". */
-export function BrandMark() {
-  return (
-    <svg className="mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeLinecap="round">
-      <path d="M19.6 7.4A8.6 8.6 0 1 0 20.6 12" strokeWidth="2.2" />
-      <path d="M12 7.2v9.6" strokeWidth="2.2" />
-      <path d="M8.4 9.4v5.2M15.6 9.4v5.2" strokeWidth="1.4" opacity=".55" />
-      <circle cx="20.2" cy="4.6" r="1.7" fill="currentColor" stroke="none" />
-    </svg>
   );
 }

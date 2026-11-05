@@ -5,7 +5,6 @@ import { t } from '../i18n';
 import { FRESH_MS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { Avatar } from './Avatar';
-import { LiveDot, SectionTitle } from './Common';
 import { Icon } from './Icon';
 
 /**
@@ -58,37 +57,35 @@ export function Arrivals({ now }: { now: number }) {
   }, [items]);
 
   return (
-    <section className="sec" aria-labelledby="arrivals-title">
-      <SectionTitle
-        id="arrivals-title"
-        words={t.home.arrivalsTitle}
-        badge={
-          <span className="chip live">
-            <LiveDot small />
-            {t.home.live}
-          </span>
-        }
-      >
-        <button type="button" className="link" aria-describedby="arrivals-title" onClick={() => setPaused((v) => !v)}>
-          <Icon name={paused ? 'play' : 'pause'} />
+    <section className="sec home-arrivals" aria-labelledby="arrivals-title">
+      <div className="sec-h">
+        <h2 className="display" id="arrivals-title">
+          {t.home.arrivalsTitle.join(' ')}
+        </h2>
+        <span className="sp" />
+        <button type="button" className="btn btn-g" aria-describedby="arrivals-title" aria-pressed={paused} onClick={() => setPaused((v) => !v)}>
           {paused ? t.home.resume : t.home.pause}
         </button>
-      </SectionTitle>
+      </div>
       <ol className="feed">
         {items.length === 0 && <li className="feed-empty">{t.home.arrivalsEmpty}</li>}
         {items.map((a) => (
           <li key={a.key} className={fresh.has(a.key) ? 'fe is-new' : 'fe'}>
-            <Avatar name={a.name} size={32} ring={!!user && a.friend} />
-            {/* Quem entrou numa linha; o nome do lobby ganha a linha de baixo inteira (até duas) e o title. */}
+            <Avatar name={a.name} size={28} ring={!!user && a.friend} />
+            <Icon name="arrow" />
+            {/* O lobby em cima (leva para a sala), quem entrou embaixo; o title guarda o nome inteiro. */}
             <div className="fe-t">
-              <div className="fe-n">
-                <b>{a.name}</b> {t.home.joined}
-              </div>
+              <span className="sr-only">
+                {a.name} {t.home.joined}{' '}
+              </span>
               <Link to={`/sala/${encodeURIComponent(a.lobby.id)}`} className="fe-l" title={a.lobby.name}>
                 {a.lobby.name}
               </Link>
+              <span className="fe-n" aria-hidden="true">
+                {a.name}
+              </span>
             </div>
-            <span className="num">{t.home.ago(Math.max(0, Math.round((now - a.at) / 1000)))}</span>
+            <span className="lbl">{t.home.ago(Math.max(0, Math.round((now - a.at) / 1000)))}</span>
           </li>
         ))}
       </ol>

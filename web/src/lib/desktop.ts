@@ -13,6 +13,7 @@ export interface DesktopInfo {
   scheme: string;
   version: string;
   modlockVersion: string;
+  dev?: boolean;
 }
 
 export interface EngineError {
@@ -25,7 +26,7 @@ export interface EngineError {
 export interface EngineCheck {
   ready: boolean;
   problems: EngineError[];
-  modes?: { testMode: boolean; testProject: string; testProjectOk: boolean };
+  modes?: { testMode: boolean; testSlugs?: string[]; testProject: string; testProjectOk: boolean };
 }
 
 export type SessionKind = 'host' | 'join';

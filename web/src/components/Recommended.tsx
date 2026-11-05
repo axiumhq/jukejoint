@@ -1,30 +1,91 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { getMode } from '../data/modes';
 import { useFriends } from '../hooks';
 import { t } from '../i18n';
 import { friendsIn } from '../lib/friends';
-import { lobbyNum } from '../lib/lobbyCard';
+import { isNearFull } from '../lib/lobbyCard';
 import { freeSlots, lobbyState } from '../lib/lobbies';
 import { roster } from '../lib/room';
 import { useSession } from '../state/session';
-import { Avatar, AvatarStack } from './Avatar';
+import { AvatarStack } from './Avatar';
+import { SlotMeter } from './Common';
 import { Icon } from './Icon';
-import { ModeCover } from './ModeCover';
 
 /**
- * O cartão recomendado do topo da home: o mesmo lobby que o "Jogar agora" escolhe
- * (`useFeaturedLobby`), nunca fixo. Barra de dados: Anfitrião, Vagas (falta N), Dentro, Servidor.
- * "Jogar agora" é a entrada real (`requestJoin`); Enter na página faz o mesmo.
+ * O destaque do topo da home (Main / Home-1366 do Claude Design): a cena da cidade com o slogan
+ * e, embaixo, a barra do lobby recomendado. O lobby é o mesmo que o "Jogar agora" escolhe
+ * (`useFeaturedLobby`), nunca fixo: nome, "Modo, de quem abriu", quem está dentro, as lâmpadas
+ * com "N de M na sala, falta N", região e ping, "Ver sala" e "Jogar agora" (Enter na página faz o mesmo).
  */
 
 const roomTo = (l: Lobby) => `/sala/${encodeURIComponent(l.id)}`;
 
-/** Nome longo ganha um título menor (o cartão tem altura fixa no desktop). */
-const LONG_NAME = 22;
+/**
+ * A cena do destaque: céu, halo e lua, prédios com janelas acesas e o chão. Pintada só com os
+ * tokens do tema (trocar o tema repinta). Decorativa; os ids dos gradientes são únicos por instância.
+ */
+function HeroScene() {
+  const u = useId().replace(/:/g, '');
+  const id = (k: string) => `hs-${k}-${u}`;
+  const url = (k: string) => `url(#${id(k)})`;
+  return (
+    <svg className="hero-scene" viewBox="0 0 1128 220" preserveAspectRatio="xMaxYMax slice" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id={id('sky')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--sky-1)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--sky-2)' }} />
+        </linearGradient>
+        <radialGradient id={id('halo')}>
+          <stop offset="0" style={{ stopColor: 'var(--bulb)', stopOpacity: 0.34 }} />
+          <stop offset=".45" style={{ stopColor: 'var(--brass)', stopOpacity: 0.1 }} />
+          <stop offset="1" style={{ stopColor: 'var(--brass)', stopOpacity: 0 }} />
+        </radialGradient>
+        <radialGradient id={id('moon')} cx="40%" cy="35%">
+          <stop offset="0" style={{ stopColor: 'var(--moon-hi)' }} />
+          <stop offset="1" style={{ stopColor: 'var(--moon-lo)' }} />
+        </radialGradient>
+        <linearGradient id={id('mist')} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--sky-2)', stopOpacity: 0 }} />
+          <stop offset="1" style={{ stopColor: 'var(--sky-2)', stopOpacity: 0.55 }} />
+        </linearGradient>
+        <filter id={id('grain')}>
+          <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch" />
+          <feColorMatrix values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0" />
+        </filter>
+      </defs>
+      <rect width="1128" height="220" fill={url('sky')} />
+      <circle cx="800" cy="74" r="170" fill={url('halo')} />
+      <path
+        d="M800 170L560 170M800 170L590 92M800 170L640 32M800 170L716 -14M800 170L884 -14M800 170L960 32M800 170L1010 92M800 170L1040 170"
+        style={{ stroke: 'var(--brass)' }}
+        strokeWidth="1"
+        opacity=".22"
+        fill="none"
+      />
+      <circle cx="800" cy="72" r="36" fill={url('moon')} />
+      <path
+        d="M380 220V128h34v-26h26v-24h22v24h24v26h30v-42h36v-20h18v20h36v42h30V96l14-22 14 22v46h34v-34h44v-26h26v-34h16v34h26v26h44v34h28V92h30v-22h22v22h30v50h44v-30h52v-24h30v24h26v108z"
+        style={{ fill: 'var(--bldg)' }}
+      />
+      <rect x="0" y="120" width="1128" height="100" fill={url('mist')} />
+      <path
+        d="M520 220v-58h40v-22h26v-30h10v-22h6v22h10v30h26v22h30v58zM700 220v-96h20v-20h18v-18h14V52l8-16 8 16v34h14v18h18v20h20v96zM880 220v-70h44v-20h34v20h30v-36h36v36h38v70z"
+        style={{ fill: 'var(--bldg-2)' }}
+      />
+      <path
+        d="M716 132h6v8h-6zM730 132h6v8h-6zM760 118h6v8h-6zM774 118h6v8h-6zM788 132h6v8h-6zM802 132h6v8h-6zM730 152h6v8h-6zM788 152h6v8h-6zM552 150h5v7h-5zM574 150h5v7h-5zM602 124h5v7h-5zM618 124h5v7h-5zM904 162h5v7h-5zM944 142h5v7h-5zM1002 130h5v7h-5zM1018 130h5v7h-5zM1036 164h5v7h-5z"
+        style={{ fill: 'var(--bulb)' }}
+        opacity=".85"
+      />
+      <path d="M430 220v-44h60v-20h44v20h50v-14h60v18h56v-10h70v14h66v-16h50v18h60v-14h50v18h132v30z" style={{ fill: 'var(--ground)' }} />
+      <rect width="1128" height="220" filter={url('grain')} opacity=".7" />
+    </svg>
+  );
+}
 
-export function RecommendedCard({ lobby, now, onCreate, fallbackMode }: { lobby: Lobby | undefined; now: number; onCreate: () => void; fallbackMode: string }) {
+export function RecommendedCard({ lobby, now, onCreate }: { lobby: Lobby | undefined; now: number; onCreate: () => void }) {
   const { user, lobbyCtx, requestJoin, hereId } = useSession();
   const friends = useFriends();
   const signedIn = !!user;
@@ -54,17 +115,21 @@ export function RecommendedCard({ lobby, now, onCreate, fallbackMode }: { lobby:
   if (!lobby) {
     return (
       <section className="hero" aria-labelledby="hero-title">
-        <ModeCover slug={fallbackMode} wide />
-        <div className="hero-shade" aria-hidden="true" />
-        <div className="hero-none">
-          <h1 className="display" id="hero-title">
-            {t.home.noneTitle}
-          </h1>
-          <p>{t.home.noneBody}</p>
-          <button type="button" className="btn btn-p btn-lg" onClick={onCreate}>
-            <Icon name="plus" />
-            {t.lobbies.create}
-          </button>
+        <HeroScene />
+        <h1 className="display hero-t" id="hero-title">
+          {t.home.heroTitle}
+        </h1>
+        <div className="hbar hbar-none">
+          <div className="hb-who">
+            <b className="hb-n">{t.home.noneTitle}</b>
+            <span className="hb-m">{t.home.noneBody}</span>
+          </div>
+          <div className="hb-act">
+            <button type="button" className="btn btn-p btn-lg" onClick={onCreate}>
+              <Icon name="plus" />
+              {t.lobbies.create}
+            </button>
+          </div>
         </div>
       </section>
     );
@@ -72,117 +137,54 @@ export function RecommendedCard({ lobby, now, onCreate, fallbackMode }: { lobby:
 
   const mode = getMode(lobby.modeSlug);
   const st = lobbyState(lobby, lobbyCtx, now);
-  const num = lobbyNum(lobby);
   const free = freeSlots(lobby);
-  // A terceira linha é o jeito do modo (o porquê da escolha já está na barra: vagas, amigos, ping).
-  const line = mode?.line.replace(/.$/, '');
   const joining = st.kind === 'joining';
+  const host = lobby.mine ? (user?.name ?? t.lobbies.you) : lobby.host;
 
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <ModeCover slug={lobby.modeSlug} wide />
-      <div className="hero-shade" aria-hidden="true" />
-      <div className="hero-body">
-        <p className="hero-cap cap">
-          <span className="acc">{t.home.recommended}</span>
-          <i aria-hidden="true" />
-          {num && (
-            <>
-              <span className="hide-s">
-                {t.home.lobbyNum} <b>{num}</b>
-              </span>
-              <i className="hide-s" aria-hidden="true" />
-            </>
-          )}
-          <span>
-            {t.regions[lobby.region]} · <b>{t.lobbies.ping(lobby.ping)}</b>
+      <HeroScene />
+      <h1 className="display hero-t" id="hero-title">
+        {t.home.heroTitle}
+      </h1>
+      <div className="hbar" role="group" aria-label={t.home.statBar}>
+        <div className="hb-who">
+          <div className="hb-id">
+            <b className="hb-n" title={lobby.name}>
+              <span className="sr-only">{t.home.recommended}: </span>
+              {lobby.name}
+            </b>
+            <span className="hb-m">
+              {mode?.name}, {t.browse.from} {host}
+            </span>
+          </div>
+          {inside.length > 0 && <AvatarStack names={inside} size={24} total={lobby.players} friends={friendNames} />}
+        </div>
+        <div className="hb-slots">
+          <SlotMeter taken={lobby.players} total={lobby.slots} pulse={isNearFull(lobby, st)} />
+          <span className="hb-cnt">
+            <b>
+              {t.lobbies.inRoom(lobby.players, lobby.slots)}
+              {free > 0 && `, ${t.home.missing(free)}`}
+            </b>
+            <span className="lbl">
+              {t.regions[lobby.region]} {t.lobbies.ping(lobby.ping)}
+            </span>
           </span>
-        </p>
-        <h1 className={lobby.name.length > LONG_NAME ? 'display is-long' : 'display'} id="hero-title">
-          {lobby.name}
-        </h1>
-        <p className="hero-sub">
-          <span className="hs-m">
-            <span className="mdot" aria-hidden="true" />
-            {mode?.name}
-          </span>
-          <span className="sep" aria-hidden="true" />
-          <span>{mode?.format}</span>
-          {line && (
-            <>
-              <span className="sep hs-x" aria-hidden="true" />
-              <span className="hs-x">{line}</span>
-            </>
-          )}
-        </p>
-      </div>
-      <div className="hbar">
-        <dl className="hbar-dl" aria-label={t.home.statBar}>
-          <div className="hg">
-            <Icon name="crown" />
-            <div>
-              <dt className="lbl">{t.home.host}</dt>
-              <dd className="hg-v">
-                <Avatar name={lobby.host} size={22} ring={signedIn && lobby.hostIsFriend} />
-                {lobby.host}
-              </dd>
-            </div>
-          </div>
-          <div className="hg">
-            <Icon name="users" />
-            <div>
-              <dt className="lbl">{t.home.slots}</dt>
-              <dd className="hg-v">
-                <span className="hg-big">
-                  {lobby.players}
-                  <small>/{lobby.slots}</small>
-                </span>
-                <span className="ticks" aria-hidden="true">
-                  {Array.from({ length: lobby.slots }, (_, i) => (
-                    <i key={i} className={i < lobby.players ? undefined : i === lobby.players ? 'e next' : 'e'} />
-                  ))}
-                </span>
-                {free > 0 && <span className="falta">{t.home.missing(free)}</span>}
-              </dd>
-            </div>
-          </div>
-          <div className="hg">
-            <Icon name="lobbies" />
-            <div>
-              <dt className="lbl">{t.home.inside}</dt>
-              <dd className="hg-v">
-                <AvatarStack names={inside} size={24} total={lobby.players} friends={friendNames} />
-                {signedIn && <span className="sub-mut">{friendNames.length > 0 ? t.home.fromList(friendNames.length) : t.home.nobodyFromList}</span>}
-              </dd>
-            </div>
-          </div>
-          <div className="hg hg-ping">
-            <Icon name="signal" />
-            <div>
-              <dt className="lbl">{t.home.server}</dt>
-              <dd className="hg-v">
-                <span className="hg-big">
-                  {lobby.ping}
-                  <small> ms</small>
-                </span>
-                <span className="sub-mut">{t.regions[lobby.region]}</span>
-              </dd>
-            </div>
-          </div>
-        </dl>
-        <div className="hg hg-act">
-          <Link to={roomTo(lobby)} className="btn btn-s">
+        </div>
+        <div className="hb-act">
+          <Link to={roomTo(lobby)} className="btn btn-o">
             {t.home.viewRoom}
           </Link>
           <button
             type="button"
-            className="btn btn-p"
+            className="btn btn-p btn-lg"
             aria-disabled={joining || !st.canJoin ? true : undefined}
             aria-keyshortcuts="Enter"
             onClick={() => st.canJoin && requestJoin({ kind: 'lobby', lobby })}
           >
-            <Icon name="bolt" />
             {joining ? t.lobbyState.joining : t.home.play}
+            {!joining && <kbd aria-hidden="true">{t.home.playHint}</kbd>}
           </button>
         </div>
       </div>
@@ -190,7 +192,10 @@ export function RecommendedCard({ lobby, now, onCreate, fallbackMode }: { lobby:
   );
 }
 
-/** Barra fixa do celular: o recomendado com "Jogar agora", ou a sua sala quando você está numa. */
+/**
+ * Barra fixa do celular, logo acima das abas de baixo (o .fxb do Celular-390): o recomendado com
+ * "Jogar agora", ou a sua sala ("Você está aqui · 2 de 6") com "Abrir a sala" quando você está numa.
+ */
 export function MobilePlayBar({ lobby }: { lobby: Lobby | undefined }) {
   const { lobbies, hereId, joiningId, requestJoin, lobbyCtx } = useSession();
   const id = joiningId ?? hereId;
@@ -200,16 +205,13 @@ export function MobilePlayBar({ lobby }: { lobby: Lobby | undefined }) {
     const joining = joiningId === mine.id;
     return (
       <div className="mbar" role="region" aria-label={t.home.mobileBar}>
-        <div className="mbar-cv">
-          <ModeCover slug={mine.modeSlug} />
-        </div>
         <div className="mbar-t">
           <b>{mine.name}</b>
           <span>
-            <span className="num">{`${mine.players}/${mine.slots}`}</span> · <em>{joining ? t.lobbyState.joining : t.lobbyState.here}</em>
+            {joining ? t.lobbyState.joining : t.lobbyState.here} · <span className="num">{`${mine.players} de ${mine.slots}`}</span>
           </span>
         </div>
-        <Link to={roomTo(mine)} className="btn btn-s">
+        <Link to={roomTo(mine)} className="btn btn-p">
           {t.home.backToRoom}
         </Link>
       </div>
@@ -220,19 +222,11 @@ export function MobilePlayBar({ lobby }: { lobby: Lobby | undefined }) {
   const st = lobbyState(lobby, lobbyCtx);
   return (
     <div className="mbar" role="region" aria-label={t.home.mobileBar}>
-      <div className="mbar-cv">
-        <ModeCover slug={lobby.modeSlug} />
-      </div>
       <div className="mbar-t">
         <b>{lobby.name}</b>
         <span>
-          <span className="num">{`${lobby.players}/${lobby.slots} · ${lobby.ping} ms`}</span>
-          {free > 0 && (
-            <>
-              {' · '}
-              <em>{t.home.missing(free)}</em>
-            </>
-          )}
+          <span className="num">{`${lobby.players} de ${lobby.slots} · ${t.lobbies.ping(lobby.ping)}`}</span>
+          {free > 0 && ` · ${t.home.missing(free)}`}
         </span>
       </div>
       <button
