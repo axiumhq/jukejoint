@@ -110,6 +110,11 @@ jobs:
               exit 0
             fi
 
+            if grep -Fq 'Pull request is already in the queue' <<< "$OUTPUT"; then
+              echo "PR is already in the merge queue."
+              exit 0
+            fi
+
             echo "$OUTPUT"
             if grep -qE 'Required status check .* is expected' <<< "$OUTPUT"; then
               if [ "$attempt" -lt 20 ]; then
