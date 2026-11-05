@@ -28,9 +28,21 @@
 @media (min-width: 1361px) {
   .lb-tools {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--sp-4);
     box-shadow: inset 0 -1px 0 var(--line);
+  }
+
+  /* 12 px de respiro entre os filtros e o fio; só a aba desce até ele, para o sublinhado encostar */
+  .lb-tools .lb-tabs > button {
+    height: 52px;
+    padding-bottom: var(--sp-3);
+  }
+
+  .lb-tools .fchips,
+  .lb-tools .lb-reg,
+  .lb-tools .lb-view {
+    margin-top: 2px;
   }
 
   .lb-tools .lb-bar,
@@ -45,6 +57,7 @@
   .lb-tools .fchips {
     order: 1;
     flex: 1;
+    margin-top: -2px;
   }
 
   .lb-tools .lb-reg {
@@ -60,7 +73,7 @@
 /* abas Todos / Sua lista / Favoritos (o .utabs da base) com a região à direita */
 .lb-bar {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--sp-4);
   min-width: 0;
@@ -74,7 +87,7 @@
 
 .lb-reg {
   flex: none;
-  margin-bottom: var(--sp-1);
+  margin-bottom: var(--sp-2);
 }
 
 .lb-reg .c {

@@ -113,7 +113,6 @@ html.is-desktop .frame {
   align-self: flex-start;
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
   height: 44px;
   padding: 0 var(--sp-3);
   color: var(--tx);

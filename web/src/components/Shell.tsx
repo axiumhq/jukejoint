@@ -9,7 +9,7 @@ import { handoffState, roster } from '../lib/room';
 import { useSession } from '../state/session';
 import { Avatar, AvatarStack, Presence } from './Avatar';
 import { DevSignIn, SignInPending } from './AppLogin';
-import { BrandSymbol, Wordmark } from './Brand';
+import { Wordmark } from './Brand';
 import { LiveDot } from './Common';
 import { SocialRail } from './Friends';
 import { Icon, type IconName } from './Icon';
@@ -263,13 +263,12 @@ function NavItems({ items = IN_DESKTOP ? navItems().filter((n) => !n.webOnly) : 
   );
 }
 
-/** A barra lateral: o JJ com o wordmark, a navegação e a sua lista. Igual em toda tela, sala incluída. */
+/** A barra lateral: o wordmark (uma marca só; o JJ fica para favicon e ícone do app), a navegação e a sua lista. Igual em toda tela, sala incluída. */
 function Side({ inert }: { inert?: boolean }) {
   return (
     <aside className="side" aria-label={t.a11y.sidebar} inert={inert}>
       <Link to="/" className="side-brand" aria-label={t.a11y.home}>
-        <BrandSymbol height={44} />
-        <Wordmark alt="" height={22} />
+        <Wordmark alt="" height={36} />
       </Link>
       <nav className="side-nav" aria-label={t.a11y.mainNav}>
         <NavItems />

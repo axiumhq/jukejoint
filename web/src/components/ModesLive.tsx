@@ -87,7 +87,7 @@ export function ModesLive() {
                   {ROMANOS[i] ?? i + 1}
                 </span>
                 <span className="arc-sig" aria-hidden="true">
-                  <ModeIcon slug={m.slug} />
+                  <ModeIcon slug={m.slug} kind={art ? 'selo' : 'glyph'} />
                 </span>
                 <span className="arc-t">
                   <b>{m.name}</b>
