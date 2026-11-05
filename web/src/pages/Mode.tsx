@@ -431,7 +431,7 @@ export function ModesIndex() {
                   <div>
                     <dt>{t.modes.facts.lobbies}</dt>
                     <dd className="num">
-                      {formatNumber(c.lobbies)} · {t.modes.withRoom(c.withRoom)}
+                      {formatNumber(c.lobbies)} · {t.modes.withRoomOf(c.withRoom, c.lobbies)}
                     </dd>
                   </div>
                   <div>

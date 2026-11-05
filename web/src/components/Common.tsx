@@ -36,10 +36,10 @@ export type TagTone = 'acc' | 'soft' | 'strong' | 'plain' | 'warn' | 'lock' | 'l
  * Etiqueta curta em Barlow (o .tag do design). `acc` é só para "Você está aqui" e "Entrando…";
  * `strong`/`soft` destacam sem acento ("Falta 2"); `warn` ganha o ponto de "em partida"; `lock`, o cadeado.
  */
-export function Tag({ tone = 'plain', children, className }: { tone?: TagTone; children: ReactNode; className?: string }) {
+export function Tag({ tone = 'plain', children, className, title }: { tone?: TagTone; children: ReactNode; className?: string; title?: string }) {
   const cls = ['tag', (tone === 'acc' || tone === 'soft' || tone === 'strong' || tone === 'line') && tone, className].filter(Boolean).join(' ');
   return (
-    <span className={cls}>
+    <span className={cls} title={title}>
       {tone === 'warn' && <span className="dot" aria-hidden="true" />}
       {tone === 'lock' && <Icon name="lock" />}
       {children}

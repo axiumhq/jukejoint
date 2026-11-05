@@ -77,10 +77,10 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
       <div className="lc-b">
         <div className="lc-meta">
           <span className="lc-id lbl">
-            {num ? `${t.home.lobbyNum} ${num} · ` : ''}
+            {num ? <span className="lc-num">{`${t.home.lobbyNum} ${num} · `}</span> : null}
             {t.regions[l.region]} · <span className="num">{t.lobbies.ping(l.ping)}</span>
           </span>
-          {tag && <Tag tone={tone}>{tag.text}</Tag>}
+          {tag && <CardTag tone={tone} text={tag.text} />}
         </div>
         <div className="lc-t">
           <Link to={`/sala/${encodeURIComponent(l.id)}`} className="lc-n" id={nameId} title={l.name}>
@@ -114,6 +114,22 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
     </article>
   );
 });
+
+/**
+ * A etiqueta do cartão é estreita: um status longo ("Em partida · rodada 3 de 5") saía cortado em
+ * "Em parti…". Ela mostra só a primeira parte; o resto fica no título (passar o mouse) e no texto
+ * para o leitor de tela.
+ */
+function CardTag({ tone, text }: { tone: Parameters<typeof Tag>[0]['tone']; text: string }) {
+  const [head = text, ...rest] = text.split(' · ');
+  const tail = rest.join(' · ');
+  return (
+    <Tag tone={tone} title={tail ? text : undefined} className={head.length > 8 ? 'is-wide' : undefined}>
+      {head}
+      {tail && <span className="sr-only"> · {tail}</span>}
+    </Tag>
+  );
+}
 
 export function CreateCard({ onCreate }: { onCreate: () => void }) {
   const createBlocked = useCreateBlocked();

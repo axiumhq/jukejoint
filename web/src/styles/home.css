@@ -480,9 +480,8 @@
     order: 4;
   }
 
-  /* os títulos continuam para o leitor de tela; a tela segue o desenho do celular */
-  .home-modes > .sec-h,
-  .lb > .lb-h > h2 {
+  /* o título dos modos fica só para o leitor de tela; o "Jogar agora" aparece, com o botão ao lado */
+  .home-modes > .sec-h {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -491,10 +490,18 @@
     white-space: nowrap;
   }
 
-  /* o "Criar lobby" do cabeçalho fica à vista (nada focável e invisível): sozinho, à direita */
+  /* o "Jogar agora" e o "Criar lobby" na mesma linha (o botão não fica mais sozinho à direita) */
   .lb > .lb-h {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
     min-height: 0;
     margin: 0;
+  }
+
+  .lb > .lb-h > h2 {
+    margin: 0;
+    font-size: var(--fs-h3);
   }
 
   .lb > .lb-h > .btn {
