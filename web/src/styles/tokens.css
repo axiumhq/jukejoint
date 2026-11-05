@@ -182,13 +182,18 @@
   --fs-lead: 0.875rem;
 
   /* raios */
-  --r-2xs: 3px;
-  --r-xs: 4px;
-  --r-sm: 6px;
-  --r-md: 8px;
-  --r-lg: 10px;
-  --r-xl: 12px;
-  --r-2xl: 16px;
+  /* Três raios só: 6 nos controles (botão, campo, chip, etiqueta), 12 nos cards e painéis, 16 nos
+     diálogos e nas capas. Os nomes antigos continuam valendo e apontam para um dos três. */
+  --r-ctl: 6px;
+  --r-card: 12px;
+  --r-dlg: 16px;
+  --r-2xs: var(--r-ctl);
+  --r-xs: var(--r-ctl);
+  --r-sm: var(--r-ctl);
+  --r-md: var(--r-ctl);
+  --r-lg: var(--r-card);
+  --r-xl: var(--r-card);
+  --r-2xl: var(--r-dlg);
 
   /* elevação: o design separa por cor de superfície; sombra só no que flutua */
   --sh-pop: 0 12px 32px rgb(0 0 0 / 0.4), inset 0 0 0 1px var(--line);

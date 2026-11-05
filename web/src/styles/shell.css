@@ -34,9 +34,17 @@ html.is-desktop .frame {
   overflow-x: hidden;
   overflow-y: auto;
 }
-html.is-desktop .side,
-html.is-desktop .rail {
+html.is-desktop .side {
   height: calc(100dvh - var(--titlebar));
+}
+
+/* O espaço da barra de rolagem fica sempre reservado: a barra do topo não anda de lugar entre uma
+   tela que rola e outra que não. */
+html {
+  scrollbar-gutter: stable;
+}
+html.is-desktop .frame {
+  scrollbar-gutter: stable;
 }
 
 .frame {
@@ -45,6 +53,12 @@ html.is-desktop .rail {
   position: relative;
   display: grid;
   grid-template-columns: var(--side-w) minmax(0, 1fr) var(--rail-w);
+  /* a barra do topo é a primeira linha e atravessa a coluna e o painel; a lateral desce as duas */
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'side tb tb'
+    'side col rail';
+  align-items: start;
   min-height: 100dvh;
   /* a cor da lateral desce a página inteira (a lateral é fixa, a página rola) */
   background: linear-gradient(90deg, var(--s1) var(--side-w), transparent 0);
@@ -54,7 +68,21 @@ html.is-desktop .rail {
   --rail-w: var(--rail);
 }
 
+.frame > .side {
+  grid-area: side;
+}
+
+.frame > .tb {
+  grid-area: tb;
+}
+
+.frame > .rail {
+  grid-area: rail;
+}
+
 .frame > .col {
+  grid-area: col;
+  align-self: stretch;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -758,11 +786,13 @@ html.is-desktop .rail {
 
 .rail {
   position: sticky;
-  top: 0;
-  height: 100dvh;
+  /* o painel começa embaixo da barra do topo e fica preso ali ao rolar */
+  top: var(--tb);
+  height: calc(100dvh - var(--titlebar) - var(--tb));
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--sp-4) var(--sp-4) var(--sp-4) 0;
+  /* à direita, o mesmo recuo da barra do topo: os blocos terminam onde a conta termina */
+  padding: var(--sp-4) var(--gut) var(--sp-4) 0;
   scrollbar-width: none;
   z-index: 20;
 }
@@ -1155,6 +1185,9 @@ html.is-desktop .rail {
 @media (max-width: 960px) {
   .frame {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'tb'
+      'col';
   }
 
   .frame:not(.has-rail) > .rail {

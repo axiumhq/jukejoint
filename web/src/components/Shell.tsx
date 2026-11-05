@@ -395,8 +395,10 @@ function Frame() {
       {IN_DESKTOP && <TitleBar />}
       <div className={cls}>
         {!sheet && <Side inert={modal} />}
+        {/* A barra do topo é uma linha da moldura: atravessa a coluna e o painel da direita, então a
+            busca e a conta ficam no mesmo lugar em toda tela, com ou sem painel. */}
+        <TopBar inert={modal} />
         <div className="col">
-          <TopBar inert={modal} />
           <LiveStatus />
           <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
             <Outlet />

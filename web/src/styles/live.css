@@ -64,7 +64,7 @@
   right: 10px;
   bottom: 10px;
   padding: var(--sp-1) var(--sp-2);
-  border-radius: 5px;
+  border-radius: var(--r-ctl);
   border: 0;
   background: transparent;
   color: var(--tx-3);

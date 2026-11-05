@@ -314,6 +314,16 @@ body {
     height: 220px;
   }
 
+  /* Instalar é a página de confiança: sem a cena da cidade (que fica na Início e no Hoje), só o
+     título, o arquivo e o botão, num painel calmo. */
+  .ih.is-plain {
+    height: auto;
+    gap: var(--sp-8);
+    padding-top: var(--sp-2);
+    background: var(--s1);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+
   .ih-sub {
     position: relative;
     display: block;

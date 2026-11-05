@@ -1668,7 +1668,7 @@ a.tl-sc:hover {
     height: auto;
     display: flex;
     flex-direction: column;
-    border-radius: 16px;
+    border-radius: var(--r-dlg);
   }
 
   .mh > .cover {
@@ -1913,7 +1913,7 @@ a.tl-sc:hover {
 
   .nf {
     min-height: 0;
-    border-radius: 16px;
+    border-radius: var(--r-dlg);
   }
 
   .nf-shade {
