@@ -23,6 +23,8 @@ export type Phase = 'open' | 'countdown' | 'handoff' | 'playing';
 export interface SeatView {
   userId: string;
   name: string;
+  /** URL do avatar da Steam, quando o login trouxe um. */
+  avatar?: string;
   host?: boolean;
   ready: boolean;
   readyAt?: number;
@@ -78,6 +80,8 @@ export interface FriendView {
   name: string;
   lobbyId?: string;
   host?: boolean;
+  /** A foto da Steam, se o servidor mandar (hoje não manda: server/internal/lobby/hub.go `FriendView`). */
+  avatar?: string;
 }
 
 export interface InviteView {
@@ -227,6 +231,7 @@ function seatsOf(v: LobbyView, ctx: ViewContext): Seat[] {
   return v.seats.map((s) => ({
     id: s.userId,
     name: s.name,
+    avatar: s.avatar,
     you: s.userId === ctx.meId || undefined,
     host: !!s.host,
     friend: ctx.friendIds.has(s.userId),
@@ -272,7 +277,7 @@ export function toLobby(v: LobbyView, ctx: ViewContext): Lobby {
 
 /** Amigos online no formato do trilho social. */
 export function toPresence(friends: FriendView[]): FriendPresence[] {
-  return friends.map((f) => ({ id: f.id, name: f.name, lobbyId: f.lobbyId ?? null, host: !!f.host }));
+  return friends.map((f) => ({ id: f.id, name: f.name, lobbyId: f.lobbyId ?? null, host: !!f.host, avatar: f.avatar }));
 }
 
 /** O convite que o trilho mostra: o mais recente para um lobby que ainda existe, fora o seu e os recusados. */

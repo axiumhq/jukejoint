@@ -73,7 +73,7 @@ export function FriendRow({ friend, children }: { friend: FriendPresence; childr
   const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
   return (
     <li className="fr">
-      <Presence name={friend.name} size={32} status={lobby ? 'lobby' : 'menu'} />
+      <Presence name={friend.name} size={32} status={lobby ? 'lobby' : 'menu'} src={friend.avatar} />
       <div className="fr-t">
         <b>{friend.name}</b>
         <small>{where(friend, lobby, hereId)}</small>
@@ -200,7 +200,7 @@ function ListPanel({ onClose, called, onCall }: { onClose: () => void; called: R
                 const lobby = f.lobbyId ? lobbies.find((l) => l.id === f.lobbyId) : undefined;
                 return (
                   <li key={f.name} className="fr">
-                    <Presence name={f.name} size={36} status={lobby ? 'lobby' : 'menu'} />
+                    <Presence name={f.name} size={36} status={lobby ? 'lobby' : 'menu'} src={f.avatar} />
                     <div className="fr-t">
                       <b>{f.name}</b>
                       <small>{where(f, lobby, hereId)}</small>
@@ -237,7 +237,7 @@ function Online() {
         <h2 className="cap" id="rail-online">
           {t.social.online} · <b>{friends.length}</b>
         </h2>
-        <span className="lbl">{t.social.inLobbies(inLobbies)}</span>
+        {friends.length > 0 && <span className="lbl">{t.social.inLobbies(inLobbies)}</span>}
       </div>
       {friends.length === 0 ? (
         <p className="rail-empty">{t.friends.none}</p>
@@ -254,10 +254,12 @@ function Online() {
           ))}
         </ul>
       )}
-      <button type="button" className="btn btn-g btn-sm list-open" aria-expanded={panel} onClick={() => setPanel((v) => !v)}>
-        {panel ? t.friends.closeList : t.friends.viewAll}
-      </button>
-      {panel && <ListPanel onClose={() => setPanel(false)} called={called} onCall={onCall} />}
+      {friends.length > 0 && (
+        <button type="button" className="btn btn-g btn-sm list-open" aria-expanded={panel} onClick={() => setPanel((v) => !v)}>
+          {panel ? t.friends.closeList : t.friends.viewAll}
+        </button>
+      )}
+      {panel && friends.length > 0 && <ListPanel onClose={() => setPanel(false)} called={called} onCall={onCall} />}
       {live ? (
         <p className="rail-empty">{L.friendsNote}</p>
       ) : (

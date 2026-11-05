@@ -15,6 +15,8 @@ import type { Seat } from '../lib/room';
 export interface MockUser {
   name: string;
   friendsOnline: number;
+  /** Ao vivo: a foto da Steam (https). */
+  avatar?: string;
   /** Ao vivo: o ID da conta (SteamID64 ou `dev:nome`). */
   id?: string;
   /** Ao vivo: conta de teste do login de desenvolvimento. */

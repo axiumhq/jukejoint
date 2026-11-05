@@ -229,6 +229,7 @@ func (h *Hub) person(u UserRef) *person {
 		h.people[u.ID] = p
 	}
 	p.user.Name = u.Name
+	p.user.Avatar = u.Avatar
 	return p
 }
 
@@ -262,12 +263,13 @@ func (h *Hub) sendLobbyTo(l *Lobby, uid string) {
 type FriendView struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
+	Avatar  string `json:"avatar,omitempty"`
 	LobbyID string `json:"lobbyId,omitempty"`
 	Host    bool   `json:"host,omitempty"`
 }
 
 func (h *Hub) friendView(p *person, viewer string) FriendView {
-	v := FriendView{ID: p.user.ID, Name: p.user.Name}
+	v := FriendView{ID: p.user.ID, Name: p.user.Name, Avatar: p.user.Avatar}
 	if l := h.lobbies[p.lobbyID]; l != nil && (!l.Locked || l.member(viewer) != nil) {
 		v.LobbyID = l.ID
 		v.Host = l.HostID == p.user.ID

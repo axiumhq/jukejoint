@@ -326,3 +326,35 @@
   letter-spacing: 0;
   color: var(--tx-3);
 }
+
+/* Foto da Steam no lugar do glifo: redonda, do tamanho do avatar. */
+.av > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--s3);
+}
+
+.pres > .av > img {
+  --c: calc(var(--s, 32px) + 1px - var(--d) / 2);
+  -webkit-mask: radial-gradient(circle at var(--c) var(--c), #0000 calc(var(--d) / 2 + 1.75px), #000 calc(var(--d) / 2 + 2.25px));
+  mask: radial-gradient(circle at var(--c) var(--c), #0000 calc(var(--d) / 2 + 1.75px), #000 calc(var(--d) / 2 + 2.25px));
+}
+
+.stack > .av:not(:last-child) > img {
+  --g: 2px;
+  --cx: calc(var(--s) * 1.5 - var(--o));
+  -webkit-mask: radial-gradient(circle at var(--cx) 50%, #0000 calc(var(--s) / 2 + var(--g) - 0.25px), #000 calc(var(--s) / 2 + var(--g) + 0.25px));
+  mask: radial-gradient(circle at var(--cx) 50%, #0000 calc(var(--s) / 2 + var(--g) - 0.25px), #000 calc(var(--s) / 2 + var(--g) + 0.25px));
+}
+
+/* Estado vazio da sua lista: alinhado ao título da seção, com leitura confortável. */
+.rail-sec .rail-empty {
+  margin: 0;
+  padding: var(--sp-2) 12px;
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  color: var(--tx-2);
+}

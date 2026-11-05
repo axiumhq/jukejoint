@@ -1,4 +1,4 @@
-import { memo, type CSSProperties } from 'react';
+import { memo, useEffect, useState, type CSSProperties } from 'react';
 import { avatarGlyph } from '../lib/avatar';
 
 /**
@@ -14,18 +14,27 @@ interface AvatarProps {
   size?: number;
   /** Anel de acento: alguém da sua lista. */
   ring?: boolean;
+  /** A foto da Steam (https). Sem ela, ou se não carregar, vale o glifo gerado do nome. */
+  src?: string;
   className?: string;
 }
 
-export const Avatar = memo(function Avatar({ name, size = 28, ring = false, className }: AvatarProps) {
+export const Avatar = memo(function Avatar({ name, size = 28, ring = false, src, className }: AvatarProps) {
   const d = avatarGlyph(name);
-  const cls = ['av', ring && 'ring', className].filter(Boolean).join(' ');
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [src]);
+  const photo = !!src && !failed;
+  const cls = ['av', photo && 'photo', ring && 'ring', className].filter(Boolean).join(' ');
   return (
     <span className={cls} style={{ '--s': `${size}px` } as CSSProperties} title={name} aria-hidden="true">
-      <svg viewBox="0 0 32 32" focusable="false">
-        <circle cx="16" cy="16" r="15.5" strokeWidth="1" />
-        <path d={d} />
-      </svg>
+      {photo ? (
+        <img src={src} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+      ) : (
+        <svg viewBox="0 0 32 32" focusable="false">
+          <circle cx="16" cy="16" r="15.5" strokeWidth="1" />
+          <path d={d} />
+        </svg>
+      )}
     </span>
   );
 });
@@ -33,10 +42,10 @@ export const Avatar = memo(function Avatar({ name, size = 28, ring = false, clas
 /** Presença: em lobby (ponto cheio), no menu do jogo (anel vazado) ou offline (apagado). */
 export type PresenceStatus = 'lobby' | 'menu' | 'offline';
 
-export function Presence({ name, size = 32, status, ring }: { name: string; size?: number; status: PresenceStatus; ring?: boolean }) {
+export function Presence({ name, size = 32, status, ring, src }: { name: string; size?: number; status: PresenceStatus; ring?: boolean; src?: string }) {
   return (
     <span className={`pres ${status}`} style={{ '--s': `${size}px` } as CSSProperties}>
-      <Avatar name={name} size={size} ring={ring} />
+      <Avatar name={name} size={size} ring={ring} src={src} />
       <i aria-hidden="true" />
     </span>
   );
@@ -51,18 +60,20 @@ interface StackProps {
   friends?: ReadonlySet<string> | string[];
   /** Quantos rostos antes do "+N". */
   max?: number;
+  /** Fotos da Steam por nome. */
+  avatars?: Readonly<Record<string, string>>;
   className?: string;
 }
 
 /** Pilha de avatares com "+N". Decorativa: o número de pessoas vai no texto ao lado. */
-export function AvatarStack({ names, size = 22, total, friends, max = 4, className }: StackProps) {
+export function AvatarStack({ names, size = 22, total, friends, max = 4, avatars, className }: StackProps) {
   const shown = names.slice(0, max);
   const more = (total ?? names.length) - shown.length;
   const isFriend = (n: string) => (friends instanceof Set ? friends.has(n) : Array.isArray(friends) ? friends.includes(n) : false);
   return (
     <span className={className ? `stack ${className}` : 'stack'} style={{ '--s': `${size}px` } as CSSProperties} aria-hidden="true">
       {shown.map((n) => (
-        <Avatar key={n} name={n} size={size} ring={isFriend(n)} />
+        <Avatar key={n} name={n} size={size} ring={isFriend(n)} src={avatars?.[n]} />
       ))}
       {more > 0 && <span className="more">+{more}</span>}
     </span>

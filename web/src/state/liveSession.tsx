@@ -176,7 +176,7 @@ export function LiveSessionProvider({ api, children }: { api: string; children: 
   lobbiesRef.current = lobbies;
   const presence = useMemo<FriendPresence[]>(() => toPresence(state.friends), [state.friends]);
   const user = useMemo<MockUser | null>(
-    () => (state.me ? { id: state.me.id, name: state.me.name, dev: state.me.dev, friendsOnline: state.friends.length } : null),
+    () => (state.me ? { id: state.me.id, name: state.me.name, avatar: state.me.avatar, dev: state.me.dev, friendsOnline: state.friends.length } : null),
     [state.me, state.friends.length],
   );
 

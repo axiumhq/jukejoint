@@ -142,7 +142,7 @@ function SeatCard({
   return (
     <li className="seat-li">
       <div className={cls}>
-        <Presence name={seat.name} size={56} status="lobby" />
+        <Presence name={seat.name} src={seat.avatar} size={56} status="lobby" />
         <div className="seat-t">
           <span className="seat-n">
             <b>{name}</b>

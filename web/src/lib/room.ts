@@ -12,6 +12,8 @@ export interface Seat {
   name: string | null;
   /** Ao vivo: o ID da conta (para remover da sala). */
   id?: string;
+  /** Ao vivo: URL do avatar da Steam. */
+  avatar?: string;
   /** Ao vivo: vaga de lobby com convite vista de fora (sem nome de verdade). */
   hidden?: boolean;
   you?: boolean;

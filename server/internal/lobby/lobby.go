@@ -85,6 +85,8 @@ var EstimatedPing = map[string]int{"BR": 11, "NA": 124, "EU": 196}
 type UserRef struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	// Avatar is the Steam avatar URL, when the login fetched one.
+	Avatar string `json:"avatar,omitempty"`
 }
 
 type member struct {
@@ -274,6 +276,7 @@ var joinCodeRe = regexp.MustCompile(`^[A-Za-z0-9._:\-]{1,128}$`)
 type SeatView struct {
 	UserID  string `json:"userId"`
 	Name    string `json:"name"`
+	Avatar  string `json:"avatar,omitempty"`
 	Host    bool   `json:"host,omitempty"`
 	Ready   bool   `json:"ready"`
 	ReadyAt int64  `json:"readyAt,omitempty"`
@@ -371,7 +374,7 @@ func (l *Lobby) view(viewer string, now time.Time) View {
 	}
 	for _, m := range l.members {
 		host := m.user.ID == l.HostID
-		seat := SeatView{UserID: m.user.ID, Name: m.user.Name, Host: host, Ready: m.ready || host || l.inMatch(), ReadyAt: ms(m.readyAt)}
+		seat := SeatView{UserID: m.user.ID, Name: m.user.Name, Avatar: m.user.Avatar, Host: host, Ready: m.ready || host || l.inMatch(), ReadyAt: ms(m.readyAt)}
 		if l.inMatch() && m.step >= 0 {
 			step := m.step
 			seat.Step = &step
