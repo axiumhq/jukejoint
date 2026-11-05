@@ -213,6 +213,21 @@ describe('Duelo à Meia-Noite', () => {
     expect(a.said('Treino 0 × 2 Ana')).toBe(true)
   })
 
+  it('o aviso de saída do host tira o duelista na hora, mesmo ainda na vaga', () => {
+    const a = w.join('Ana', 0)
+    const b = w.join('Bia', 1)
+    w.tick(1.5)
+    untilLive(w)
+    w.disconnect(b)
+    expect(a.said('Bia saiu. Ana leva a partida.')).toBe(true)
+  })
+
+  it('os corpos sem dono são varridos a cada quadro', () => {
+    w.join('Ana', 0)
+    w.tick(1)
+    expect(w.world.swept).toBeGreaterThanOrEqual(9)
+  })
+
   it('/placar responde para quem pediu', () => {
     const a = w.join('Ana', 0)
     w.tick(1.2)

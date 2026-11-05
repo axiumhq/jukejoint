@@ -10,7 +10,8 @@ Um contra um, melhor de cinco, com fila. É o primeiro modo de verdade do Jukejo
 - Um golpe que tira toda a vida decide a rodada na hora.
 - Quem fizer 3 rodadas leva a partida. Quem perde vai para o fim da fila, quem vence fica, e a próxima partida começa sozinha.
 - Se ninguém morre em 90 segundos, vence quem tiver mais vida, em proporção. Com vida igual, a rodada repete.
-- Se um duelista sai do servidor, o outro leva a partida.
+- Se um duelista sai do servidor, o outro leva a partida na hora: o modo ouve o aviso de saída do host (`onPlayerLeave`), além de conferir a lista a cada segundo.
+- Os corpos de herói que ficam sem dono depois das trocas de herói são tirados do mapa (`Strays`, do Modlock).
 
 ## Comandos no chat
 

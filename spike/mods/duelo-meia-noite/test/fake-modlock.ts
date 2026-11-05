@@ -63,6 +63,9 @@ const world = {
   worldFns: [] as ((map: string) => void)[],
   commands: new Map<string, (p: FakePlayer, args: string) => void>(),
   startFns: [] as ((args: readonly string[]) => void)[],
+  joinFns: [] as ((e: { connection: Conn }) => void)[],
+  leaveFns: [] as ((e: { connection: Conn; disconnected: boolean }) => void)[],
+  swept: 0,
   damageFns: [] as ((hit: { victim: number }) => { block: boolean } | void)[],
   damagedFns: [] as ((hit: { victim: number; attacker: number; healthBefore: number; healthLost: number }) => void)[],
   builds: new Map<string, { name: string; description: string; items: { item: string; annotation: string }[] }[]>(),
@@ -85,6 +88,12 @@ export const fake = {
   },
   leave(player: FakePlayer) {
     world.conns = world.conns.filter((c) => c.player !== player)
+  },
+  /** The host's leave notice: the player still holds the slot while the handlers run. */
+  disconnect(player: FakePlayer) {
+    const c = world.conns.find((x) => x.player === player)!
+    for (const fn of world.leaveFns) fn({ connection: c, disconnected: true })
+    world.conns = world.conns.filter((x) => x !== c)
   },
   loadWorld() {
     for (const fn of world.worldFns) fn('street_test')
@@ -135,6 +144,9 @@ export const players = () => [...world.conns]
 export const onFrame = (fn: (f: { timeSeconds: number }) => void) => { world.frame.push(fn) }
 export const onWorld = (fn: (map: string) => void) => { world.worldFns.push(fn) }
 export const command = (name: string, fn: (p: FakePlayer, args: string) => void) => { world.commands.set(name, fn) }
+export const onPlayerJoin = (fn: (e: { connection: Conn }) => void) => { world.joinFns.push(fn) }
+export const onPlayerLeave = (fn: (e: { connection: Conn; disconnected: boolean }) => void) => { world.leaveFns.push(fn) }
+export class Strays { sweep() { world.swept++ } }
 export const onStart = (fn: (args: readonly string[]) => void) => { world.startFns.push(fn) }
 export const onDamage = (fn: (hit: { victim: number }) => { block: boolean } | void) => { world.damageFns.push(fn) }
 export const onDamaged = (fn: (hit: { victim: number; attacker: number; healthBefore: number; healthLost: number }) => void) => { world.damagedFns.push(fn) }

@@ -159,9 +159,30 @@ function duelistAt(entity: number): number {
 
 /* ───────── fila ───────── */
 
+/**
+ * Quem o host avisou que saiu: durante o aviso a pessoa ainda ocupa a vaga, então a fila a
+ * ignora até ela sumir da lista do host.
+ */
+const leaving = new Set<string>()
+
+/** O host avisou que alguém entrou: confere a fila na hora, sem esperar o próximo segundo. */
+export function playerJoined() {
+  syncQueue()
+}
+
+/** O host avisou que alguém saiu: tira da fila na hora e, se duelava, o outro leva. */
+export function playerLeft(c: Connection) {
+  leaving.add(key({ slot: c.player.slot, generation: c.generation }))
+  syncQueue()
+}
+
 /** Junta a fila com quem está no servidor: entra quem chegou, sai quem foi embora. */
 export function syncQueue() {
-  const here = players().filter((c) => c.ready)
+  const listed = players()
+  for (const k of [...leaving]) {
+    if (!listed.some((c) => key({ slot: c.player.slot, generation: c.generation }) === k)) leaving.delete(k)
+  }
+  const here = listed.filter((c) => c.ready && !leaving.has(key({ slot: c.player.slot, generation: c.generation })))
   const present = new Set(here.map((c) => key({ slot: c.player.slot, generation: c.generation })))
   const before = state.queue.map(key)
 
@@ -404,7 +425,7 @@ function endMatch(winner: Seat, text: string) {
   }
   state.queue = state.queue.filter((s) => key(s) !== key(winner) && (!loser || key(s) !== key(loser)))
   state.queue.unshift(winner)
-  if (loser && players().some((c) => c.ready && key({ slot: c.player.slot, generation: c.generation }) === key(loser))) state.queue.push(loser)
+  if (loser && !leaving.has(key(loser)) && players().some((c) => c.ready && key({ slot: c.player.slot, generation: c.generation }) === key(loser))) state.queue.push(loser)
   const next = state.queue[1]
   if (next) tellAll(`Próximo duelo: ${winner.name} contra ${next.name}.`)
   later(BETWEEN_MATCHES_SECONDS, () => {
