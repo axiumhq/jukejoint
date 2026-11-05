@@ -141,6 +141,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
           rust-src-dir: desktop/src-tauri
+          cache-shared-key: desktop-check
       - run: npm ci --prefix web
       - run: npm ci --prefix desktop
       - run: npm run build:front --prefix desktop

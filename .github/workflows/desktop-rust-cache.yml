@@ -13,6 +13,7 @@ on:
       - web/package-lock.json
       - web/src/config/brand.ts
       - .github/workflows/release-desktop.yml
+      - .github/workflows/ci.yml
       - .github/workflows/desktop-rust-cache.yml
   workflow_dispatch:
 
@@ -21,9 +22,13 @@ permissions:
 
 jobs:
   warm-cache:
-    name: Warm Windows release dependencies
+    name: Warm Windows ${{ matrix.profile }} dependencies
     runs-on: windows-2025
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [check, release]
     steps:
       # actions/checkout v7.0.1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -43,7 +48,7 @@ jobs:
         with:
           target: x86_64-pc-windows-msvc
           rust-src-dir: desktop/src-tauri
-          cache-shared-key: desktop-release
+          cache-shared-key: desktop-${{ matrix.profile }}
 
       - name: Install frontend dependencies
         run: |
@@ -54,5 +59,11 @@ jobs:
         run: npm run build:front --prefix desktop
 
       - name: Compile release dependencies
+        if: matrix.profile == 'release'
         working-directory: desktop/src-tauri
         run: cargo build --release --locked
+
+      - name: Check desktop dependencies
+        if: matrix.profile == 'check'
+        working-directory: desktop/src-tauri
+        run: cargo check --locked
