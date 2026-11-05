@@ -79,18 +79,14 @@ jobs:
           $version = $env:RELEASE_TAG.Substring(1)
           $bundle = 'desktop/src-tauri/target/release/bundle/nsis'
           $installer = Get-ChildItem $bundle -Filter '*-setup.exe' | Select-Object -First 1
-          $package = Get-ChildItem $bundle -Filter '*.nsis.zip' | Select-Object -First 1
-          if (-not $installer -or -not $package) { throw "O Tauri não gerou os artefatos NSIS em $bundle." }
+          if (-not $installer) { throw "O Tauri não gerou o instalador NSIS em $bundle." }
+          $signature = "$($installer.FullName).sig"
+          if (-not (Test-Path $signature)) { throw "Assinatura do instalador não encontrada: $signature" }
           $setupName = "Jukejoint-$env:RELEASE_TAG-windows-x64-setup.exe"
-          $updateName = "Jukejoint-$env:RELEASE_TAG-windows-x64-update.nsis.zip"
           $setup = Join-Path $bundle $setupName
-          $update = Join-Path $bundle $updateName
-          $generatedSignature = "$($package.FullName).sig"
-          if (-not (Test-Path $generatedSignature)) { throw "Assinatura do pacote não encontrada: $generatedSignature" }
           Move-Item $installer.FullName $setup
-          Move-Item $package.FullName $update
-          Move-Item $generatedSignature "$update.sig"
-          $signaturePath = "$update.sig"
+          Move-Item $signature "$setup.sig"
+          $signaturePath = "$setup.sig"
           $release = gh release view "$env:RELEASE_TAG" --repo "$env:GITHUB_REPOSITORY" --json body,publishedAt | ConvertFrom-Json
           $manifest = @{
             version = $version
@@ -99,7 +95,7 @@ jobs:
             platforms = @{
               'windows-x86_64-nsis' = @{
                 signature = (Get-Content $signaturePath -Raw).Trim()
-                url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/$updateName"
+                url = "https://github.com/$env:GITHUB_REPOSITORY/releases/download/$env:RELEASE_TAG/$setupName"
               }
             }
           }
@@ -113,7 +109,7 @@ jobs:
           $bundle = 'desktop/src-tauri/target/release/bundle/nsis'
           gh release upload "$env:RELEASE_TAG" `
             (Join-Path $bundle "Jukejoint-$env:RELEASE_TAG-windows-x64-setup.exe") `
-            (Join-Path $bundle "Jukejoint-$env:RELEASE_TAG-windows-x64-update.nsis.zip") `
+            (Join-Path $bundle "Jukejoint-$env:RELEASE_TAG-windows-x64-setup.exe.sig") `
             (Join-Path $bundle 'latest.json') `
             --repo "$env:GITHUB_REPOSITORY" --clobber
           if ($LASTEXITCODE -ne 0) { throw 'Não consegui anexar os artefatos à release.' }
