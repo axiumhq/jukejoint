@@ -15,11 +15,7 @@ html {
   scroll-padding-bottom: calc(var(--bn) + var(--sp-4));
 }
 
-/* toque: sem o flash cinza do navegador (cada controle já tem :active) e sem a espera do toque duplo */
-html {
-  -webkit-tap-highlight-color: transparent;
-}
-
+/* toque: sem a espera do toque duplo. O realce do toque do navegador fica: os controles ainda não têm :active */
 a,
 button,
 summary,
