@@ -1,161 +1,145 @@
-# Jukejoint
+<p align="center">
+  <img src="web/src/assets/brand/simbolo-jj.svg" alt="Jukejoint symbol" width="112">
+</p>
 
-Plataforma gratuita de modos da comunidade para Deadlock, feita para o Brasil e a América Latina. Você cria ou acha uma sala, entra pela Steam, e o app abre o jogo já dentro do modo.
+<h1 align="center">Jukejoint</h1>
 
-A partida é P2P: o jogo roda num servidor no PC de quem cria a sala, e os outros PCs se ligam direto a ele. O nosso servidor só faz login, lista as salas e apresenta os PCs uns aos outros. O motor que monta o modo dentro do Deadlock é o [Modlock](https://github.com/paralin/modlock) (MIT), fixado numa versão conferida por hash.
+<p align="center">Community lobbies for playing custom Deadlock modes together.</p>
 
-Projeto independente da comunidade. Não é afiliado à Valve. Deadlock é marca da Valve Corporation.
+<p align="center">
+  <a href="https://github.com/axiumhq/jukejoint/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/axiumhq/jukejoint/ci.yml?branch=main&label=CI" alt="CI status"></a>
+  <a href="https://github.com/axiumhq/jukejoint/releases/latest"><img src="https://img.shields.io/github/v/release/axiumhq/jukejoint?label=version" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-6b5548" alt="Proprietary software"></a>
+  <img src="https://img.shields.io/badge/desktop_app-Windows-0078D4" alt="Windows desktop app">
+</p>
 
-## Como as peças se ligam
+**Jukejoint** is an independent project for the Deadlock community in Brazil and Latin America. Use the website or Windows app to find a lobby, sign in through Steam, and launch a custom mode.
 
+The game runs on the lobby host's computer. Other players connect directly over P2P. Jukejoint's API handles sign-in, lobby listings, and the signaling players need to find each other. The app uses [Modlock](https://github.com/paralin/modlock), pinned to a specific version and verified by SHA-256.
+
+> Jukejoint is proprietary software. Its source code is public for inspection and release transparency. Making this repository public does not grant permission to use, modify, or redistribute the software. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Jukejoint is not affiliated with Valve. Deadlock is a trademark of Valve Corporation.
+
+## Download
+
+Download the latest Windows installer from the [releases page](https://github.com/axiumhq/jukejoint/releases/latest). The installer includes the app, available modes, and the Modlock version pinned for that release. The app checks for updates before opening its main window.
+
+## Available modes
+
+| Mode | Status |
+| --- | --- |
+| Duelo à Meia-Noite | Playable 1v1 mode with best-of-five matches and a shared hero selection. |
+| Campo de Treino | Playable practice mode with targets and training commands. |
+| Círculo Profano, Último Bonde, Neblina, and Cerco ao Cofre | Listed in the catalog, but currently launch the test mode. |
+
+Modes live in `spike/mods/`. Each mode has its own README with instructions and test coverage.
+
+## How it works
+
+```text
+Website and Windows app
+        │
+        ├── API: Steam sign-in, lobbies, presence, and invites
+        └── Modlock: starts the mode and connects computers over P2P
+
+API and signaling: hosted on the project's Raspberry Pi
 ```
-  navegador ──────────┐
-                      ▼
-  app desktop ──▶ API (login Steam, salas, presença) ──── no Raspberry Pi, atrás de um túnel da Cloudflare
-     │                │                                     api.jukejoint.app · signal.jukejoint.app
-     │                └── sinalização (apresenta os PCs)
-     ▼
-  modlock.exe ──▶ Deadlock ◀═══ P2P (WebRTC/QUIC) ═══▶ Deadlock dos outros PCs
-  (o modo roda no servidor do jogo, no PC de quem criou a sala)
-```
 
-1. O **site** (`web/`) e o **app desktop** (`desktop/`) mostram as salas e falam com a **API** (`server/`).
-2. Quando a sala começa, o app chama o `modlock.exe` para hospedar ou entrar. O Modlock carrega o modo de `spike/mods/<modo>`, abre o Deadlock e liga os PCs pela **sinalização** (`spike/signal/`).
-3. A API e a sinalização rodam em imagens Docker no Raspberry Pi do repositório [`axiumhq/infra-pi`](https://github.com/axiumhq/infra-pi).
+The website (`web/`) and desktop app (`desktop/`) use the Go API (`server/`). The signaling service (`spike/signal/`) helps Modlock processes establish a P2P connection. The API and signaling service run as Docker images published to GHCR; deployment configuration lives in [`axiumhq/infra-pi`](https://github.com/axiumhq/infra-pi).
 
-## O que tem em cada pasta
+## Run locally
 
-| Pasta | O que é |
-|---|---|
-| `web/` | O site (React, Vite, TypeScript). Funciona com dados simulados ou com a API de verdade. O app desktop carrega este mesmo site. |
-| `desktop/` | O app desktop (Tauri v2, Rust e React): a janela do site, a tela Instalação, o login, os links `jukejoint://`, o atualizador assinado e o `EngineAdapter`, que conversa com o `modlock.exe`. |
-| `server/` | A API em Go: login pela Steam (OpenID), lista de salas, WebSocket das salas, presença e convites. O estado fica em memória por enquanto. |
-| `spike/signal/` | O servidor de sinalização em Go, que os motores dos PCs usam para se achar antes de ligar o P2P. |
-| `spike/mods/` | Os modos de jogo, em TypeScript, com a SDK do Modlock (ver [Modos](#modos)). |
-| `spike/bridge/` | O teste da ponte entre a interface do Modlock e o site. |
-| `scripts/` | `install-modlock.ps1` baixa o Modlock fixado e confere o hash. `publico/` tem o guia e os scripts do teste pela internet, e `spike/` os scripts do primeiro teste entre dois PCs. |
-| `bin/modlock.cmd` | Roda o Modlock fixado de `tools/` sem a checagem de atualização. |
-| `docs/` | Decisões e pesquisa: a decisão de plataforma, o adaptador do motor, o spike, o design e a análise de segurança do motor. |
-| `art/` | Os arquivos do Blender da arte-chave (cidade, torre, herói) e as prévias. |
-| `prototipos/` | Protótipos HTML de direções visuais, só de consulta. |
-| `.github/workflows/` | CI, release, imagens Docker e a fila de merge (ver [Testes, CI e releases](#testes-ci-e-releases)). |
-| `tools/` | **Fora do git.** O Go portátil, o `modlock-v0.1.73/` e os arquivos locais do teste público. |
+### Website with demo data
 
-## Modos
-
-Cada modo é uma pasta em `spike/mods/` com `main.ts`, `mod.json`, um `README.md`, testes em Vitest contra uma SDK falsa (`test/`) e um autoteste (`probe.ts`) que roda no servidor de verdade do jogo, com bots e sem pessoas.
-
-| Modo | Pasta | Situação |
-|---|---|---|
-| **Duelo à Meia-Noite** | `duelo-meia-noite` | De verdade. 1 contra 1, melhor de cinco, com fila, mesmo herói sorteado para os dois e placar na tela. |
-| **Campo de Treino** | `campo-de-treino` | De verdade. Treino de alvos e comandos de treino (`/bot`, `/semRecarga`, `/vida`, `/almas`, `/item`). |
-| Rotas | `rotas` | Protótipo, ainda só no [PR #17](https://github.com/axiumhq/jukejoint/pull/17), em rascunho. Rota de caixas com a ordem mais curta, e gravar e correr atalhos de movimento. |
-| Medições | `medicoes` | Também no PR #17. Laboratório sem pessoas que mede andar, tirolesa e o tempo da wave. Não é um modo do site. |
-| `hello` | `hello` | O modo de teste. Os outros quatro modos do site (Círculo Profano, Último Bonde, Neblina e Cerco ao Cofre) ainda abrem este. |
-
-O catálogo que liga cada modo do site a uma pasta fica em `desktop/src-tauri/src/engine/catalog.rs`. Um modo novo de verdade entra em `MODES` com `test: false` e em `REAL_PROJECTS`; o `build-live.mjs` lê essa lista para empacotar o app.
-
-## Começar
-
-### O que instalar
-
-- **Node** 20.19+ ou 22.12+ para o site (o app desktop usa o Node 24) e npm.
-- **Go** 1.27 para a API e a sinalização. O repositório espera um Go portátil em `tools/go/` (`export PATH="$PWD/tools/go/bin:$PATH" GOTOOLCHAIN=local`), mas um Go instalado também serve.
-- **Rust** 1.99.1 (fixado em `rust-toolchain.toml`), MSVC Build Tools 2022, Windows SDK e WebView2, para o app desktop.
-- **O Modlock fixado**, para rodar modos e o app:
-  ```powershell
-  powershell -ExecutionPolicy Bypass -File scripts\install-modlock.ps1
-  ```
-  Ele baixa a versão de `desktop/src-tauri/src/engine/mod.rs` para `tools\modlock-v0.1.73\` e recusa o arquivo se o SHA-256 não bater com o publicado pelo GitHub.
-- **Deadlock instalado pela Steam**, para rodar os modos e o autoteste.
-
-### Só o site, com dados simulados
+Requires Node.js 24 and npm.
 
 ```bash
-cd web
-npm install
-npm run dev        # http://localhost:5173
+npm ci --prefix web
+npm run dev --prefix web
 ```
 
-Sem `VITE_API_URL`, o site usa dados simulados, e dá para navegar por tudo sem servidor.
+Open `http://localhost:5173`. Without `VITE_API_URL`, the website uses simulated data.
 
-### O site com a API local
+### Website with a local API
+
+Requires the Go version specified in `server/go.mod`.
 
 ```bash
 cd server
-DEV_LOGIN=1 go run .                           # http://127.0.0.1:8090, com login de teste
-
-cd web
-VITE_API_URL=http://localhost:8090 npm run dev
+DEV_LOGIN=1 go run .
 ```
 
-O `DEV_LOGIN=1` libera o botão "Entrar como teste (dev)". Para entrar com a Steam de verdade, a API precisa de uma chave da Steam Web API em `server/.data/steam-api-key`, pasta que fica fora do git. As variáveis estão em [`server/README.md`](server/README.md).
+In another terminal:
 
-### O app desktop
+```bash
+npm ci --prefix web
+VITE_API_URL=http://localhost:8090 npm run dev --prefix web
+```
+
+`DEV_LOGIN=1` is for local development only. See [`server/README.md`](server/README.md) for Steam authentication and other configuration.
+
+### Desktop app
+
+The desktop app is developed and packaged for Windows. It requires Node.js 24, Rust 1.99.1, MSVC Build Tools 2022, the Windows SDK, and WebView2.
 
 ```powershell
-cd web;        npm ci
-cd ..\desktop; npm ci
-$env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"
-$env:MODLOCK_BIN = "$PWD\..\tools\modlock-v0.1.73\modlock.exe"
+npm ci --prefix web
+npm ci --prefix desktop
+powershell -ExecutionPolicy Bypass -File scripts\install-modlock.ps1
+$env:MODLOCK_BIN = "$PWD\tools\modlock-v0.1.73\modlock.exe"
+cd desktop
 npx tauri dev
 ```
 
-Para gerar o app que fala com o servidor público, em `desktop\out\Jukejoint.zip`:
+Deadlock must be installed through Steam to launch a mode in-game. See [`desktop/README.md`](desktop/README.md) for development, configuration, and build details.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\publico\gerar-app.ps1
-```
+## Repository layout
 
-O passo a passo de um teste entre duas pessoas pela internet está em [`scripts/publico/LEIA.md`](scripts/publico/LEIA.md). Detalhes do app, das variáveis e do empacotamento estão em [`desktop/README.md`](desktop/README.md).
+| Path | Contents |
+| --- | --- |
+| `web/` | React, Vite, and TypeScript website, also loaded by the desktop app. |
+| `desktop/` | App interface and Tauri/Rust integration with the system and Modlock. |
+| `server/` | Go API for Steam sign-in, lobbies, presence, and invites. |
+| `spike/signal/` | Go P2P signaling service. |
+| `spike/mods/` | Custom modes and their tests. |
+| `scripts/` | Modlock installation and local build/test helpers. |
+| `docs/` | Architecture decisions, integration, design, and audits. |
+| `.github/workflows/` | CI, merge queue, release builds, and server images. |
 
-### Um modo, sem o app
+The local `tools/` directory is not tracked by Git. The installation script downloads the expected Modlock version and verifies its hash before use.
 
-Com o Deadlock fechado, na pasta do modo:
+## Checks
 
-```powershell
-cd spike\mods\duelo-meia-noite
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --watch                 # abre o jogo num servidor local com o modo
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe   # autoteste com bots, sem abrir o jogo: PASS ou FAIL
-```
+These are the main local checks. The CI workflow selects checks based on the paths changed in a pull request.
 
-Os testes das regras, sem o jogo, usam o Vitest do site:
+| Area | Command |
+| --- | --- |
+| Website | `npm test --prefix web` and `npm run build --prefix web` |
+| Desktop frontend | `npm run typecheck --prefix desktop` |
+| Desktop Rust | `cargo test --manifest-path desktop/src-tauri/Cargo.toml` |
+| API | `cd server && go vet ./... && go test ./...` |
+| Signaling | `cd spike/signal && go vet ./... && go test ./...` |
 
-```powershell
-node ..\..\..\web\node_modules\vitest\vitest.mjs run --config test\vitest.config.mts
-```
+## CI and releases
 
-O README de cada modo diz o que o autoteste confere e o que ainda só se prova com gente.
+- The `CI` workflow runs checks for changed areas and provides an aggregate status for pull requests.
+- Approved pull requests with passing CI can enter the merge queue.
+- The release workflow creates releases and calculates versions from classified changes.
+- The desktop build publishes the Windows installer, updater signature, and `latest.json` to the release.
+- The image workflow publishes the API and signaling images to GHCR and opens an update pull request in `infra-pi`.
 
-## Testes, CI e releases
+See [GitHub Actions](https://github.com/axiumhq/jukejoint/actions) for current workflow status and [releases](https://github.com/axiumhq/jukejoint/releases) for published artifacts.
 
-| Onde | Comando |
-|---|---|
-| Site | `npm test --prefix web` · `npm run build --prefix web` |
-| App (frente) | `npm run typecheck --prefix desktop` |
-| App (Rust) | `cargo test --manifest-path desktop/src-tauri/Cargo.toml` |
-| API e sinalização | `go vet ./... && go test ./...` em `server/` e em `spike/signal/` |
-| Modos | o Vitest e o autoteste de cada pasta (ver acima) |
+## Contributing
 
-- **CI** (`ci.yml`): em cada PR, roda só as partes que mudaram: Go da API e da sinalização, o site e a frente do app, e o Rust do app no Windows. O check `CI` junta todos.
-- **Fila de merge:** o `main` só muda por PR. Um PR aprovado e com o CI verde entra sozinho na fila de merge (`auto-queue-approved-prs.yml`).
-- **Release automática** (`intelligent-release.yml`): cada mudança no `main` vira uma release com versão calculada pelas mudanças.
-- **App:** a release gera o instalador do Windows (`Jukejoint-vX.Y.Z-windows-x64-setup.exe`) e o pacote assinado do atualizador (`release-desktop.yml`). O instalador já leva o Modlock fixado e os modos.
-- **Servidores:** a release e cada build do `main` publicam as imagens da API e da sinalização no GHCR (`ghcr.io/axiumhq/jukejoint-api` e `-signal`, `images.yml`). Depois, abrem um PR de versões no `infra-pi`. Quando esse PR entra, o Pi atualiza os containers, a API reinicia e as salas abertas fecham. O login sobrevive.
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first for the contribution process and the rights granted for accepted contributions. Jukejoint remains proprietary software.
 
-## Contribuir
+## Documentation
 
-- **Branch e PR:** trabalhe numa branch e abra um PR para o `main`. Não dá para enviar direto para ele.
-- **Idioma:** commits, PRs e textos do produto em português do Brasil.
-- **Texto neutro em gênero:** "quem criou", "a pessoa", "contatos", e nunca "o anfitrião" ou "o amigo".
-- **Sem material da Valve na marca e no site:** nada de logos, fontes, arte, retratos de heróis ou nomes de lugares do jogo. As cenas e as capas dos modos são arte nossa.
-- **Segredos fora do git:** a chave da Steam (`server/.data/`), a chave da sessão, o segredo da sinalização e o token do túnel (`tools/`) nunca entram num commit.
-- **O motor:** o Modlock é fixado por versão e hash. Para atualizar, troque a versão e o SHA-256 em `desktop/src-tauri/src/engine/mod.rs`, em `scripts/install-modlock.ps1` e em `bin/modlock.cmd`. Depois, rode o teste com o binário real (`desktop/src-tauri/tests/real_cli.rs`) e os autotestes dos modos.
-
-## Documentos
-
-- [`docs/decisao-plataforma.md`](docs/decisao-plataforma.md): por que o Modlock como motor, os caminhos considerados e os riscos.
-- [`docs/engine-adapter.md`](docs/engine-adapter.md): como o app conversa com o motor e as etapas da partida.
-- [`docs/spike-fase-0.md`](docs/spike-fase-0.md): o primeiro teste entre dois PCs.
-- [`docs/design/`](docs/design/): pesquisa de UX, auditorias e as direções visuais.
-- [`server/README.md`](server/README.md), [`spike/signal/README.md`](spike/signal/README.md), [`web/README.md`](web/README.md) e [`desktop/README.md`](desktop/README.md): os detalhes de cada parte.
+- [Desktop app](desktop/README.md)
+- [API](server/README.md)
+- [Signaling service](spike/signal/README.md)
+- [Platform decision](docs/decisao-plataforma.md)
+- [Modlock adapter](docs/engine-adapter.md)
+- [First two-computer test](docs/spike-fase-0.md)
