@@ -60,6 +60,16 @@ fn main() {
     println!("cargo:rustc-env=APP_BRAND_NAME={name}");
     println!("cargo:rustc-env=APP_SLUG={slug}");
 
+    println!("cargo:rerun-if-env-changed=APP_VERSION");
+    let app_version = std::env::var("APP_VERSION").unwrap_or_else(|_| {
+        std::env::var("CARGO_PKG_VERSION").expect("Cargo define CARGO_PKG_VERSION")
+    });
+    assert!(
+        semver::Version::parse(&app_version).is_ok(),
+        "APP_VERSION precisa ser uma versão SemVer válida: {app_version:?}"
+    );
+    println!("cargo:rustc-env=APP_VERSION={app_version}");
+
     for var in ["APP_API_URL", "APP_ENGINE_ORIGIN"] {
         println!("cargo:rerun-if-env-changed={var}");
         let raw = std::env::var(var).unwrap_or_default();

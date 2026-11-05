@@ -13,6 +13,7 @@
     "allow-engine-host",
     "allow-engine-join",
     "allow-engine-stop",
-    "allow-engine-session"
+    "allow-engine-session",
+    "updater:default"
   ]
 }

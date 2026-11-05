@@ -17,6 +17,7 @@ import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
+import { DesktopUpdateNotice } from './DesktopUpdateNotice';
 import { ThemeMenu } from './ThemeMenu';
 import '../styles/live.css';
 
@@ -332,6 +333,7 @@ function Frame() {
       </a>
       <CoverDefs />
       <TopBar inert={modal} />
+      <DesktopUpdateNotice />
       <LiveStatus />
       <div className="app">
         <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
