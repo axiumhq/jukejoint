@@ -17,7 +17,47 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* abas Todos / Sua lista / Favoritos (o .utabs da base) com a região à direita; o fio corre a barra toda */
+/* abas, chips, região e visão: uma linha só em tela larga; o fio corre a barra toda */
+.lb-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+@media (min-width: 1361px) {
+  .lb-tools {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--sp-4);
+    box-shadow: inset 0 -1px 0 var(--line);
+  }
+
+  .lb-tools .lb-bar,
+  .lb-tools .lb-row {
+    display: contents;
+  }
+
+  .lb-tools .lb-tabs {
+    order: 0;
+  }
+
+  .lb-tools .fchips {
+    order: 1;
+    flex: 1;
+  }
+
+  .lb-tools .lb-reg {
+    order: 2;
+    margin-bottom: 0;
+  }
+
+  .lb-tools .lb-view {
+    order: 3;
+  }
+}
+
+/* abas Todos / Sua lista / Favoritos (o .utabs da base) com a região à direita */
 .lb-bar {
   display: flex;
   align-items: center;

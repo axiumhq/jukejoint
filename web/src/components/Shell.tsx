@@ -17,7 +17,7 @@ import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
-import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
+import { ThemeMenu } from './ThemeMenu';
 import { TitleBar } from './TitleBar';
 import '../styles/live.css';
 
@@ -197,7 +197,7 @@ function Account() {
   );
 }
 
-/** A barra de topo: wordmark, busca (Ctrl K), ao vivo ou pílula da sala, tema (quando a lateral não mostra) e conta. */
+/** A barra de topo: wordmark (só sem a lateral), busca (Ctrl K), ao vivo ou pílula da sala, tema e idioma, e conta. */
 export function TopBar({ inert }: { inert?: boolean }) {
   const { hereId, joiningId } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -263,12 +263,13 @@ function NavItems({ items = IN_DESKTOP ? navItems().filter((n) => !n.webOnly) : 
   );
 }
 
-/** A barra lateral: o JJ, a navegação, a sua lista e o tema. Igual em toda tela, sala incluída. */
+/** A barra lateral: o JJ com o wordmark, a navegação e a sua lista. Igual em toda tela, sala incluída. */
 function Side({ inert }: { inert?: boolean }) {
   return (
     <aside className="side" aria-label={t.a11y.sidebar} inert={inert}>
       <Link to="/" className="side-brand" aria-label={t.a11y.home}>
         <BrandSymbol height={44} />
+        <Wordmark alt="" height={22} />
       </Link>
       <nav className="side-nav" aria-label={t.a11y.mainNav}>
         <NavItems />
@@ -276,7 +277,6 @@ function Side({ inert }: { inert?: boolean }) {
       <div className="side-social">
         <SocialRail />
       </div>
-      <ThemeSwatches />
     </aside>
   );
 }
