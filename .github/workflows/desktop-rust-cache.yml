@@ -54,8 +54,4 @@ jobs:
 
       - name: Compile release dependencies
         working-directory: desktop/src-tauri
-        env:
-          APP_API_URL: https://api.jukejoint.app
-          APP_ENGINE_ORIGIN: https://signal.jukejoint.app
-          APP_VERSION: 1.2.0
         run: cargo build --release --locked --target x86_64-pc-windows-msvc
