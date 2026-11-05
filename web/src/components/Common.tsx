@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { t } from '../i18n';
+import { live as L } from '../i18n/live';
 import { Icon } from './Icon';
 
 /** Primitivos pequenos: chip, etiqueta, ponto ao vivo, lâmpadas de vaga, esqueleto e título de seção. */
@@ -22,6 +23,11 @@ export function Chip({ children, pressed, onClick, count, label, className }: Ch
       {count != null && <span className="c">{count}</span>}
     </button>
   );
+}
+
+/** Dentro de um botão de criar lobby bloqueado: a razão, para leitor de tela (a dica visível é o `title`). */
+export function CreateReason({ blocked }: { blocked: boolean }) {
+  return blocked ? <span className="sr-only"> ({L.createBlocked})</span> : null;
 }
 
 export type TagTone = 'acc' | 'soft' | 'strong' | 'plain' | 'warn' | 'lock' | 'line';

@@ -33,7 +33,7 @@
 .hero-t {
   position: relative;
   max-width: 620px;
-  padding: 24px 32px 0;
+  padding: var(--sp-6) var(--sp-8) 0;
   font-size: var(--fs-hero);
   line-height: 60px;
   letter-spacing: -0.02em;
@@ -45,16 +45,16 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  gap: 24px;
+  gap: var(--sp-6);
   height: 76px;
-  padding: 0 16px 0 32px;
+  padding: 0 var(--sp-6) 0 var(--sp-8);
   background: var(--s2);
 }
 
 .hb-who {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: var(--sp-5);
   min-width: 0;
 }
 
@@ -91,7 +91,7 @@
 .hb-slots {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
   min-width: 0;
 }
 
@@ -112,14 +112,16 @@
 }
 
 .hb-cnt .lbl {
-  margin-left: 8px;
+  margin-left: var(--sp-2);
   line-height: 16px;
+  /* "BR/SA 22 ms": a região já vem em maiúscula; a unidade fica em minúscula */
+  text-transform: none;
 }
 
 .hb-act {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
 }
 
 /* sem lobby: a linha de texto ocupa o lugar das vagas */
@@ -138,7 +140,7 @@
 .lb {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--sp-4);
 }
 
 .lb > .sec-h {
@@ -150,16 +152,16 @@
 .mv-list {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .mv {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   min-width: 0;
-  padding: 18px 8px 16px;
+  padding: var(--sp-4) var(--sp-2) var(--sp-4);
   border-radius: var(--r-xl);
   background: var(--s2);
   text-align: center;
@@ -179,7 +181,7 @@
   display: block;
   width: 108px;
   height: 108px;
-  margin-bottom: 8px;
+  margin-bottom: var(--sp-2);
 }
 
 .mv-ring svg {
@@ -222,7 +224,7 @@
 .mv-t {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--sp-1);
   min-width: 0;
   max-width: 100%;
 }
@@ -250,16 +252,16 @@
 .feed {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  gap: var(--sp-3);
 }
 
 .fe {
   display: grid;
   grid-template-columns: 28px 16px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 8px;
+  gap: var(--sp-2);
   min-height: 52px;
-  padding: 8px 14px 8px 10px;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--s2);
   min-width: 0;
@@ -315,12 +317,14 @@
 
 .fe > .lbl {
   white-space: nowrap;
+  /* "22 s": unidade em minúscula */
+  text-transform: none;
 }
 
 .feed-empty {
   grid-column: 1 / -1;
   color: var(--tx-3);
-  padding: 14px 0;
+  padding: var(--sp-4) 0;
 }
 
 /* ───────── Barra fixa do celular (o .fxb do design) ───────── */
@@ -334,8 +338,8 @@
   bottom: calc(var(--bn) + env(safe-area-inset-bottom));
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px 8px 16px;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3) var(--sp-2) var(--sp-4);
   background: var(--s3);
   box-shadow: inset 0 1px 0 var(--line);
 }
@@ -374,7 +378,7 @@
 @media (max-width: 1366px) {
   .home > .notice {
     min-height: 28px;
-    padding: 0 4px 0 10px;
+    padding: 0 var(--sp-1) 0 var(--sp-4);
     border-radius: var(--r-sm);
   }
 
@@ -384,18 +388,14 @@
   }
 
   .hero-t {
-    padding: 16px 24px 0;
+    padding: var(--sp-4) var(--sp-6) 0;
     line-height: 44px;
   }
 
   .hbar {
     height: 68px;
-    gap: 16px;
-    padding: 0 12px 0 24px;
-  }
-
-  .lb {
-    gap: 8px;
+    gap: var(--sp-4);
+    padding: 0 var(--sp-6);
   }
 }
 
@@ -433,6 +433,7 @@
 
   .home > .notice {
     order: 0;
+    margin-top: var(--sp-2);
   }
 
   .hero {
@@ -456,13 +457,13 @@
 
   .home-modes {
     order: 2;
-    margin-top: 10px;
+    margin-top: var(--sp-3);
   }
 
   .lb {
     order: 3;
-    margin-top: 10px;
-    gap: 10px;
+    margin-top: var(--sp-3);
+    gap: var(--sp-3);
   }
 
   .home-arrivals {
@@ -471,7 +472,7 @@
 
   /* os títulos continuam para o leitor de tela; a tela segue o desenho do celular */
   .home-modes > .sec-h,
-  .lb > .lb-h {
+  .lb > .lb-h > h2 {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -480,11 +481,21 @@
     white-space: nowrap;
   }
 
+  /* o "Criar lobby" do cabeçalho fica à vista (nada focável e invisível): sozinho, à direita */
+  .lb > .lb-h {
+    min-height: 0;
+    margin: 0;
+  }
+
+  .lb > .lb-h > .btn {
+    margin-left: auto;
+  }
+
   .mv-list {
     display: flex;
-    gap: 8px;
-    margin: 0 -16px;
-    padding: 0 16px;
+    gap: var(--sp-2);
+    margin: 0 calc(var(--sp-4) * -1);
+    padding: 0 var(--sp-4);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     scroll-padding-left: 16px;
@@ -500,8 +511,8 @@
     flex-direction: row;
     width: 212px;
     min-height: 60px;
-    gap: 10px;
-    padding: 8px 10px;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
     text-align: left;
     scroll-snap-align: start;
   }
@@ -543,11 +554,26 @@
 
   .feed {
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: var(--sp-2);
   }
 
   .mbar {
     display: grid;
+  }
+}
+
+/* toque: o nome do lobby em "Chegando agora" vira o alvo do cartão inteiro (52 px ou mais) */
+@media (max-width: 760px), (pointer: coarse) {
+  .fe {
+    position: relative;
+    min-height: max(52px, var(--hit, 44px));
+  }
+
+  .fe-l::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
   }
 }
 

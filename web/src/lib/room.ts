@@ -157,3 +157,11 @@ const RULE_ICONS: [RegExp, RuleIcon][] = [
 export function ruleIcon(rule: string): RuleIcon {
   return RULE_ICONS.find(([re]) => re.test(rule))?.[1] ?? 'info';
 }
+
+/**
+ * A tecla F (PRONTO) só vale com o foco dentro da barra de ação, e nunca com modificador nem repetindo.
+ * Um atalho de tecla única solto na página quebraria a WCAG 2.1.4.
+ */
+export function isReadyKey(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; repeat: boolean }): boolean {
+  return (e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey && !e.repeat;
+}

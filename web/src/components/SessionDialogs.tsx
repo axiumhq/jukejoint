@@ -8,6 +8,7 @@ import { desktop as D } from '../i18n/desktop';
 import { live as L } from '../i18n/live';
 import type { EngineError } from '../lib/desktop';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
+import { TOAST_MS, toastLeft } from '../lib/toast';
 import { useSession } from '../state/session';
 import { DevSignIn, SignInPending } from './AppLogin';
 import { LiveDot, Tag } from './Common';
@@ -244,7 +245,12 @@ export function JoinDialog() {
               <button type="button" className="btn btn-g btn-lg" onClick={closeJoin}>
                 {t.join.switchCancel}
               </button>
-              <button type="button" className={appProblems && !here ? 'btn btn-g btn-lg' : 'btn btn-p btn-lg'} onClick={confirmJoin}>
+              <button
+                type="button"
+                className={appProblems && !here ? 'btn btn-g btn-lg' : 'btn btn-p btn-lg'}
+                onClick={confirmJoin}
+                data-autofocus={appProblems && !here ? undefined : ''}
+              >
                 {here ? t.join.switchConfirm : appProblems ? D.enterAnyway : t.lobbyState.join}
                 <Icon name="arrow" />
               </button>
@@ -265,7 +271,7 @@ export function JoinDialog() {
               <h3 className="cap" id="join-none">
                 {t.join.noApp}
               </h3>
-              <Link to="/instalar" className="btn btn-p btn-lg" onClick={closeJoin}>
+              <Link to="/instalar" className="btn btn-p btn-lg" onClick={closeJoin} data-autofocus="">
                 <Icon name="download" />
                 {t.join.install}
               </Link>
@@ -581,17 +587,48 @@ export function HostDialog() {
   );
 }
 
+/**
+ * Um aviso: some em 5,2 s, mas o relógio para enquanto o mouse está em cima ou o foco está dentro
+ * (WCAG 2.2.1) e retoma com o que sobrava (e pelo menos 1,5 s).
+ */
+function ToastItem({ id, message, onDismiss }: { id: number; message: string; onDismiss: (id: number) => void }) {
+  const [hover, setHover] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const left = useRef(TOAST_MS);
+  const paused = hover || focus;
+  useEffect(() => {
+    if (paused) return;
+    const start = Date.now();
+    const timer = window.setTimeout(() => onDismiss(id), left.current);
+    return () => {
+      window.clearTimeout(timer);
+      left.current = toastLeft(left.current, Date.now() - start);
+    };
+  }, [paused, id, onDismiss]);
+  return (
+    <div
+      className="toast"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setFocus(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocus(false);
+      }}
+    >
+      <span>{message}</span>
+      <button type="button" className="btn-icon" onClick={() => onDismiss(id)} aria-label={t.common.close}>
+        <Icon name="x" />
+      </button>
+    </div>
+  );
+}
+
 export function Toasts() {
   const { toasts, dismissToast } = useSession();
   return (
     <div className="toasts" role="status" aria-live="polite" aria-label={t.a11y.notifications}>
       {toasts.map((toast) => (
-        <div key={toast.id} className="toast">
-          <span>{toast.message}</span>
-          <button type="button" className="btn-icon" onClick={() => dismissToast(toast.id)} aria-label={t.common.close}>
-            <Icon name="x" />
-          </button>
-        </div>
+        <ToastItem key={toast.id} id={toast.id} message={toast.message} onDismiss={dismissToast} />
       ))}
     </div>
   );

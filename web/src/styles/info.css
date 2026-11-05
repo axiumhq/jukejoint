@@ -13,9 +13,9 @@ body {
     flex-direction: column;
     justify-content: space-between;
     height: 220px;
-    margin: 0 0 32px;
+    margin: 0 0 var(--sp-8);
     overflow: hidden;
-    border-radius: 16px;
+    border-radius: var(--r-2xl);
     background: var(--sky-1);
   }
 
@@ -30,9 +30,9 @@ body {
   .ih-title {
     position: relative;
     margin: 0;
-    padding: 24px 32px 0;
-    font-size: 3.5rem;
-    line-height: 60px;
+    padding: var(--sp-6) var(--sp-8) 0;
+    font-size: var(--fs-hero);
+    line-height: 1.08;
     letter-spacing: -0.02em;
   }
 
@@ -42,10 +42,10 @@ body {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-flow: row;
-    gap: 24px;
+    gap: var(--sp-6);
     height: 76px;
     margin: 0;
-    padding: 0 32px;
+    padding: 0 var(--sp-8);
     border-radius: 0;
     background: var(--s2);
     box-shadow: none;
@@ -72,7 +72,7 @@ body {
   .nh .dc dd {
     display: flex;
     align-items: baseline;
-    gap: 8px;
+    gap: var(--sp-2);
     min-height: 28px;
     overflow: hidden;
   }
@@ -102,7 +102,7 @@ body {
   .nw-sec {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--sp-3);
   }
 
   .nw-h2 {
@@ -115,14 +115,14 @@ body {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
+    gap: var(--sp-2);
     margin: 0;
   }
 
   .nw-sec .sel select {
     height: 32px;
     min-height: 32px;
-    padding: 0 32px 0 12px;
+    padding: 0 var(--sp-8) 0 var(--sp-3);
     border-radius: var(--r-sm);
     font-size: 0.8125rem;
     background: transparent;
@@ -134,12 +134,12 @@ body {
   }
 
   .nw-sec .nw-cats {
-    gap: 8px;
+    gap: var(--sp-2);
   }
 
   .nw-sec .nw-ctl .chip {
     height: 32px;
-    padding: 0 12px;
+    padding: 0 var(--sp-3);
     border-radius: var(--r-sm);
     font-size: 0.8125rem;
   }
@@ -155,8 +155,8 @@ body {
   .nw-sec .tl > article {
     display: grid;
     grid-template-columns: 150px minmax(0, 1fr);
-    gap: 24px;
-    padding: 16px 0;
+    gap: var(--sp-6);
+    padding: var(--sp-4) 0;
     box-shadow: inset 0 1px 0 var(--line);
   }
 
@@ -164,7 +164,7 @@ body {
     display: flex;
     align-items: flex-start;
     justify-items: start;
-    gap: 12px;
+    gap: var(--sp-3);
     padding: 0;
     text-align: left;
   }
@@ -193,7 +193,7 @@ body {
     flex: none;
     width: 9px;
     height: 9px;
-    margin-top: 6px;
+    margin-top: var(--sp-2);
     border-radius: 50%;
     background: var(--s3);
     box-shadow: inset 0 0 0 1px var(--line-2);
@@ -208,7 +208,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 6px;
+    gap: var(--sp-2);
     padding: 0;
     min-width: 0;
   }
@@ -216,7 +216,7 @@ body {
   .nw-sec .tl-hd {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--sp-3);
   }
 
   .nw-sec .tl-title {
@@ -254,7 +254,7 @@ body {
     height: 28px;
     padding: 0;
     margin: 0;
-    gap: 6px;
+    gap: var(--sp-2);
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--acc);
@@ -267,7 +267,7 @@ body {
   }
 
   .nw-sec .tl-changes ul {
-    margin: 4px 0 0;
+    margin: var(--sp-1) 0 0;
     padding: 0;
     border-radius: 0;
     background: none;
@@ -278,9 +278,9 @@ body {
   .nw-sec .tl-changes li {
     display: grid;
     grid-template-columns: 112px minmax(0, 1fr) 150px;
-    gap: 12px;
+    gap: var(--sp-3);
     align-items: baseline;
-    padding: 8px 0;
+    padding: var(--sp-2) 0;
     border: 0;
     box-shadow: inset 0 1px 0 var(--line);
     font-size: 0.8125rem;
@@ -301,8 +301,8 @@ body {
   .nw-sec .nw-empty {
     align-items: center;
     justify-items: center;
-    gap: 8px;
-    padding: 48px 24px;
+    gap: var(--sp-2);
+    padding: 48px var(--sp-6);
     border: 0;
     border-radius: var(--r-xl);
     background: var(--s2);
@@ -317,7 +317,7 @@ body {
   .ih-sub {
     position: relative;
     display: block;
-    padding: 0 32px;
+    padding: 0 var(--sp-8);
     color: var(--tx-2);
   }
 
@@ -340,9 +340,9 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: var(--sp-4);
     height: 76px;
-    padding: 0 16px 0 32px;
+    padding: 0 var(--sp-6) 0 var(--sp-8);
     background: var(--s2);
   }
 
@@ -370,16 +370,16 @@ body {
   .ih-btn {
     flex: none;
     height: 44px;
-    padding: 0 32px;
+    padding: 0 var(--sp-8);
   }
 
   .ih-hash {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     align-items: center;
-    gap: 6px 12px;
-    margin: -8px 0 16px;
-    padding: 10px 16px;
+    gap: var(--sp-2) var(--sp-3);
+    margin: calc(var(--sp-2) * -1) 0 var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
     border-radius: var(--r-xl);
     background: var(--s2);
   }
@@ -394,7 +394,7 @@ body {
 
   .ih-hash .copy-field {
     grid-column: 2;
-    padding: 4px 4px 4px 10px;
+    padding: var(--sp-1) var(--sp-1) var(--sp-1) var(--sp-3);
   }
 
   .ih-hash .copy-field code {
@@ -404,6 +404,7 @@ body {
   .ih-src,
   .ih-help {
     grid-column: 2;
+    max-width: 70ch;
     margin: 0;
     font-size: 0.75rem;
     line-height: 16px;
@@ -420,7 +421,7 @@ body {
   }
 
   .ih-status {
-    margin-bottom: 8px;
+    margin-bottom: var(--sp-2);
   }
 
   .ih-status .ast {
@@ -431,7 +432,8 @@ body {
   }
 
   .ih-req {
-    margin: 0 0 32px;
+    max-width: 70ch;
+    margin: 0 0 var(--sp-8);
     font-size: 0.75rem;
     line-height: 16px;
     color: var(--tx-3);
@@ -441,7 +443,7 @@ body {
   #passos .isteps {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: var(--sp-3);
   }
 
   #passos .istep {
@@ -449,8 +451,8 @@ body {
     flex-direction: column;
     align-items: flex-start;
     text-align: left;
-    gap: 8px;
-    padding: 14px;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
     border: 0;
     border-radius: var(--r-xl);
     background: var(--s2);
@@ -495,13 +497,13 @@ body {
   }
 
   .ins .sec-h h2 {
-    font-size: 1.625rem;
-    line-height: 34px;
+    font-size: var(--fs-h2);
+    line-height: 36px;
   }
 
   /* abas de antivírus: o fio de latão embaixo da ativa */
   .av-tabs .lb-tabs {
-    gap: 24px;
+    gap: var(--sp-6);
   }
 
   /* ───────── 404 ───────── */
@@ -527,7 +529,7 @@ body {
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    gap: 12px;
+    gap: var(--sp-3);
     max-width: none;
     padding: 0 56px;
   }
@@ -555,12 +557,12 @@ body {
   }
 
   .nf-act {
-    margin-top: 8px;
+    margin-top: var(--sp-2);
   }
 
   .nf-else {
     margin-top: 0;
-    gap: 4px 12px;
+    gap: var(--sp-1) var(--sp-3);
   }
 
   .nf-else a {
@@ -574,7 +576,8 @@ body {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 88%, transparent) 0, color-mix(in srgb, var(--sky-1) 55%, transparent) 42%, transparent 68%);
+    /* véu atrás do texto: as janelas acesas da cena não caem entre as letras (4,5:1 no corpo) */
+    background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 94%, transparent) 0, color-mix(in srgb, var(--sky-1) 88%, transparent) 46%, color-mix(in srgb, var(--sky-1) 45%, transparent) 64%, transparent 80%);
     pointer-events: none;
   }
 
@@ -585,6 +588,47 @@ body {
   .nf .nf-code {
     position: static;
     inset: auto;
+  }
+
+  /* até 1366: as capas seguem o destaque da home (margem de 24, título menor) */
+  @media (max-width: 1366px) {
+    .nh-title,
+    .ih-title {
+      padding: var(--sp-4) var(--sp-6) 0;
+    }
+
+    .ih-sub {
+      padding: 0 var(--sp-6);
+    }
+
+    .nh .dbar,
+    .ih-band {
+      padding-inline: var(--sp-6);
+    }
+  }
+
+  /* toque: filtros, versão, "Ver mudanças", links do 404 e da fonte chegam a 44 px (--hit) */
+  @media (max-width: 760px), (pointer: coarse) {
+    .nw-sec .sel select,
+    .nw-sec .nw-ctl .chip {
+      height: var(--hit, 44px);
+      min-height: var(--hit, 44px);
+    }
+
+    .nw-sec .tl-changes summary {
+      height: auto;
+      min-height: var(--hit, 44px);
+    }
+
+    .nf-else a,
+    .ih-src,
+    .nh .dc-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: var(--hit, 44px);
+      min-height: var(--hit, 44px);
+    }
   }
 
   @media (max-width: 900px) {
@@ -598,23 +642,23 @@ body {
     .ih-title {
       font-size: 2.25rem;
       line-height: 42px;
-      padding: 20px 16px 16px;
+      padding: var(--sp-5) var(--sp-4) var(--sp-4);
     }
 
     .nh .dbar {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       height: auto;
-      padding: 12px 16px;
-      gap: 12px;
+      padding: var(--sp-3) var(--sp-4);
+      gap: var(--sp-3);
     }
 
     .ih-sub {
-      padding: 0 16px;
+      padding: 0 var(--sp-4);
     }
 
     .ih-band {
       height: auto;
-      padding: 12px 16px;
+      padding: var(--sp-3) var(--sp-4);
       flex-wrap: wrap;
     }
 
@@ -638,12 +682,12 @@ body {
 
     .nw-sec .tl > article {
       grid-template-columns: minmax(0, 1fr);
-      gap: 8px;
+      gap: var(--sp-2);
     }
 
     .nw-sec .tl-changes li {
       grid-template-columns: minmax(0, 1fr);
-      gap: 2px;
+      gap: var(--sp-1);
     }
 
     /* a cidade ancorada à direita: a lua não fica atrás do título */
@@ -655,11 +699,11 @@ body {
 
     .nh .dc dd {
       flex-wrap: wrap;
-      gap: 0 8px;
+      gap: 0 var(--sp-2);
     }
 
     .nf::after {
-      background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 92%, transparent) 0, color-mix(in srgb, var(--sky-1) 70%, transparent) 70%, color-mix(in srgb, var(--sky-1) 45%, transparent) 100%);
+      background: linear-gradient(90deg, color-mix(in srgb, var(--sky-1) 95%, transparent) 0, color-mix(in srgb, var(--sky-1) 90%, transparent) 70%, color-mix(in srgb, var(--sky-1) 78%, transparent) 100%);
     }
 
     .nf {
@@ -668,7 +712,7 @@ body {
     }
 
     .nf-body {
-      padding: 0 20px;
+      padding: 0 var(--sp-5);
     }
 
     .nf h1 {

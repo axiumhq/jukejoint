@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { Icon } from '../components/Icon';
-import { Tag } from '../components/Common';
+import { CreateReason, Tag } from '../components/Common';
 import { ModeCover, ModeMedallion } from '../components/ModeCover';
 import { getMode } from '../data/modes';
 import { useDocumentTitle } from '../hooks';
+import { useCreateBlocked } from '../hooks/useServerStatus';
+import { live as L } from '../i18n/live';
 import '../styles/modes.css';
 import { t } from '../i18n';
 import { isJoinable, pickBestLobby, pickReasons } from '../lib/lobbies';
+import { joinNeedsDialog } from '../lib/quickPlay';
 import { busiestMode, liveStats } from '../lib/stats';
 import { useSession } from '../state/session';
 
@@ -28,7 +31,9 @@ const PICK_MS = 1100;
 export function QuickPlay() {
   useDocumentTitle(t.meta.quickPlay);
   const s = useSession();
-  const { lobbies, requestJoin, openHost, joiningId } = s;
+  const { lobbies, requestJoin, openHost, joiningId, joinTarget } = s;
+  const createBlocked = useCreateBlocked();
+  const act = useRef<HTMLButtonElement>(null);
   const [params] = useSearchParams();
   const modeSlug = params.get('modo') ?? undefined;
   const mode = modeSlug ? getMode(modeSlug) : undefined;
@@ -45,14 +50,22 @@ export function QuickPlay() {
       const best = pickBestLobby(cur.lobbies, { mode: modeSlug, ctx: cur.lobbyCtx });
       setStep(2);
       setPickedId(best?.id ?? null);
-      if (best) cur.requestJoin({ kind: 'lobby', lobby: best });
-      else cur.openHost(modeSlug ?? busiestMode(liveStats(cur.lobbies)).slug);
+      // Com o app pronto vai direto para a sala. Sem ele, o diálogo não abre por cima do painel:
+      // o resultado fica à vista e a entrada sai do botão dele.
+      if (best && !joinNeedsDialog({ appConnected: cur.appConnected, desktop: cur.desktop, appCheck: cur.appCheck?.status ?? null, hereId: cur.hereId, targetId: best.id })) {
+        cur.requestJoin({ kind: 'lobby', lobby: best });
+      }
     }, PICK_MS);
     return () => {
       window.clearTimeout(a);
       window.clearTimeout(b);
     };
   }, [modeSlug]);
+
+  // Resultado pronto: o foco vai para a ação principal (entrar, ou criar quando não há lobby).
+  useEffect(() => {
+    if (pickedId !== undefined) act.current?.focus({ preventScroll: true });
+  }, [pickedId]);
 
   const picked = pickedId ? lobbies.find((l) => l.id === pickedId) : undefined;
   const pool = useMemo(() => lobbies.filter((l) => (!modeSlug || l.modeSlug === modeSlug) && isJoinable(l)), [lobbies, modeSlug]);
@@ -78,9 +91,12 @@ export function QuickPlay() {
                 {mode ? t.quickPlay.only(mode.name) : t.quickPlay.anyMode} · {t.quickPlay.open(pool.length)}
               </span>
             </div>
-            <Link to="/" className="btn btn-g qp-x" aria-label={t.common.close}>
-              <Icon name="close" />
-            </Link>
+            {/* o diálogo de entrar tem o "×" dele: o do painel sai de cena enquanto ele está aberto */}
+            {joinTarget === null && (
+              <Link to="/" className="btn btn-g qp-x" aria-label={t.common.close}>
+                <Icon name="close" />
+              </Link>
+            )}
           </div>
 
           <div className="qp-scan" aria-hidden="true">
@@ -93,7 +109,6 @@ export function QuickPlay() {
             ))}
           </div>
 
-          {!picked && pickedId !== null && (
           <ol className="qp-steps">
             {steps.map((label, i) => {
               const st = i < step || (i === 2 && picked) ? 'done' : i === step ? 'on' : 'next';
@@ -107,7 +122,6 @@ export function QuickPlay() {
               );
             })}
           </ol>
-          )}
           <p className="sr-only" role="status" aria-live="polite">
             {pickedId === undefined ? t.quickPlay.searching : picked ? `${t.quickPlay.found}: ${picked.name}` : t.quickPlay.noneTitle}
           </p>
@@ -155,6 +169,7 @@ export function QuickPlay() {
               </Link>
               {picked ? (
                 <button
+                  ref={act}
                   type="button"
                   className="btn btn-p btn-lg"
                   aria-disabled={joining || undefined}
@@ -164,9 +179,17 @@ export function QuickPlay() {
                   {!joining && <Icon name="arrow" />}
                 </button>
               ) : (
-                <button type="button" className="btn btn-p btn-lg" onClick={() => openHost(modeSlug ?? cover)}>
+                <button
+                  ref={act}
+                  type="button"
+                  className="btn btn-p btn-lg"
+                  aria-disabled={createBlocked || undefined}
+                  title={createBlocked ? L.createBlocked : undefined}
+                  onClick={() => !createBlocked && openHost(modeSlug ?? cover)}
+                >
                   <Icon name="plus" />
                   {t.quickPlay.create}
+                  <CreateReason blocked={createBlocked} />
                 </button>
               )}
             </div>

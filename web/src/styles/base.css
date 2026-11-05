@@ -11,8 +11,8 @@ html {
   -webkit-text-size-adjust: 100%;
   scrollbar-color: var(--s4) transparent;
   scrollbar-width: thin;
-  scroll-padding-top: calc(var(--tb) + 16px);
-  scroll-padding-bottom: calc(var(--bn) + 16px);
+  scroll-padding-top: calc(var(--tb) + var(--sp-4));
+  scroll-padding-bottom: calc(var(--bn) + var(--sp-4));
 }
 
 body {
@@ -168,7 +168,7 @@ main:focus {
   font-family: var(--f-num);
   font-size: var(--fs-md);
   font-weight: 500;
-  line-height: 18px;
+  line-height: 20px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--tx-3);
@@ -186,10 +186,10 @@ main:focus {
 
 .skip-link {
   position: fixed;
-  left: 16px;
-  top: 8px;
+  left: var(--sp-4);
+  top: var(--sp-2);
   z-index: 100;
-  padding: 10px 14px;
+  padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-sm);
   background: var(--acc);
   color: var(--acc-ink);
@@ -214,14 +214,21 @@ main:focus {
   stroke-linejoin: round;
 }
 
+/* tecla: --tx-2 cheio (6,4:1 ou mais sobre qualquer superfície, nos quatro temas), sem opacidade */
 kbd,
 .kbd {
   font: 500 0.6875rem/16px var(--f-ui);
-  padding: 0 5px;
+  padding: 0 var(--sp-1);
   border-radius: var(--r-2xs);
+  color: var(--tx-2);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+/* dentro de botão, a tecla segue a cor do botão (latão, presença, desligado) */
+.btn kbd,
+.btn .kbd {
   color: inherit;
-  box-shadow: inset 0 0 0 1px currentColor;
-  opacity: 0.7;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 55%, transparent);
 }
 
 /* ───────── Botões ───────── */
@@ -232,8 +239,8 @@ kbd,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 0 14px;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4);
   border-radius: var(--r-sm);
   font-size: var(--fs-md);
   font-weight: 600;
@@ -301,13 +308,13 @@ kbd,
 
 .btn-sm {
   --h: 32px;
-  padding: 0 12px;
+  padding: 0 var(--sp-3);
   font-size: var(--fs-sm);
 }
 
 .btn-lg {
   --h: 44px;
-  padding: 0 18px;
+  padding: 0 var(--sp-5);
 }
 
 /* o PRONTO e o Iniciar partida da sala */
@@ -376,7 +383,7 @@ kbd,
 .link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   color: var(--acc);
   font-size: var(--fs-sm);
   font-weight: 500;
@@ -397,7 +404,7 @@ kbd,
 /* Abas sublinhadas (o .tab do design): a ativa ganha o fio de latão embaixo. */
 .utabs {
   display: flex;
-  gap: 24px;
+  gap: var(--sp-6);
   box-shadow: inset 0 -1px 0 var(--line);
 }
 
@@ -406,7 +413,7 @@ kbd,
   height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   color: var(--tx-3);
   font-size: var(--fs-md);
   font-weight: 500;
@@ -433,15 +440,15 @@ kbd,
 /* Segmentos (região, cartões/compacto): o .seg do design. */
 .seg {
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
+  gap: var(--sp-1);
+  padding: var(--sp-1);
   border-radius: var(--r-md);
   background: var(--s2);
 }
 
 .seg > button {
-  height: 30px;
-  padding: 0 12px;
+  height: 28px;
+  padding: 0 var(--sp-3);
   border-radius: var(--r-sm);
   color: var(--tx-3);
   font-size: var(--fs-sm);
@@ -467,8 +474,8 @@ kbd,
   height: 32px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 0 12px;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-3);
   border-radius: var(--r-sm);
   color: var(--tx-2);
   font-size: var(--fs-sm);
@@ -505,16 +512,16 @@ kbd,
 .chip .ico {
   width: 14px;
   height: 14px;
-  margin-right: -3px;
+  margin-right: calc(var(--sp-1) * -1);
 }
 
 /* Etiqueta em Barlow (o .tag do design): "Porta aberta", "Lotado", "Você está aqui". */
 .tag {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--sp-1);
   height: 20px;
-  padding: 0 7px;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-xs);
   font-family: var(--f-num);
   font-size: var(--fs-md);
@@ -558,9 +565,9 @@ kbd,
 }
 
 .badge {
-  min-width: 19px;
+  min-width: 20px;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 var(--sp-1);
   border-radius: var(--r-xs);
   display: inline-grid;
   place-items: center;
@@ -596,9 +603,9 @@ kbd,
 .stc {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--sp-2);
   height: 24px;
-  padding: 0 8px;
+  padding: 0 var(--sp-2);
   border-radius: var(--r-xs);
   background: var(--s3);
   font-size: var(--fs-xs);
@@ -607,8 +614,8 @@ kbd,
 
 .stc::before {
   content: '';
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
 }
@@ -623,11 +630,11 @@ kbd,
 
 /* ───────── Medidor de vagas: as lâmpadas ───────── */
 
-/* Uma lâmpada por vaga: acesa = ocupada; a próxima vaga livre pulsa de leve quando falta pouco. */
+/* Uma lâmpada por vaga: acesa = ocupada; a próxima vaga livre ganha um anel de latão e brilho parado (sem animação). */
 .bulbs {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: var(--sp-1);
   flex-wrap: wrap;
 }
 
@@ -645,20 +652,14 @@ kbd,
 }
 
 .bulbs > i.next {
-  animation: bulb-next 1.8s ease-in-out infinite;
+  box-shadow:
+    inset 0 0 0 1px var(--acc),
+    0 0 8px var(--bulb-glow);
 }
 
 .bulbs.lg > i {
   width: 14px;
   height: 14px;
-}
-
-@keyframes bulb-next {
-  50% {
-    box-shadow:
-      inset 0 0 0 1px var(--acc),
-      0 0 8px var(--bulb-glow);
-  }
 }
 
 /* ───────── Esqueleto e vazio ───────── */
@@ -681,8 +682,8 @@ kbd,
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 56px 24px;
+  gap: var(--sp-2);
+  padding: 56px var(--sp-6);
   border-radius: var(--r-xl);
   background: var(--s2);
   text-align: center;
@@ -701,7 +702,7 @@ kbd,
 
 .empty > .btn,
 .empty > div {
-  margin-top: 10px;
+  margin-top: var(--sp-3);
 }
 
 /* ───────── Avatares, presença, pilha ───────── */
@@ -804,7 +805,7 @@ kbd,
 .stack > .more {
   height: var(--s);
   min-width: var(--s);
-  padding: 0 6px;
+  padding: 0 var(--sp-2);
   border-radius: 99px;
   display: inline-grid;
   place-items: center;
@@ -907,7 +908,7 @@ input[type='text'],
 input[type='search'],
 select {
   min-height: 44px;
-  padding: 0 14px;
+  padding: 0 var(--sp-4);
   border: 0;
   border-radius: var(--r-md);
   background: var(--s2);
@@ -933,8 +934,8 @@ input[type='radio'] {
 .copy-field {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 8px 8px 8px 12px;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   background: var(--bg);
   box-shadow: inset 0 0 0 1px var(--line);
@@ -945,9 +946,28 @@ input[type='radio'] {
   min-width: 0;
   font-family: var(--f-code);
   font-size: 0.8125rem;
-  line-height: 18px;
+  line-height: 20px;
   color: var(--tx-2);
   overflow-wrap: anywhere;
+}
+
+/* ───────── Alvos de toque: 44 px (--hit) até 760 px e em ponteiro grosso ───────── */
+
+@media (max-width: 760px), (pointer: coarse) {
+  .btn,
+  .btn-sm,
+  .chip,
+  .seg > button,
+  .utabs > button,
+  .utabs > a,
+  .link {
+    min-height: var(--hit, 44px);
+  }
+
+  .icon-btn {
+    min-width: var(--hit, 44px);
+    min-height: var(--hit, 44px);
+  }
 }
 
 /* ───────── Movimento reduzido: o estado muda, o movimento não. ───────── */
