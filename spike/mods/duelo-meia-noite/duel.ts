@@ -2,7 +2,7 @@
 //
 // - Os dois primeiros da fila duelam; quem está na fila assiste.
 // - A cada rodada sai um herói sorteado, o mesmo para os dois, com as quatro habilidades
-//   liberadas e os primeiros itens da build recomendada do herói. Sem loja.
+//   liberadas e o mesmo kit de itens (a build recomendada, quando o servidor tem). Sem loja.
 // - Quem fizer 3 rodadas leva a partida. Quem perde vai para o fim da fila, quem vence fica.
 // - Rodada sem abate em 90 segundos: vence quem tiver mais vida, em proporção. Empate repete.
 // - Fora da rodada valendo, ninguém toma dano: nem na contagem, nem entre as rodadas.
@@ -93,7 +93,7 @@ export function standingOf(s: Seat) {
   return standings.get(id) ?? standings.join(id, [])
 }
 
-function pick<T>(list: readonly T[]): T {
+export function pick<T>(list: readonly T[]): T {
   return list[Math.floor(Math.random() * list.length)]
 }
 
@@ -241,7 +241,9 @@ function startMatch() {
 
 /**
  * O kit da rodada, igual para os dois: os primeiros itens da build recomendada do herói, na
- * ordem de compra. Sem build, dois itens de cada aba, de nível 1 ou 2, sem ativos.
+ * ordem de compra. Sem build, dois itens de cada aba, de nível 1 ou 2, sem ativos. No servidor
+ * do Modlock v0.1.73 o heroBuild volta vazio (o autoteste mostrou 0 itens), então hoje vale o
+ * sorteio; o log diz qual dos dois saiu.
  */
 export function loadout(hero: string): string[] {
   const fromBuild: string[] = []
@@ -250,6 +252,7 @@ export function loadout(hero: string): string[] {
       if (!fromBuild.includes(it.item)) fromBuild.push(it.item)
     }
   }
+  log('build de', hero, fromBuild.length, 'itens')
   if (fromBuild.length >= KIT_SIZE / 2) return fromBuild.slice(0, KIT_SIZE)
   const pool = items.filter((i) => i.tier <= 2 && !i.active && !i.imbue)
   const out: string[] = []
@@ -265,11 +268,19 @@ function startRound() {
   if (!a || !b) return resetToWaiting()
   state.phase = 'preparing'
   state.round += 1
-  const hero = pick(heroes)
+  // O host não troca o herói de um bot: com um bot no duelo, a rodada é com o herói dele.
+  const botHero = state.duel.map((s) => (s.bot ? s.player.pawn()?.hero : undefined)).find((h) => h !== undefined)
+  const hero = (botHero !== undefined && heroes.find((h) => h.id === botHero)) || pick(heroes)
   state.hero = hero.name
   state.heroTitle = hero.title
   state.kit = loadout(hero.name)
-  state.duel.forEach((s, i) => s.player.selectHero(hero.name, TEAMS[i]))
+  state.duel.forEach((s, i) => {
+    if (s.bot) return
+    // Contra um bot, o time oposto ao dele, que o host também não troca.
+    const other = state.duel[1 - i]
+    const otherTeam = other.bot ? other.player.pawn()?.team : undefined
+    s.player.selectHero(hero.name, otherTeam === 2 || otherTeam === 3 ? 5 - otherTeam : TEAMS[i])
+  })
   centerAll(`Rodada ${state.round}: ${hero.title}`)
 
   // O herói aparece num quadro seguinte: espera os dois existirem, vivos, com o herói certo.
@@ -474,6 +485,7 @@ export function trainingBot(player: Player) {
   const humans = players().filter((c) => !c.bot && c.ready).length
   if (humans >= 2) return void player.chat('O bot de treino só entra com menos de duas pessoas no servidor.')
   if (players().some((c) => c.bot)) return void player.chat('Já tem um bot na fila.')
-  addBot({ name: 'Treino', team: 3 })
+  // Sem herói o bot não entra (o host recusa o herói 0): ele chega com um sorteado.
+  addBot({ name: 'Treino', team: 3, hero: pick(heroes).name })
   player.chat('Um bot entrou na fila para você treinar.')
 }

@@ -22,7 +22,9 @@ export class FakePlayer {
   constructor(readonly slot: number) {}
 
   pawn() {
-    return this.pawnState ? { ...this.pawnState, effectiveMaxHealth: this.pawnState.maxHealth } : undefined
+    if (!this.pawnState) return undefined
+    const id = heroes.find((h) => h.name === this.pawnState!.hero)?.id ?? 0
+    return { ...this.pawnState, hero: id, effectiveMaxHealth: this.pawnState.maxHealth }
   }
   chat(t: string) { this.log.push(`chat:${t}`); return true }
   announce(title: string, t: string) { this.log.push(`announce:${title}:${t}`); return true }
@@ -71,6 +73,14 @@ export const fake = {
   join(name: string, slot: number) {
     const player = new FakePlayer(slot)
     world.conns.push({ player, steamId: BigInt(slot + 1), name, bot: false, ready: true, generation: 1, roles: [] })
+    return player
+  },
+  /** A bot arrives seated on its hero and team, and the host refuses to change them. */
+  joinBot(name: string, slot: number, hero: string, team: number) {
+    const player = new FakePlayer(slot)
+    player.pawnState = { entity: 100 + slot, hero, team, health: 600, maxHealth: 600, position: { x: team * 1000, y: 0, z: 0 } }
+    player.selectHero = () => undefined as unknown as number
+    world.conns.push({ player, steamId: 0n, name, bot: true, ready: true, generation: 1, roles: [] })
     return player
   },
   leave(player: FakePlayer) {

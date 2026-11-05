@@ -3,9 +3,9 @@
 // valer, confere que os dois têm o mesmo herói e estão frente a frente na arena, derruba o
 // segundo bot três vezes e confere o placar e a fila no fim. Sai com PASS ou FAIL.
 // O formato vem do exemplo arena do Modlock (MIT, paralin/modlock).
-import { addBot, log, ProbeRun, vector } from 'modlock'
+import { addBot, heroes, log, ProbeRun, vector } from 'modlock'
 
-import { HALF_GAP, state, WINS_NEEDED } from './duel'
+import { HALF_GAP, pick, state, WINS_NEEDED } from './duel'
 
 type Step = 'seat' | 'live' | 'fall' | 'scored' | 'over'
 
@@ -29,10 +29,14 @@ export class Probe {
 
   private advance(now: number): boolean | string {
     switch (this.step) {
-      case 'seat':
-        log('bots', addBot({ name: 'Bot Um', team: 2 })?.slot, addBot({ name: 'Bot Dois', team: 3 })?.slot)
+      case 'seat': {
+        // Sem herói o host recusa o bot (herói 0), e depois não troca o herói dele: os dois
+        // chegam com o mesmo herói, sorteado aqui.
+        const hero = pick(heroes).name
+        log('bots', hero, addBot({ name: 'Bot Um', team: 2, hero })?.slot, addBot({ name: 'Bot Dois', team: 3, hero })?.slot)
         this.step = 'live'
         return false
+      }
       case 'live': {
         if (state.phase !== 'live') return false
         const [a, b] = state.duel.map((s) => s.player.pawn())

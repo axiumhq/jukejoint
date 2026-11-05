@@ -37,6 +37,7 @@ describe('Duelo à Meia-Noite', () => {
     w.tick(1.5)
     untilLive(w)
     expect(a.pawnState?.hero).toBe(b.pawnState?.hero)
+    expect(a.pawn()?.hero).toBeGreaterThan(0)
     expect(a.pawnState?.team).toBe(2)
     expect(b.pawnState?.team).toBe(3)
     expect(a.items.length).toBe(6)
@@ -194,6 +195,22 @@ describe('Duelo à Meia-Noite', () => {
     expect(ui).toContain('Ana 1 × 0 Bia')
     expect(ui).toContain('"points":[1,0]')
     expect(ui).toContain('Ana leva a rodada')
+  })
+
+  it('contra um bot, a rodada usa o herói do bot e o time oposto ao dele', () => {
+    const bot = w.joinBot('Treino', 0, 'hero_dois', 2)
+    const a = w.join('Ana', 1)
+    w.tick(1.5)
+    for (let r = 0; r < 2; r++) {
+      untilLive(w)
+      expect(a.pawnState?.hero).toBe('hero_dois')
+      expect(a.pawnState?.team).toBe(3)
+      expect(bot.pawnState?.team).toBe(2)
+      kill(bot)
+      w.tick(0.3)
+      bot.pawnState!.health = 600
+    }
+    expect(a.said('Treino 0 × 2 Ana')).toBe(true)
   })
 
   it('/placar responde para quem pediu', () => {

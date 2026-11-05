@@ -5,7 +5,7 @@ Um contra um, melhor de cinco, com fila. É o primeiro modo de verdade do Jukejo
 ## Regras
 
 - Os dois primeiros da fila duelam. Quem está na fila assiste, com a câmera no duelo.
-- Cada rodada sorteia um herói, o mesmo para os dois, em times opostos. Os dois recebem as quatro habilidades liberadas, com o primeiro upgrade, e os 6 primeiros itens da build recomendada do herói, na ordem de compra (`heroBuild`). Um herói sem build recebe dois itens de cada aba, de nível 1 ou 2, sem itens ativos. Sem loja.
+- Cada rodada sorteia um herói, o mesmo para os dois, em times opostos. Os dois recebem as quatro habilidades liberadas, com o primeiro upgrade, e o mesmo kit de 6 itens. O modo tenta os primeiros itens da build recomendada do herói (`heroBuild`), mas no servidor do Modlock v0.1.73 ela volta vazia, então hoje o kit é sorteado a cada rodada: dois itens de cada aba, de nível 1 ou 2, sem itens ativos. Sem loja.
 - Os dois ficam congelados por 3 segundos de contagem. Depois a rodada vale. Fora da rodada valendo, ninguém toma dano.
 - Um golpe que tira toda a vida decide a rodada na hora.
 - Quem fizer 3 rodadas leva a partida. Quem perde vai para o fim da fila, quem vence fica, e a próxima partida começa sozinha.
@@ -49,6 +49,8 @@ node ..\..\..\web\node_modules\typescript\bin\tsc -p tsconfig.json
 ..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe
 ```
 
+Rodou em 05/11/2026 no servidor do Modlock v0.1.73, mapa `dl_midtown`: **PASS** em cerca de 30 segundos. Os dois bots duelaram com o mesmo herói, a 1100 unidades um do outro, e o placar e a fila fecharam certos. Foi o autoteste que mostrou que o host recusa um bot sem herói e não troca o herói de um bot, e que o `heroBuild` vem vazio no servidor.
+
 O modo põe dois bots, espera a rodada valer e confere que os dois têm o mesmo herói, em times opostos e frente a frente. Depois derruba o segundo bot três vezes, confere o placar a cada ponto e confere que quem venceu ficou na frente da fila. No fim, o servidor fecha com PASS ou FAIL.
 
 No jogo, sozinho, com o Deadlock fechado: `modlock dev --watch` nesta pasta abre o jogo num servidor local. Lá dentro, `/bot` traz o adversário. O sandbox do Modlock (`modlock dev --sandbox`) roda o modo sem o jogo, mas nele o `addBot` não cria um segundo jogador, então o duelo não começa.
@@ -56,6 +58,6 @@ No jogo, sozinho, com o Deadlock fechado: `modlock dev --watch` nesta pasta abre
 ## O que ainda não foi provado no jogo
 
 Os testes cobrem as regras. Falta ver dentro do jogo:
-- se o meio do caminho entre as bases é um bom lugar para o duelo (se não for, use `/arena`);
-- se `cvar.arena` tira mesmo as tropas e os acampamentos;
-- se os itens e as habilidades chegam antes da contagem acabar.
+- se o centro do mapa (onde o duelo cai sem `/arena`) é um bom lugar para lutar, com gente de verdade;
+- se `cvar.arena` tira mesmo as tropas e os acampamentos (o servidor aceitou as variáveis, mas ninguém olhou o mapa);
+- se o placar na tela aparece no jogo como no sandbox.
