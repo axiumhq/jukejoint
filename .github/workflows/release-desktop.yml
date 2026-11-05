@@ -35,6 +35,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
 
       - name: Set up Rust
         # actions-rust-lang/setup-rust-toolchain v2.0.1
@@ -42,6 +46,7 @@ jobs:
         with:
           toolchain: stable
           target: x86_64-pc-windows-msvc
+          rust-src-dir: desktop/src-tauri
 
       - name: Install frontend dependencies
         run: |
