@@ -146,7 +146,7 @@ main:focus {
 /* Rótulo de grupo em caixa alta ("LOBBIES", "TEMA"): o .gt do design. */
 .cap {
   font-family: var(--f-ui);
-  font-size: 0.6875rem;
+  font-size: var(--fs-2xs);
   font-weight: 600;
   line-height: 16px;
   letter-spacing: 0.08em;
@@ -156,7 +156,7 @@ main:focus {
 
 .cap b {
   font-family: var(--f-num);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   font-weight: 600;
   letter-spacing: 0.03em;
   color: var(--tx-2);
@@ -187,7 +187,7 @@ main:focus {
   position: fixed;
   left: var(--sp-4);
   top: var(--sp-2);
-  z-index: 100;
+  z-index: var(--z-skip);
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-sm);
   background: var(--acc);
@@ -249,6 +249,33 @@ kbd,
     background-color var(--t-fast),
     color var(--t-fast),
     box-shadow var(--t-fast);
+}
+
+/* Pressionado: no toque não existe hover, então este é o único retorno de que o toque pegou.
+   Vale para todo controle clicável; desativado não reage. */
+:is(
+    .btn,
+    .icon-btn,
+    .chip,
+    .seg > button,
+    .side-nav a,
+    .bn a,
+    .acct,
+    .fav,
+    .room-pill,
+    .live-count,
+    .theme-opt,
+    .dlg-pick,
+    .dlg-seg label,
+    .dlg-step button,
+    .seat-kick,
+    button.seat.is-empty,
+    .sr-opt,
+    .window-controls button,
+    .toast .btn-icon,
+    .lc-create
+  ):active:not([disabled], [aria-disabled='true']) {
+  filter: var(--press);
 }
 
 /* primária: o latão chapado */
@@ -320,7 +347,7 @@ kbd,
 .btn-xl {
   --h: 60px;
   padding: 0 28px;
-  font-size: 1.125rem;
+  font-size: var(--fs-18);
   letter-spacing: 0.02em;
 }
 
@@ -901,7 +928,7 @@ kbd,
 
 code {
   font-family: var(--f-code);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
 }
 
 input[type='text'],
@@ -945,7 +972,7 @@ input[type='radio'] {
   flex: 1;
   min-width: 0;
   font-family: var(--f-code);
-  font-size: 0.8125rem;
+  font-size: var(--fs-sm);
   line-height: 20px;
   color: var(--tx-2);
   overflow-wrap: anywhere;

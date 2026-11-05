@@ -157,7 +157,9 @@
   --brass: #c8a46a;
   --brass-lo: #6f5228;
   --bulb: #f2d9a4;
-  --bulb-glow: rgb(232 190 120 / 0.55);
+  /* a luz que a lâmpada joga em volta; as sombras de brilho mudam só a opacidade dela */
+  --bulb-ray: rgb(232 190 120);
+  --bulb-glow: rgb(from var(--bulb-ray) r g b / 0.55);
   --moon-hi: #f6ebd3;
   --moon-lo: #d9c39a;
   --mist: #d8cfc2;
@@ -169,10 +171,15 @@
   --f-num: 'Barlow Condensed', 'Arial Narrow', sans-serif;
   --f-mono: var(--f-num);
   --f-code: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Escala de UI: todo texto de interface usa um destes. Os títulos grandes das capas e dos
+     destaques (de 1.375rem para cima) ficam no próprio componente, ajustados à arte. */
+  --fs-2xs: 0.6875rem; /* 11, só rótulo miúdo em caixa-alta */
   --fs-xs: 0.75rem; /* 12/16 */
   --fs-sm: 0.8125rem; /* 13/18 */
   --fs-md: 0.875rem; /* 14/20, o corpo */
+  --fs-15: 0.9375rem; /* 15, nome em lista e destaque de cartão */
   --fs-lg: 1rem; /* 16/22, nome no cartão */
+  --fs-18: 1.125rem; /* 18, título pequeno de painel */
   --fs-body: 0.875rem; /* 14/20, o corpo (= --fs-md) */
   --lh-body: 1.25rem;
   --fs-h3: 1.25rem; /* 20/26 */
@@ -228,6 +235,31 @@
   --t-fast: 150ms;
   --t-mid: 200ms;
   --t-slow: 240ms;
+  /* Camadas, de baixo para cima. Dentro de um componente, 0 a 4 resolvem o empilhamento local.
+     Diálogos usam <dialog> e ficam na camada de cima do navegador, fora desta escala. */
+  --z-rail: 20; /* painel da direita */
+  --z-bar: 30; /* barra lateral e barra da sala */
+  --z-status: 35; /* faixa de conexão */
+  --z-tb: 40; /* barra do topo */
+  --z-actionbar: 45; /* barra de ação do modo, no celular */
+  --z-nav: 50; /* abas de baixo e lista de contatos */
+  --z-pop: 60; /* menus e a lista da busca */
+  --z-pop-top: 61; /* a busca aberta no celular, por cima dos menus */
+  --z-scrim: 70; /* o véu atrás da folha */
+  --z-sheet: 80; /* a folha de baixo */
+  --z-toast: 90;
+  --z-skip: 100; /* o link de pular para o conteúdo */
+  --z-titlebar: 1000; /* a barra da janela do app */
+
+  /* fechar da janela: o vermelho do próprio Windows */
+  --win-close: #c42b1c;
+
+  /* Larguras de quebra (CSS não aceita variável em @media; a lista vale como regra):
+     1366 notebook · 1240 painel mais estreito · 1100 topo sem extras · 960 sem barra lateral,
+     com abas embaixo · 760 celular · 640 celular estreito. */
+
+  /* pressionado: o controle escurece um pouco enquanto o dedo ou o botão do mouse está nele */
+  --press: brightness(0.86);
 }
 
 @media (max-width: 1366px) {
