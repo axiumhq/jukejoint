@@ -7,10 +7,13 @@ import { useSession } from '../state/session';
 import { ModeCover, ModeIcon } from './ModeCover';
 import '../styles/modes-live.css';
 
+const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+
 /**
- * Modos da home. Com lobbies: lista compacta (ícone, nome, frase, quantos lobbies e quanta gente);
- * clicar filtra a lista de lobbies pelo modo (e clicar de novo tira). Cidade vazia (conexão ok e
- * nenhum lobby): cartões com a cena do modo; clicar abre o "Criar lobby" já com o modo escolhido.
+ * Modos da home. Com lobbies: os "Arcanos", uma carta de tarô art déco por modo (numeral romano, o
+ * sigilo do modo no centro, nome, formato e quantos lobbies e quanta gente); clicar filtra a lista
+ * de lobbies pelo modo (e clicar de novo tira). Cidade vazia (conexão ok e nenhum lobby): cartões
+ * com a cena do modo; clicar abre o "Criar lobby" já com o modo escolhido.
  */
 export function ModesLive() {
   const modes = getModes();
@@ -39,10 +42,11 @@ export function ModesLive() {
     <section className="home-modes ml" aria-labelledby="modes-title">
       <h2 className="ml-h" id="modes-title">
         {M.title}
+        {!empty && <small>{M.rituals}</small>}
       </h2>
       {empty && <p className="ml-sub">{M.sub}</p>}
-      <ul className={empty ? 'ml-list is-cards' : 'ml-list'}>
-        {modes.map((m) => {
+      <ul className={empty ? 'ml-list is-cards' : 'ml-list is-arcanos'}>
+        {modes.map((m, i) => {
           if (empty) {
             return (
               <li key={m.slug}>
@@ -60,11 +64,22 @@ export function ModesLive() {
           const c = byMode[m.slug];
           return (
             <li key={m.slug}>
-              <button type="button" className="ml-row" aria-pressed={f.mode === m.slug} aria-label={M.filterLabel(m.name)} onClick={() => pick(m.slug)}>
-                <ModeIcon slug={m.slug} className="ml-ic" />
-                <b>{m.name}</b>
-                <span className="ml-ln">{m.line}</span>
-                <span className="ml-nums">
+              <button type="button" className={c ? 'arcano' : 'arcano is-quiet'} aria-pressed={f.mode === m.slug} onClick={() => pick(m.slug)}>
+                <i aria-hidden="true" />
+                <i aria-hidden="true" />
+                <i aria-hidden="true" />
+                <i aria-hidden="true" />
+                <span className="arc-num" aria-hidden="true">
+                  {ROMANOS[i] ?? i + 1}
+                </span>
+                <span className="arc-sig" aria-hidden="true">
+                  <ModeIcon slug={m.slug} />
+                </span>
+                <span className="arc-t">
+                  <b>{m.name}</b>
+                  <span className="arc-fmt">{m.format}</span>
+                </span>
+                <span className="arc-vivo">
                   {c ? (
                     <>
                       <em>{M.lobbies(c.lobbies)}</em> · {M.playing(c.players)}
@@ -72,6 +87,9 @@ export function ModesLive() {
                   ) : (
                     M.none
                   )}
+                </span>
+                <span className="sr-only">
+                  {m.line} {M.filterHint}
                 </span>
               </button>
             </li>

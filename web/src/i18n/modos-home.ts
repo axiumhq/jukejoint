@@ -5,6 +5,8 @@ import { getLocale } from './locale';
 const ptBRModosHome = {
   title: 'Modos',
   sub: 'Escolha um e abra o primeiro lobby da noite.',
+  rituals: 'os seis rituais da casa',
+  filterHint: 'Filtrar os lobbies por este modo.',
   none: 'Nenhum lobby agora',
   lobbies: (n: number) => (n === 1 ? '1 lobby' : `${n} lobbies`),
   playing: (n: number) => `${n} jogando`,
