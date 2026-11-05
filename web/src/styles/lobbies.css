@@ -1,55 +1,41 @@
-/* Lobbies abertos v8: abas, chips, visão e os cartões (cartão ↔ linha compacta). */
+/* Lobbies da home: a barra de abas com a região, os chips com a visão e os cartões (cartão ↔ linha compacta). */
 
-.ctl {
+/* abas Todos / Sua lista / Favoritos (o .utabs da base) com a região à direita; o fio corre a barra toda */
+.lb-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  justify-content: space-between;
+  gap: 16px;
   min-width: 0;
+  box-shadow: inset 0 -1px 0 var(--line);
 }
 
-/* abas Todos / Amigos / Favoritos */
-.lb-tabs {
-  display: flex;
-  padding: 3px;
-  border-radius: var(--r-md);
-  background: var(--s1);
-  box-shadow: 0 0 0 1px var(--line) inset;
+.lb-tabs.utabs {
+  box-shadow: none;
   flex: none;
 }
 
-.lb-tabs button {
-  height: 28px;
-  padding: 0 12px;
-  border-radius: 6px;
-  font-size: 0.78125rem;
-  font-weight: 550;
-  color: var(--tx-3);
+.lb-reg {
+  flex: none;
+  margin-bottom: 4px;
+}
+
+.lb-reg .c {
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.lb-row {
   display: flex;
   align-items: center;
-  gap: 7px;
-  transition:
-    background var(--t-fast),
-    color var(--t-fast);
-}
-
-.lb-tabs button:hover {
-  color: var(--tx);
-}
-
-.lb-tabs button[aria-selected='true'] {
-  background: var(--s4);
-  color: var(--tx);
-}
-
-.lb-tabs .c {
-  font: 500 0.75rem var(--f-mono);
-  opacity: 0.7;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
 }
 
 .fchips {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
   min-width: 0;
@@ -62,41 +48,21 @@
 }
 
 .fchips .chip {
-  height: 34px;
   flex: none;
 }
 
-.ctl .end {
-  margin-left: auto;
-  display: flex;
-  gap: 6px;
+/* região e abas como chips: só no celular */
+.fchips .only-m {
+  display: none;
+}
+
+.lb-view {
   flex: none;
 }
 
-.vt {
-  display: flex;
-  padding: 3px;
-  border-radius: var(--r-md);
-  box-shadow: 0 0 0 1px var(--line) inset;
-  background: var(--s1);
-}
-
-.vt button {
-  width: 30px;
-  height: 28px;
-  border-radius: 6px;
-  display: grid;
-  place-items: center;
-  color: var(--tx-3);
-}
-
-.vt button:hover {
-  color: var(--tx);
-}
-
-.vt button[aria-pressed='true'] {
-  background: var(--s4);
-  color: var(--tx);
+/* esqueleto do cartão (carregando) */
+.lc-sk {
+  min-height: 176px;
 }
 
 /* ───────── Cartões ───────── */
@@ -104,112 +70,136 @@
 .lgrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
+  gap: 12px;
 }
 
+/* O cartão do design: faixa de arte de 112 px à esquerda, conteúdo à direita. */
 .lc {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  border-radius: var(--r-lg);
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  min-height: 176px;
+  border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--s2);
-  box-shadow: 0 0 0 1px var(--line) inset;
-  transition:
-    box-shadow var(--t-mid) var(--e-out),
-    transform var(--t-mid) var(--e-out);
+  transition: background-color var(--t-fast);
 }
 
 .lc:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 0 1px var(--line-2) inset,
-    0 22px 40px -24px hsl(0 0% 0% / 0.6);
+  background: color-mix(in srgb, var(--s2), #fff 4%);
 }
 
+/* você está aqui: o fio de latão em volta */
 .lc.is-you {
-  box-shadow: 0 0 0 1px var(--acc-line) inset;
+  box-shadow: inset 0 0 0 1px var(--acc);
 }
 
-.lc-cv {
+.lc-art {
   position: relative;
-  height: 96px;
-  flex: none;
-  overflow: hidden;
+  display: block;
+  min-height: 100%;
 }
 
-.lc-cv::after {
-  content: '';
+.lc-art .strip {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(0deg, var(--s2), transparent 72%), linear-gradient(180deg, hsl(from var(--k0) h s l / 0.88), transparent 50%);
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 74px;
+  height: 100%;
 }
 
-.lc-id {
+.lc-art .med {
   position: absolute;
-  z-index: 2;
-  left: 12px;
-  top: 11px;
-  color: hsl(from var(--tx) h s l / 0.92);
-}
-
-.lc-st {
-  position: absolute;
-  z-index: 2;
-  right: 10px;
-  top: 9px;
-  display: flex;
-  gap: 6px;
+  left: 28px;
+  top: 50%;
+  width: 68px;
+  height: 68px;
+  margin-top: -34px;
 }
 
 .lc-b {
-  position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 2px 16px 14px;
-  flex: 1;
+  gap: 6px;
   min-width: 0;
+  padding: 12px 14px 12px 8px;
+}
+
+.lc-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lc-id {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lc-id .num {
+  letter-spacing: inherit;
 }
 
 .lc-t {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 24px;
   min-width: 0;
 }
 
-.lc-m {
+/* min-height: o nome de uma linha ainda é um alvo de 24 px */
+.lc-n {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.75rem;
-  color: var(--tx-2);
+  gap: 6px;
+  min-width: 0;
+  min-height: 24px;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 22px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.lc-m .mdot {
-  width: 6px;
-  height: 6px;
+.lc-n:hover {
+  color: var(--acc);
+}
+
+.lc-n .ico {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--tx-2);
 }
 
 .fav {
   position: relative;
-  margin-left: auto;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px -4px 0;
+  border-radius: var(--r-sm);
   display: grid;
   place-items: center;
-  color: var(--tx-3);
+  color: var(--tx-2);
   transition:
     color var(--t-fast),
-    background var(--t-fast);
+    background-color var(--t-fast);
 }
 
 /* a estrela fica pequena; a área de toque, não */
 .fav::after {
   content: '';
   position: absolute;
-  inset: -5px;
+  inset: -4px;
 }
 
 .fav:hover {
@@ -218,387 +208,363 @@
 }
 
 .fav[aria-pressed='true'] {
-  color: var(--acc-tx);
+  color: var(--acc);
 }
 
 .fav[aria-pressed='true'] .ico {
   fill: currentColor;
 }
 
-/* min-height: o nome de uma linha ainda é um alvo de 24 px (o 2º corte de linha não vaza) */
-.lc-n {
-  display: block;
-  min-height: 24px;
-  margin-top: 4px;
-  font-size: 1.0625rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.lc-n:hover {
-  color: var(--acc-tx);
-}
-
-.lc-n .ico {
-  display: inline-block;
-  width: 13px;
-  height: 13px;
-  margin-left: 6px;
-  vertical-align: -1px;
-  color: var(--tx-3);
-}
-
-.lc-h {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.78125rem;
-  color: var(--tx-3);
+.lc-m {
   min-width: 0;
-}
-
-.lc-h b {
-  color: var(--tx);
-  font-weight: 550;
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  color: var(--tx-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+.lc-m b {
+  font-weight: 400;
+}
+
+.lc-m b.is-friend {
+  color: var(--tx);
+  font-weight: 600;
+}
+
+.lc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 24px;
+  margin-top: 2px;
+  min-width: 0;
+}
+
+.lc-row .bulbs {
+  flex-wrap: nowrap;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.lc-row .stack {
+  padding-right: 2px;
+}
+
+/* a pilha leva o fio da cor do painel, como no kit */
+.lc-row .stack > .av svg circle {
+  stroke: var(--s2);
+  stroke-width: 2;
+}
+
 .lc-f {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
   min-width: 0;
 }
 
 .lc-cnt {
-  font: 600 0.78125rem var(--f-mono);
+  font-size: var(--fs-xs);
+  line-height: 16px;
+  color: var(--tx-2);
   white-space: nowrap;
 }
 
-.lc-cnt small {
-  color: var(--tx-3);
-  font-weight: 500;
-}
-
-.bar {
-  flex: 1;
-  max-width: 72px;
-  min-width: 24px;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--s4);
-  overflow: hidden;
-}
-
-.bar i {
-  display: block;
-  height: 100%;
-  background: var(--tx-2);
-  border-radius: inherit;
-}
-
-.lc.near .bar i {
-  background: var(--acc-tx);
-}
-
-.lc.dim .lc-n,
-.lc.dim .lc-cv {
-  opacity: 0.62;
-}
-
 .lc-act {
-  margin-left: auto;
   display: flex;
   gap: 6px;
   flex: none;
 }
 
-.lc-act .btn {
-  min-width: 86px;
+.lc-act .btn-sm {
+  --h: 32px;
 }
 
-.lc-act .btn-square {
-  min-width: 0;
+/* cheio, em partida fechado ou com convite: a arte e o nome apagam (o .apagado do design) */
+.lc.dim .lc-art,
+.lc.dim .lc-n {
+  opacity: 0.62;
 }
 
-/* o "Entrar" do cartão em foco vira o acento */
-.lc:hover .btn.go,
-.lc .btn.go:hover,
-.lc .btn.go:focus-visible {
-  background: var(--acc);
-  color: var(--acc-ink);
-  box-shadow: none;
-}
-
+/* "Criar lobby": o cartão vazado do design */
 .lc-create {
-  border-radius: var(--r-lg);
-  border: 1px dashed var(--line-2);
+  border-radius: var(--r-xl);
+  box-shadow: inset 0 0 0 1px var(--line-2);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  color: var(--tx-2);
-  min-height: 250px;
+  gap: 4px;
+  min-height: 176px;
+  color: var(--tx);
   text-align: center;
-  transition:
-    border-color var(--t-fast),
-    color var(--t-fast),
-    background var(--t-fast);
+  transition: background-color var(--t-fast);
 }
 
 .lc-create:hover {
-  border-color: var(--acc-line);
-  color: var(--tx);
-  background: var(--acc-soft);
+  background: var(--s2);
 }
 
 .lc-create .pl {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  box-shadow: 0 0 0 1px var(--line-2) inset;
+  display: none;
 }
 
 .lc-create b {
-  font-weight: 600;
+  font: 400 1.5rem/32px var(--f-display);
+  letter-spacing: -0.01em;
 }
 
 .lc-create small {
-  color: var(--tx-3);
-  font-size: 0.75rem;
-  max-width: 24ch;
+  color: var(--tx-2);
+  font-size: var(--fs-xs);
+  max-width: 28ch;
 }
 
-/* ───────── Compacto ───────── */
+/* ───────── Compacto: a linha do design (.cp) ───────── */
 
 .lgrid.list {
   grid-template-columns: 1fr;
-  gap: 6px;
+  gap: 4px;
 }
 
 .lgrid.list .lc {
-  flex-direction: row;
-  align-items: center;
-  height: 62px;
+  grid-template-columns: 56px minmax(0, 1fr);
+  min-height: 56px;
+  border-radius: var(--r-lg);
 }
 
-.lgrid.list .lc:hover {
-  transform: none;
-}
-
-.lgrid.list .lc-cv {
-  width: 120px;
-  height: 100%;
-}
-
-.lgrid.list .lc-cv::after {
-  background: linear-gradient(90deg, transparent 30%, var(--s2));
-}
-
-.lgrid.list .lc-id,
-.lgrid.list .lc-st {
+.lgrid.list .lc-art .strip {
   display: none;
+}
+
+.lgrid.list .lc-art .med {
+  left: 14px;
+  width: 32px;
+  height: 32px;
+  margin-top: -16px;
 }
 
 .lgrid.list .lc-b {
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 180px) 176px 160px auto;
+  grid-template-areas: 'name tag ping meter act';
   align-items: center;
-  padding: 0 12px 0 14px;
-  gap: 18px;
+  gap: 12px;
+  padding: 6px 14px 6px 10px;
+}
+
+.lgrid.list .lc-meta {
+  display: contents;
+}
+
+.lgrid.list .lc-id {
+  grid-area: ping;
+  font-size: 0.9375rem;
+}
+
+.lgrid.list .lc-meta .tag {
+  grid-area: tag;
+  justify-self: start;
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 20px;
 }
 
 .lgrid.list .lc-t {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 2px;
+  grid-area: name;
 }
 
 .lgrid.list .lc-n {
-  margin: 0;
-  -webkit-line-clamp: 1;
-  font-size: 0.875rem;
+  font-size: var(--fs-md);
 }
 
-.lgrid.list .lc-m .fav {
+.lgrid.list .fav,
+.lgrid.list .lc-m,
+.lgrid.list .lc-row .stack {
   display: none;
 }
 
-.lgrid.list .lc-h {
-  width: 170px;
-  flex: none;
+.lgrid.list .lc-row {
+  grid-area: meter;
+  margin: 0;
 }
 
 .lgrid.list .lc-f {
+  grid-area: act;
   margin: 0;
-  padding: 0;
-  border: 0;
-  width: auto;
-  min-width: 300px;
-  flex: none;
+}
+
+.lgrid.list .lc-cnt {
+  display: none;
 }
 
 .lgrid.list .lc-create {
-  min-height: 62px;
+  min-height: 56px;
   flex-direction: row;
+  gap: 12px;
 }
 
-.lgrid.list .lc-create small {
-  display: none;
+.lgrid.list .lc-create b {
+  font-size: 1.125rem;
 }
 
 .more-row {
   display: flex;
   justify-content: center;
-  margin-top: 16px;
+  margin-top: 4px;
 }
 
+/* vazio: o EmptyState da base (título em Bodoni, uma linha, a ação) ocupando a grade toda */
 .lb-empty {
   grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 44px 20px;
-  border-radius: var(--r-lg);
-  border: 1px dashed var(--line-2);
-  text-align: center;
-  color: var(--tx-2);
 }
 
-.lb-loading {
-  border-style: solid;
-  border-color: var(--line);
-  color: var(--tx-3);
-}
-
-.lb-empty > .ico {
-  width: 20px;
-  height: 20px;
-  color: var(--tx-3);
-}
-
-.lb-empty b {
-  color: var(--tx);
-  font-size: 0.9375rem;
-}
-
-.lb-empty p {
-  max-width: 52ch;
-}
-
-.lb-empty div {
+.lb-empty > div {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px;
-  margin-top: 4px;
+}
+
+.lb-sug {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 12px;
 }
 
 /* ───────── Pontos de quebra ───────── */
+
+@media (max-width: 1366px) {
+  .lc,
+  .lc-create,
+  .lc-sk {
+    min-height: 160px;
+  }
+
+  .lc-act .btn-sm {
+    padding: 0 8px;
+    font-size: var(--fs-xs);
+  }
+}
 
 @media (max-width: 1240px) {
   .lgrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .lgrid.list .lc-h {
+  .lgrid.list .lc-b {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 160px) 176px auto;
+    grid-template-areas: 'name tag ping act';
+  }
+
+  .lgrid.list .lc-row {
     display: none;
   }
 }
 
-@media (max-width: 1080px) {
-  .lgrid.list .lc-f {
-    width: auto;
-  }
-}
-
-/* toque: abas, chips e a troca de visão chegam a 40 px; a estrela ganha área de 44 px */
+/* toque: abas e a troca de visão chegam a 44 px; a estrela ganha área de 44 px */
 @media (pointer: coarse) {
-  .lb-tabs button,
-  .fchips .chip {
-    height: 40px;
+  .lb-tabs.utabs > button {
+    height: 44px;
   }
 
-  .vt button {
-    width: 40px;
-    height: 40px;
+  .lb-view > button,
+  .lb-reg > button {
+    height: 38px;
   }
 
   .fav::after {
-    inset: -9px;
+    inset: -8px;
   }
 }
 
 @media (max-width: 760px) {
-  .ctl {
-    flex-wrap: wrap;
-    gap: 8px;
+  /* as abas e a região entram nos chips; a troca de visão sai (o celular é sempre cartão) */
+  .lb-bar,
+  .lb-view {
+    display: none;
   }
 
-  .ctl .lb-tabs {
-    width: 100%;
+  .fchips .only-m {
+    display: inline-flex;
   }
 
-  .ctl .lb-tabs button {
-    flex: 1;
-    justify-content: center;
+  .fchips .chip {
+    height: 44px;
   }
 
   .fchips {
     margin: 0 -16px;
     padding: 2px 16px;
     width: calc(100% + 32px);
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 16px;
   }
 
-  .ctl .end {
-    display: none;
+  .fchips .chip {
+    scroll-snap-align: start;
   }
 
   .lgrid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 8px;
   }
 
-  /* no celular, a visão compacta vira cartão (não cabe em linha) */
+  /* no celular o cartão encolhe para a linha do design (.lcm): medalhão de 56, nome e uma ação */
+  .lc,
   .lgrid.list .lc {
-    flex-direction: column;
-    align-items: stretch;
-    height: auto;
+    grid-template-columns: 72px minmax(0, 1fr);
+    min-height: 0;
   }
 
-  .lgrid.list .lc-cv {
-    width: auto;
-    height: 72px;
+  .lc-art {
+    background: var(--sky-1);
   }
 
+  .lc-art .strip {
+    display: none;
+  }
+
+  .lc-art .med,
+  .lgrid.list .lc-art .med {
+    left: 8px;
+    width: 56px;
+    height: 56px;
+    margin-top: -28px;
+  }
+
+  .lc-b,
   .lgrid.list .lc-b {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    padding: 2px 16px 14px;
-    gap: 9px;
+    gap: 4px;
+    padding: 10px 12px 10px 8px;
   }
 
-  .lgrid.list .lc-f {
-    width: auto;
-    min-width: 0;
+  .lgrid.list .lc-meta {
+    display: flex;
+  }
+
+  .lc-m,
+  .lc-row,
+  .fav {
+    display: none;
+  }
+
+  .lgrid.list .lc-cnt {
+    display: inline;
   }
 
   .lc-create {
-    min-height: 120px;
+    min-height: 96px;
   }
 }

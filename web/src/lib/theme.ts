@@ -1,12 +1,12 @@
 /**
- * Os cinco temas do v8 (tokens em styles/tokens.css, um bloco `[data-theme]` cada).
- * O Deadlock é o padrão: abre sem nada salvo e é o primeiro da lista.
- * Para adicionar um tema: o bloco em tokens.css com os mesmos 28 tokens, uma linha aqui
+ * Os quatro temas do redesign (tokens em styles/tokens.css, um bloco `[data-theme]` cada).
+ * O Carvão neutro é o padrão: abre sem nada salvo e é o primeiro da lista.
+ * Para adicionar um tema: o bloco em tokens.css com os mesmos tokens de cor, uma linha aqui
  * e o id na lista do script inline de index.html.
- * A amostra do menu não tem cor própria: o elemento leva `data-theme` e lê `--s1` e `--acc` do bloco
- * do tema (ThemeMenu e `.theme-opt .sw` em shell.css). Mudou o token, mudou a amostra.
+ * A amostra não tem cor própria aqui: o elemento leva `data-theme` e lê `--swatch` do bloco do
+ * tema (ThemeMenu, ThemeSwatches e `.sw` em shell.css). Mudou o token, mudou a amostra.
  */
-export type ThemeId = 'deadlock' | 'carmim' | 'pergaminho' | 'gelo' | 'grafite';
+export type ThemeId = 'carvao' | 'noite' | 'ameixa' | 'vinho';
 
 export interface ThemeInfo {
   id: ThemeId;
@@ -15,22 +15,22 @@ export interface ThemeInfo {
 }
 
 export const THEMES: ThemeInfo[] = [
-  { id: 'deadlock', name: 'Deadlock', note: 'Verde-fumaça, pergaminho e âmbar. Padrão.' },
-  { id: 'carmim', name: 'Carmim', note: 'Vinho e carmim.' },
-  { id: 'pergaminho', name: 'Pergaminho', note: 'Quase preto quente e creme.' },
-  { id: 'gelo', name: 'Gelo', note: 'Azul-noite e ciano, frio e nítido.' },
-  { id: 'grafite', name: 'Grafite', note: 'Neutro e calmo, para longas sessões.' },
+  { id: 'carvao', name: 'Carvão neutro', note: 'Carvão, marfim e latão. Padrão.' },
+  { id: 'noite', name: 'Azul meia-noite', note: 'Azul-noite frio e latão claro.' },
+  { id: 'ameixa', name: 'Ameixa suave', note: 'Ameixa baixa e quente.' },
+  { id: 'vinho', name: 'Vinho e latão', note: 'A barra lateral em vinho, a cor da marca.' },
 ];
 
-export const DEFAULT_THEME: ThemeId = 'deadlock';
-/** Chave no localStorage (a mesma do protótipo; o valor é JSON, ex.: "\"gelo\""). */
+export const DEFAULT_THEME: ThemeId = 'carvao';
+/** Chave no localStorage (a mesma do protótipo; o valor é JSON, ex.: "\"noite\""). */
 export const THEME_KEY = 'lobby.theme';
 
 export const isThemeId = (v: unknown): v is ThemeId => typeof v === 'string' && THEMES.some((th) => th.id === v);
 
 /**
  * O tema que abre: `?theme=` (capturas) ganha do salvo, que ganha do padrão.
- * `stored` é o valor cru do storage (JSON); valores inválidos caem no padrão.
+ * `stored` é o valor cru do storage (JSON); valores inválidos (inclusive os ids dos temas
+ * antigos, como "deadlock") caem no padrão.
  */
 export function resolveTheme(stored: string | null, search = ''): ThemeId {
   const q = new URLSearchParams(search).get('theme');

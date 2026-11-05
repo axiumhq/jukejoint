@@ -1,33 +1,57 @@
-// Gera as duas instâncias estáticas da Roboto Serif que o site usa (src/fonts/*.woff2).
+// Gera os arquivos de fonte que o site usa (src/fonts/*.woff2), a partir dos pacotes @fontsource
+// (devDependencies: só servem de matéria-prima, o site não importa nada deles).
 //
-// O CSS só pede a serifa em dois pontos fixos do espaço de variação:
-//   .display / logotipo: largura 50%, peso 700, opsz 144
-//   .cap (rótulo espaçado): largura 75%, peso 650, opsz 12
-// O arquivo variável do @fontsource ("standard", subconjunto latino) tem ~370 kB porque carrega
-// os três eixos inteiros. Fixar os eixos nesses pontos (instanciação do HarfBuzz, via subset-font)
-// dá o mesmo desenho em arquivos de poucas dezenas de kB.
+// Sistema de tipo do redesign (Design-System do Claude Design):
+//   Bodoni Moda     títulos (.display, h1, h2)       peso 400 fixo, eixo opsz mantido (6 a 96)
+//   Hanken Grotesk  interface                         pesos 400 a 600 (variável, faixa cortada)
+//   Barlow Condensed números, ping, rótulos de dado  500 e 600 (estáticos)
+//   JetBrains Mono  código e hash do instalador      500 (estático)
+// Os arquivos variáveis inteiros carregam eixos que o CSS não usa; fixar ou cortar os eixos
+// (instanciação do HarfBuzz, via subset-font) deixa cada um com poucas dezenas de kB.
 //
-// Uso: npm run fonts  (rodar de novo só se mudar a versão do @fontsource ou um desses pontos).
-// Não acessa a rede: lê o woff2 de node_modules e escreve em src/fonts/.
-import { readFile, writeFile } from 'node:fs/promises';
+// Uso: npm run fonts  (rodar de novo só se mudar a versão de um @fontsource ou uma faixa abaixo).
+// Não acessa a rede: lê de node_modules e escreve em src/fonts/.
+import { copyFile, readFile, stat, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import subsetFont from 'subset-font';
 
 const root = new URL('..', import.meta.url);
-const src = new URL('node_modules/@fontsource-variable/roboto-serif/files/roboto-serif-latin-standard-normal.woff2', root);
+const mod = (p) => new URL(`node_modules/${p}`, root);
+const out = (f) => new URL(`src/fonts/${f}`, root);
 
-/** Pontos do espaço de variação, iguais aos de src/styles/base.css e shell.css. */
+/** Variáveis: eixo fixo (número) ou faixa ({ min, max, default }). */
 const INSTANCES = [
-  { file: 'roboto-serif-display.woff2', axes: { wdth: 50, wght: 700, opsz: 144 } },
-  { file: 'roboto-serif-cap.woff2', axes: { wdth: 75, wght: 650, opsz: 12 } },
+  {
+    from: '@fontsource-variable/bodoni-moda/files/bodoni-moda-latin-opsz-normal.woff2',
+    file: 'bodoni-moda-400.woff2',
+    axes: { wght: 400 },
+  },
+  {
+    from: '@fontsource-variable/hanken-grotesk/files/hanken-grotesk-latin-wght-normal.woff2',
+    file: 'hanken-grotesk.woff2',
+    axes: { wght: { min: 400, max: 600, default: 400 } },
+  },
 ];
 
-const input = await readFile(src);
-for (const { file, axes } of INSTANCES) {
+/** Estáticos: cópia direta do subconjunto latino. */
+const COPIES = [
+  ['@fontsource/barlow-condensed/files/barlow-condensed-latin-500-normal.woff2', 'barlow-condensed-500.woff2'],
+  ['@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2', 'barlow-condensed-600.woff2'],
+  ['@fontsource/jetbrains-mono/files/jetbrains-mono-latin-500-normal.woff2', 'jetbrains-mono-500.woff2'],
+];
+
+const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
+
+for (const { from, file, axes } of INSTANCES) {
+  const input = await readFile(mod(from));
   // keepAllGlyphs: o arquivo de origem já é o subconjunto latino do fontsource (mesmo
-  // unicode-range de src/fonts/display.css); aqui só se fixam os eixos.
-  const out = await subsetFont(input, '', { targetFormat: 'woff2', variationAxes: axes, keepAllGlyphs: true });
-  const dest = new URL(`src/fonts/${file}`, root);
-  await writeFile(dest, out);
-  console.log(`${fileURLToPath(dest)}  ${(out.length / 1024).toFixed(1)} kB  ${JSON.stringify(axes)}`);
+  // unicode-range de src/fonts/display.css); aqui só se fixam ou cortam os eixos.
+  const data = await subsetFont(input, '', { targetFormat: 'woff2', variationAxes: axes, keepAllGlyphs: true });
+  await writeFile(out(file), data);
+  console.log(`${fileURLToPath(out(file))}  ${kb(data.length)}  ${JSON.stringify(axes)}`);
+}
+
+for (const [from, file] of COPIES) {
+  await copyFile(mod(from), out(file));
+  console.log(`${fileURLToPath(out(file))}  ${kb((await stat(out(file))).size)}`);
 }

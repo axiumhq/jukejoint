@@ -7,16 +7,17 @@ import { friendsIn, type FriendPresence } from '../lib/friends';
 import { cardTag, isNearFull, lobbyNum } from '../lib/lobbyCard';
 import { lobbyState, type LobbyContext } from '../lib/lobbies';
 import { roster } from '../lib/room';
-import { AvatarStack, Avatar } from './Avatar';
-import { Tag } from './Common';
+import { AvatarStack } from './Avatar';
+import { SlotMeter, Tag } from './Common';
 import { Icon } from './Icon';
 import { LobbyAction } from './LobbyAction';
-import { ModeCover } from './ModeCover';
+import { ModeMedallion, ModeStrip } from './ModeCover';
 
 /**
- * O cartão de lobby do v8 (e a linha compacta, que é o mesmo cartão com outra grade).
- * Capa do modo, etiqueta de estado, anfitrião, pilha de quem está dentro, contagem e UMA ação.
- * O nome leva para a sala (/sala/:id).
+ * O cartão de lobby do redesign (Design-System, `.lc`): à esquerda a faixa de céu com a silhueta
+ * do modo e o medalhão; à direita "LOBBY 04 · BR/SA · 14 MS" com a etiqueta de estado, o nome
+ * (leva para a sala), "Modo, de quem abriu", as lâmpadas de vaga com quem está dentro, e embaixo
+ * "N de M na sala" com UMA ação. A linha compacta é o mesmo cartão com outra grade (lobbies.css).
  */
 
 export interface CardEnv {
@@ -55,55 +56,49 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
     [l, env.me, env.ctx.hereId, env.signedIn, friendNames],
   );
   const hostFriend = env.signedIn && l.hostIsFriend;
-  const dim = st.kind === 'full' || st.kind === 'playing-closed';
-  const cls = ['lc', 'has-cover', isNearFull(l, st) && 'near', dim && 'dim', st.you && 'is-you'].filter(Boolean).join(' ');
+  const near = isNearFull(l, st);
+  const dim = st.kind === 'full' || st.kind === 'playing-closed' || st.kind === 'private' || st.kind === 'knocking';
+  const cls = ['lc', near && 'near', dim && 'dim', st.you && 'is-you'].filter(Boolean).join(' ');
+  // O acento é só de "Você está aqui" e "Entrando…"; o "Falta N" fica em destaque sem acento.
+  const tone = tag && tag.tone === 'acc' && !st.you && st.kind !== 'joining' ? 'strong' : tag?.tone;
+  const host = l.mine ? env.me : l.host;
 
   return (
     <article className={cls} aria-labelledby={nameId}>
-      <div className="lc-cv">
-        <ModeCover slug={l.modeSlug} />
-        <span className="lc-id lbl">
-          {num ? `${t.home.lobbyNum} ${num} · ` : ''}
-          {t.regions[l.region]} · <span className="num">{t.lobbies.ping(l.ping)}</span>
-        </span>
-        {tag && (
-          <span className="lc-st">
-            <Tag tone={tag.tone}>{tag.text}</Tag>
-          </span>
-        )}
-      </div>
+      <span className="lc-art" aria-hidden="true">
+        <ModeStrip slug={l.modeSlug} />
+        <ModeMedallion slug={l.modeSlug} />
+      </span>
       <div className="lc-b">
-        <div className="lc-t">
-          <div className="lc-m">
-            <span className="mdot" aria-hidden="true" />
-            <span>{mode?.name}</span>
-            {onFav && (
-              <button type="button" className="fav" aria-pressed={fav} aria-label={t.browse.favorite(l.name)} onClick={() => onFav(l.id)}>
-                <Icon name="star" />
-              </button>
-            )}
-          </div>
-          <Link to={`/sala/${encodeURIComponent(l.id)}`} className="lc-n" id={nameId} title={l.name}>
-            {l.name}
-            {l.locked && <Icon name="lock" label={t.lobbies.locked} />}
-          </Link>
+        <div className="lc-meta">
+          <span className="lc-id lbl">
+            {num ? `${t.home.lobbyNum} ${num} · ` : ''}
+            {t.regions[l.region]} · <span className="num">{t.lobbies.ping(l.ping)}</span>
+          </span>
+          {tag && <Tag tone={tone}>{tag.text}</Tag>}
         </div>
-        <div className="lc-h">
-          <Avatar name={l.mine ? env.me : l.host} size={20} ring={hostFriend} />
-          <span>{t.browse.from}</span>
-          <b>{l.mine ? env.me : l.host}</b>
+        <div className="lc-t">
+          <Link to={`/sala/${encodeURIComponent(l.id)}`} className="lc-n" id={nameId} title={l.name}>
+            {l.locked && <Icon name="lock" label={t.lobbies.locked} />}
+            {l.name}
+          </Link>
+          {onFav && (
+            <button type="button" className="fav" aria-pressed={fav} aria-label={t.browse.favorite(l.name)} onClick={() => onFav(l.id)}>
+              <Icon name="star" />
+            </button>
+          )}
+        </div>
+        <span className="lc-m">
+          <span className="lc-mode">{mode?.name}</span>, {t.browse.from} <b className={hostFriend ? 'is-friend' : undefined}>{host}</b>
+        </span>
+        <div className="lc-row">
+          <SlotMeter taken={l.players} total={l.slots} pulse={near} />
+          <AvatarStack names={inside} size={24} total={l.players} friends={friendNames} />
         </div>
         <div className="lc-f">
-          <AvatarStack names={inside} size={22} total={l.players} friends={friendNames} />
           <span className="lc-cnt">
             <span className="sr-only">{t.lobbies.slots(l.players, l.slots, friendNames.length)}</span>
-            <span aria-hidden="true">
-              {l.players}
-              <small>/{l.slots}</small>
-            </span>
-          </span>
-          <span className="bar" aria-hidden="true">
-            <i style={{ width: `${Math.min(100, (l.players / l.slots) * 100)}%` }} />
+            <span aria-hidden="true">{t.lobbies.inRoom(l.players, l.slots)}</span>
           </span>
           <span className="lc-act">
             <LobbyAction lobby={l} state={st} describedBy={nameId} primary={featured && st.canJoin && !st.you} compact />

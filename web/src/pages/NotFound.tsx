@@ -1,24 +1,24 @@
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon';
-import { ModeCover } from '../components/ModeCover';
+import { NotFoundArt } from '../components/NotFoundArt';
 import { useDocumentTitle } from '../hooks';
 import { t } from '../i18n';
+import '../styles/info.css';
 
 /**
- * 404 no v8: a capa da bússola na neblina, o título e um caminho de volta (os lobbies, que são a home).
- * Os outros destinos ficam na linha "Ou vá para"; nada de dois botões para o mesmo lugar.
+ * 404 no v8: a rua da cidade da marca com o ônibus parado, o título e um caminho de volta (os lobbies,
+ * que são a home). Os outros destinos ficam na linha "Ou vá para"; nada de dois botões para o mesmo lugar.
  * `toModes` serve ao "modo que saiu de cartaz": o primeiro passo vira a lista de modos.
  */
 export function NotFound({ title = t.notFound.title, body = t.notFound.body, toModes = false }: { title?: string; body?: string; toModes?: boolean }) {
   useDocumentTitle(t.meta.notFound);
   return (
     <section className="nf" aria-labelledby="nf-title">
-      <ModeCover slug="neblina" wide />
-      <div className="nf-shade" aria-hidden="true" />
-      <span className="nf-code lbl" aria-hidden="true">
-        {t.notFound.code}
-      </span>
+      <NotFoundArt />
       <div className="nf-body">
+        <span className="nf-code" aria-hidden="true">
+          {t.notFound.code}
+        </span>
         <h1 className="display" id="nf-title">
           {title}
         </h1>

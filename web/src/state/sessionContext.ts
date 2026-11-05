@@ -33,6 +33,10 @@ export interface HostDraft {
   slots: number;
   minPlayers: number;
   locked: boolean;
+  /** "Iniciantes ok". */
+  beginners: boolean;
+  /** "Aceita entrar no meio da partida". */
+  joinInProgress: boolean;
 }
 
 export type JoinTarget = { kind: 'lobby'; lobby: Lobby } | { kind: 'bots' };

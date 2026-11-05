@@ -118,7 +118,7 @@ export type ServerMsg =
 
 /** Os pedidos que o site manda. O servidor valida cada um contra o estado atual. */
 export type Intent =
-  | { type: 'create'; lobby: { name: string; modeSlug: string; region: Region; slots: number; minPlayers: number; locked: boolean; beginners?: boolean } }
+  | { type: 'create'; lobby: { name: string; modeSlug: string; region: Region; slots: number; minPlayers: number; locked: boolean; beginners?: boolean; joinInProgress?: boolean } }
   | { type: 'join'; lobbyId: string }
   | { type: 'leave' }
   | { type: 'ready'; ready: boolean }
