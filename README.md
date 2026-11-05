@@ -1,87 +1,87 @@
 <p align="center">
-  <img src="web/src/assets/brand/simbolo-jj.svg" alt="Símbolo do Jukejoint" width="112">
+  <img src="web/src/assets/brand/simbolo-jj.svg" alt="Jukejoint symbol" width="112">
 </p>
 
 <h1 align="center">Jukejoint</h1>
 
-<p align="center">Salas da comunidade para jogar modos personalizados de Deadlock com outras pessoas.</p>
+<p align="center">Community lobbies for playing custom Deadlock modes together.</p>
 
 <p align="center">
-  <a href="https://github.com/axiumhq/jukejoint/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/axiumhq/jukejoint/ci.yml?branch=main&label=CI" alt="Status do CI"></a>
-  <a href="https://github.com/axiumhq/jukejoint/releases/latest"><img src="https://img.shields.io/github/v/release/axiumhq/jukejoint?label=vers%C3%A3o" alt="Última versão"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/licen%C3%A7a-propriet%C3%A1ria-6b5548" alt="Software proprietário"></a>
-  <img src="https://img.shields.io/badge/app_desktop-Windows-0078D4" alt="App desktop para Windows">
+  <a href="https://github.com/axiumhq/jukejoint/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/axiumhq/jukejoint/ci.yml?branch=main&label=CI" alt="CI status"></a>
+  <a href="https://github.com/axiumhq/jukejoint/releases/latest"><img src="https://img.shields.io/github/v/release/axiumhq/jukejoint?label=version" alt="Latest release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-proprietary-6b5548" alt="Proprietary software"></a>
+  <img src="https://img.shields.io/badge/desktop_app-Windows-0078D4" alt="Windows desktop app">
 </p>
 
-**Jukejoint** é um projeto independente para a comunidade de Deadlock no Brasil e na América Latina. Pelo site ou app para Windows, você encontra uma sala, entra pela Steam e inicia o modo escolhido.
+**Jukejoint** is an independent project for the Deadlock community in Brazil and Latin America. Use the website or Windows app to find a lobby, sign in through Steam, and launch a custom mode.
 
-O jogo roda no computador de quem hospeda a sala. Os demais computadores se conectam diretamente por P2P. A API do Jukejoint cuida do login, da lista de salas e da sinalização necessária para os jogadores se encontrarem. O app usa o [Modlock](https://github.com/paralin/modlock), fixado por versão e verificado por SHA-256.
+The game runs on the lobby host's computer. Other players connect directly over P2P. Jukejoint's API handles sign-in, lobby listings, and the signaling players need to find each other. The app uses [Modlock](https://github.com/paralin/modlock), pinned to a specific version and verified by SHA-256.
 
-> O Jukejoint é software proprietário. O código está público para permitir inspeção e dar transparência aos releases. Publicar o repositório não concede licença para usar, modificar ou redistribuir o software. Consulte [LICENSE](LICENSE) e [CONTRIBUTING.md](CONTRIBUTING.md).
+> Jukejoint is proprietary software. Its source code is public for inspection and release transparency. Making this repository public does not grant permission to use, modify, or redistribute the software. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md).
 
-O projeto não é afiliado à Valve. Deadlock é uma marca da Valve Corporation.
+Jukejoint is not affiliated with Valve. Deadlock is a trademark of Valve Corporation.
 
-## Baixar
+## Download
 
-Baixe o instalador mais recente do Windows na [página de releases](https://github.com/axiumhq/jukejoint/releases/latest). O instalador inclui o app, os modos disponíveis e a versão do Modlock fixada para aquele release. O app verifica atualizações antes de abrir a janela principal.
+Download the latest Windows installer from the [releases page](https://github.com/axiumhq/jukejoint/releases/latest). The installer includes the app, available modes, and the Modlock version pinned for that release. The app checks for updates before opening its main window.
 
-## Modos disponíveis
+## Available modes
 
-| Modo | Estado |
+| Mode | Status |
 | --- | --- |
-| Duelo à Meia-Noite | Modo jogável de 1 contra 1, com melhor de cinco e seleção compartilhada de herói. |
-| Campo de Treino | Modo jogável para praticar contra alvos e usar comandos de treino. |
-| Círculo Profano, Último Bonde, Neblina e Cerco ao Cofre | Aparecem no catálogo, mas ainda iniciam o modo de teste. |
+| Duelo à Meia-Noite | Playable 1v1 mode with best-of-five matches and a shared hero selection. |
+| Campo de Treino | Playable practice mode with targets and training commands. |
+| Círculo Profano, Último Bonde, Neblina, and Cerco ao Cofre | Listed in the catalog, but currently launch the test mode. |
 
-Os modos ficam em `spike/mods/`. Cada modo tem seu próprio README com instruções e cobertura de testes.
+Modes live in `spike/mods/`. Each mode has its own README with instructions and test coverage.
 
-## Como funciona
+## How it works
 
 ```text
-Site e app Windows
+Website and Windows app
         │
-        ├── API: login Steam, salas, presença e convites
-        └── Modlock: inicia o modo e conecta os computadores por P2P
+        ├── API: Steam sign-in, lobbies, presence, and invites
+        └── Modlock: starts the mode and connects computers over P2P
 
-API e sinalização: hospedadas no Raspberry Pi do projeto
+API and signaling: hosted on the project's Raspberry Pi
 ```
 
-O site (`web/`) e o app desktop (`desktop/`) usam a API em Go (`server/`). O serviço de sinalização (`spike/signal/`) ajuda os processos Modlock a estabelecer a conexão. A API e a sinalização são implantadas a partir das imagens Docker publicadas no GHCR; a configuração de infraestrutura fica no repositório [`axiumhq/infra-pi`](https://github.com/axiumhq/infra-pi).
+The website (`web/`) and desktop app (`desktop/`) use the Go API (`server/`). The signaling service (`spike/signal/`) helps Modlock processes establish a P2P connection. The API and signaling service run as Docker images published to GHCR; deployment configuration lives in [`axiumhq/infra-pi`](https://github.com/axiumhq/infra-pi).
 
-## Executar localmente
+## Run locally
 
-### Site com dados de demonstração
+### Website with demo data
 
-Requer Node.js 24 e npm.
+Requires Node.js 24 and npm.
 
 ```bash
 npm ci --prefix web
 npm run dev --prefix web
 ```
 
-Abra `http://localhost:5173`. Sem `VITE_API_URL`, o site usa dados simulados.
+Open `http://localhost:5173`. Without `VITE_API_URL`, the website uses simulated data.
 
-### Site com API local
+### Website with a local API
 
-Requer Go na versão indicada em `server/go.mod`.
+Requires the Go version specified in `server/go.mod`.
 
 ```bash
 cd server
 DEV_LOGIN=1 go run .
 ```
 
-Em outro terminal:
+In another terminal:
 
 ```bash
 npm ci --prefix web
 VITE_API_URL=http://localhost:8090 npm run dev --prefix web
 ```
 
-O login `DEV_LOGIN=1` serve somente para desenvolvimento local. Para configurar autenticação Steam e outras variáveis, consulte [`server/README.md`](server/README.md).
+`DEV_LOGIN=1` is for local development only. See [`server/README.md`](server/README.md) for Steam authentication and other configuration.
 
-### App desktop
+### Desktop app
 
-O app desktop é desenvolvido e empacotado para Windows. Requer Node.js 24, Rust 1.99.1, MSVC Build Tools 2022, Windows SDK e WebView2.
+The desktop app is developed and packaged for Windows. It requires Node.js 24, Rust 1.99.1, MSVC Build Tools 2022, the Windows SDK, and WebView2.
 
 ```powershell
 npm ci --prefix web
@@ -92,54 +92,54 @@ cd desktop
 npx tauri dev
 ```
 
-Deadlock precisa estar instalado pela Steam para iniciar um modo no jogo. Mais detalhes de desenvolvimento, configuração e build estão em [`desktop/README.md`](desktop/README.md).
+Deadlock must be installed through Steam to launch a mode in-game. See [`desktop/README.md`](desktop/README.md) for development, configuration, and build details.
 
-## Estrutura do repositório
+## Repository layout
 
-| Caminho | Conteúdo |
+| Path | Contents |
 | --- | --- |
-| `web/` | Site em React, Vite e TypeScript; também é carregado pelo app desktop. |
-| `desktop/` | Interface do app e integração Tauri/Rust com o sistema e o Modlock. |
-| `server/` | API em Go para login Steam, salas, presença e convites. |
-| `spike/signal/` | Serviço Go de sinalização P2P. |
-| `spike/mods/` | Modos personalizados e seus testes. |
-| `scripts/` | Instalação do Modlock e ferramentas para builds e testes locais. |
-| `docs/` | Decisões de arquitetura, integração, design e auditorias. |
-| `.github/workflows/` | CI, fila de merge, builds de release e imagens de servidor. |
+| `web/` | React, Vite, and TypeScript website, also loaded by the desktop app. |
+| `desktop/` | App interface and Tauri/Rust integration with the system and Modlock. |
+| `server/` | Go API for Steam sign-in, lobbies, presence, and invites. |
+| `spike/signal/` | Go P2P signaling service. |
+| `spike/mods/` | Custom modes and their tests. |
+| `scripts/` | Modlock installation and local build/test helpers. |
+| `docs/` | Architecture decisions, integration, design, and audits. |
+| `.github/workflows/` | CI, merge queue, release builds, and server images. |
 
-O diretório local `tools/` não é versionado. O script de instalação baixa o Modlock esperado e valida o hash antes de usá-lo.
+The local `tools/` directory is not tracked by Git. The installation script downloads the expected Modlock version and verifies its hash before use.
 
-## Verificações
+## Checks
 
-Os comandos abaixo são os principais checks locais. O workflow de CI seleciona os checks conforme os caminhos alterados no PR.
+These are the main local checks. The CI workflow selects checks based on the paths changed in a pull request.
 
-| Área | Comando |
+| Area | Command |
 | --- | --- |
-| Site | `npm test --prefix web` e `npm run build --prefix web` |
-| Interface desktop | `npm run typecheck --prefix desktop` |
-| Rust desktop | `cargo test --manifest-path desktop/src-tauri/Cargo.toml` |
+| Website | `npm test --prefix web` and `npm run build --prefix web` |
+| Desktop frontend | `npm run typecheck --prefix desktop` |
+| Desktop Rust | `cargo test --manifest-path desktop/src-tauri/Cargo.toml` |
 | API | `cd server && go vet ./... && go test ./...` |
-| Sinalização | `cd spike/signal && go vet ./... && go test ./...` |
+| Signaling | `cd spike/signal && go vet ./... && go test ./...` |
 
-## CI e releases
+## CI and releases
 
-- O workflow `CI` roda os checks das partes alteradas e fornece um check agregado para PRs.
-- PRs aprovados e com CI verde podem entrar na merge queue.
-- O workflow de release cria a release e calcula a versão a partir das mudanças classificadas.
-- O build desktop publica o instalador Windows, a assinatura do atualizador e `latest.json` na release.
-- O workflow de imagens publica as imagens da API e da sinalização no GHCR e abre PR de atualização no `infra-pi`.
+- The `CI` workflow runs checks for changed areas and provides an aggregate status for pull requests.
+- Approved pull requests with passing CI can enter the merge queue.
+- The release workflow creates releases and calculates versions from classified changes.
+- The desktop build publishes the Windows installer, updater signature, and `latest.json` to the release.
+- The image workflow publishes the API and signaling images to GHCR and opens an update pull request in `infra-pi`.
 
-Consulte a [página de Actions](https://github.com/axiumhq/jukejoint/actions) para o estado atual dos workflows e a [página de releases](https://github.com/axiumhq/jukejoint/releases) para os artefatos publicados.
+See [GitHub Actions](https://github.com/axiumhq/jukejoint/actions) for current workflow status and [releases](https://github.com/axiumhq/jukejoint/releases) for published artifacts.
 
-## Contribuir
+## Contributing
 
-Contribuições são bem-vindas por pull request. Antes de abrir um, leia [CONTRIBUTING.md](CONTRIBUTING.md), que explica o processo e os direitos concedidos para contribuições aceitas. O projeto continua proprietário.
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first for the contribution process and the rights granted for accepted contributions. Jukejoint remains proprietary software.
 
-## Documentação
+## Documentation
 
-- [App desktop](desktop/README.md)
+- [Desktop app](desktop/README.md)
 - [API](server/README.md)
-- [Sinalização](spike/signal/README.md)
-- [Decisão de plataforma](docs/decisao-plataforma.md)
-- [Adaptador do Modlock](docs/engine-adapter.md)
-- [Primeiro teste entre dois PCs](docs/spike-fase-0.md)
+- [Signaling service](spike/signal/README.md)
+- [Platform decision](docs/decisao-plataforma.md)
+- [Modlock adapter](docs/engine-adapter.md)
+- [First two-computer test](docs/spike-fase-0.md)

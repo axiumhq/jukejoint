@@ -1,26 +1,25 @@
-# Contribuir com o Jukejoint
+# Contributing to Jukejoint
 
-O código do Jukejoint é proprietário, embora o repositório seja público para inspeção. Pull requests podem ser enviados, mas só serão incorporados depois de revisão e aprovação dos mantenedores.
+Jukejoint is proprietary software, even though its repository is public for inspection. Pull requests are welcome, but changes are incorporated only after review and approval by the maintainers.
 
-## Antes de abrir um pull request
+## Before opening a pull request
 
-1. Abra uma issue para discutir mudanças grandes ou alterações de comportamento.
-2. Crie uma branch a partir de `main` e mantenha o PR focado.
-3. Descreva o problema, a solução e como você verificou a mudança.
-4. Não inclua credenciais, dados pessoais, arquivos locais de `tools/` ou conteúdo de terceiros sem licença compatível.
-5. Execute os checks relevantes para os caminhos alterados. O CI do PR também fará essa seleção.
+1. Open an issue to discuss major changes or behavior changes.
+2. Create a branch from `main` and keep the pull request focused.
+3. Describe the problem, the proposed solution, and how you verified the change.
+4. Do not include credentials, personal data, local files from `tools/`, or third-party content without a compatible license.
+5. Run the relevant checks for the paths you changed. Pull request CI will select checks as well.
 
-Use português do Brasil em textos voltados às pessoas usuárias. Preserve os padrões existentes de acessibilidade, segurança e linguagem neutra.
+Use Brazilian Portuguese for user-facing product text. Follow the project's existing accessibility, security, and gender-neutral language practices.
 
-## Direitos sobre contribuições
+## Rights to contributions
 
-Ao enviar uma contribuição, você declara que tem direito de fazê-lo e concede aos mantenedores do Jukejoint uma licença mundial, perpétua, irrevogável, não exclusiva e livre de royalties para usar, reproduzir, modificar, preparar obras derivadas, distribuir, exibir, executar e sublicenciar essa contribuição como parte do Jukejoint, em código-fonte ou binário, inclusive em versões proprietárias e comerciais.
+By submitting a contribution, you confirm that you have the right to do so and grant the Jukejoint maintainers a worldwide, perpetual, irrevocable, non-exclusive, royalty-free license to use, reproduce, modify, prepare derivative works, distribute, display, perform, and sublicense that contribution as part of Jukejoint, in source or binary form, including in proprietary and commercial releases.
 
-Você mantém os direitos autorais sobre sua contribuição e pode reutilizá-la em outros projetos. Essa licença permite que os mantenedores integrem e distribuam a contribuição no Jukejoint sem exigir que o projeto inteiro seja licenciado como open source.
+You retain the copyright to your contribution and may reuse it in other projects. This license allows the maintainers to incorporate and distribute the contribution in Jukejoint without requiring the entire project to be released under an open source license.
 
-Ao abrir um pull request, você confirma que leu e aceita estes termos. Se não concordar, não envie a contribuição. Os mantenedores podem pedir um acordo escrito adicional antes de aceitar mudanças relevantes.
+By opening a pull request, you confirm that you have read and accepted these terms. Do not submit a contribution if you disagree. The maintainers may request a separate written agreement before accepting substantial changes.
 
-## Revisão e aceite
+## Review and acceptance
 
-Enviar um pull request não garante que a mudança será aceita. Os mantenedores podem solicitar alterações ou fechar a proposta. Não inclua contribuições de terceiros sem permissão e sem informar a origem e a licença aplicável.
-
+Submitting a pull request does not guarantee that it will be accepted. The maintainers may request changes or close the proposal. Do not submit third-party contributions without permission and without identifying their source and applicable license.
