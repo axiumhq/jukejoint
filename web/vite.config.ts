@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig, type Plugin } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 /**
@@ -49,6 +49,7 @@ function routePreload(): Plugin {
 
 export default defineConfig({
   plugins: [react(), routePreload()],
+  test: { setupFiles: ['./src/test/setup.ts'] },
   server: { port: 5173 },
   preview: { port: 4173 },
 });
