@@ -50,7 +50,7 @@ export const en: DeepPartial<Messages> = {
     },
   },
   search: {
-    label: 'Search', placeholder: 'Search lobbies, modes, or players', open: 'Open search',
+    label: 'Search', placeholder: 'Search lobbies, modes, or players…', open: 'Open search',
     hint: 'Type a lobby, mode, or player name.', none: (q) => `Nothing found for “${q}”.`,
     groups: { lobbies: 'Lobbies', modes: 'Modes', players: 'Players' }, playersIn: (n) => `${n} playing`,
     hosting: (lobby) => `hosting ${lobby}`, inLobby: (lobby) => `in ${lobby}`, nowhere: 'not in a lobby',
@@ -208,7 +208,7 @@ export const en: DeepPartial<Messages> = {
   knock: {
     title: 'Request to join', body: (host) => `This lobby is invite-only. ${host} will see your request and decide whether to let you in.`,
     privacy: 'Invite-only lobbies show player counts, not the names of people inside.', message: 'Message to the host (optional)',
-    messagePlaceholder: 'For example: support player, ready to use voice chat', send: 'Send request', cancel: 'Not now',
+    messagePlaceholder: 'For example: support player, ready to use voice chat…', send: 'Send request', cancel: 'Not now',
     signIn: 'Sign in with Steam so the host can see who you are.', sentToast: (host) => `Request sent. ${host} can see your name and decide.`,
     acceptedToast: (host, name) => `${host} opened “${name}”. You can join now.`,
   },

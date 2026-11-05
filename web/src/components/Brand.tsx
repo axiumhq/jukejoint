@@ -8,9 +8,12 @@ import wordmarkUrl from '../assets/brand/wordmark.svg';
  * `currentColor`, para seguir o texto do tema.
  */
 
+/** Largura ÷ altura do wordmark.svg (viewBox 1000 × 410): o <img> reserva o espaço antes de carregar. */
+const WORDMARK_RATIO = 1000 / 410;
+
 /** O wordmark. `alt` vazio quando o nome já está no rótulo de quem o contém (o link da marca). */
 export function Wordmark({ height = 24, alt = BRAND_NAME, className }: { height?: number; alt?: string; className?: string }) {
-  return <img className={className ? `wordmark ${className}` : 'wordmark'} src={wordmarkUrl} alt={alt} height={height} style={{ height }} />;
+  return <img className={className ? `wordmark ${className}` : 'wordmark'} src={wordmarkUrl} alt={alt} translate="no" width={Math.round(height * WORDMARK_RATIO)} height={height} style={{ height }} />;
 }
 
 /** O símbolo JJ (proporção 170 × 384). Decorativo por padrão. */
