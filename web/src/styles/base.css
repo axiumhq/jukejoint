@@ -823,6 +823,29 @@ kbd,
   filter: var(--sh-art);
 }
 
+/* Dentro do medalhão: detalhe de duas cores a partir de 40 px; abaixo disso (.med-sm), o glifo. */
+.med .med-g {
+  display: none;
+  color: var(--brass-hi);
+}
+
+.med.med-sm .med-d,
+.mv-tile .med .med-d,
+.lgrid.list .lc-art .med .med-d {
+  display: none;
+}
+
+.med.med-sm .med-g,
+.mv-tile .med .med-g,
+.lgrid.list .lc-art .med .med-g {
+  display: inline;
+}
+
+.mi {
+  display: block;
+  flex: none;
+}
+
 .strip {
   display: block;
   width: 100%;
