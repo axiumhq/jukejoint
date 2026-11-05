@@ -30,7 +30,7 @@ node ..\..\..\web\node_modules\vitest\vitest.mjs run --config test\vitest.config
 Para conferir que o modo compila e os tipos da SDK batem:
 
 ```powershell
-..\..\..\tools\modlock-v0.1.68\modlock.exe build
+..\..\..\tools\modlock-v0.1.73\modlock.exe build
 node ..\..\..\web\node_modules\typescript\bin\tsc -p tsconfig.json
 ```
 
