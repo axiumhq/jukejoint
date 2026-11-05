@@ -36,18 +36,20 @@ function lobby(p: Partial<Lobby> = {}): Lobby {
 }
 
 describe('temas', () => {
-  it('o Deadlock é o padrão e o primeiro da lista', () => {
-    expect(DEFAULT_THEME).toBe('deadlock');
-    expect(THEMES[0]!.id).toBe('deadlock');
-    expect(THEMES.map((x) => x.id)).toEqual(['deadlock', 'carmim', 'pergaminho', 'gelo', 'grafite']);
+  it('o Carvão neutro é o padrão e o primeiro da lista', () => {
+    expect(DEFAULT_THEME).toBe('carvao');
+    expect(THEMES[0]!.id).toBe('carvao');
+    expect(THEMES.map((x) => x.id)).toEqual(['carvao', 'noite', 'ameixa', 'vinho']);
   });
 
   it('?theme= ganha do salvo, o salvo ganha do padrão e lixo cai no padrão', () => {
-    expect(resolveTheme('"gelo"', '?theme=carmim')).toBe('carmim');
-    expect(resolveTheme('"gelo"', '')).toBe('gelo');
-    expect(resolveTheme(null, '')).toBe('deadlock');
-    expect(resolveTheme('"neon"', '?theme=nada')).toBe('deadlock');
-    expect(resolveTheme('{quebrado', '')).toBe('deadlock');
+    expect(resolveTheme('"noite"', '?theme=vinho')).toBe('vinho');
+    expect(resolveTheme('"noite"', '')).toBe('noite');
+    expect(resolveTheme(null, '')).toBe('carvao');
+    expect(resolveTheme('"neon"', '?theme=nada')).toBe('carvao');
+    expect(resolveTheme('{quebrado', '')).toBe('carvao');
+    // ids dos temas antigos (v8) caem no padrão
+    expect(resolveTheme('"deadlock"', '')).toBe('carvao');
   });
 });
 

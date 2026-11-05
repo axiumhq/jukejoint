@@ -1,4 +1,4 @@
-/* Base v8: reset, tipo, botões, chips e etiquetas, avatares, capas, line-art e formulários. Tudo lê tokens.css. */
+/* Base do redesign: reset, tipo, botões, abas, chips e etiquetas, lâmpadas, esqueleto, vazio, avatares, capas e formulários. Tudo lê tokens.css. */
 
 *,
 *::before,
@@ -11,19 +11,17 @@ html {
   -webkit-text-size-adjust: 100%;
   scrollbar-color: var(--s4) transparent;
   scrollbar-width: thin;
-  scroll-padding-top: calc(var(--tb) + var(--tabs, 0px) + 16px);
+  scroll-padding-top: calc(var(--tb) + 16px);
+  scroll-padding-bottom: calc(var(--bn) + 16px);
 }
 
 body {
   margin: 0;
   min-height: 100dvh;
-  font: 400 0.8125rem/1.45 var(--f-ui);
+  font: 400 var(--fs-md) / 20px var(--f-ui);
   color: var(--tx);
-  background:
-    radial-gradient(1100px 620px at 12% -8%, var(--bg-tint), transparent 62%), radial-gradient(900px 640px at 104% 108%, var(--bg-tint-2), transparent 60%),
-    var(--bg);
-  background-attachment: fixed;
-  font-feature-settings: 'ss01', 'cv11';
+  background: var(--bg);
+  font-variant-numeric: tabular-nums lining-nums;
   -webkit-font-smoothing: antialiased;
   overflow-x: clip;
 }
@@ -102,7 +100,7 @@ a {
 }
 
 input {
-  caret-color: var(--acc-tx);
+  caret-color: var(--acc);
 }
 
 input::placeholder {
@@ -111,7 +109,7 @@ input::placeholder {
 }
 
 :focus-visible {
-  outline: 2px solid var(--acc-tx);
+  outline: 2px solid var(--acc);
   outline-offset: 2px;
   border-radius: var(--r-sm);
 }
@@ -122,53 +120,56 @@ main:focus {
 
 /* ───────── Tipo ───────── */
 
+/* Números e rótulos de dado: Barlow Condensed (ping, vagas, contagens). */
 .num,
 .mono {
-  font-family: var(--f-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+  font-family: var(--f-num);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: 0.02em;
 }
 
-/* Serifa condensada: só títulos grandes, o logotipo e os títulos de seção em dois tons. */
+/* Bodoni Moda: só títulos (página, seção, diálogo, destaque). Peso 400, opsz automático. */
 .display {
   font-family: var(--f-display);
-  font-stretch: 50%;
-  font-weight: 700;
-  font-variation-settings: 'opsz' 144;
-  letter-spacing: -0.015em;
-  line-height: 0.95;
+  font-weight: 400;
+  font-optical-sizing: auto;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
 }
 
+/* compat: os títulos em dois tons do v8 viram um tom só (o design não pinta palavra de título) */
 .two em {
   font-style: normal;
-  color: var(--acc-tx);
+  color: inherit;
 }
 
-/* Rótulo espaçado em caixa alta: serifa só em poucos rótulos (herói, trilho, menu de tema). */
+/* Rótulo de grupo em caixa alta ("LOBBIES", "TEMA"): o .gt do design. */
 .cap {
-  font-family: var(--f-display);
-  font-stretch: 75%;
-  font-weight: 650;
-  font-variation-settings: 'opsz' 12;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  letter-spacing: 0.16em;
+  font-family: var(--f-ui);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
 
 .cap b {
-  font-family: var(--f-mono);
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-family: var(--f-num);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   color: var(--tx-2);
 }
 
-/* Rótulo de dado: Anfitrião, Vagas, "Lobby 07 · BR/SA · 18 ms". */
+/* Rótulo de dado em Barlow: "LOBBY 04 · BR/SA · 14 MS", "VAGAS". */
 .lbl {
-  font-size: 0.75rem;
-  font-weight: 550;
-  letter-spacing: 0.08em;
+  font-family: var(--f-num);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  line-height: 18px;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--tx-3);
 }
@@ -201,6 +202,7 @@ main:focus {
   transform: none;
 }
 
+/* Ícones de linha: traço de 1,4 na grade de 16 (o 1,5 da grade de 24 do design). */
 .ico {
   width: 16px;
   height: 16px;
@@ -214,70 +216,67 @@ main:focus {
 
 kbd,
 .kbd {
-  font: 500 0.75rem/1 var(--f-mono);
-  padding: 4px 6px;
-  border-radius: var(--r-xs);
-  background: var(--s3);
-  color: var(--tx-3);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
+  font: 500 0.6875rem/16px var(--f-ui);
+  padding: 0 5px;
+  border-radius: var(--r-2xs);
+  color: inherit;
+  box-shadow: inset 0 0 0 1px currentColor;
+  opacity: 0.7;
 }
 
 /* ───────── Botões ───────── */
 
 .btn {
-  --h: 32px;
+  --h: 36px;
   height: var(--h);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 13px;
+  padding: 0 14px;
   border-radius: var(--r-sm);
-  font-weight: 550;
-  font-size: 0.78125rem;
+  font-size: var(--fs-md);
+  font-weight: 600;
   line-height: 1;
   white-space: nowrap;
-  letter-spacing: -0.005em;
   transition:
-    background var(--t-fast) var(--e-out),
+    background-color var(--t-fast),
     color var(--t-fast),
-    box-shadow var(--t-mid) var(--e-out),
-    transform var(--t-fast) var(--e-out);
+    box-shadow var(--t-fast);
 }
 
-.btn:active:not(:disabled):not([aria-disabled='true']) {
-  transform: translateY(1px);
-}
-
-/* primária: o acento, com o brilho do protótipo */
+/* primária: o latão chapado */
 .btn-p,
 .btn-primary {
   background: var(--acc);
   color: var(--acc-ink);
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.18) inset,
-    0 6px 18px -10px hsl(0 0% 0% / 0.6);
 }
 
 .btn-p:hover,
 .btn-primary:hover {
   background: var(--acc-hi);
-  box-shadow:
-    0 1px 0 hsl(0 0% 100% / 0.22) inset,
-    0 8px 24px -8px hsl(0 0% 0% / 0.6);
 }
 
-/* secundária: superfície com fio */
-.btn-s,
-.btn-line {
+/* secundária: superfície um passo acima, sem fio */
+.btn-s {
   background: var(--s3);
   color: var(--tx);
-  box-shadow: 0 0 0 1px var(--line-2) inset;
 }
 
-.btn-s:hover,
-.btn-line:hover {
+.btn-s:hover {
   background: var(--s4);
+}
+
+/* contorno */
+.btn-o,
+.btn-line {
+  color: var(--tx);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.btn-o:hover,
+.btn-line:hover {
+  background: var(--s3);
 }
 
 /* fantasma */
@@ -292,17 +291,31 @@ kbd,
   color: var(--tx);
 }
 
+/* feito ("Chamado", "Convidado"): fica parado, na cor de presença */
+.btn-done,
+.btn-done:hover {
+  background: var(--s3);
+  color: var(--live);
+  cursor: default;
+}
+
 .btn-sm {
-  --h: 26px;
-  padding: 0 10px;
-  font-size: 0.75rem;
-  border-radius: 5px;
+  --h: 32px;
+  padding: 0 12px;
+  font-size: var(--fs-sm);
 }
 
 .btn-lg {
-  --h: 40px;
+  --h: 44px;
   padding: 0 18px;
-  font-size: 0.84375rem;
+}
+
+/* o PRONTO e o Iniciar partida da sala */
+.btn-xl {
+  --h: 60px;
+  padding: 0 28px;
+  font-size: 1.125rem;
+  letter-spacing: 0.02em;
 }
 
 .btn-square {
@@ -314,27 +327,21 @@ kbd,
   width: 100%;
 }
 
+/* indisponível: superfície apagada, texto apagado (o .dis do design) */
 .btn[disabled],
-.btn[aria-disabled='true'] {
-  opacity: 0.55;
-  cursor: default;
-}
-
+.btn[aria-disabled='true'],
+.btn[disabled]:hover,
 .btn[aria-disabled='true']:hover {
   background: var(--s3);
-}
-
-.btn-g[aria-disabled='true']:hover,
-.btn-quiet[aria-disabled='true']:hover {
-  background: none;
-}
-
-.btn .kbd {
-  padding: 3px 5px;
-  background: hsl(0 0% 0% / 0.18);
-  color: inherit;
+  color: var(--tx-3);
   box-shadow: none;
-  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.btn-g[disabled],
+.btn-g[aria-disabled='true'],
+.btn-quiet[aria-disabled='true'] {
+  background: none;
 }
 
 .btn .ico {
@@ -342,15 +349,15 @@ kbd,
 }
 
 .icon-btn {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex: none;
   display: inline-grid;
   place-items: center;
   border-radius: var(--r-sm);
   color: var(--tx-2);
   transition:
-    background var(--t-fast),
+    background-color var(--t-fast),
     color var(--t-fast);
 }
 
@@ -365,89 +372,158 @@ kbd,
   color: var(--tx);
 }
 
-/* link de texto discreto ("Ver todos", "Notas da versão", "Pausar") */
+/* link de texto: latão sublinhado ("Notas da versão", "Ver todas as regras") */
 .link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--tx-2);
-  font-size: 0.78125rem;
-  font-weight: 550;
-  padding: 6px 8px;
-  border-radius: var(--r-sm);
+  color: var(--acc);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
   white-space: nowrap;
-  transition:
-    color var(--t-fast),
-    background var(--t-fast);
+  border-radius: var(--r-xs);
+  transition: color var(--t-fast);
 }
 
 .link:hover {
-  color: var(--tx);
-  background: var(--s3);
+  color: var(--acc-hi);
 }
 
-/* ───────── Chips, etiquetas, badges ───────── */
+/* ───────── Abas, segmentos, chips, etiquetas ───────── */
+
+/* Abas sublinhadas (o .tab do design): a ativa ganha o fio de latão embaixo. */
+.utabs {
+  display: flex;
+  gap: 24px;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+.utabs > button,
+.utabs > a {
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--tx-3);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  transition: color var(--t-fast);
+}
+
+.utabs > :hover {
+  color: var(--tx);
+}
+
+.utabs > [aria-selected='true'],
+.utabs > [aria-current='page'] {
+  color: var(--tx);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--acc);
+}
+
+.utabs .c {
+  font: 500 0.9375rem var(--f-num);
+  letter-spacing: 0.02em;
+  color: var(--tx-3);
+}
+
+/* Segmentos (região, cartões/compacto): o .seg do design. */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--s2);
+}
+
+.seg > button {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  color: var(--tx-3);
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  transition:
+    background-color var(--t-fast),
+    color var(--t-fast);
+}
+
+.seg > button:hover {
+  color: var(--tx);
+}
+
+.seg > [aria-pressed='true'],
+.seg > [aria-selected='true'],
+.seg > [aria-checked='true'] {
+  background: var(--s4);
+  color: var(--tx);
+  font-weight: 600;
+}
 
 .chip {
-  height: 28px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 0 11px;
+  padding: 0 12px;
   border-radius: var(--r-sm);
-  background: var(--s2);
   color: var(--tx-2);
-  font-size: 0.75rem;
+  font-size: var(--fs-sm);
   font-weight: 500;
   white-space: nowrap;
-  box-shadow: 0 0 0 1px var(--line) inset;
+  box-shadow: inset 0 0 0 1px var(--line);
   transition:
-    background var(--t-fast),
+    background-color var(--t-fast),
     color var(--t-fast),
     box-shadow var(--t-fast);
 }
 
 .chip:hover {
   color: var(--tx);
-  background: var(--s3);
+  background: var(--s2);
 }
 
 .chip[aria-pressed='true'] {
-  background: var(--acc-soft);
-  color: var(--acc-tx);
-  box-shadow: 0 0 0 1px var(--acc-line) inset;
+  background: var(--s4);
+  color: var(--tx);
+  box-shadow: none;
 }
 
 .chip .c {
-  font: 500 0.75rem var(--f-mono);
+  font: 500 0.875rem var(--f-num);
+  letter-spacing: 0.02em;
   color: var(--tx-3);
 }
 
 .chip[aria-pressed='true'] .c {
-  color: inherit;
-  opacity: 0.75;
+  color: var(--tx-2);
 }
 
 .chip .ico {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   margin-right: -3px;
 }
 
+/* Etiqueta em Barlow (o .tag do design): "Porta aberta", "Lotado", "Você está aqui". */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   height: 20px;
   padding: 0 7px;
-  border-radius: 5px;
-  font-size: 0.75rem;
-  font-weight: 550;
-  letter-spacing: 0.01em;
+  border-radius: var(--r-xs);
+  font-family: var(--f-num);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  line-height: 1;
   white-space: nowrap;
-  background: hsl(0 0% 0% / 0.5);
-  color: var(--tx);
-  backdrop-filter: blur(6px);
+  background: var(--s3);
+  color: var(--tx-2);
 }
 
 .tag .ico {
@@ -455,37 +531,40 @@ kbd,
   height: 12px;
 }
 
+/* acento: só "Você está aqui" e "Entrando…" */
 .tag.acc {
   background: var(--acc);
   color: var(--acc-ink);
 }
 
-.tag.soft {
-  background: var(--acc-soft);
-  color: var(--acc-tx);
+/* em destaque sem acento: "Falta 2", "N da sua lista", "Porta aberta" */
+.tag.soft,
+.tag.strong {
+  color: var(--tx);
 }
 
 .tag.line {
   background: transparent;
-  box-shadow: 0 0 0 1px var(--line-2) inset;
+  box-shadow: inset 0 0 0 1px var(--line-2);
   color: var(--tx-2);
 }
 
+/* "Em partida": o ponto de presença */
 .tag .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--warn);
+  background: var(--live);
 }
 
 .badge {
   min-width: 19px;
   height: 18px;
   padding: 0 5px;
-  border-radius: 5px;
+  border-radius: var(--r-xs);
   display: inline-grid;
   place-items: center;
-  font: 600 0.75rem/1 var(--f-mono);
+  font: 600 0.8125rem/1 var(--f-num);
   background: var(--acc);
   color: var(--acc-ink);
 }
@@ -496,18 +575,11 @@ kbd,
 }
 
 .dot-live {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--live);
-  box-shadow: 0 0 0 3px hsl(from var(--live) h s l / 0.16);
-  flex: none;
-}
-
-.dot-live.sm {
   width: 6px;
   height: 6px;
-  box-shadow: none;
+  border-radius: 50%;
+  background: var(--live);
+  flex: none;
 }
 
 /* losango do modo */
@@ -516,12 +588,125 @@ kbd,
   height: 8px;
   transform: rotate(45deg);
   border-radius: 1.5px;
-  background: var(--acc-tx);
+  background: var(--acc);
   flex: none;
+}
+
+/* Estado curto com ponto ("Conferido", "Desligado"): o .stc do design. */
+.stc {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: var(--r-xs);
+  background: var(--s3);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+.stc::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.stc.ok {
+  color: var(--live);
+}
+
+.stc.er {
+  color: var(--warn);
+}
+
+/* ───────── Medidor de vagas: as lâmpadas ───────── */
+
+/* Uma lâmpada por vaga: acesa = ocupada; a próxima vaga livre pulsa de leve quando falta pouco. */
+.bulbs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.bulbs > i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--s3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.bulbs > i.on {
+  background: var(--bulb);
+  box-shadow: 0 0 6px var(--bulb-glow);
+}
+
+.bulbs > i.next {
+  animation: bulb-next 1.8s ease-in-out infinite;
+}
+
+.bulbs.lg > i {
+  width: 14px;
+  height: 14px;
+}
+
+@keyframes bulb-next {
+  50% {
+    box-shadow:
+      inset 0 0 0 1px var(--acc),
+      0 0 8px var(--bulb-glow);
+  }
+}
+
+/* ───────── Esqueleto e vazio ───────── */
+
+.skel {
+  border-radius: var(--r-xl);
+  background: var(--s2);
+  opacity: 0.7;
+  animation: skel 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes skel {
+  to {
+    opacity: 0.35;
+  }
+}
+
+/* Estado vazio: painel com título em Bodoni, uma linha e uma ação. */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 56px 24px;
+  border-radius: var(--r-xl);
+  background: var(--s2);
+  text-align: center;
+}
+
+.empty > h2,
+.empty > h3 {
+  font: 400 var(--fs-h2) / 36px var(--f-display);
+  letter-spacing: -0.01em;
+}
+
+.empty > p {
+  color: var(--tx-2);
+  max-width: 52ch;
+}
+
+.empty > .btn,
+.empty > div {
+  margin-top: 10px;
 }
 
 /* ───────── Avatares, presença, pilha ───────── */
 
+/* O avatar do design: disco na superfície com o glifo de linha da pessoa em latão. */
 .av {
   --s: 28px;
   width: var(--s);
@@ -540,16 +725,27 @@ kbd,
   border-radius: 50%;
 }
 
-/* anel de acento: alguém da sua lista. O contorno segue o círculo e o vão é transparente,
-   então funciona sobre qualquer superfície. */
+.av svg circle {
+  fill: var(--s3);
+  stroke: var(--line-2);
+}
+
+.av svg path {
+  fill: none;
+  stroke: var(--acc);
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+}
+
+/* anel de acento: alguém da sua lista. O contorno segue o círculo e o vão é transparente. */
 .av.ring {
-  outline: 1.5px solid var(--acc-tx);
+  outline: 1.5px solid var(--acc);
   outline-offset: 1.5px;
 }
 
 /* Presença: o ponto abre um recorte de 2 px no avatar (máscara), sem depender da cor de fundo. */
 .pres {
-  --d: max(8px, calc(var(--s, 32px) * 0.3));
+  --d: max(8px, calc(var(--s, 32px) * 0.33));
   position: relative;
   display: inline-flex;
   flex: none;
@@ -568,15 +764,17 @@ kbd,
   width: var(--d);
   height: var(--d);
   border-radius: 50%;
-  background: var(--tx-3);
+  background: var(--s4);
 }
 
-.pres.menu > i {
+/* em lobby: ponto cheio; no menu do jogo: anel vazado (o .pd e o .pd.o do design) */
+.pres.lobby > i {
   background: var(--live);
 }
 
-.pres.lobby > i {
-  background: var(--acc-tx);
+.pres.menu > i {
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--tx-3);
 }
 
 /* Pilha: cada rosto é recortado onde o próximo encosta (2 px de vão, 3,5 px se o próximo tem anel). */
@@ -610,11 +808,25 @@ kbd,
   border-radius: 99px;
   display: inline-grid;
   place-items: center;
-  font: 600 0.75rem var(--f-mono);
-  letter-spacing: -0.02em;
-  background: var(--s4);
+  font: 600 0.8125rem var(--f-num);
+  letter-spacing: 0.02em;
+  background: var(--s3);
   color: var(--tx-2);
   box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+/* ───────── Medalhão e faixa do modo (ModeMedallion, ModeStrip) ───────── */
+
+.med {
+  display: block;
+  flex: none;
+  filter: var(--sh-art);
+}
+
+.strip {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 /* ───────── Capas (SVG pintado pelo tema + grão) ───────── */
@@ -625,9 +837,6 @@ kbd,
   overflow: hidden;
   background: var(--k0);
   isolation: isolate;
-  /* desvio de matiz do modo, dentro da família do tema */
-  --m1: oklch(from var(--k1) l c calc(h + var(--m, 0)));
-  --m2: oklch(from var(--k2) l c calc(h + var(--m, 0)));
 }
 
 .cover > svg {
@@ -644,7 +853,7 @@ kbd,
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.32;
+  opacity: 0.22;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.4 -.2'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
 }
@@ -664,27 +873,11 @@ kbd,
   overflow: hidden;
 }
 
-/* ───────── Line-art de maquinário (decoração, 5–7,5%) ───────── */
-
-.lineart {
-  position: absolute;
-  pointer-events: none;
-  color: var(--lineart);
-  opacity: 0.075;
-  z-index: 0;
-}
-
-.lineart svg {
-  width: 100%;
-  height: 100%;
-  fill: none;
-  stroke: currentColor;
-}
-
 /* ───────── Formulários e código ───────── */
 
 code {
-  font-family: var(--f-mono);
+  font-family: var(--f-code);
+  font-size: 0.8125rem;
 }
 
 input[type='text'],
@@ -692,16 +885,17 @@ input[type='search'],
 select {
   min-height: 44px;
   padding: 0 14px;
-  border: 1px solid var(--line-2);
-  border-radius: var(--r-sm);
-  background: var(--bg);
-  font-size: 0.8125rem;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--s2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  font-size: var(--fs-md);
   transition: border-color var(--t-mid) var(--e-out);
 }
 
 input[type='text']:hover,
 select:hover {
-  border-color: var(--tx-3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 
 input[type='checkbox'],
@@ -717,17 +911,18 @@ input[type='radio'] {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 10px 10px 10px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: var(--s2);
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--r-md);
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
 .copy-field code {
   flex: 1;
   min-width: 0;
-  font-size: 0.75rem;
-  line-height: 1.6;
+  font-family: var(--f-code);
+  font-size: 0.8125rem;
+  line-height: 18px;
   color: var(--tx-2);
   overflow-wrap: anywhere;
 }

@@ -3,11 +3,12 @@ import { useNavigate } from 'react-router';
 import { modes } from '../data/modes';
 import { useFriends } from '../hooks';
 import { t } from '../i18n';
-import { flatHits, searchAll, type SearchHit } from '../lib/search';
+import { flatHits, fold, searchAll, type SearchHit } from '../lib/search';
 import { useSession } from '../state/session';
 import { Avatar } from './Avatar';
 import { Icon } from './Icon';
 import { ModeCover } from './ModeCover';
+import '../styles/social.css';
 
 /**
  * A busca da barra superior: combobox com lista de resultados (padrão ARIA 1.2).
@@ -24,6 +25,31 @@ function hitTo(h: SearchHit) {
   if (h.kind === 'lobby') return `/sala/${encodeURIComponent(h.lobby.id)}`;
   if (h.kind === 'mode') return `/?modo=${encodeURIComponent(h.mode.slug)}#lobbies`;
   return h.lobby ? `/sala/${encodeURIComponent(h.lobby.id)}` : null;
+}
+
+/** Marca no nome o trecho que bateu (sem acento e sem caixa), como o `mark` do design. */
+function Marked({ text, q }: { text: string; q: string }) {
+  const needle = fold(q.trim());
+  if (!needle) return <>{text}</>;
+  let folded = '';
+  const at: number[] = [];
+  Array.from(text).forEach((ch, k) => {
+    const f = fold(ch);
+    for (let n = 0; n < f.length; n += 1) at.push(k);
+    folded += f;
+  });
+  const i = folded.indexOf(needle);
+  if (i < 0) return <>{text}</>;
+  const chars = Array.from(text);
+  const a = at[i] ?? 0;
+  const b = (at[i + needle.length - 1] ?? chars.length - 1) + 1;
+  return (
+    <>
+      {chars.slice(0, a).join('')}
+      <mark className="hl">{chars.slice(a, b).join('')}</mark>
+      {chars.slice(b).join('')}
+    </>
+  );
 }
 
 export function Search({ open, onOpenChange }: SearchProps) {
@@ -160,10 +186,16 @@ export function Search({ open, onOpenChange }: SearchProps) {
       >
         {lead}
         <span className="sr-t">
-          <b>{h.label}</b>
+          <b>
+            <Marked text={h.label} q={q} />
+          </b>
           <small>{sub}</small>
         </span>
-        {to && <Icon name="arrow" />}
+        {to && idx === active && (
+          <kbd className="sr-enter" aria-hidden="true">
+            Enter
+          </kbd>
+        )}
       </li>
     );
   };
@@ -171,7 +203,7 @@ export function Search({ open, onOpenChange }: SearchProps) {
   const group = (key: keyof typeof groups) =>
     groups[key].length > 0 && (
       <li role="presentation" key={key}>
-        <span className="cap" aria-hidden="true">
+        <span className="cap sr-gt" aria-hidden="true">
           {t.search.groups[key]}
         </span>
         <ul role="group" aria-label={t.search.groups[key]}>
@@ -216,6 +248,14 @@ export function Search({ open, onOpenChange }: SearchProps) {
             {group('modes')}
             {group('players')}
           </ul>
+          {expanded && hits.length > 0 && (
+            <div className="search-foot" aria-hidden="true">
+              <span>{t.search.count(hits.length)}</span>
+              <span>
+                <kbd>↑↓</kbd>navegar<kbd>Enter</kbd>abrir<kbd>Esc</kbd>fechar
+              </span>
+            </div>
+          )}
         </div>
       )}
       <span className="sr-only" role="status">

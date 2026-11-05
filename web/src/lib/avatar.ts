@@ -159,3 +159,20 @@ export function avatarArt(name: string): AvatarArt {
   }
   return { kind, bg: field, rot, shapes };
 }
+
+/**
+ * O glifo do avatar do redesign (Design-System): dois polígonos concêntricos, de 3 a 6 lados,
+ * girados pelo nome, num disco de 32. Só o desenho: a cor vem do tema (`.av svg path` em base.css,
+ * o latão), como no kit. Determinístico, o mesmo algoritmo do protótipo.
+ */
+export function avatarGlyph(name: string): string {
+  let h = 7;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const k = 3 + (h % 4);
+  const r0 = (h % 7) / 7;
+  const pt = (i: number, R: number) => {
+    const a = ((i + r0) / k) * 6.2832;
+    return `${(16 + R * Math.cos(a)).toFixed(1)} ${(16 + R * Math.sin(a)).toFixed(1)}`;
+  };
+  return [10, 5].map((R) => 'M' + Array.from({ length: k }, (_, i) => pt(i, R)).join('L') + 'Z').join('');
+}

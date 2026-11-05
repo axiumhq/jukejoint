@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import type { Lobby } from '../data/lobbies';
 import { useFriends, useIncomingInvite } from '../hooks';
@@ -12,6 +13,7 @@ import { DevSignIn, SignInPending } from './AppLogin';
 import { Presence } from './Avatar';
 import { Icon } from './Icon';
 import { useRail, useRailSignIn } from './Rail';
+import '../styles/social.css';
 
 /**
  * O trilho social da home (e o padrão de qualquer tela que não traga o seu):
@@ -36,7 +38,7 @@ export function FriendStep({ friend, called, onCall }: { friend: FriendPresence;
   const lobby = friend.lobbyId ? lobbies.find((l) => l.id === friend.lobbyId) : undefined;
   if (!lobby) {
     return (
-      <button type="button" className="btn btn-g btn-sm" disabled={called} aria-label={called ? undefined : `${t.social.call} ${friend.name}`} onClick={onCall}>
+      <button type="button" className={called ? 'btn btn-g btn-sm feito' : 'btn btn-g btn-sm'} disabled={called} aria-label={called ? undefined : `${t.social.call} ${friend.name}`} onClick={onCall}>
         {called ? t.social.called : t.social.call}
       </button>
     );
@@ -113,7 +115,7 @@ function Party() {
   const here = hereId ? lobbies.find((l) => l.id === hereId) : undefined;
   const hint = () => pushToast(t.social.partyHint);
   return (
-    <section className="rail-sec" aria-labelledby="rail-party">
+    <section className="rail-sec rail-party" aria-labelledby="rail-party">
       <div className="rail-h">
         <h2 className="cap" id="rail-party">
           {t.social.party} · <b>1/5</b>
@@ -150,25 +152,21 @@ function Party() {
   );
 }
 
-function Invite() {
+function Invite({ announce = true }: { announce?: boolean }) {
   const { requestJoin, declineInvite, pushToast } = useSession();
   const invite = useIncomingInvite();
   if (!invite) return null;
   const { from, lobby } = invite;
   return (
-    <section className="rail-sec" aria-labelledby="rail-invite">
-      <div className="rail-h">
-        <h2 className="cap" id="rail-invite">
-          {t.social.invite} · <b>{t.social.now}</b>
-        </h2>
-      </div>
-      <div className="card invite">
+    <section className="rail-sec rail-invite" aria-label={t.social.invite}>
+      <div className="card invite" role={announce ? 'status' : undefined} aria-live={announce ? 'polite' : undefined}>
         <div className="invite-top">
-          <Presence name={from} size={34} status="lobby" />
           <div>
-            <b>{from}</b> {t.social.invitedYou}
+            <b>
+              {from} {t.social.invitedYou}
+            </b>
             <small>
-              {lobby.name} · <span className="num">{`${lobby.players}/${lobby.slots}`}</span>
+              {lobby.name} · {t.lobbies.inRoom(lobby.players, lobby.slots)}
             </small>
           </div>
         </div>
@@ -183,7 +181,7 @@ function Invite() {
           </button>
           <button
             type="button"
-            className="btn btn-s btn-sm"
+            className="btn btn-g btn-sm"
             onClick={() => {
               declineInvite(lobby.id);
               pushToast(t.social.declinedToast(from));
@@ -197,13 +195,66 @@ function Invite() {
   );
 }
 
+/** "Ver toda a lista": o painel de 380 px do desktop (no celular a lista já abre na folha de baixo). */
+function ListPanel({ onClose, called, onCall }: { onClose: () => void; called: ReadonlySet<string>; onCall: (f: FriendPresence) => void }) {
+  const friends = useFriends();
+  const { lobbies, hereId, live } = useSession();
+  const hasInvite = !!useIncomingInvite();
+  const inLobbies = friends.filter((f) => f.lobbyId).length;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return createPortal(
+    <aside className="list-panel" aria-label={t.friends.title}>
+      <div className="list-panel-in">
+        <h2 className="list-panel-h">{t.friends.title}</h2>
+        {hasInvite && <Invite announce={false} />}
+        {friends.length === 0 ? (
+          <p className="list-panel-empty">{t.friends.none}</p>
+        ) : (
+          <>
+            <div className="list-panel-lh">
+              <h3>{t.friends.online(friends.length)}</h3>
+              <span>{t.social.inLobbies(inLobbies)}</span>
+            </div>
+            <ul aria-label={t.friends.peopleOnline} className="list-panel-ul">
+              {friends.map((f) => {
+                const lobby = f.lobbyId ? lobbies.find((l) => l.id === f.lobbyId) : undefined;
+                return (
+                  <li key={f.name} className="fr">
+                    <Presence name={f.name} size={36} status={lobby ? 'lobby' : 'menu'} />
+                    <div className="fr-t">
+                      <b>{f.name}</b>
+                      <small>{where(f, lobby, hereId)}</small>
+                    </div>
+                    <FriendStep friend={f} called={called.has(f.name)} onCall={() => onCall(f)} />
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        <p className="list-panel-note">{live ? L.friendsNote : t.friends.panelNote}</p>
+      </div>
+    </aside>,
+    document.body,
+  );
+}
+
 function Online() {
   const friends = useFriends();
   const { live, callFriend } = useSession();
   const [called, setCalled] = useState<ReadonlySet<string>>(() => new Set());
   const [showOff, setShowOff] = useState(false);
+  const [panel, setPanel] = useState(false);
   const offId = useId();
   const inLobbies = friends.filter((f) => f.lobbyId).length;
+  const onCall = (f: FriendPresence) => {
+    // Ao vivo o convite vai pelo servidor; simulado, só o aviso.
+    void callFriend(f).then((ok) => ok && setCalled((s) => new Set(s).add(f.name)));
+  };
   return (
     <section className="rail-sec" aria-labelledby="rail-online">
       <div className="rail-h">
@@ -221,15 +272,16 @@ function Online() {
               <FriendStep
                 friend={f}
                 called={called.has(f.name)}
-                onCall={() => {
-                  // Ao vivo o convite vai pelo servidor; simulado, só o aviso.
-                  void callFriend(f).then((ok) => ok && setCalled((s) => new Set(s).add(f.name)));
-                }}
+                onCall={() => onCall(f)}
               />
             </FriendRow>
           ))}
         </ul>
       )}
+      <button type="button" className="btn btn-g btn-sm list-open" aria-expanded={panel} onClick={() => setPanel((v) => !v)}>
+        {panel ? t.friends.closeList : t.friends.viewAll}
+      </button>
+      {panel && <ListPanel onClose={() => setPanel(false)} called={called} onCall={onCall} />}
       {live ? (
         <p className="rail-empty">{L.friendsNote}</p>
       ) : (

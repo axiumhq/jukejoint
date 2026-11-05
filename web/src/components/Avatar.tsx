@@ -1,11 +1,11 @@
 import { memo, type CSSProperties } from 'react';
-import { avatarArt, type AvatarShape } from '../lib/avatar';
+import { avatarGlyph } from '../lib/avatar';
 
 /**
- * Avatar gerado do nome (lib/avatar.ts), presença e pilha.
- * Os avatares não leem o tema: a cor é da pessoa, não da interface. O que encosta neles
- * (o ponto de presença, o vizinho na pilha) abre um recorte de verdade no desenho (máscara),
- * então ficam limpos sobre qualquer superfície.
+ * Avatar gerado do nome (lib/avatar.ts `avatarGlyph`), presença e pilha.
+ * O desenho do redesign: disco na superfície com o glifo de linha da pessoa em latão (cores em
+ * base.css, `.av`), então segue o tema. O que encosta neles (o ponto de presença, o vizinho na
+ * pilha) abre um recorte de verdade no desenho (máscara), limpo sobre qualquer superfície.
  */
 
 interface AvatarProps {
@@ -17,32 +17,20 @@ interface AvatarProps {
   className?: string;
 }
 
-function Shape({ s }: { s: AvatarShape }) {
-  if (s.t === 'circle') return <circle cx={s.cx} cy={s.cy} r={s.r} fill={s.fill} />;
-  if (s.t === 'rect') return <rect x={s.x} y={s.y} width={s.w} height={s.h} fill={s.fill} />;
-  return <path d={s.d} fill={s.fill} />;
-}
-
 export const Avatar = memo(function Avatar({ name, size = 28, ring = false, className }: AvatarProps) {
-  const a = avatarArt(name);
+  const d = avatarGlyph(name);
   const cls = ['av', ring && 'ring', className].filter(Boolean).join(' ');
   return (
     <span className={cls} style={{ '--s': `${size}px` } as CSSProperties} title={name} aria-hidden="true">
-      <svg viewBox="0 0 36 36" focusable="false">
-        <rect width="36" height="36" fill={a.bg} />
-        <g transform={a.rot ? `rotate(${a.rot} 18 18)` : undefined}>
-          {a.shapes.map((s, i) => (
-            <Shape key={i} s={s} />
-          ))}
-        </g>
-        {/* fio interno: define a borda em fundo escuro sem contorno pesado */}
-        <circle cx="18" cy="18" r="17.5" fill="none" stroke="#fff" strokeOpacity=".14" strokeWidth="1" />
+      <svg viewBox="0 0 32 32" focusable="false">
+        <circle cx="16" cy="16" r="15.5" strokeWidth="1" />
+        <path d={d} />
       </svg>
     </span>
   );
 });
 
-/** Presença: em lobby (acento), no menu do jogo (ao vivo) ou offline (apagado). */
+/** Presença: em lobby (ponto cheio), no menu do jogo (anel vazado) ou offline (apagado). */
 export type PresenceStatus = 'lobby' | 'menu' | 'offline';
 
 export function Presence({ name, size = 32, status, ring }: { name: string; size?: number; status: PresenceStatus; ring?: boolean }) {

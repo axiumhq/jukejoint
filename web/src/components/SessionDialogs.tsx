@@ -27,12 +27,7 @@ function LobbySummary({ lobby }: { lobby: Lobby }) {
         <span className="lbl">{mode?.name}</span>
         <b>{lobby.name}</b>
         <span className="dlg-lm">
-          <span>
-            <span className="num">
-              {lobby.players}/{lobby.slots}
-            </span>{' '}
-            {t.join.seatsUnit}
-          </span>
+          <span className="num">{t.lobbies.inRoom(lobby.players, lobby.slots)}</span>
           <i aria-hidden="true" />
           <span>
             {t.regions[lobby.region]} · <span className="num">{t.lobbies.ping(lobby.ping)}</span>
@@ -118,14 +113,14 @@ function OpenOnPc({ lobby, onClose }: { lobby: Lobby | null; onClose: () => void
         <h3 className="cap" id="join-pc">
           {lobby ? t.join.phoneRoomLink : t.join.phoneSiteLink}
         </h3>
-        <code ref={code} className="dlg-link num">
+        <code ref={code} className={copy === 'failed' ? 'dlg-link num is-fail' : 'dlg-link num'}>
           {url.replace(/^https?:\/\//, '')}
         </code>
         <button type="button" className="btn btn-p btn-lg" onClick={copyLink}>
           <Icon name={copy === 'done' ? 'check' : 'copy'} />
           {copy === 'done' ? t.join.linkCopied : lobby ? t.join.copyRoomLink : t.join.copySiteLink}
         </button>
-        <p className="dlg-hint" role="status">
+        <p className={copy === 'failed' ? 'dlg-hint is-fail' : 'dlg-hint'} role="status">
           {copy === 'failed' ? t.join.copyFailed : t.install.platformMeta}
         </p>
       </section>
@@ -195,7 +190,7 @@ function AppCheckBlock() {
       </ul>
       <p className="dlg-hint">{D.problemsHint}</p>
       <div className="dlg-act is-start">
-        <button type="button" className="btn btn-s btn-sm" onClick={openInstallWindow}>
+        <button type="button" className="btn btn-p btn-sm" onClick={openInstallWindow}>
           <Icon name="gear" />
           {D.openInstall}
         </button>
@@ -227,7 +222,7 @@ export function JoinDialog() {
 
   return (
     <>
-      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title} lead={lead}>
+      <Dialog open={joinTarget !== null} onClose={closeJoin} title={title} lead={here ? undefined : lead} className="dlg-join">
         {live && (
           <div className="dlg-stack">
             <LobbySummary lobby={live} />
@@ -246,10 +241,10 @@ export function JoinDialog() {
           <>
             {desktop && <AppCheckBlock />}
             <div className="dlg-act">
-              <button type="button" className="btn btn-s btn-lg" onClick={closeJoin}>
+              <button type="button" className="btn btn-g btn-lg" onClick={closeJoin}>
                 {t.join.switchCancel}
               </button>
-              <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
+              <button type="button" className={appProblems && !here ? 'btn btn-g btn-lg' : 'btn btn-p btn-lg'} onClick={confirmJoin}>
                 {here ? t.join.switchConfirm : appProblems ? D.enterAnyway : t.lobbyState.join}
                 <Icon name="arrow" />
               </button>
@@ -257,20 +252,20 @@ export function JoinDialog() {
           </>
         ) : (
           <div className="dlg-opts">
-            <section className="dlg-opt is-main" aria-labelledby="join-have">
+            <section className="dlg-opt" aria-labelledby="join-have">
               <h3 className="cap" id="join-have">
                 {t.join.haveApp}
               </h3>
-              <button type="button" className="btn btn-p btn-lg" onClick={confirmJoin}>
+              <button type="button" className="btn btn-s btn-lg" onClick={confirmJoin}>
                 {t.join.openApp}
                 <Icon name="arrow" />
               </button>
             </section>
-            <section className="dlg-opt" aria-labelledby="join-none">
+            <section className="dlg-opt is-main" aria-labelledby="join-none">
               <h3 className="cap" id="join-none">
                 {t.join.noApp}
               </h3>
-              <Link to="/instalar" className="btn btn-s btn-lg" onClick={closeJoin}>
+              <Link to="/instalar" className="btn btn-p btn-lg" onClick={closeJoin}>
                 <Icon name="download" />
                 {t.join.install}
               </Link>
@@ -310,7 +305,7 @@ export function KnockDialog() {
   }
 
   return (
-    <Dialog open={live !== null} onClose={closeKnock} title={t.knock.title} lead={live ? t.knock.body(live.host) : undefined}>
+    <Dialog open={live !== null} onClose={closeKnock} className="dlg-join" title={t.knock.title} lead={live ? t.knock.body(live.host) : undefined}>
       {live && (
         <div className="dlg-stack">
           <LobbySummary lobby={live} />
@@ -318,7 +313,14 @@ export function KnockDialog() {
         </div>
       )}
       {!user ? (
-        <SignInBlock body={t.knock.signIn} />
+        <>
+          <SignInBlock body={t.knock.signIn} />
+          <div className="dlg-act">
+            <button type="button" className="btn btn-g btn-lg" onClick={closeKnock}>
+              {t.knock.cancel}
+            </button>
+          </div>
+        </>
       ) : (
         <form className="dlg-form" onSubmit={submit}>
           <div className="dlg-field">
@@ -350,6 +352,47 @@ export function KnockDialog() {
   );
 }
 
+/** Interruptor de opção do lobby (role switch, 44 px de altura). */
+function Switch({ on, onChange, children }: { on: boolean; onChange: (v: boolean) => void; children: ReactNode }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} className={on ? 'dlg-sw is-on' : 'dlg-sw'} onClick={() => onChange(!on)}>
+      <i aria-hidden="true" />
+      {children}
+    </button>
+  );
+}
+
+/** Contador de − / + (vagas, mínimo para começar): botões de 44 px, valor ao vivo. */
+function Stepper({
+  value,
+  min,
+  max,
+  less,
+  more,
+  onChange,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  less: string;
+  more: string;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <div className="dlg-step">
+      <button type="button" aria-label={less} disabled={value <= min} onClick={() => onChange(Math.max(min, value - 1))}>
+        −
+      </button>
+      <output className="num" aria-live="polite">
+        {value}
+      </output>
+      <button type="button" aria-label={more} disabled={value >= max} onClick={() => onChange(Math.min(max, value + 1))}>
+        +
+      </button>
+    </div>
+  );
+}
+
 export function HostDialog() {
   const { hostDialog, closeHost, createLobby, user } = useSession();
   const [modeSlug, setModeSlug] = useState(modes[0]!.slug);
@@ -358,12 +401,12 @@ export function HostDialog() {
   const [slots, setSlots] = useState(12);
   const [quorum, setQuorum] = useState(6);
   const [locked, setLocked] = useState(false);
+  const [beginners, setBeginners] = useState(false);
+  const [midMatch, setMidMatch] = useState(true);
 
   const mode = modes.find((m) => m.slug === modeSlug) ?? modes[0]!;
-  const slotOptions = Array.from({ length: mode.maxPlayers - mode.minPlayers + 1 }, (_, i) => mode.minPlayers + i);
   const total = Math.min(slots, mode.maxPlayers);
   const minNeeded = Math.min(quorum, total);
-  const quorumOptions = Array.from({ length: total - mode.minPlayers + 1 }, (_, i) => mode.minPlayers + i);
 
   const pickMode = (slug: string) => {
     const m = modes.find((x) => x.slug === slug);
@@ -381,6 +424,8 @@ export function HostDialog() {
       setQuorum(m.minPlayers);
       setName('');
       setLocked(false);
+      setBeginners(false);
+      setMidMatch(true);
     }
   }, [hostDialog.open, hostDialog.modeSlug]);
 
@@ -389,11 +434,11 @@ export function HostDialog() {
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    createLobby({ name: finalName, modeSlug, region, slots: total, minPlayers: minNeeded, locked });
+    createLobby({ name: finalName, modeSlug, region, slots: total, minPlayers: minNeeded, locked, beginners, joinInProgress: midMatch });
   }
 
   return (
-    <Dialog open={hostDialog.open} onClose={closeHost} title={t.host.title} size="wide">
+    <Dialog open={hostDialog.open} onClose={closeHost} title={t.host.title} size="wide" className="dlg-host">
       {!user ? (
         <SignInBlock body={t.host.needSignIn} />
       ) : (
@@ -424,9 +469,14 @@ export function HostDialog() {
           </fieldset>
 
           <div className="dlg-field">
-            <label className="cap" htmlFor="host-name">
-              {t.host.name}
-            </label>
+            <div className="dlg-lbl">
+              <label className="cap" htmlFor="host-name">
+                {t.host.name}
+              </label>
+              <span className="dlg-count num" aria-hidden="true">
+                {name.length} / 40
+              </span>
+            </div>
             <input
               id="host-name"
               className="dlg-input"
@@ -454,43 +504,27 @@ export function HostDialog() {
                 ))}
               </div>
             </fieldset>
-            <div className="dlg-field">
-              <label className="cap" htmlFor="host-slots">
+            <div className="dlg-field" role="group" aria-labelledby="host-slots-l">
+              <span className="cap" id="host-slots-l">
                 {t.host.slots}
-              </label>
-              <span className="dlg-select">
-                <select
-                  id="host-slots"
-                  value={total}
-                  onChange={(e) => {
-                    const n = Number(e.target.value);
-                    setSlots(n);
-                    if (quorum > n) setQuorum(n);
-                  }}
-                >
-                  {slotOptions.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-                <Icon name="chev" />
               </span>
+              <Stepper
+                value={total}
+                min={mode.minPlayers}
+                max={mode.maxPlayers}
+                less="Menos vagas"
+                more="Mais vagas"
+                onChange={(n) => {
+                  setSlots(n);
+                  if (quorum > n) setQuorum(n);
+                }}
+              />
             </div>
-            <div className="dlg-field">
-              <label className="cap" htmlFor="host-quorum">
+            <div className="dlg-field" role="group" aria-labelledby="host-quorum-l" aria-describedby="host-quorum-hint">
+              <span className="cap" id="host-quorum-l">
                 {t.host.quorum}
-              </label>
-              <span className="dlg-select">
-                <select id="host-quorum" value={minNeeded} aria-describedby="host-quorum-hint" onChange={(e) => setQuorum(Number(e.target.value))}>
-                  {quorumOptions.map((n) => (
-                    <option key={n} value={n}>
-                      {n}
-                    </option>
-                  ))}
-                </select>
-                <Icon name="chev" />
               </span>
+              <Stepper value={minNeeded} min={mode.minPlayers} max={total} less="Menos confirmados" more="Mais confirmados" onChange={setQuorum} />
             </div>
           </div>
           <p id="host-quorum-hint" className="dlg-hint">
@@ -522,6 +556,15 @@ export function HostDialog() {
               </label>
             </div>
           </fieldset>
+
+          <div className="dlg-sws">
+            <Switch on={beginners} onChange={setBeginners}>
+              {t.host.beginners}
+            </Switch>
+            <Switch on={midMatch} onChange={setMidMatch}>
+              {t.host.joinInProgress}
+            </Switch>
+          </div>
 
           <div className="dlg-act">
             <button type="button" className="btn btn-s btn-lg" onClick={closeHost}>

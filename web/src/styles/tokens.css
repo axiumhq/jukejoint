@@ -1,217 +1,248 @@
 /*
- * Tokens v8 "Fumaça e latão" (docs/design/v8-estrutura.md §4 e §5).
+ * Tokens do redesign (Design-System do Claude Design, "Fiel ao kit").
  * O tema é o atributo data-theme no <html>; o script inline de index.html aplica o salvo antes
- * de pintar. Os cinco blocos têm os mesmos 28 tokens. Tudo lê daqui: superfícies, acento, fios,
- * line-art, presença e as capas dos modos (--k*). Os avatares não mudam com o tema.
- * Um sistema de acento: --acc para agir, --acc-tx para chamar atenção no texto, --live só presença.
+ * de pintar. Os quatro blocos de tema têm os mesmos tokens de cor; o resto (fios, derivados do
+ * acento, tipo, raios, sombras, movimento) é comum e mora mais abaixo.
+ *
+ * Nomes: os componentes já liam --bg, --s1..--s4, --tx*, --acc* e --k*; eles continuam, agora
+ * com os valores do design. Correspondência com o design (bg, sb, pn, pn2, sel, tx, tx2, tx3, ac,
+ * on, live, er, c1, c2, bl, mid, fg, m1, m2):
+ *   bg  → --bg        sb  → --s1 (barra lateral, barras)     pn → --s2 (painel, cartão)
+ *   pn2 → --s3 (hover, campo, botão secundário)              sel → --s4 e --sel (selecionado)
+ *   tx/tx2/tx3 → --tx/--tx-2/--tx-3     ac → --acc (e --acc-tx)     on → --acc-ink
+ *   live → --live     er → --warn (e --er)
+ *   c1/c2 (céu) → --sky-1/--sky-2 (e --k0 = c1, o escuro das capas)
+ *   bl (prédios) → --bldg   mid → --bldg-2   fg (chão, silhueta) → --ground   m1/m2 (medalhão) → --med-1/--med-2
+ * Um sistema de acento: --acc para agir e marcar o item ativo, --live só presença.
  */
 
-/* Deadlock (padrão): verde-fumaça quase preto, pergaminho no texto, âmbar na ação, verde-alma no "ao vivo". */
+/* Carvão neutro (padrão): carvão quase neutro, marfim no texto, latão na ação. */
 :root,
-[data-theme='deadlock'] {
+[data-theme='carvao'] {
   color-scheme: dark;
-  --bg: hsl(170 16% 4.5%);
-  --bg-tint: hsl(36 70% 40% / 0.1);
-  --bg-tint-2: hsl(172 40% 30% / 0.1);
-  --s1: hsl(170 12% 6.5%); /* trilhos, barras */
-  --s2: hsl(170 10% 9%); /* cartões */
-  --s3: hsl(170 9% 12.5%); /* hover, campos */
-  --s4: hsl(170 9% 16%); /* pressionado */
-  --line: hsl(170 10% 14%);
-  --line-2: hsl(168 10% 20%);
-  --tx: hsl(42 45% 92%);
-  --tx-2: hsl(40 15% 72%);
-  --tx-3: hsl(150 6% 56%);
-  --acc: hsl(35 85% 56%); /* preenchimentos: ação primária, item ativo */
-  --acc-hi: hsl(36 90% 62%);
-  --acc-ink: hsl(30 40% 7%);
-  --acc-tx: hsl(38 90% 66%); /* acento como texto sobre escuro */
-  --acc-soft: hsl(35 85% 56% / 0.13);
-  --acc-line: hsl(35 85% 56% / 0.42);
-  --live: hsl(166 62% 52%); /* presença online e "ao vivo"; nunca ação */
-  --warn: hsl(10 80% 62%);
-  --lineart: hsl(40 40% 68%);
-  /* capa: fundo, meio, brilho, metal claro, metal escuro, fumaça, núcleo */
-  --k0: hsl(170 25% 3.5%);
-  --k1: hsl(172 35% 13%);
-  --k2: hsl(34 80% 48%);
-  --kh: hsl(42 85% 86%);
-  --kl: hsl(172 25% 19%);
-  --ks: hsl(166 35% 58%);
-  --kc: hsl(44 100% 95%);
+  --bg: #131312;
+  --s1: #181716;
+  --s2: #1c1b1a;
+  --s3: #262523;
+  --s4: #2c2a27;
+  --tx: #ece6db;
+  --tx-2: #bdb7ad;
+  --tx-3: #9b958c;
+  --acc: #c8a46a;
+  --acc-hi: #d8b173;
+  --acc-ink: #17130c;
+  --live: #8fb48a;
+  --warn: #e59583;
+  --sky-1: #0d0d0e;
+  --sky-2: #4a3448;
+  --bldg: #33282f;
+  --bldg-2: #1f1a1e;
+  --ground: #0d0c0d;
+  --med-1: #4a2c49;
+  --med-2: #151114;
+  /* amostra do seletor de tema */
+  --swatch: #2a2826;
 }
 
-[data-theme='carmim'] {
-  --bg: hsl(345 30% 4%);
-  --bg-tint: hsl(350 80% 32% / 0.2);
-  --bg-tint-2: hsl(345 70% 24% / 0.14);
-  --s1: hsl(345 22% 6.2%);
-  --s2: hsl(345 18% 8.6%);
-  --s3: hsl(345 16% 12%);
-  --s4: hsl(345 15% 16%);
-  --line: hsl(345 20% 14%);
-  --line-2: hsl(345 18% 20%);
-  --tx: hsl(350 35% 96%);
-  --tx-2: hsl(345 14% 72%);
-  --tx-3: hsl(345 10% 58%);
-  --acc: hsl(350 76% 49%);
-  --acc-hi: hsl(350 82% 45%); /* o hover aprofunda: o texto branco precisa de 4,5:1 */
-  --acc-ink: hsl(350 60% 98%);
-  --acc-tx: hsl(350 95% 69%);
-  --acc-soft: hsl(350 76% 49% / 0.14);
-  --acc-line: hsl(350 76% 55% / 0.45);
-  --live: hsl(146 50% 56%);
-  --warn: hsl(36 92% 62%);
-  --lineart: hsl(350 70% 58%);
-  --k0: hsl(345 45% 3.5%);
-  --k1: hsl(348 62% 15%);
-  --k2: hsl(350 78% 46%);
-  --kh: hsl(14 85% 86%);
-  --kl: hsl(348 50% 20%);
-  --ks: hsl(352 70% 62%);
-  --kc: hsl(20 100% 95%);
+/* Azul meia-noite: azul-noite frio com latão claro. */
+[data-theme='noite'] {
+  --bg: #10141b;
+  --s1: #141923;
+  --s2: #171d27;
+  --s3: #212937;
+  --s4: #2a3446;
+  --tx: #e9e7e1;
+  --tx-2: #b8bec8;
+  --tx-3: #939caa;
+  --acc: #d3b47f;
+  --acc-hi: #e4c289;
+  --acc-ink: #141821;
+  --live: #8fb8a0;
+  --warn: #de8a78;
+  --sky-1: #0a0e16;
+  --sky-2: #2d3d5c;
+  --bldg: #1f2a40;
+  --bldg-2: #141b2a;
+  --ground: #090d14;
+  --med-1: #33466a;
+  --med-2: #0f141e;
+  --swatch: #25324a;
 }
 
-[data-theme='pergaminho'] {
-  --bg: hsl(20 10% 5%);
-  --bg-tint: hsl(36 55% 40% / 0.1);
-  --bg-tint-2: hsl(24 40% 30% / 0.08);
-  --s1: hsl(20 9% 6.6%);
-  --s2: hsl(20 8% 9%);
-  --s3: hsl(20 8% 12.5%);
-  --s4: hsl(20 8% 16%);
-  --line: hsl(24 9% 14%);
-  --line-2: hsl(26 10% 20%);
-  --tx: hsl(38 65% 96%);
-  --tx-2: hsl(36 18% 72%);
-  --tx-3: hsl(32 10% 56%);
-  --acc: hsl(42 60% 84%);
-  --acc-hi: hsl(42 70% 89%);
-  --acc-ink: hsl(20 12% 7%);
-  --acc-tx: hsl(41.6 60% 66%);
-  --acc-soft: hsl(42 60% 84% / 0.1);
-  --acc-line: hsl(42 60% 84% / 0.38);
-  --live: hsl(96 38% 60%);
-  --warn: hsl(28 90% 62%);
-  --lineart: hsl(40 45% 70%);
-  --k0: hsl(24 25% 3.5%);
-  --k1: hsl(30 38% 12%);
-  --k2: hsl(36 62% 46%);
-  --kh: hsl(44 90% 88%);
-  --kl: hsl(28 40% 18%);
-  --ks: hsl(38 50% 66%);
-  --kc: hsl(45 100% 96%);
+/* Ameixa suave: ameixa baixa e quente. */
+[data-theme='ameixa'] {
+  --bg: #151217;
+  --s1: #1b161e;
+  --s2: #1f1a22;
+  --s3: #2a242e;
+  --s4: #372d3c;
+  --tx: #ede4dd;
+  --tx-2: #c3b9bf;
+  --tx-3: #a59ba4;
+  --acc: #d0ae7c;
+  --acc-hi: #e1bc86;
+  --acc-ink: #1a1418;
+  --live: #94b48e;
+  --warn: #de8a78;
+  --sky-1: #110d13;
+  --sky-2: #4c3552;
+  --bldg: #32263a;
+  --bldg-2: #1f1725;
+  --ground: #0e0a10;
+  --med-1: #523a58;
+  --med-2: #16111a;
+  --swatch: #3f3045;
 }
 
-[data-theme='gelo'] {
-  --bg: hsl(218 30% 4%);
-  --bg-tint: hsl(200 90% 40% / 0.12);
-  --bg-tint-2: hsl(230 70% 40% / 0.1);
-  --s1: hsl(218 22% 6.2%);
-  --s2: hsl(218 18% 8.6%);
-  --s3: hsl(218 16% 12%);
-  --s4: hsl(218 15% 16%);
-  --line: hsl(218 18% 14%);
-  --line-2: hsl(218 16% 20%);
-  --tx: hsl(205 40% 96%);
-  --tx-2: hsl(212 14% 72%);
-  --tx-3: hsl(214 10% 57%);
-  --acc: hsl(190 92% 70%);
-  --acc-hi: hsl(190 95% 78%);
-  --acc-ink: hsl(215 45% 7%);
-  --acc-tx: hsl(190 92% 72%);
-  --acc-soft: hsl(190 92% 70% / 0.11);
-  --acc-line: hsl(190 92% 70% / 0.4);
-  --live: hsl(160 62% 58%);
-  --warn: hsl(38 92% 64%);
-  --lineart: hsl(195 70% 70%);
-  --k0: hsl(220 45% 3.5%);
-  --k1: hsl(214 60% 13%);
-  --k2: hsl(198 85% 48%);
-  --kh: hsl(190 100% 92%);
-  --kl: hsl(216 45% 20%);
-  --ks: hsl(200 60% 72%);
-  --kc: hsl(190 100% 97%);
+/* Vinho e latão: a barra lateral na cor de campo da marca (vinho) e o selecionado em ameixa. */
+[data-theme='vinho'] {
+  --bg: #151110;
+  --s1: #2b1828;
+  --s2: #1f1918;
+  --s3: #2a2220;
+  --s4: #4a2c49;
+  --tx: #e9dfcf;
+  --tx-2: #cac3b9;
+  --tx-3: #aea79e;
+  --acc: #c8a46a;
+  --acc-hi: #d8b173;
+  --acc-ink: #1a161c;
+  --live: #8fb48a;
+  --warn: #e59583;
+  --sky-1: #171216;
+  --sky-2: #4a2c49;
+  --bldg: #382236;
+  --bldg-2: #22151f;
+  --ground: #140e12;
+  --med-1: #4a2c49;
+  --med-2: #1a161c;
+  --swatch: #4a2c49;
 }
 
-/* Grafite: neutro, pouco croma e superfícies um passo mais claras; descansa a vista. */
-[data-theme='grafite'] {
-  --bg: hsl(225 6% 8%);
-  --bg-tint: hsl(220 20% 50% / 0.05);
-  --bg-tint-2: hsl(25 30% 50% / 0.04);
-  --s1: hsl(225 5% 10%);
-  --s2: hsl(225 5% 12.5%);
-  --s3: hsl(225 5% 16%);
-  --s4: hsl(225 5% 20%);
-  --line: hsl(225 5% 17%);
-  --line-2: hsl(225 5% 23%);
-  --tx: hsl(40 12% 91%);
-  --tx-2: hsl(220 6% 71%);
-  --tx-3: hsl(220 5% 61%);
-  --acc: hsl(20 50% 64%);
-  --acc-hi: hsl(20 55% 70%);
-  --acc-ink: hsl(20 30% 10%);
-  --acc-tx: hsl(22 60% 73%);
-  --acc-soft: hsl(20 50% 64% / 0.12);
-  --acc-line: hsl(20 50% 64% / 0.38);
-  --live: hsl(150 35% 58%);
-  --warn: hsl(38 75% 64%);
-  --lineart: hsl(30 10% 70%);
-  --k0: hsl(225 8% 5%);
-  --k1: hsl(220 10% 16%);
-  --k2: hsl(20 40% 46%);
-  --kh: hsl(30 40% 86%);
-  --kl: hsl(220 8% 22%);
-  --ks: hsl(25 25% 62%);
-  --kc: hsl(35 60% 95%);
+/*
+ * Derivados: calculados no mesmo elemento que leva o tema (o <html> e as amostras com data-theme),
+ * então seguem a troca de tema sem cor repetida.
+ */
+:root,
+[data-theme] {
+  --sel: var(--s4);
+  --er: var(--warn);
+  --acc-tx: var(--acc); /* o latão como texto: passa de 7:1 sobre o fundo nos quatro temas */
+  --acc-soft: rgb(from var(--acc) r g b / 0.13);
+  --acc-line: rgb(from var(--acc) r g b / 0.42);
+  /* fios: marfim translúcido, iguais nos quatro temas */
+  --line: rgb(236 230 219 / 0.09);
+  --line-2: rgb(236 230 219 / 0.2);
+  /* sem brilho de fundo no redesign: o fundo é chapado */
+  --bg-tint: transparent;
+  --bg-tint-2: transparent;
+  /* capas (ModeCover): --k0 escuro do céu, --k1 céu baixo, --k2 latão, --kh brilho do latão */
+  --k0: var(--sky-1);
+  --k1: var(--sky-2);
+  --k2: var(--acc);
+  --kh: var(--brass-hi);
+  --kl: var(--bldg);
+  --ks: var(--tx-3);
+  --kc: var(--bulb);
 }
 
 /* Tokens que não mudam com o tema. */
 :root {
-  --f-ui: 'Geist Variable', 'Geist', system-ui, sans-serif;
-  --f-mono: 'Geist Mono Variable', 'Geist Mono', ui-monospace, monospace;
-  --f-display: 'Roboto Serif Variable', 'Roboto Serif', Georgia, serif;
+  /* latão da marca, lâmpada e lua: cores da ilustração, iguais nos quatro temas */
+  --brass-hi: #f0ddb4;
+  --brass: #c8a46a;
+  --brass-lo: #6f5228;
+  --bulb: #f2d9a4;
+  --bulb-glow: rgb(232 190 120 / 0.55);
+  --moon-hi: #f6ebd3;
+  --moon-lo: #d9c39a;
+  --mist: #d8cfc2;
+
+  /* tipo */
+  --f-ui: 'Hanken Grotesk', system-ui, sans-serif;
+  --f-display: 'Bodoni Moda', Georgia, serif;
+  /* números, ping, rótulos de dado ("LOBBY 04 · 14 MS"): o nome --f-mono ficou pelo papel (números) */
+  --f-num: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  --f-mono: var(--f-num);
+  --f-code: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  --fs-xs: 0.75rem; /* 12/16 */
+  --fs-sm: 0.8125rem; /* 13/18 */
+  --fs-md: 0.875rem; /* 14/20, o corpo */
+  --fs-lg: 1rem; /* 16/22, nome no cartão */
+  --fs-h3: 1.625rem; /* 26/32 */
+  --fs-h2: 1.75rem; /* 28/36, título de seção */
+  --fs-h1: 2.25rem; /* 36/42, título de página */
+  --fs-hero: 3.5rem; /* 56/60, slogan do destaque */
+  --fs-lead: 0.875rem;
+
+  /* raios */
+  --r-2xs: 3px;
   --r-xs: 4px;
   --r-sm: 6px;
   --r-md: 8px;
   --r-lg: 10px;
   --r-xl: 12px;
-  --tb: 58px; /* barra superior */
-  --tabs: 0px; /* faixa de navegação, só abaixo de 960 px */
-  --rail: 320px; /* trilho social */
+  --r-2xl: 16px;
+
+  /* elevação: o design separa por cor de superfície; sombra só no que flutua */
+  --sh-pop: 0 12px 32px rgb(0 0 0 / 0.4), inset 0 0 0 1px var(--line);
+  --sh-dlg: 0 18px 50px rgb(0 0 0 / 0.5), inset 0 0 0 1px var(--line);
+  --sh-art: drop-shadow(0 5px 8px rgb(0 0 0 / 0.55));
+
+  /* casca */
+  --side: 248px; /* barra lateral */
+  --side-c: 72px; /* barra lateral recolhida (só ícones) */
+  --tb: 72px; /* barra superior */
+  --bn: 0px; /* barra de abas de baixo, só abaixo de 960 px */
+  --tabs: 0px; /* compat: a faixa de navegação de cima saiu */
+  --rail: 352px; /* painel da tela à direita */
   --gut: 32px; /* margem do conteúdo */
+
+  /* espaço */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-9: 36px;
+
+  /* movimento: só para mostrar estado */
   --e-out: cubic-bezier(0.22, 1, 0.36, 1);
   --t-fast: 150ms;
   --t-mid: 200ms;
   --t-slow: 240ms;
 }
 
+@media (max-width: 1366px) {
+  :root {
+    --side: 224px;
+    --tb: 56px;
+    --gut: 24px;
+    --rail: 320px;
+    --fs-hero: 2.5rem;
+  }
+}
+
 @media (max-width: 1240px) {
   :root {
     --rail: 288px;
-    --gut: 24px;
   }
 }
 
 @media (max-width: 960px) {
   :root {
-    --tabs: 44px;
+    --side: 0px;
+    --side-c: 0px;
+    --bn: 64px;
+    --tb: 56px;
   }
 }
 
 @media (max-width: 760px) {
   :root {
-    --tb: 56px;
     --gut: 16px;
+    --fs-hero: 1.875rem;
   }
-}
-
-/*
- * Escala de títulos que o app desktop ainda lê (desktop/src/install.css importa este arquivo).
- * O resto da compatibilidade v6 saiu: o site só lê os tokens v8 acima.
- */
-:root {
-  --fs-h1: clamp(2.25rem, 3.6vw, 3.375rem);
-  --fs-h2: clamp(1.5rem, 2.2vw, 1.875rem);
-  --fs-lead: 0.9375rem;
 }

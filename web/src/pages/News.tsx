@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { Chip, LiveDot, SectionTitle, Tag, type TagTone } from '../components/Common';
+import { Chip, Tag, type TagTone } from '../components/Common';
+import { HeroArt } from '../components/HeroArt';
 import { Icon } from '../components/Icon';
-import { PageHead } from '../components/PageHead';
 import { APP_RELEASE } from '../config/brand';
 import { getMode, modes } from '../data/modes';
 import { PLATFORM_SCOPE, releases, type Change, type ChangeCategory, type Release } from '../data/patches';
 import { useDocumentTitle, useLiveStats } from '../hooks';
 import { formatDate, formatNumber, LOCALE, t } from '../i18n';
 import { busiestMode } from '../lib/stats';
+import '../styles/info.css';
 
 /**
  * "Hoje" (/novidades) no v8: uma barra de dados com o agora da plataforma (as mesmas contagens
@@ -46,12 +47,15 @@ function TodayBar() {
   const topCount = stats.byMode[top.slug]?.players ?? 0;
   const latest = releases[0]!;
   return (
-    <section className="today" aria-label={t.news.today}>
+    <section className="nh" aria-label={t.news.today}>
+      <HeroArt />
+      <h1 className="nh-title display">
+        {t.news.titleWords[0]} {t.news.titleWords[1]}
+      </h1>
       <dl className="dbar">
         <div className="dc">
           <dt className="lbl">{t.news.stat.players}</dt>
           <dd>
-            <LiveDot small />
             <span className="dc-big num">{formatNumber(stats.players)}</span>
           </dd>
         </div>
@@ -65,7 +69,6 @@ function TodayBar() {
         <div className="dc">
           <dt className="lbl">{t.news.stat.busiest}</dt>
           <dd>
-            <span className="mdot" aria-hidden="true" />
             <Link to={`/modos/${top.slug}`} className="dc-link">
               {top.name}
             </Link>
@@ -89,42 +92,35 @@ function TodayBar() {
 /** Uma versão na linha do tempo: data e número à esquerda; manchete, resumo, etiquetas e as mudanças. */
 function Entry({ release, changes, open }: { release: Release; changes: Change[]; open: boolean }) {
   const counts = CATS.map((c) => [c, changes.filter((x) => x.category === c).length] as const).filter(([, n]) => n > 0);
-  const scopes = [...new Set(release.changes.map((c) => c.scope))];
   const current = release.version === APP_RELEASE.version;
   const id = anchor(release.version);
   return (
     <li className={current ? 'tl is-current' : 'tl'}>
       <article aria-labelledby={`${id}-t`} id={id}>
         <p className="tl-when">
-          <time dateTime={release.date} className="tl-day display">
-            {shortDay(release.date)}
-          </time>
-          <span className="tl-meta num">
-            {release.date.slice(0, 4)} · v{release.version}
+          <span className={current ? 'bulb on' : 'bulb'} aria-hidden="true" />
+          <span className="tl-wt">
+            <time dateTime={release.date} className="tl-day">
+              {shortDay(release.date)}
+            </time>
+            <span className="tl-meta num">
+              {release.date.slice(0, 4)} · v{release.version}
+            </span>
           </span>
         </p>
-        <span className="tl-node" aria-hidden="true" />
         <div className="tl-body">
-          <h3 id={`${id}-t`} className="tl-title display">
-            {release.headline}
-            <span className="sr-only">
-              {', '}
-              {t.news.version} {release.version}, {formatDate(release.date)}
-            </span>
-          </h3>
-          {current && (
-            <p className="tl-cur">
-              <Tag tone="acc">{t.news.current}</Tag>
-            </p>
-          )}
-          <p className="tl-tldr">{release.tldr}</p>
-          <div className="tl-tags">
-            {counts.map(([c, n]) => (
-              <Tag key={c} tone={CAT_TONE[c]}>
-                {t.news.catCount[c](n)}
-              </Tag>
-            ))}
+          <div className="tl-hd">
+            <h3 id={`${id}-t`} className="tl-title">
+              {release.headline}
+              <span className="sr-only">
+                {', '}
+                {t.news.version} {release.version}, {formatDate(release.date)}
+              </span>
+            </h3>
+            {current && <Tag tone="acc">{t.news.current}</Tag>}
           </div>
+          <p className="tl-tldr">{release.tldr}</p>
+          <p className="tl-ct">{counts.map(([c, n]) => t.news.catCount[c](n)).join(' · ')}</p>
           <details className="tl-changes" open={open || undefined}>
             <summary>
               {t.news.showChanges(changes.length)}
@@ -136,28 +132,12 @@ function Entry({ release, changes, open }: { release: Release; changes: Change[]
                   <span className="tl-cat">
                     <Tag tone={CAT_TONE[c.category]}>{t.categories[c.category]}</Tag>
                   </span>
-                  <span>
-                    {c.text} <span className="tl-scope">{scopeName(c.scope)}</span>
-                  </span>
+                  <span>{c.text}</span>
+                  <span className="tl-scope">{scopeName(c.scope)}</span>
                 </li>
               ))}
             </ul>
           </details>
-          <p className="tl-aff">
-            <span className="lbl">{t.news.affects}</span>
-            {scopes.map((sc) =>
-              sc === PLATFORM_SCOPE ? (
-                <span key={sc} className="tl-sc">
-                  {scopeName(sc)}
-                </span>
-              ) : (
-                <Link key={sc} to={`/modos/${sc}`} className="tl-sc">
-                  <span className="mdot" aria-hidden="true" />
-                  {scopeName(sc)}
-                </Link>
-              ),
-            )}
-          </p>
         </div>
       </article>
     </li>
@@ -190,11 +170,13 @@ export function News() {
 
   return (
     <>
-      <PageHead words={t.news.titleWords} lead={t.news.lead} />
       <TodayBar />
 
-      <section className="sec" aria-labelledby="notes-title">
-        <SectionTitle id="notes-title" words={t.news.notesWords} meta={t.news.count(shown.length)} />
+      <section className="nw-sec" aria-labelledby="notes-title">
+        <h2 id="notes-title" className="nw-h2 display">
+          {t.news.notesWords[0]} {t.news.notesWords[1]}
+          <span className="sr-only">{t.news.count(shown.length)}</span>
+        </h2>
         <div className="nw-ctl" role="group" aria-label={t.news.filters}>
           <label className="sel">
             <span className="sr-only">{t.news.mode}</span>

@@ -1,46 +1,50 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
-import { BRAND_NAME } from '../config/brand';
 import { useFriends, useLiveStats, useMediaQuery } from '../hooks';
 import { formatNumber, t } from '../i18n';
 import { live as L } from '../i18n/live';
+import { IN_DESKTOP } from '../lib/desktop';
 import { friendsIn } from '../lib/friends';
 import { handoffState, roster } from '../lib/room';
 import { useSession } from '../state/session';
-import { AvatarStack, Presence } from './Avatar';
+import { Avatar, AvatarStack, Presence } from './Avatar';
 import { DevSignIn, SignInPending } from './AppLogin';
+import { BrandSymbol, Wordmark } from './Brand';
 import { LiveDot } from './Common';
 import { SocialRail } from './Friends';
-import { BrandMark, Icon } from './Icon';
-import { LineArt } from './LineArt';
+import { Icon, type IconName } from './Icon';
 import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
-import { ThemeMenu } from './ThemeMenu';
+import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
 import '../styles/live.css';
 
 /*
- * Casca v8 (estrutura da pele B): barra superior, coluna principal e trilho social fixo.
- * Breakpoints em styles/shell.css: 1240 (trilho 288), 960 (trilho vira folha, navegação vira faixa), 760 (celular).
+ * Casca do redesign ("Fiel ao kit"): barra lateral à esquerda (JJ, navegação com ícones, a sua
+ * lista e o tema), coluna principal com a barra de topo (wordmark, busca, ao vivo ou pílula da
+ * sala, conta) e, quando a tela traz `<Rail>`, o painel dela à direita.
+ * A barra lateral recolhe para só ícones na sala e, abaixo de 1240 px, em telas com painel.
+ * Abaixo de 960 px: sem barra lateral, barra de abas embaixo e o painel (ou a sua lista) como folha.
+ * Pontos de quebra em styles/shell.css e tokens.css.
  */
 
-const NAV: { to: string; label: string; end?: boolean }[] = [
-  { to: '/', label: t.header.nav.play, end: true },
-  { to: '/modos', label: t.header.nav.modes },
-  { to: '/novidades', label: t.header.nav.today },
-  { to: '/instalar', label: t.header.nav.install },
+interface NavItem {
+  to: string;
+  label: string;
+  icon: IconName;
+  /** Só no site: dentro do app desktop o item some (o app já está instalado). */
+  webOnly?: boolean;
+}
+
+const NAV: NavItem[] = [
+  { to: '/', label: t.header.nav.play, icon: 'navPlay' },
+  { to: '/modos', label: t.header.nav.modes, icon: 'navModes' },
+  { to: '/novidades', label: t.header.nav.today, icon: 'navToday' },
+  { to: '/instalar', label: t.header.nav.install, icon: 'navInstall', webOnly: true },
 ];
 
-/** A marca provisória: anel aberto + o nome (BRAND_NAME, ainda não decidido). */
-export function Wordmark() {
-  return (
-    <>
-      <BrandMark />
-      <b>{BRAND_NAME}</b>
-    </>
-  );
-}
+const NAV_HERE = IN_DESKTOP ? NAV.filter((n) => !n.webOnly) : NAV;
 
 /**
  * A pílula "Na sala": substitui a contagem ao vivo quando você está numa sala.
@@ -72,8 +76,8 @@ function RoomPill() {
       : lobby.status === 'em-partida'
         ? t.header.roomPill.playing(lobby.name)
         : t.header.roomPill.here(lobby.name);
-  // Sem contador de etapas aqui: a etapa do app vai no nome acessível; o progresso numerado é só o da sala.
-  const meta = `${lobby.players}/${lobby.slots}`;
+  // "N de M": o mesmo jeito de escrever vagas do resto do produto (nunca "N/M").
+  const meta = `${lobby.players} de ${lobby.slots}`;
 
   return (
     <Link
@@ -133,7 +137,7 @@ function Account() {
   }, [open]);
 
   if (!user) {
-    // O trilho já mostra o convite de login (desktop): a barra não repete o botão.
+    // A barra lateral já mostra o convite de login (desktop): a barra de topo não repete o botão.
     if (signInShown && !sheet) return null;
     if (authPending) return <SignInPending />;
     return (
@@ -162,20 +166,22 @@ function Account() {
         aria-label={t.account.menu(user.name)}
         onClick={() => setOpen((v) => !v)}
       >
-        <Presence name={user.name} size={30} status="menu" />
+        <Avatar name={user.name} size={30} />
         <span className="acct-name">{user.name}</span>
-        <Icon name="chev" />
       </button>
       {open && (
         <div className="pop acct-menu">
-          <div>
-            <b>{user.name}</b>
-            <p>{t.account.friendsOnline(friends.length)}</p>
+          <div className="acct-who">
+            <Presence name={user.name} size={36} status="menu" />
+            <div>
+              <b>{user.name}</b>
+              <p>{t.account.friendsOnline(friends.length)}</p>
+            </div>
           </div>
           <p>{live ? (user.dev ? L.devNote : L.steamNote) : t.account.mockNote}</p>
           <button
             type="button"
-            className="btn btn-s btn-sm"
+            className="btn btn-o btn-sm"
             onClick={() => {
               setOpen(false);
               signOut();
@@ -190,7 +196,7 @@ function Account() {
   );
 }
 
-/** A barra superior: marca, navegação, busca (Ctrl K), ao vivo ou pílula da sala, tema e conta. Mais a faixa de navegação (≤960 px). */
+/** A barra de topo: wordmark, busca (Ctrl K), ao vivo ou pílula da sala, tema (quando a lateral não mostra) e conta. */
 export function TopBar({ inert }: { inert?: boolean }) {
   const { hereId, joiningId } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -199,62 +205,111 @@ export function TopBar({ inert }: { inert?: boolean }) {
   const inRoom = !!(joiningId ?? hereId);
 
   return (
-    <>
-      <header className="tb" inert={inert}>
-        <Link to="/" className="brand" aria-label={t.a11y.home}>
-          <Wordmark />
-        </Link>
-        <NavLinks className="nav" />
-        <span className="tb-sp" />
-        <Search open={searchOpen} onOpenChange={setSearchOpen} />
-        {inRoom ? <RoomPill /> : <LiveCount />}
-        <button
-          type="button"
-          className="icon-btn only-phone"
-          data-search-toggle
-          aria-label={t.search.open}
-          aria-expanded={searchOpen}
-          onClick={() => setSearchOpen((v) => !v)}
-        >
-          <Icon name="search" />
-        </button>
+    <header className="tb" inert={inert}>
+      <Link to="/" className="brand" aria-label={t.a11y.home}>
+        <Wordmark alt="" height={24} />
+      </Link>
+      <span className="tb-sp" />
+      <Search open={searchOpen} onOpenChange={setSearchOpen} />
+      {inRoom ? <RoomPill /> : <LiveCount />}
+      <button
+        type="button"
+        className="icon-btn only-phone"
+        data-search-toggle
+        aria-label={t.search.open}
+        aria-expanded={searchOpen}
+        onClick={() => setSearchOpen((v) => !v)}
+      >
+        <Icon name="search" size={20} />
+      </button>
+      <span className="tb-theme">
         <ThemeMenu />
-        <Account />
-      </header>
-      {/* Abaixo de 960 px a navegação desce para esta faixa fixa sob a barra; só uma das duas aparece. */}
-      <NavLinks className="tabs" inert={inert} />
+      </span>
+      <Account />
+    </header>
+  );
+}
+
+/** "Jogar" cobre o caminho todo de jogar: a home, o /jogar e a sala. */
+function usePlayActive() {
+  const { pathname } = useLocation();
+  return pathname === '/' || pathname.startsWith('/jogar') || pathname.startsWith('/sala/');
+}
+
+/** Os links de Jogar, Modos, Hoje e Instalar (só no site), com o ícone de linha do design. */
+function NavItems({ items = NAV_HERE, label = true }: { items?: NavItem[]; label?: boolean }) {
+  const play = usePlayActive();
+  return (
+    <>
+      {items.map((n) => {
+        const body = (
+          <>
+            <Icon name={n.icon} />
+            <span className={label ? 'nav-t' : 'nav-t sr-only'}>{n.label}</span>
+          </>
+        );
+        return n.to === '/' ? (
+          <Link key={n.to} to={n.to} aria-current={play ? 'page' : undefined} title={label ? undefined : n.label}>
+            {body}
+          </Link>
+        ) : (
+          <NavLink key={n.to} to={n.to} title={label ? undefined : n.label}>
+            {body}
+          </NavLink>
+        );
+      })}
     </>
   );
 }
 
-/** Jogar, Modos, Hoje e Instalar: na barra (largo) ou na faixa sob ela (tablet e celular). */
-function NavLinks({ className, inert }: { className: string; inert?: boolean }) {
-  const { pathname } = useLocation();
-  // "Jogar" cobre o caminho todo de jogar: a home, o /jogar e a sala.
-  const play = pathname === '/' || pathname.startsWith('/jogar') || pathname.startsWith('/sala/');
+/** A barra lateral: o JJ, a navegação, a sua lista (quando aberta) e o tema. Recolhida, só ícones. */
+function Side({ compact, social, inert }: { compact: boolean; social: boolean; inert?: boolean }) {
   return (
-    <nav className={className} aria-label={t.a11y.mainNav} inert={inert}>
-      {NAV.map((n) =>
-        n.to === '/' ? (
-          <Link key={n.to} to={n.to} aria-current={play ? 'page' : undefined}>
-            {n.label}
-          </Link>
-        ) : (
-          <NavLink key={n.to} to={n.to} end={n.end}>
-            {n.label}
-          </NavLink>
-        ),
+    <aside className="side" aria-label={t.a11y.sidebar} inert={inert}>
+      <Link to="/" className="side-brand" aria-label={t.a11y.home}>
+        <BrandSymbol height={compact ? 36 : 44} />
+      </Link>
+      <nav className="side-nav" aria-label={t.a11y.mainNav}>
+        <NavItems label={!compact} />
+      </nav>
+      {social && (
+        <div className="side-social">
+          <SocialRail />
+        </div>
       )}
+      {!compact && <ThemeSwatches />}
+    </aside>
+  );
+}
+
+/** Abaixo de 960 px: Jogar, Modos, Hoje e a sua lista (abre a folha). O Instalar vai para o rodapé. */
+function BottomNav({ inert }: { inert?: boolean }) {
+  const { openSheet, sheetOpen, sheetKind } = useRail();
+  return (
+    <nav className="bn" aria-label={t.a11y.mainNav} inert={inert}>
+      <NavItems items={NAV.filter((n) => !n.webOnly)} />
+      <button
+        type="button"
+        className="bn-list"
+        aria-haspopup="dialog"
+        aria-expanded={sheetOpen && sheetKind === 'social'}
+        onClick={(e) => openSheet(e.currentTarget, 'social')}
+      >
+        <Icon name="navList" />
+        <span className="nav-t">{t.header.nav.list}</span>
+      </button>
     </nav>
   );
 }
 
-/** O trilho fixo: conteúdo da tela (via `<Rail>`) ou o social padrão. Folha de baixo abaixo de 960 px. */
+/** O painel da tela (via `<Rail>`), à direita. Folha de baixo abaixo de 960 px, com o painel ou a sua lista. */
 function RailAside({ sheet }: { sheet: boolean }) {
-  const { setTarget, slots, title, sheetOpen, closeSheet } = useRail();
+  const { setTarget, slots, title, sheetOpen, sheetKind, closeSheet } = useRail();
   const closeBtn = useRef<HTMLButtonElement>(null);
   useSheetFocus(closeBtn);
   const open = sheet && sheetOpen;
+  // Na folha, a sua lista aparece quando a tela não tem painel ou quando foi ela que se pediu.
+  const social = sheet && (slots === 0 || (open && sheetKind === 'social'));
   const titleId = 'rail-sheet-title';
   const ref = useCallback((el: HTMLDivElement | null) => setTarget(el), [setTarget]);
 
@@ -262,33 +317,36 @@ function RailAside({ sheet }: { sheet: boolean }) {
     <>
       <aside
         className={open ? 'rail is-open' : 'rail'}
-        aria-label={sheet ? undefined : t.social.label}
+        aria-label={sheet ? undefined : (title ?? t.social.label)}
         aria-labelledby={sheet ? titleId : undefined}
         role={open ? 'dialog' : undefined}
         aria-modal={open ? true : undefined}
         inert={sheet && !open}
       >
         <div className="sheet-h">
-          <b id={titleId}>{title ?? t.social.sheet}</b>
+          <i className="sheet-grip" aria-hidden="true" />
+          <b id={titleId} className="display">
+            {social ? t.social.sheet : (title ?? t.social.sheet)}
+          </b>
           <button ref={closeBtn} type="button" className="icon-btn" aria-label={t.social.close} onClick={closeSheet}>
             <Icon name="x" />
           </button>
         </div>
-        <div ref={ref} className="rail-in" />
-        {slots === 0 && <SocialRail />}
+        <div ref={ref} className="rail-in" hidden={social && slots > 0} />
+        {social && <SocialRail />}
       </aside>
       <div className={open ? 'scrim is-on' : 'scrim'} onClick={closeSheet} aria-hidden="true" />
     </>
   );
 }
 
-/** Ao vivo: o aviso discreto enquanto o WebSocket conecta ou reconecta. */
+/** Ao vivo: a faixa de conexão enquanto o WebSocket conecta ou reconecta. */
 function LiveStatus() {
   const { live, connection } = useSession();
   if (!live || connection === 'online') return null;
   const offline = connection === 'offline';
   return (
-    <p className={offline ? 'live-status is-offline' : 'live-status'} role="status">
+    <p className={offline ? 'live-status is-offline' : 'live-status'} role={offline ? 'alert' : 'status'}>
       <i aria-hidden="true" />
       {offline ? L.offline : L.connecting}
     </p>
@@ -300,9 +358,13 @@ function Frame() {
   const main = useRef<HTMLElement>(null);
   const first = useRef(true);
   const sheet = useMediaQuery('(max-width: 960px)');
-  const { sheetOpen, closeSheet } = useRail();
+  const narrow = useMediaQuery('(max-width: 1240px)');
+  const { sheetOpen, closeSheet, slots } = useRail();
   const { live } = useSession();
   const modal = sheet && sheetOpen;
+  const pageRail = slots > 0;
+  // Recolhida: na sala (o design da sala) e, abaixo de 1240 px, em telas com painel.
+  const compact = !sheet && (pathname.startsWith('/sala/') || (pageRail && narrow));
 
   useEffect(() => closeSheet(), [pathname, closeSheet]);
 
@@ -324,6 +386,7 @@ function Frame() {
 
   // /instalar tem o aviso de afiliação mais completo; o rodapé usa esse lá, para não repetir.
   const about = pathname.startsWith('/instalar') ? t.install.affiliation : t.footer.about;
+  const cls = ['frame', compact && 'is-compact', pageRail && 'has-rail'].filter(Boolean).join(' ');
 
   return (
     <>
@@ -331,21 +394,29 @@ function Frame() {
         {t.a11y.skip}
       </a>
       <CoverDefs />
-      <TopBar inert={modal} />
-      <LiveStatus />
-      <div className="app">
-        <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
-          <LineArt />
-          <LineArt className="b" />
-          <Outlet />
-        </main>
-        <footer className="foot" inert={modal}>
-          <p className="fineprint">
-            {about} {live ? null : t.footer.prototype}
-          </p>
-        </footer>
+      <div className={cls}>
+        {!sheet && <Side compact={compact} social={!compact} inert={modal} />}
+        <div className="col">
+          <TopBar inert={modal} />
+          <LiveStatus />
+          <main id="main" className="main" ref={main} tabIndex={-1} inert={modal}>
+            <Outlet />
+          </main>
+          <footer className="foot" inert={modal}>
+            {sheet && !IN_DESKTOP && (
+              <Link to="/instalar" className="link">
+                <Icon name="navInstall" />
+                {t.header.installLink}
+              </Link>
+            )}
+            <p className="fineprint">
+              {about} {live ? null : t.footer.prototype}
+            </p>
+          </footer>
+        </div>
         <RailAside sheet={sheet} />
       </div>
+      {sheet && <BottomNav inert={modal} />}
       <JoinDialog />
       <HostDialog />
       <Toasts />
