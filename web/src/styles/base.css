@@ -899,7 +899,7 @@ kbd,
   isolation: isolate;
 }
 
-.cover > svg {
+.cover > :is(svg, img) {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -918,8 +918,15 @@ kbd,
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .5  0 0 0 0 .5  0 0 0 1.4 -.2'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
 }
 
+/* A cena pintada (WebP) preenche a capa com o recorte no foco do assunto (lib/pintura.ts). */
+.cover > img,
+img.strip {
+  display: block;
+  object-fit: cover;
+}
+
 /* Zoom de 5% no hover de quem tem capa; will-change só durante o hover. */
-.has-cover:hover .cover > svg {
+.has-cover:hover .cover > :is(svg, img) {
   transform: scale(1.05);
   will-change: transform;
 }
@@ -1018,7 +1025,7 @@ input[type='radio'] {
     scroll-behavior: auto !important;
   }
 
-  .has-cover:hover .cover > svg {
+  .has-cover:hover .cover > :is(svg, img) {
     transform: none;
   }
 }

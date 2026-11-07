@@ -181,7 +181,7 @@
 }
 
 /* a arte cresce 4% no hover do cartão (a transição é a da capa, base.css) */
-.lc:hover .lc-art .cover > svg {
+.lc:hover .lc-art .cover > :is(svg, img) {
   transform: scale(1.04);
 }
 
@@ -519,7 +519,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lc:hover .lc-art .cover > svg {
+  .lc:hover .lc-art .cover > :is(svg, img) {
     transform: none;
   }
 }

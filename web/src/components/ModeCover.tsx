@@ -1,5 +1,6 @@
 import { memo, useLayoutEffect, useState, type CSSProperties } from 'react';
 import { coverFraming, loadScene, MEDALLION_DEFS, modeIcon, sceneId, sceneSlug, type CoverVariant, type IconKind, type PreparedScene } from '../lib/cover';
+import { FOCO_CENA, pintura } from '../lib/pintura';
 
 /**
  * A capa de um modo: a cena noturna do kit (1600×900, foco à direita, faixa calma embaixo à esquerda
@@ -58,12 +59,21 @@ function SceneSvg({ slug, variant, className }: { slug: string; variant: CoverVa
   );
 }
 
+/** A cena pintada do modo (WebP), quando existe; o recorte segue o foco do assunto. */
+function ScenePaint({ src, className }: { src: string; className?: string }) {
+  return <img className={className} src={src} alt="" loading="lazy" decoding="async" style={{ objectPosition: FOCO_CENA }} />;
+}
+
 export const ModeCover = memo(function ModeCover({ slug, wide = false, className }: ModeCoverProps) {
+  const paint = pintura(slug);
   // Efeito de layout: o pedido sai no mesmo commit; a cena entra no DOM assim que o chunk chega.
-  useLayoutEffect(() => ensureScene(slug), [slug]);
+  // Com a cena pintada, o SVG nem é pedido.
+  useLayoutEffect(() => {
+    if (!paint) ensureScene(slug);
+  }, [slug, paint]);
   return (
     <div className={className ? `cover ${className}` : 'cover'} style={{ contentVisibility: 'auto' } as CSSProperties} aria-hidden="true">
-      <SceneSvg slug={slug} variant={wide ? 'wide' : 'card'} />
+      {paint ? <ScenePaint src={paint} /> : <SceneSvg slug={slug} variant={wide ? 'wide' : 'card'} />}
     </div>
   );
 });
@@ -115,8 +125,12 @@ export function ModeMedallion({ slug, size, className }: { slug: string; size?: 
 
 /** A coluna de arte do cartão de lobby: fatia vertical da cena, centrada no foco. Decorativa. */
 export function ModeStrip({ slug, className }: { slug: string; className?: string }) {
-  useLayoutEffect(() => ensureScene(slug), [slug]);
-  return <SceneSvg slug={slug} variant="strip" className={className ? `strip ${className}` : 'strip'} />;
+  const paint = pintura(slug);
+  useLayoutEffect(() => {
+    if (!paint) ensureScene(slug);
+  }, [slug, paint]);
+  const cls = className ? `strip ${className}` : 'strip';
+  return paint ? <ScenePaint src={paint} className={cls} /> : <SceneSvg slug={slug} variant="strip" className={cls} />;
 }
 
 /**
