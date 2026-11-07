@@ -109,7 +109,7 @@ Deadlock must be installed through Steam to launch a mode in-game. See [`desktop
 
 The local `tools/` directory is not tracked by Git. The installation script downloads the expected Modlock version and verifies its hash before use.
 
-## Checks
+## Verify changes
 
 These are the main local checks. The CI workflow selects checks based on the paths changed in a pull request.
 

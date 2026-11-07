@@ -63,8 +63,7 @@ export function ModesLive() {
             );
           }
           const c = byMode[m.slug];
-          const art = pintura(`arcano-${m.slug}`);
-          const art45 = pintura(`arcano-${m.slug}-45`);
+          const art = pintura(m.slug);
           return (
             <li key={m.slug}>
               <button
@@ -75,7 +74,6 @@ export function ModesLive() {
               >
                 {art && (
                   <picture className="arc-art" aria-hidden="true">
-                    {art45 && <source media="(min-width: 721px) and (max-width: 1240px)" srcSet={art45} />}
                     <img src={art} alt="" loading="lazy" decoding="async" />
                   </picture>
                 )}
