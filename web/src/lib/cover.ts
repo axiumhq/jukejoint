@@ -121,7 +121,8 @@ export async function loadScene(slug: string): Promise<PreparedScene> {
 
 const iconRaw = import.meta.glob<string>('../assets/modes/icons/*.svg', { query: '?raw', import: 'default', eager: true });
 
-export type IconKind = 'glyph' | 'detalhe';
+/** glifo 24 (listas), detalhe 48 (medalhão) e selo 24: sem anel, centrado e do mesmo tamanho nos seis. */
+export type IconKind = 'glyph' | 'detalhe' | 'selo';
 
 export interface IconMarkup {
   viewBox: string;
@@ -135,14 +136,14 @@ const iconCache = new Map<string, IconMarkup>();
 /** O ícone do modo: glifo 24 (currentColor) ou detalhe 48 (duas cores de latão). */
 export function modeIcon(slug: string, kind: IconKind): IconMarkup {
   const s = sceneSlug(slug);
-  const file = kind === 'glyph' ? s : `${s}-detalhe`;
+  const file = kind === 'glyph' ? s : `${s}-${kind}`;
   const key = `${kind}:${s}`;
   let m = iconCache.get(key);
   if (!m) {
     const raw = iconRaw[`../assets/modes/icons/${file}.svg`] ?? '';
     const tag = /<svg([^>]*)>/.exec(raw)?.[1] ?? '';
     const attrs: Record<string, string> = {};
-    let viewBox = kind === 'glyph' ? '0 0 24 24' : '0 0 48 48';
+    let viewBox = kind === 'detalhe' ? '0 0 48 48' : '0 0 24 24';
     for (const [, k, v] of tag.matchAll(/([\w:-]+)="([^"]*)"/g)) {
       if (!k || v == null) continue;
       if (k === 'viewBox') viewBox = v;

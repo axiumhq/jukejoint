@@ -1,49 +1,24 @@
 import { useEffect, useId, useRef, type KeyboardEvent } from 'react';
 import { t } from '../i18n';
+import { useLocale } from '../i18n/useLocale';
 import { useTheme } from '../state/theme';
 import { Icon } from './Icon';
-import { LocaleSelect } from './LocaleSelect';
+
+const IDIOMAS = [
+  { id: 'pt-BR', name: 'Português (Brasil)' },
+  { id: 'en', name: 'English' },
+] as const;
 
 /**
- * Seletor de tema da barra lateral (o do design): "Tema" e uma amostra redonda por tema.
- * Botões com `aria-pressed`; cada amostra lê `--swatch` do próprio tema (data-theme no elemento).
- */
-export function ThemeSwatches() {
-  const { theme, themes, setTheme } = useTheme();
-  const id = useId();
-  return (
-    <div className="theme-sw" role="group" aria-labelledby={id}>
-      <span className="theme-sw-t" id={id}>
-        {t.theme.title}
-      </span>
-      <div className="theme-sw-row">
-        {themes.map((th) => (
-          <button
-            key={th.id}
-            type="button"
-            className="sw"
-            data-theme={th.id}
-            aria-pressed={th.id === theme}
-            aria-label={th.name}
-            title={th.name}
-            onClick={() => setTheme(th.id)}
-          />
-        ))}
-      </div>
-      <LocaleSelect />
-    </div>
-  );
-}
-
-/**
- * Seletor de tema em menu (ícone de paleta na barra superior): aparece quando a barra lateral não
- * mostra as amostras (recolhida ou no celular). Menu com itens de rádio (padrão ARIA de menu):
+ * Tema e idioma em menu (ícone de paleta na barra superior), em toda largura: fora da navegação,
+ * como preferência. Menu com itens de rádio (padrão ARIA de menu):
  * abrir leva o foco ao tema atual; setas, Home e End andam; Enter ou espaço escolhem (o menu
  * fica aberto para comparar); Esc ou Tab fecham e devolvem o foco ao botão. Também abre pelo
  * "Ajustes" do trilho (`useTheme().openMenu()`).
  */
 export function ThemeMenu() {
   const { theme, themes, setTheme, menuOpen, setMenuOpen } = useTheme();
+  const { locale, setLocale } = useLocale();
   const wrap = useRef<HTMLSpanElement>(null);
   const btn = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
@@ -124,6 +99,25 @@ export function ThemeMenu() {
               <span>
                 <b>{th.name}</b>
                 <small>{th.note}</small>
+              </span>
+              <Icon name="check" />
+            </button>
+          ))}
+          <div className="cap" aria-hidden="true">
+            {t.theme.language}
+          </div>
+          {IDIOMAS.map((l) => (
+            <button
+              key={l.id}
+              type="button"
+              role="menuitemradio"
+              aria-checked={l.id === locale}
+              tabIndex={-1}
+              className="theme-opt is-lang"
+              onClick={() => setLocale(l.id)}
+            >
+              <span>
+                <b>{l.name}</b>
               </span>
               <Icon name="check" />
             </button>

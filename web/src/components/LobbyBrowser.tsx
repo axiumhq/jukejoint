@@ -23,7 +23,7 @@ import { LobbyCard, orderLobbies } from './LobbyCard';
  */
 
 /** Oito cartões e o "Criar lobby": três fileiras cheias na grade de três. */
-const PAGE = 8;
+const PAGE = 9;
 const SKELETONS = 6;
 
 /** Anúncio resumido para leitor de tela: no máximo um a cada 15 s, nunca por cartão. */
@@ -228,83 +228,85 @@ export function LobbyBrowser({ featured, now }: { featured: Lobby | undefined; n
         </button>
       </div>
 
-      <div className="lb-bar">
-        <div className="utabs lb-tabs" role="tablist" aria-label={t.browse.tabs}>
-          {TABS.map((x, i) => (
-            <button
-              key={x.id}
-              ref={(el) => {
-                tabRefs.current[i] = el;
-              }}
-              type="button"
-              role="tab"
-              id={`lb-tab-${x.id}`}
-              aria-selected={tab === x.id}
-              aria-controls="lobby-grid"
-              tabIndex={tab === x.id ? 0 : -1}
-              onClick={() => setTab(x.id)}
-              onKeyDown={(e) => onTabKey(e, i)}
-            >
-              {x.label}
-              {counts[x.id] != null && <span className="c">{counts[x.id]}</span>}
-            </button>
-          ))}
-        </div>
-        <div className="seg lb-reg" role="group" aria-label={t.lobbies.region}>
-          {REGIONS.map((r) => {
-            const range = pingRange(pool, r);
-            return (
-              <button key={r} type="button" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
-                {t.regions[r]}
-                {range && (f.regions.length ? f.regions.includes(r) : r === nearest) && <span className="c">{range}</span>}
+      <div className="lb-tools">
+        <div className="lb-bar">
+          <div className="utabs lb-tabs" role="tablist" aria-label={t.browse.tabs}>
+            {TABS.map((x, i) => (
+              <button
+                key={x.id}
+                ref={(el) => {
+                  tabRefs.current[i] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`lb-tab-${x.id}`}
+                aria-selected={tab === x.id}
+                aria-controls="lobby-grid"
+                tabIndex={tab === x.id ? 0 : -1}
+                onClick={() => setTab(x.id)}
+                onKeyDown={(e) => onTabKey(e, i)}
+              >
+                {x.label}
+                {counts[x.id] != null && <span className="c">{counts[x.id]}</span>}
               </button>
-            );
-          })}
+            ))}
+          </div>
+          <div className="seg lb-reg" role="group" aria-label={t.lobbies.region}>
+            {REGIONS.map((r) => {
+              const range = pingRange(pool, r);
+              return (
+                <button key={r} type="button" aria-pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
+                  {t.regions[r]}
+                  {range && (f.regions.length ? f.regions.includes(r) : r === nearest) && <span className="c">{range}</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
 
-      <div className="lb-row">
-        <div className="fchips" role="group" aria-label={t.browse.chips}>
-          {/* celular: a região e as abas entram na fileira de chips */}
-          {REGIONS.map((r) => (
-            <Chip key={r} className="only-m" pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
-              {t.regions[r]}
+        <div className="lb-row">
+          <div className="fchips" role="group" aria-label={t.browse.chips}>
+            {/* celular: a região e as abas entram na fileira de chips */}
+            {REGIONS.map((r) => (
+              <Chip key={r} className="only-m" pressed={f.regions.includes(r)} onClick={() => toggleRegion(r)}>
+                {t.regions[r]}
+              </Chip>
+            ))}
+            <Chip className="only-m" pressed={tab === 'friends'} onClick={() => toggleTab('friends')} count={counts.friends}>
+              {t.browse.friends}
             </Chip>
-          ))}
-          <Chip className="only-m" pressed={tab === 'friends'} onClick={() => toggleTab('friends')} count={counts.friends}>
-            {t.browse.friends}
-          </Chip>
-          {(counts.fav > 0 || tab === 'fav') && (
-            <Chip className="only-m" pressed={tab === 'fav'} onClick={() => toggleTab('fav')} count={counts.fav}>
-              {t.browse.favorites}
+            {(counts.fav > 0 || tab === 'fav') && (
+              <Chip className="only-m" pressed={tab === 'fav'} onClick={() => toggleTab('fav')} count={counts.fav}>
+                {t.browse.favorites}
+              </Chip>
+            )}
+            <Chip pressed={f.slotsOnly} onClick={() => update({ slotsOnly: !f.slotsOnly })}>
+              {t.browse.slots}
             </Chip>
-          )}
-          <Chip pressed={f.slotsOnly} onClick={() => update({ slotsOnly: !f.slotsOnly })}>
-            {t.browse.slots}
-          </Chip>
-          <Chip pressed={f.beginners} onClick={() => update({ beginners: !f.beginners })}>
-            {t.browse.beginners}
-          </Chip>
-          <Chip pressed={f.playing} onClick={() => update({ playing: !f.playing })}>
-            {t.browse.playing}
-          </Chip>
-          <Chip pressed={f.lowPing} onClick={() => update({ lowPing: !f.lowPing })}>
-            {t.browse.lowPing(LOW_PING_MS)}
-          </Chip>
-          {modeName && (
-            <Chip pressed onClick={() => update({ mode: '' })} label={t.browse.removeMode(modeName)}>
-              {modeName}
-              <Icon name="x" />
+            <Chip pressed={f.beginners} onClick={() => update({ beginners: !f.beginners })}>
+              {t.browse.beginners}
             </Chip>
-          )}
-        </div>
-        <div className="seg lb-view" role="group" aria-label={t.browse.view}>
-          <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>
-            {t.browse.grid}
-          </button>
-          <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
-            {t.browse.list}
-          </button>
+            <Chip pressed={f.playing} onClick={() => update({ playing: !f.playing })}>
+              {t.browse.playing}
+            </Chip>
+            <Chip pressed={f.lowPing} onClick={() => update({ lowPing: !f.lowPing })}>
+              {t.browse.lowPing(LOW_PING_MS)}
+            </Chip>
+            {modeName && (
+              <Chip pressed onClick={() => update({ mode: '' })} label={t.browse.removeMode(modeName)}>
+                {modeName}
+                <Icon name="x" />
+              </Chip>
+            )}
+          </div>
+          <div className="seg lb-view" role="group" aria-label={t.browse.view}>
+            <button type="button" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>
+              {t.browse.grid}
+            </button>
+            <button type="button" aria-pressed={view === 'list'} onClick={() => setView('list')}>
+              {t.browse.list}
+            </button>
+          </div>
         </div>
       </div>
 

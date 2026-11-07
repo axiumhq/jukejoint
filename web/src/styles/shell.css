@@ -235,47 +235,6 @@ html.is-desktop .frame {
   display: none;
 }
 
-/* o tema, no pé da lateral */
-.theme-sw {
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-4) var(--sp-3) 0;
-  box-shadow: inset 0 1px 0 var(--line);
-  flex: none;
-}
-
-.theme-sw-t {
-  font-size: var(--fs-xs);
-  line-height: 16px;
-  color: var(--tx-3);
-}
-
-.theme-sw-row {
-  display: flex;
-  gap: var(--sp-3);
-}
-
-/* a amostra tem data-theme do próprio tema: a cor sai do --swatch dele */
-.theme-sw .sw {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--swatch);
-  box-shadow: inset 0 0 0 1px var(--line-2);
-}
-
-.theme-sw .sw[aria-pressed='true'] {
-  box-shadow:
-    0 0 0 2px var(--s1),
-    0 0 0 3px var(--acc);
-}
-
-.theme-sw .sw:focus-visible {
-  border-radius: 50%;
-}
-
 .locale-pref {
   display: grid;
   gap: 6px;
@@ -331,9 +290,28 @@ html.is-desktop .frame {
   flex: 1;
 }
 
-/* o menu de tema da barra só aparece quando a lateral não existe (até 960 px) */
+/* tema e idioma ficam no menu da barra, em toda largura */
 .tb-theme {
-  display: none;
+  display: flex;
+}
+
+/* com a lateral à vista, a marca mora nela: a barra começa pela busca e o resto vai para a direita */
+@media (min-width: 961px) {
+  .tb > .brand {
+    display: none;
+  }
+
+  .tb > * {
+    order: 2;
+  }
+
+  .tb > .search {
+    order: 0;
+  }
+
+  .tb > .tb-sp {
+    order: 1;
+  }
 }
 
 .live-count {
@@ -1219,10 +1197,6 @@ html.is-desktop .frame {
     gap: var(--sp-1);
   }
 
-  .tb-theme {
-    display: flex;
-  }
-
   .main {
     padding-bottom: var(--sp-2);
   }
@@ -1536,4 +1510,9 @@ html.is-desktop .frame {
   .tb .acct-dev-group {
     display: none;
   }
+}
+
+/* idioma no menu da paleta: uma linha só, sem amostra */
+.theme-opt.is-lang {
+  min-height: 36px;
 }

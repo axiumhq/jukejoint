@@ -559,7 +559,7 @@
 
   /* em caixa-alta espaçada, 20 px quebrava "LOBBIES ABERTOS" em duas linhas ao lado do botão */
   .lb > .lb-h > h2,
-  .home .sec-caps,
+  .home .sec-h .sec-caps,
   .home .ml-h {
     margin: 0;
     font-size: var(--fs-lg);
@@ -603,7 +603,7 @@
 }
 
 /* Título de seção da Home v4 em caixa-alta (o mesmo de "LOBBIES ABERTOS" e "MODOS"). */
-.sec-caps {
+.sec-h .sec-caps {
   font: 500 1.375rem/1.2 var(--f-ui);
   letter-spacing: 0.1em;
   text-transform: uppercase;

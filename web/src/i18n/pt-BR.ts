@@ -100,7 +100,7 @@ export const ptBR = {
   },
   theme: {
     title: 'Tema',
-    button: 'Tema',
+    button: 'Tema e idioma',
     language: 'Idioma',
     changed: (name: string) => `Tema ${name}.`,
   },

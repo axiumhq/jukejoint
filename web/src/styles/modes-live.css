@@ -232,7 +232,7 @@
 
 /* o selo: disco escuro com aro de latão, sempre logo acima do nome (uma ou duas linhas) */
 .arcano.has-art .arc-sig {
-  --selo: 30px;
+  --selo: 34px;
   position: relative;
   grid-row: 2;
   align-self: end;
@@ -248,8 +248,9 @@
 }
 
 .arcano.has-art .arc-sig svg {
-  width: 20px;
-  height: 20px;
+  display: block;
+  width: 24px;
+  height: 24px;
 }
 
 /* o texto fica preso às duas últimas linhas da grade, embaixo da pintura */

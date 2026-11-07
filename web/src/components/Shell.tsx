@@ -9,7 +9,7 @@ import { handoffState, roster } from '../lib/room';
 import { useSession } from '../state/session';
 import { Avatar, AvatarStack, Presence } from './Avatar';
 import { DevSignIn, SignInPending } from './AppLogin';
-import { BrandSymbol, Wordmark } from './Brand';
+import { Wordmark } from './Brand';
 import { LiveDot } from './Common';
 import { SocialRail } from './Friends';
 import { Icon, type IconName } from './Icon';
@@ -17,7 +17,7 @@ import { CoverDefs } from './ModeCover';
 import { RailProvider, useRail, useSheetFocus } from './Rail';
 import { Search } from './Search';
 import { HostDialog, JoinDialog, Toasts } from './SessionDialogs';
-import { ThemeMenu, ThemeSwatches } from './ThemeMenu';
+import { ThemeMenu } from './ThemeMenu';
 import { TitleBar } from './TitleBar';
 import '../styles/live.css';
 
@@ -197,7 +197,7 @@ function Account() {
   );
 }
 
-/** A barra de topo: wordmark, busca (Ctrl K), ao vivo ou pílula da sala, tema (quando a lateral não mostra) e conta. */
+/** A barra de topo: wordmark (só sem a lateral), busca (Ctrl K), ao vivo ou pílula da sala, tema e idioma, e conta. */
 export function TopBar({ inert }: { inert?: boolean }) {
   const { hereId, joiningId } = useSession();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -263,12 +263,12 @@ function NavItems({ items = IN_DESKTOP ? navItems().filter((n) => !n.webOnly) : 
   );
 }
 
-/** A barra lateral: o JJ, a navegação, a sua lista e o tema. Igual em toda tela, sala incluída. */
+/** A barra lateral: o wordmark (uma marca só; o JJ fica para favicon e ícone do app), a navegação e a sua lista. Igual em toda tela, sala incluída. */
 function Side({ inert }: { inert?: boolean }) {
   return (
     <aside className="side" aria-label={t.a11y.sidebar} inert={inert}>
       <Link to="/" className="side-brand" aria-label={t.a11y.home}>
-        <BrandSymbol height={44} />
+        <Wordmark alt="" height={36} />
       </Link>
       <nav className="side-nav" aria-label={t.a11y.mainNav}>
         <NavItems />
@@ -276,7 +276,6 @@ function Side({ inert }: { inert?: boolean }) {
       <div className="side-social">
         <SocialRail />
       </div>
-      <ThemeSwatches />
     </aside>
   );
 }

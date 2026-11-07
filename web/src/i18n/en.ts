@@ -56,7 +56,7 @@ export const en: DeepPartial<Messages> = {
     hosting: (lobby) => `hosting ${lobby}`, inLobby: (lobby) => `in ${lobby}`, nowhere: 'not in a lobby',
     friend: 'friend', count: (n) => (n === 0 ? 'No results' : n === 1 ? '1 result' : `${n} results`),
   },
-  theme: { title: 'Theme', button: 'Theme', language: 'Language', changed: (name) => `Theme: ${name}.` },
+  theme: { title: 'Theme', button: 'Theme and language', language: 'Language', changed: (name) => `Theme: ${name}.` },
   notice: { title: 'The game updated.', body: 'If a mode breaks, the app will let you know before you join.', link: 'Release notes', dismiss: 'Dismiss notice' },
   home: {
     recommended: 'Recommended', heroTitle: 'Play outside the lanes.', lobbyNum: 'Lobby', statBar: 'About this lobby',
