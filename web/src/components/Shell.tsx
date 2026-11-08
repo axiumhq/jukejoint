@@ -407,7 +407,8 @@ function Frame() {
             <Outlet />
           </main>
           <footer className="foot" inert={modal}>
-            {sheet && !IN_DESKTOP && (
+            {/* na própria /instalar o link apontaria para a página aberta */}
+            {sheet && !IN_DESKTOP && !pathname.startsWith('/instalar') && (
               <Link to="/instalar" className="link">
                 <Icon name="navInstall" />
                 {t.header.installLink}

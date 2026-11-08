@@ -1,3 +1,4 @@
+import { BRAND_NAME } from '../config/brand';
 import type { Messages } from './pt-BR';
 
 type DeepPartial<T> = T extends (...args: infer A) => infer R
@@ -266,11 +267,9 @@ export const en: DeepPartial<Messages> = {
     notFoundTitle: 'This mode is no longer featured', notFoundBody: 'It may have been renamed or removed. Browse the featured modes instead.', seeAll: 'Browse all modes',
   },
   install: {
-    title: 'Get the app', titleWords: ['Get', 'the app'], platformMeta: 'Windows 10 and 11 · 64-bit',
+    title: 'Get the app', titleWords: ['Get', 'the app'], platformMeta: 'Windows 10 and 11 · 64-bit · Deadlock on Steam',
     lead: 'Before downloading, see exactly what will be installed. The app is free and has one job: open the game with your selected mode.',
     download: (file) => `Download ${file}`, downloadShort: 'Download', version: 'Version', size: 'Size', date: 'Published',
-    requirements: 'Windows 10 or 11 (64-bit) and Deadlock installed through Steam. No administrator access required.',
-    mobileNote: 'On a phone? The app is for Windows. Open this page on your PC to download it.',
     hashTitle: 'Installer fingerprint (SHA-256)', hashHelp: 'Compare this with the file you downloaded. If it differs, do not run it; it is not the file we published.',
     copy: 'Copy', copied: 'Copied', copyHash: 'Copy SHA-256 hash', copyCommand: 'Copy command', source: 'GitHub releases',
     sourceCode: 'Source code', releaseNotes: 'Release notes on GitHub', releaseLoading: 'Checking the latest version…',
@@ -289,13 +288,13 @@ export const en: DeepPartial<Messages> = {
     uninstallBody: 'In Windows Settings, open Apps, find Jukejoint, and select Uninstall. This removes all listed folders, including downloaded modes.',
     downloadTitle: 'The installer', stepsWords: ['Three', 'steps'],
     steps: [
-      { title: 'Download the installer', body: 'One file with the engine and modes included. You can check its hash before opening it.' },
+      { title: 'Download the installer', body: 'One file with the engine. Modes arrive later, when you join one of their lobbies.' },
       { title: 'Run it', body: 'Administrator access is not required. If Windows shows a warning, the reason and steps are below.' },
       { title: 'Open the app', body: 'This page detects when it is running. Then choose a lobby and click Join.' },
     ],
     stepDone: 'done', smartWords: ['Windows', 'may show a warning'],
     smartWhy: 'The first time you run the installer, Windows may show “Windows protected your PC.” SmartScreen displays this warning when a program has few downloads. It is a reputation warning, not a virus detection. To continue:',
-    smartSteps: (file) => ['Select “More info.”', `Check that the listed app is ${file}. If the name differs, do not run it; download it again from this page.`, 'Select “Run anyway.”'],
+    smartSteps: (file) => ['Select “More info.”', `${file ? `Check that the listed app is ${file}.` : `Check that the listed app starts with ${BRAND_NAME}-v and ends with -windows-x64-setup.exe.`} If the name differs, do not run it; download it again from this page.`, 'Select “Run anyway.”'],
     smartFigure: 'Illustration of the two warning screens. Your PC shows the Windows version installed there.',
     smartMock: { title: 'Windows protected your PC', more: 'More info', app: 'App:', run: 'Run anyway', dont: 'Don’t run', before: 'First screen', after: 'After selecting More info' },
     avWords: ['If antivirus', 'blocks it'], whatWords: ['What gets installed', 'and where'], doesWords: ['What the app', 'does and does not do'],
@@ -307,9 +306,8 @@ export const en: DeepPartial<Messages> = {
       { q: 'Is it free?', a: 'Yes. The app and modes are free.' },
       { q: 'Do I need to be a PC administrator?', a: 'No. The app installs in your user folder and does not request administrator access.' },
       { q: 'Does it work on phones or Mac?', a: 'The app requires 64-bit Windows 10 or 11. You can browse lobbies and rooms on a phone, but you need a PC to play.' },
-      { q: 'Does the app keep running after I close the game?', a: 'No. It does not run in the background after you close the game.' },
       { q: 'How do I update it?', a: 'The app checks for updates when it opens and downloads them in the background. When the download finishes, select “Restart and update.” If you installed an older version, uninstall it and install this version once. Future updates install automatically.' },
-      { q: 'My antivirus says it is a virus. What should I do?', a: 'Check the hash and follow the antivirus-specific steps above.' },
+      { q: 'My antivirus says it is a virus. What should I do?', a: 'Check the hash and follow the steps for your antivirus.', link: { href: '#antivirus', text: 'Go to “If antivirus blocks it”' } },
     ],
     toc: 'On this page', tocItems: { baixar: 'Download', passos: 'Steps', windows: 'Windows warning', antivirus: 'Antivirus', arquivos: 'Installed files', faz: 'What it does', anticheat: 'Anti-cheat', desinstalar: 'Uninstall', perguntas: 'Questions' },
     railChanges: 'The app in recent versions', railChangesLink: 'All app release notes', sheet: 'Get the app',

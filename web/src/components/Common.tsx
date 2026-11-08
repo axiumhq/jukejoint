@@ -134,7 +134,25 @@ export function SectionTitle({ id, words, meta, badge, children }: SectionTitleP
   );
 }
 
-export function CopyField({ value, label, copyLabel, id }: { value: string; label: string; copyLabel: string; id?: string }) {
+/**
+ * Um valor para copiar (hash, comando). `group` quebra o valor em blocos de N caracteres só na tela,
+ * para conferir de olho (o hash em blocos de 8): a cópia, e a seleção, continuam sem espaços.
+ */
+export function CopyField({
+  value,
+  label,
+  copyLabel,
+  id,
+  group,
+  className,
+}: {
+  value: string;
+  label: string;
+  copyLabel: string;
+  id?: string;
+  group?: number;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
   async function copy() {
     try {
@@ -146,9 +164,9 @@ export function CopyField({ value, label, copyLabel, id }: { value: string; labe
     window.setTimeout(() => setCopied(false), 2000);
   }
   return (
-    <div className="copy-field" id={id}>
-      <code className="num" aria-label={label}>
-        {value}
+    <div className={className ? `copy-field ${className}` : 'copy-field'} id={id}>
+      <code className={group ? 'num is-grouped' : 'num'} aria-label={label}>
+        {group ? value.match(new RegExp(`.{1,${group}}`, 'g'))!.map((part, i) => <span key={i}>{part}</span>) : value}
       </code>
       <button type="button" className="btn btn-quiet btn-sm" onClick={copy} aria-label={copied ? t.install.copied : copyLabel}>
         <Icon name={copied ? 'check' : 'copy'} size={14} />
