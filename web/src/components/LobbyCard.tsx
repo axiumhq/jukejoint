@@ -14,7 +14,7 @@ import { AvatarStack } from './Avatar';
 import { CreateReason } from './Common';
 import { Icon } from './Icon';
 import { LobbyAction } from './LobbyAction';
-import { ModeCover } from './ModeCover';
+import { ModeCover, ModeIcon } from './ModeCover';
 
 /**
  * O cartão de lobby da Home v4, "ingresso + cartaz" (prototipos/home-curada, v4):
@@ -44,12 +44,14 @@ interface LobbyCardProps {
   /** Favorito (só aparece o botão quando `onFav` existe). */
   fav?: boolean;
   onFav?: (id: string) => void;
+  /** Na página do próprio modo: sem o nome do modo na linha e sem a capa (o herói da página já a mostra). */
+  inMode?: boolean;
 }
 
 /** Até seis rostos no placar; o resto vira "+N". */
 const FACES = 6;
 
-export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = false, fav = false, onFav }: LobbyCardProps) {
+export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = false, fav = false, onFav, inMode = false }: LobbyCardProps) {
   const st = lobbyState(l, env.ctx, env.now);
   const mode = getMode(l.modeSlug);
   const corner = cardCorner(l, st, env.signedIn, env.now);
@@ -74,15 +76,13 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
   }, [l, env.me, env.ctx.hereId, env.signedIn, friendNames]);
   const hostFriend = env.signedIn && l.hostIsFriend;
   const dim = st.kind === 'full' || st.kind === 'playing-closed' || st.kind === 'private' || st.kind === 'knocking';
-  const cls = ['lc', dim && 'dim', st.you && 'is-you'].filter(Boolean).join(' ');
+  const cls = ['lc', dim && 'dim', st.you && 'is-you', inMode && 'in-mode'].filter(Boolean).join(' ');
   const host = l.mine ? env.me : l.host;
   const teams = isTeamFormat(mode?.format);
 
   return (
     <article className={cls} aria-labelledby={nameId}>
-      <div className="lc-art">
-        <ModeCover slug={l.modeSlug} />
-      </div>
+      <div className="lc-art">{inMode ? <ModeIcon slug={l.modeSlug} kind="detalhe" className="lc-sig" /> : <ModeCover slug={l.modeSlug} />}</div>
       <div className="lc-top">
         {num && <span className="lc-no">{K.num(num)}</span>}
         {corner && <span className={corner.accent ? 'lc-st is-acc' : 'lc-st'}>{corner.text}</span>}
@@ -121,7 +121,8 @@ export const LobbyCard = memo(function LobbyCard({ lobby: l, env, featured = fal
             )}
           </div>
           <span className="lc-m">
-            {mode?.name} · {K.openedBy} <b className={hostFriend ? 'is-friend' : undefined}>{host}</b>
+            {!inMode && <>{mode?.name} · </>}
+            {K.openedBy} <b className={hostFriend ? 'is-friend' : undefined}>{host}</b>
           </span>
         </div>
         <span className="sr-only">{t.lobbies.slots(l.players, l.slots, people.friends.length)}</span>

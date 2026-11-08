@@ -57,218 +57,6 @@
   gap: var(--sp-4);
 }
 
-.arcano {
-  --brass: color-mix(in srgb, var(--acc) 38%, transparent);
-  position: relative;
-  display: grid;
-  grid-template-rows: auto 1fr auto auto;
-  justify-items: center;
-  width: 100%;
-  aspect-ratio: 3 / 5;
-  padding: 18px 12px 16px;
-  border: 0;
-  border-radius: 10px;
-  color: inherit;
-  font: inherit;
-  text-align: center;
-  cursor: pointer;
-  /* moldura dupla de latão: um fio externo e outro 6 px para dentro */
-  background:
-    radial-gradient(120% 70% at 50% 38%, color-mix(in srgb, var(--acc) 9%, transparent), transparent 60%),
-    linear-gradient(var(--s1), color-mix(in srgb, var(--s1) 70%, #000));
-  box-shadow:
-    inset 0 0 0 1px var(--brass),
-    inset 0 0 0 6px var(--s1),
-    inset 0 0 0 7px color-mix(in srgb, var(--acc) 18%, transparent);
-  transition: box-shadow var(--t-fast);
-}
-
-.arcano:hover,
-.arcano[aria-pressed='true'] {
-  --brass: color-mix(in srgb, var(--acc) 72%, transparent);
-}
-
-.arcano[aria-pressed='true'] {
-  box-shadow:
-    inset 0 0 0 1.5px var(--acc),
-    inset 0 0 0 6px var(--s1),
-    inset 0 0 0 7px color-mix(in srgb, var(--acc) 34%, transparent);
-}
-
-.arcano.is-quiet {
-  opacity: 0.72;
-}
-
-/* cantos escalonados */
-.arcano > i {
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 0 solid color-mix(in srgb, var(--acc) 55%, transparent);
-}
-
-.arcano > i:nth-of-type(1) { left: 10px; top: 10px; border-left-width: 1px; border-top-width: 1px; }
-.arcano > i:nth-of-type(2) { right: 10px; top: 10px; border-right-width: 1px; border-top-width: 1px; }
-.arcano > i:nth-of-type(3) { left: 10px; bottom: 10px; border-left-width: 1px; border-bottom-width: 1px; }
-.arcano > i:nth-of-type(4) { right: 10px; bottom: 10px; border-right-width: 1px; border-bottom-width: 1px; }
-
-.arc-num {
-  margin-top: 4px;
-  font: 500 var(--fs-xs) / 1.4 var(--f-ui);
-  letter-spacing: 0.3em;
-  color: var(--acc);
-}
-
-.arc-sig {
-  align-self: center;
-  display: grid;
-  width: 64px;
-  height: 64px;
-  color: var(--acc);
-  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--acc) 45%, transparent));
-}
-
-.arc-sig svg {
-  width: 100%;
-  height: 100%;
-}
-
-.arc-t b {
-  display: block;
-  font: 600 var(--fs-15) / 1.25 var(--f-ui);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.arc-fmt {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--fs-xs);
-  color: var(--tx-3);
-}
-
-.arc-vivo {
-  width: 80%;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid color-mix(in srgb, var(--acc) 22%, transparent);
-  font-size: var(--fs-xs);
-  color: var(--tx-2);
-}
-
-.arc-vivo em {
-  font-style: normal;
-  font-weight: 600;
-  color: var(--tx);
-}
-
-.arcano:focus-visible {
-  outline-offset: 3px;
-}
-
-/* ───────── Com pintura: a face da carta é a cena, e o sigilo vira um selo de latão ───────── */
-
-.arcano.has-art {
-  overflow: hidden;
-  isolation: isolate;
-  background: var(--s1);
-  box-shadow: none;
-}
-
-.arc-art {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-}
-
-.arc-art img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 62% 50%;
-  transition: transform var(--t-slow) var(--e-out);
-}
-
-.arcano.has-art:hover .arc-art img {
-  transform: scale(1.03);
-}
-
-/* a moldura vai por cima da pintura, junto com o véu que escurece a parte do texto */
-.arcano.has-art::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(to top, rgb(10 8 8 / 0.92) 0%, rgb(10 8 8 / 0.78) 34%, transparent 58%);
-  box-shadow:
-    inset 0 0 0 1px var(--brass),
-    inset 0 0 0 6px rgb(10 8 8 / 0.55),
-    inset 0 0 0 7px color-mix(in srgb, var(--acc) 22%, transparent);
-  transition: box-shadow var(--t-fast);
-}
-
-.arcano.has-art[aria-pressed='true']::before {
-  box-shadow:
-    inset 0 0 0 1.5px var(--acc),
-    inset 0 0 0 6px rgb(10 8 8 / 0.55),
-    inset 0 0 0 7px color-mix(in srgb, var(--acc) 40%, transparent);
-}
-
-.arcano.has-art > :not(.arc-art) {
-  z-index: 1;
-}
-
-.arcano.has-art > span:not(.arc-art):not(.arc-sig) {
-  position: relative;
-}
-
-.arcano.has-art .arc-num {
-  color: var(--tx);
-  text-shadow: 0 1px 6px rgb(0 0 0 / 0.8);
-}
-
-/* o selo: disco escuro com aro de latão, sempre logo acima do nome (uma ou duas linhas) */
-.arcano.has-art .arc-sig {
-  --selo: 34px;
-  position: relative;
-  grid-row: 2;
-  align-self: end;
-  display: grid;
-  place-items: center;
-  width: var(--selo);
-  height: var(--selo);
-  margin-bottom: 8px;
-  border-radius: 50%;
-  background: rgb(14 11 10 / 0.92);
-  box-shadow: inset 0 0 0 1px var(--acc);
-  filter: none;
-}
-
-.arcano.has-art .arc-sig svg {
-  display: block;
-  width: 24px;
-  height: 24px;
-}
-
-/* o texto fica preso às duas últimas linhas da grade, embaixo da pintura */
-.arcano.has-art .arc-t {
-  grid-row: 3;
-}
-
-.arcano.has-art .arc-vivo {
-  grid-row: 4;
-  width: 100%;
-  margin-top: 8px;
-  padding-top: 6px;
-}
-
-.arcano.has-art .arc-t b {
-  font-size: var(--fs-md);
-}
-
 .ml-card {
   display: grid;
   align-content: start;
@@ -330,7 +118,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .arcano {
+  .ml-list .arcano {
     aspect-ratio: 4 / 5;
   }
 }
@@ -358,7 +146,7 @@
     scroll-snap-align: start;
   }
 
-  .arcano {
+  .ml-list .arcano {
     aspect-ratio: 3 / 5;
   }
 
@@ -369,12 +157,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ml-art .cover,
-  .arc-art img {
+  .ml-art .cover {
     transition: none;
-  }
-
-  .arcano.has-art:hover .arc-art img {
-    transform: none;
   }
 }

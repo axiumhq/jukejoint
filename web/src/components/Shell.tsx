@@ -377,7 +377,12 @@ function Frame() {
   useEffect(() => {
     if (!hash) return;
     const el = document.getElementById(hash.slice(1));
-    if (el) el.scrollIntoView({ block: 'start' });
+    if (el) {
+      el.scrollIntoView({ block: 'start' });
+      // o foco vai junto com a rolagem: quem navega pelo teclado segue dali, não do topo da página
+      if (!el.matches('a[href], button, input, select, textarea, [tabindex]')) el.setAttribute('tabindex', '-1');
+      el.focus({ preventScroll: true });
+    }
   }, [pathname, hash]);
 
   // /instalar tem o aviso de afiliação mais completo; o rodapé usa esse lá, para não repetir.

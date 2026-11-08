@@ -43,66 +43,99 @@
   color: var(--tx-2);
 }
 
-.mi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
-}
-
-.mi-card {
+/* o modo mais cheio agora: pintura larga à esquerda, os dados à direita, moldura de latão */
+.mi-feat {
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  min-height: 340px;
   border-radius: var(--r-xl);
   overflow: hidden;
   background: var(--s2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 26%, transparent);
+  transition: box-shadow var(--t-fast);
 }
 
-.mi-cv {
+.mi-feat:hover {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 60%, transparent);
+}
+
+.mi-feat:hover .cover > img {
+  transform: scale(1.02);
+}
+
+.mi-feat:has(.mi-fn a:focus-visible) {
+  box-shadow: inset 0 0 0 2px var(--acc);
+}
+
+.mi-fcv {
   position: relative;
-  height: 132px;
-  flex: none;
   overflow: hidden;
 }
 
-.mi-cv .mi-st {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-}
-
-.mi-b {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-}
-
-.mi-t {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-}
-
-.mi-n {
-  margin: 0;
-  font: 600 1.125rem / 24px var(--f-ui);
-}
-
-/* o nome é o link do cartão inteiro; o botão fica por cima */
-.mi-n a::after {
+/* a pintura se dissolve no painel dos dados */
+.mi-fcv::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 1;
+  background: linear-gradient(90deg, transparent 55%, var(--s2));
+  pointer-events: none;
 }
 
-.mi-l {
+.mi-fb {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-6) var(--sp-6) var(--sp-4);
+}
+
+.mi-kick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.mi-rom {
+  padding: 2px 8px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 55%, transparent);
+  letter-spacing: 0.2em;
+}
+
+.mi-fn {
   margin: 0;
-  font-size: var(--fs-sm);
-  line-height: 18px;
+  font-size: var(--fs-h1);
+  line-height: 46px;
+  text-wrap: balance;
+}
+
+.mi-fn a {
+  color: inherit;
+}
+
+/* o nome é o link do cartão inteiro; o botão fica por cima */
+.mi-fn a::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+
+.mi-fn a:focus-visible {
+  outline: none;
+}
+
+.mi-fl {
+  max-width: 44ch;
+  margin: 0;
   color: var(--tx-2);
 }
 
@@ -110,7 +143,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--sp-4);
-  margin: 0;
+  margin: var(--sp-2) 0 0;
 }
 
 .mi-d dt {
@@ -129,37 +162,62 @@
   white-space: nowrap;
 }
 
-.mi-f {
+.mi-ff {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-2);
-  margin-top: auto;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid color-mix(in srgb, var(--acc) 18%, transparent);
 }
 
 .mi-fmt {
   min-width: 0;
-  font-size: var(--fs-xs);
-  line-height: 16px;
+  font-size: var(--fs-sm);
   color: var(--tx-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.mi-f .btn {
+.mi-ff .btn {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   flex: none;
 }
 
-.mi-card:has(.mi-n a:focus-visible) {
-  box-shadow: 0 0 0 2px var(--acc);
+/* os outros cinco, em cartas de arcano, do mais cheio ao mais calmo */
+.mi-rest {
+  margin-top: var(--sp-8);
 }
 
-.mi-n a:focus-visible {
-  outline: none;
+.mi-rh {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  margin-bottom: var(--sp-4);
 }
+
+.mi-rt {
+  margin: 0;
+  font: 500 22px / 1.1 var(--f-ui);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mi-arcanos {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mi-arcanos > li {
+  display: flex;
+}
+
 
 /* ───────── /modos/:slug ───────── */
 
@@ -314,9 +372,10 @@
   margin-bottom: var(--sp-4);
 }
 
+/* títulos de seção um degrau abaixo do nome do modo: a página tem um título só */
 .md-sec .sec-h h2 {
-  font-size: var(--fs-h2);
-  line-height: 36px;
+  font-size: 1.5rem;
+  line-height: 30px;
 }
 
 .md-cols {
@@ -365,19 +424,20 @@
   padding-top: var(--sp-1);
 }
 
+/* o número da regra é um numeral romano numa plaquinha de latão, como os arcanos */
 .md-n {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 24px;
+  min-width: 34px;
   height: 24px;
-  border-radius: 50%;
-  background: var(--s3);
-  font-family: var(--f-num);
-  font-size: var(--fs-15);
-  font-weight: 600;
-  color: var(--tx);
+  padding: 0 6px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent);
+  font: 600 var(--fs-xs) / 1 var(--f-ui);
+  letter-spacing: 0.14em;
+  color: var(--acc);
 }
 
 .md-lgrid.lgrid {
@@ -389,54 +449,27 @@
   color: var(--tx-3);
 }
 
-.md-others {
+/* "Outros modos": os arcanos da home, do mais cheio ao mais calmo */
+.md-arcanos {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--sp-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.md-oc {
+.md-arcanos > li {
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-width: 0;
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-xl);
-  background: var(--s2);
-  color: var(--tx);
-  transition: background-color var(--t-fast);
 }
 
-.md-oc:hover {
-  background: var(--s3);
+.md-arcanos .arcano {
+  padding-inline: 8px;
 }
 
-.md-oc .med {
-  flex: none;
-}
-
-.md-ob {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.md-on {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.md-os {
-  font-size: var(--fs-xs);
-  line-height: 16px;
-  color: var(--tx-3);
+/* a carta é estreita aqui: a linha de baixo fica só com os lobbies */
+.md-arcanos .arc-play {
+  display: none;
 }
 
 /* trilho do modo: regiões, lista, ranking e mudanças como no design */
@@ -504,8 +537,13 @@
   color: var(--tx-2);
 }
 
-.rail .mr-p .av {
-  display: none;
+/* nome e região alinhados à esquerda, como o cabeçalho "Nome"; números à direita */
+.rail .mr-rank th {
+  text-align: left;
+}
+
+.rail .mr-rank th:nth-child(n + 3) {
+  text-align: right;
 }
 
 .rail .mr-pn {
@@ -798,29 +836,85 @@
   justify-content: center;
 }
 
-/* toque: voltar e os cartões de "Outros modos" chegam a 44 px (--hit) */
+/* esmaecido da borda de uma fileira que rola: some quando a rolagem chega ao fim */
+@property --fade-x {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes fade-x {
+  0%,
+  92% {
+    --fade-x: 40px;
+  }
+
+  100% {
+    --fade-x: 0px;
+  }
+}
+
+/* toque: o voltar chega a 44 px (--hit) */
 @media (max-width: 760px), (pointer: coarse) {
-  .md-back,
-  .md-oc {
+  .md-back {
     min-height: var(--hit, 44px);
   }
 }
 
 /* ───────── Telas estreitas ───────── */
 
-@media (max-width: 960px) {
-  .mi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (max-width: 1100px) {
+  .mi-feat {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
+}
 
+@media (max-width: 960px) {
   .md-lgrid.lgrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mi-arcanos {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .mi-grid {
+  /* destaque empilhado: a pintura em cima, os dados embaixo */
+  .mi-feat {
     grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .mi-fcv {
+    height: 180px;
+  }
+
+  .mi-fcv::after {
+    background: linear-gradient(180deg, transparent 50%, var(--s2));
+  }
+
+  .mi-fb {
+    padding: var(--sp-2) var(--sp-4) var(--sp-4);
+  }
+
+  .mi-fn {
+    font-size: 2rem;
+    line-height: 38px;
+  }
+
+  .mi-arcanos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+  }
+
+  .mi-arcanos .arcano {
+    aspect-ratio: 4 / 5;
+  }
+
+  .mi-ht h1 {
+    font-size: 2rem;
+    line-height: 40px;
   }
 
   .mi-ht h1 {
@@ -878,20 +972,40 @@
     gap: 0;
   }
 
-  .md-others {
+  /* cinco cartas em duas colunas: a quinta ocupa a linha toda, deitada */
+  .mi-arcanos > li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .mi-arcanos > li:last-child:nth-child(odd) .arcano {
+    aspect-ratio: 16 / 9;
+  }
+
+  /* celular: os outros modos viram uma fileira que rola para o lado; a borda direita esmaece
+     enquanto houver carta escondida, para ninguém achar que acabou */
+  .md-arcanos {
     display: flex;
-    gap: var(--sp-2);
+    gap: var(--sp-3);
     margin: 0 calc(var(--sp-4) * -1);
-    padding: 0 var(--sp-4);
+    padding: 0 var(--sp-4) var(--sp-2);
     overflow-x: auto;
     scroll-snap-type: x mandatory;
-    scroll-padding-left: 16px;
+    scroll-padding-left: var(--sp-4);
     scrollbar-width: none;
   }
 
-  .md-others li {
-    flex: 0 0 200px;
+  .md-arcanos > li {
+    flex: none;
+    width: 150px;
     scroll-snap-align: start;
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .md-arcanos {
+      mask-image: linear-gradient(90deg, #000 calc(100% - var(--fade-x)), transparent);
+      animation: fade-x linear both;
+      animation-timeline: scroll(self inline);
+    }
   }
 
   .qp-page {

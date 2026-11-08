@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
 import { Link, useParams } from 'react-router';
-import { Avatar } from '../components/Avatar';
-import { CreateReason, SectionTitle, Tag } from '../components/Common';
+import { ArcanoFace, arcanoClass, romano } from '../components/Arcano';
+import { CreateReason, SectionTitle } from '../components/Common';
 import { FriendRow, FriendStep } from '../components/Friends';
 import { Icon } from '../components/Icon';
-import { CreateCard, LobbyCard, orderLobbies, type CardEnv } from '../components/LobbyCard';
-import { ModeCover, ModeMedallion } from '../components/ModeCover';
+import { LobbyCard, orderLobbies, type CardEnv } from '../components/LobbyCard';
+import { ModeCover } from '../components/ModeCover';
 import { Rail, useRail, useRailSignIn } from '../components/Rail';
 import type { Lobby } from '../data/lobbies';
 import { getMode, getModes, type Mode, type Region } from '../data/modes';
@@ -16,7 +16,8 @@ import { useCreateBlocked } from '../hooks/useServerStatus';
 import { useNow } from '../hooks/useNow';
 import { formatDate, formatNumber, formatShortDate, t } from '../i18n';
 import { live as L } from '../i18n/live';
-import { EMPTY_FILTERS, filterLobbies, REGIONS } from '../lib/lobbies';
+import { modosPagina as P } from '../i18n/modos-pagina';
+import { EMPTY_FILTERS, filterLobbies, lobbyState, modeArcana, REGIONS } from '../lib/lobbies';
 import { useSession } from '../state/session';
 import { NotFound } from './NotFound';
 import '../styles/modes.css';
@@ -33,6 +34,22 @@ const EMPTY = { players: 0, lobbies: 0, withRoom: 0 };
 /** Menor ping entre os lobbies do modo (com a região), para a barra de dados. */
 function bestPing(list: Lobby[]) {
   return list.reduce<Lobby | undefined>((best, l) => (!best || l.ping < best.ping ? l : best), undefined);
+}
+
+/** Do modo mais cheio ao mais calmo (empate: a ordem do catálogo). */
+function byPlayers(list: Mode[], byMode: Record<string, { players: number } | undefined>) {
+  return [...list].sort((a, b) => (byMode[b.slug]?.players ?? 0) - (byMode[a.slug]?.players ?? 0) || modeArcana(a.slug) - modeArcana(b.slug));
+}
+
+/** A linha de baixo do arcano: "4 lobbies · 38 jogando", ou "nenhum lobby". */
+function ArcanoVivo({ lobbies, players }: { lobbies: number; players: number }) {
+  if (!lobbies) return <>{P.lobbies(0)}</>;
+  return (
+    <>
+      <em>{P.lobbies(lobbies)}</em>
+      <span className="arc-play"> · {P.playing(players)}</span>
+    </>
+  );
 }
 
 /* ───────── Trilho da página do modo ───────── */
@@ -136,7 +153,6 @@ function Leaderboard({ mode }: { mode: Mode }) {
               <td className="num">{i + 1}</td>
               <th scope="row">
                 <span className="mr-p">
-                  <Avatar name={e.player} size={20} />
                   <span className="mr-pn">{e.player}</span>
                   <span className="mr-reg">{t.regions[e.region]}</span>
                 </span>
@@ -188,14 +204,14 @@ function RecentChanges({ mode }: { mode: Mode }) {
 }
 
 /** Abaixo de 960 px o trilho vira folha: este cartão abre (como o "Amigos" da home). */
-function SheetCard({ friends, regions }: { friends: number; regions: number }) {
+function SheetCard({ friends, regions, signedIn }: { friends: number; regions: number; signedIn: boolean }) {
   const { openSheet } = useRail();
   return (
     <button type="button" className="md-sheet" aria-haspopup="dialog" onClick={(e) => openSheet(e.currentTarget)}>
       <Icon name="users" />
       <span className="t">
         <b>{t.modes.sheetOpen}</b>
-        <span>{t.modes.sheetOpenSub(friends, regions)}</span>
+        <span>{signedIn ? t.modes.sheetOpenSub(friends, regions) : P.sheetOut(regions)}</span>
       </span>
       <Icon name="chev" />
     </button>
@@ -224,8 +240,14 @@ export function ModePage() {
   if (!mode) return <NotFound title={t.modes.notFoundTitle} body={t.modes.notFoundBody} toModes />;
 
   const c = stats.byMode[mode.slug] ?? EMPTY;
-  const others = modes.filter((m) => m.slug !== mode.slug);
-  const ping = bestPing(all);
+  const others = byPlayers(
+    modes.filter((m) => m.slug !== mode.slug),
+    stats.byMode,
+  );
+  // o lobby em que você está (entrou ou abriu) não conta como "com vaga" nem entra no menor ping
+  const here = lobbyCtx.hereId ? all.find((l) => l.id === lobbyCtx.hereId) : undefined;
+  const open = all.filter((l) => l.id !== here?.id && !l.mine && lobbyState(l, lobbyCtx, now).canJoin);
+  const ping = bestPing(open);
   const env: CardEnv = { ctx: lobbyCtx, signedIn: !!user, me: user?.name ?? t.lobbies.you, friends, now };
   const ordered = orderLobbies(modeLobbies, lobbyCtx, featured);
   const ids = new Set(all.map((l) => l.id));
@@ -269,17 +291,17 @@ export function ModePage() {
           </div>
           <div>
             <dt>{t.modes.withRoomLabel}</dt>
-            <dd className="num">{formatNumber(c.withRoom)}</dd>
+            <dd className="num">{formatNumber(open.length)}</dd>
           </div>
           <div>
-            <dt>{t.modes.facts.bestPing}</dt>
+            <dt>{P.bestPing}</dt>
             <dd className="num">
               {ping ? (
                 <>
                   {ping.ping} ms <span className="md-sub">{t.regions[ping.region]}</span>
                 </>
               ) : (
-                t.modes.noPing
+                P.noRoom
               )}
             </dd>
           </div>
@@ -312,10 +334,25 @@ export function ModePage() {
         </div>
       </div>
       <p id="mode-join-hint" className="md-hint">
-        {featured ? t.modes.joinHint(c.withRoom) : t.modes.noLobbies}
+        {here ? (
+          <>
+            {P.here(here.name)}{' '}
+            <Link to={`/sala/${encodeURIComponent(here.id)}`} className="link">
+              {P.hereOpen}
+            </Link>
+          </>
+        ) : featured ? (
+          <>
+            {P.playTarget(featured.name, t.regions[featured.region], featured.ping)}
+            {P.playAmong(open.length)}
+          </>
+        ) : (
+          t.modes.noLobbies
+        )}
+        {!user && <> {P.signInToCreate}</>}
       </p>
 
-      <SheetCard friends={friendsHere} regions={regionCount} />
+      <SheetCard friends={friendsHere} regions={regionCount} signedIn={!!user} />
 
       <div className="md-cols">
         <section className="sec md-sec" aria-labelledby="mode-how">
@@ -334,8 +371,8 @@ export function ModePage() {
           <ol className="md-rules">
             {mode.rules.map((r, i) => (
               <li key={r}>
-                <span className="md-n num" aria-hidden="true">
-                  {i + 1}
+                <span className="md-n" aria-hidden="true">
+                  {romano(i + 1)}
                 </span>
                 <span>{r}</span>
               </li>
@@ -345,7 +382,7 @@ export function ModePage() {
       </div>
 
       <section className="sec md-sec" aria-labelledby="mode-lobbies">
-        <SectionTitle id="mode-lobbies" words={t.modes.lobbiesWords} meta={t.modes.lobbiesMeta(c.lobbies, c.withRoom)}>
+        <SectionTitle id="mode-lobbies" words={t.modes.lobbiesWords} meta={t.modes.lobbiesMeta(c.lobbies, open.length)}>
           <Link to={`/?modo=${mode.slug}#lobbies`} className="link">
             {t.modes.lobbiesAll}
             <Icon name="arrow" />
@@ -353,28 +390,21 @@ export function ModePage() {
         </SectionTitle>
         <div className="lgrid md-lgrid">
           {ordered.map((l) => (
-            <LobbyCard key={l.id} lobby={l} env={env} featured={featured?.id === l.id} />
+            <LobbyCard key={l.id} lobby={l} env={env} featured={featured?.id === l.id} inMode />
           ))}
-          <CreateCard onCreate={() => openHost(mode.slug)} />
         </div>
         {ordered.length === 0 && <p className="md-empty">{t.lobbies.modeListEmpty(mode.name)}</p>}
       </section>
 
       <nav className="sec md-sec" aria-labelledby="mode-others">
-        <SectionTitle id="mode-others" words={t.modes.othersWords} />
-        <ul className="md-others">
+        <SectionTitle id="mode-others" words={t.modes.othersWords} meta={P.othersMeta} />
+        <ul className="md-arcanos">
           {others.map((m) => {
             const oc = stats.byMode[m.slug] ?? EMPTY;
             return (
               <li key={m.slug}>
-                <Link to={`/modos/${m.slug}`} className="md-oc">
-                  <ModeMedallion slug={m.slug} size={44} />
-                  <span className="md-ob">
-                    <span className="md-on">{m.name}</span>
-                    <span className="md-os">
-                      <span className="num">{formatNumber(oc.players)}</span> {t.header.live}
-                    </span>
-                  </span>
+                <Link to={`/modos/${m.slug}`} className={arcanoClass(m.slug, { quiet: !oc.lobbies })}>
+                  <ArcanoFace slug={m.slug} name={m.name} format={m.format} vivo={<ArcanoVivo lobbies={oc.lobbies} players={oc.players} />} sr={m.line} />
                 </Link>
               </li>
             );
@@ -398,6 +428,9 @@ export function ModesIndex() {
   const modes = getModes();
   useDocumentTitle(t.meta.modes);
   const stats = useLiveStats();
+  const [top, ...rest] = byPlayers(modes, stats.byMode);
+  if (!top) return null;
+  const tc = stats.byMode[top.slug] ?? EMPTY;
   return (
     <div className="mi">
       <header className="mi-h">
@@ -407,51 +440,77 @@ export function ModesIndex() {
         </div>
         <p className="mi-lead">{t.modes.lead}</p>
       </header>
-      <ul className="mi-grid">
-        {modes.map((m) => {
-          const c = stats.byMode[m.slug] ?? EMPTY;
-          return (
-            <li key={m.slug} className="mi-card has-cover">
-              <div className="mi-cv">
-                <ModeCover slug={m.slug} wide />
-                <Tag className="mi-st">{t.modes.lobbiesCount(c.lobbies)}</Tag>
-              </div>
-              <div className="mi-b">
-                <div className="mi-t">
-                  <h2 className="mi-n">
-                    <Link to={`/modos/${m.slug}`}>{m.name}</Link>
-                  </h2>
-                  <p className="mi-l">{m.line}</p>
-                </div>
-                <dl className="mi-d">
-                  <div>
-                    <dt>{t.modes.facts.playing}</dt>
-                    <dd className="num">{formatNumber(c.players)}</dd>
-                  </div>
-                  <div>
-                    <dt>{t.modes.facts.lobbies}</dt>
-                    <dd className="num">
-                      {formatNumber(c.lobbies)} · {t.modes.withRoomOf(c.withRoom, c.lobbies)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>{t.modes.facts.duration}</dt>
-                    <dd className="num">{t.modes.durationValue(m.durationMin)}</dd>
-                  </div>
-                </dl>
-                <div className="mi-f">
-                  <span className="mi-fmt">
-                    {m.format} · {t.modes.rangeShort(m.minPlayers, m.maxPlayers)}
-                  </span>
-                  <Link to={`/?modo=${m.slug}#lobbies`} className="btn btn-s btn-sm" aria-label={t.modes.seeLobbiesLabel(m.name)}>
-                    {t.modes.seeLobbies}
-                  </Link>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+
+      {/* o mais cheio agora: a pintura larga e os dados; o cartão inteiro abre o modo */}
+      <article className="mi-feat" aria-labelledby="mi-feat-n">
+        <div className="mi-fcv">
+          <ModeCover slug={top.slug} wide />
+        </div>
+        <div className="mi-fb">
+          <span className="mi-kick">
+            <span className="mi-rom" aria-hidden="true">
+              {romano(modeArcana(top.slug))}
+            </span>
+            {P.busiest}
+          </span>
+          <h2 className="display mi-fn" id="mi-feat-n">
+            <Link to={`/modos/${top.slug}`}>{top.name}</Link>
+          </h2>
+          <p className="mi-fl">{top.line}</p>
+          <dl className="mi-d">
+            <div>
+              <dt>{t.modes.facts.playing}</dt>
+              <dd className="num">{formatNumber(tc.players)}</dd>
+            </div>
+            <div>
+              <dt>{t.modes.facts.lobbies}</dt>
+              <dd className="num">
+                {formatNumber(tc.lobbies)} · {t.modes.withRoomOf(tc.withRoom, tc.lobbies)}
+              </dd>
+            </div>
+            <div>
+              <dt>{t.modes.facts.duration}</dt>
+              <dd className="num">{t.modes.durationValue(top.durationMin)}</dd>
+            </div>
+          </dl>
+          <div className="mi-ff">
+            <span className="mi-fmt">
+              {top.format} · {t.modes.sizeValue(top.minPlayers, top.maxPlayers)}
+            </span>
+            <Link to={`/modos/${top.slug}#mode-lobbies`} className="btn btn-p">
+              {P.seeLobbies(tc.lobbies)}
+              <Icon name="arrow" />
+            </Link>
+          </div>
+        </div>
+      </article>
+
+      <section className="mi-rest" aria-labelledby="mi-rest">
+        <div className="mi-rh">
+          <h2 className="mi-rt" id="mi-rest">
+            {P.restTitle}
+          </h2>
+          <span className="lbl">{P.restMeta}</span>
+        </div>
+        <ul className="mi-arcanos">
+          {rest.map((m) => {
+            const c = stats.byMode[m.slug] ?? EMPTY;
+            return (
+              <li key={m.slug}>
+                <Link to={`/modos/${m.slug}`} className={arcanoClass(m.slug, { quiet: !c.lobbies, size: 'lg' })}>
+                  <ArcanoFace
+                    slug={m.slug}
+                    name={m.name}
+                    format={`${m.format} · ${t.modes.durationValue(m.durationMin)}`}
+                    vivo={<ArcanoVivo lobbies={c.lobbies} players={c.players} />}
+                    sr={m.line}
+                  />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
     </div>
   );
 }
