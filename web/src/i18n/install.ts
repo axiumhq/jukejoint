@@ -20,9 +20,9 @@ export interface AvGuide {
 }
 
 const ptBRInstall = {
-  /** `size` já vem formatado (ex.: "38,2"), da release usada na página. */
-  installedItems: (size: string): InstalledItem[] => [
-    { item: 'Aplicativo', path: `%LOCALAPPDATA%\\${BRAND_NAME}\\`, size: `${size}\u00a0MB` },
+  /** `appSize` já vem pronto, com a unidade (ex.: "38,2 MB"), da release usada na página. */
+  installedItems: (appSize: string): InstalledItem[] => [
+    { item: 'Aplicativo', path: `%LOCALAPPDATA%\\${BRAND_NAME}\\`, size: appSize },
     { item: 'Configurações e registros', path: `%APPDATA%\\${BRAND_NAME}\\`, size: 'menos de 1\u00a0MB' },
     { item: 'Modos baixados', path: `[pasta do jogo na Steam]\\…\\addons\\${BRAND_NAME.toLowerCase()}\\`, size: '5 a 40\u00a0MB por modo' },
     { item: 'Atalho', path: 'Menu Iniciar', size: '1\u00a0KB' },
@@ -63,7 +63,8 @@ const ptBRInstall = {
       ],
     },
   ],
-  hashCommand: (file: string) => `Get-FileHash .\\${file} -Algorithm SHA256`,
+  /** O PowerShell abre na pasta do usuário: o caminho aponta para Downloads. Sem a release, o `*` acha qualquer versão. */
+  hashCommand: (file: string | null) => `Get-FileHash "$env:USERPROFILE\\Downloads\\${file ?? `${BRAND_NAME}-v*-windows-x64-setup.exe`}"`,
 };
 
 export type InstallTexts = typeof ptBRInstall;

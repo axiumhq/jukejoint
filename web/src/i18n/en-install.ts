@@ -2,8 +2,8 @@ import { BRAND_NAME } from '../config/brand';
 import type { AvGuide, InstalledItem } from './install';
 
 export const enInstall = {
-  installedItems: (size: string): InstalledItem[] => [
-    { item: 'App', path: `%LOCALAPPDATA%\\${BRAND_NAME}\\`, size: `${size}\u00a0MB` },
+  installedItems: (appSize: string): InstalledItem[] => [
+    { item: 'App', path: `%LOCALAPPDATA%\\${BRAND_NAME}\\`, size: appSize },
     { item: 'Settings and logs', path: `%APPDATA%\\${BRAND_NAME}\\`, size: 'under 1\u00a0MB' },
     { item: 'Downloaded modes', path: `[Deadlock folder in Steam]\\…\\addons\\${BRAND_NAME.toLowerCase()}\\`, size: '5 to 40\u00a0MB per mode' },
     { item: 'Shortcut', path: 'Start menu', size: '1\u00a0KB' },
@@ -44,5 +44,5 @@ export const enInstall = {
       ],
     },
   ],
-  hashCommand: (file: string) => `Get-FileHash .\\${file} -Algorithm SHA256`,
+  hashCommand: (file: string | null) => `Get-FileHash "$env:USERPROFILE\\Downloads\\${file ?? `${BRAND_NAME}-v*-windows-x64-setup.exe`}"`,
 };

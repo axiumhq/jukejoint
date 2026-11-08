@@ -1218,6 +1218,12 @@
   background: var(--s3);
 }
 
+/* a seção que está na tela: texto claro e o fio de latão à esquerda */
+.toc a[aria-current] {
+  color: var(--tx);
+  box-shadow: inset 2px 0 0 var(--acc);
+}
+
 /* ───────── /novidades ("Hoje") ───────── */
 
 .today .dbar {

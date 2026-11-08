@@ -331,6 +331,57 @@ body {
     color: var(--tx-2);
   }
 
+  /* o símbolo JJ gravado em latão à direita, como o sigilo do modo no ingresso */
+  .ih-sig {
+    position: absolute;
+    top: var(--sp-6);
+    right: var(--sp-8);
+    width: auto;
+    height: 132px;
+    color: var(--acc);
+    opacity: 0.16;
+    pointer-events: none;
+  }
+
+  /* o carimbo da versão, o mesmo do "Lobby Nº" dos ingressos */
+  .ih-no {
+    position: relative;
+    align-self: flex-start;
+    margin: var(--sp-6) var(--sp-8) 0;
+    padding: var(--sp-1) var(--sp-2);
+    border-radius: 3px;
+    font: 600 var(--fs-2xs) / 1.2 var(--f-ui);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--tx);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent);
+  }
+
+  .ih-no .num {
+    letter-spacing: 0.08em;
+  }
+
+  .ih-top .ih-no + .ih-title {
+    padding-top: var(--sp-3);
+  }
+
+  /* no celular: o aviso de que o app é para Windows, no lugar da faixa de baixar */
+  .ih-phone {
+    position: relative;
+    max-width: 52ch;
+    margin: calc(var(--sp-4) * -1) 0 0;
+    padding: 0 var(--sp-8);
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: var(--tx-2);
+  }
+
+  .ih-phone b {
+    font-weight: 600;
+    color: var(--tx);
+  }
+
   .ih-top {
     position: relative;
     display: flex;
@@ -414,6 +465,15 @@ body {
     overflow-wrap: anywhere;
   }
 
+  /* em blocos de 8, quatro por linha: dá para conferir bloco a bloco */
+  .ih-hash .copy-field code.is-grouped {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.7ch;
+    max-width: 36ch;
+    overflow-wrap: normal;
+  }
+
   .ih-src,
   .ih-help {
     grid-column: 2;
@@ -444,15 +504,23 @@ body {
     box-shadow: inset 0 0 0 1px var(--line);
   }
 
-  .ih-req {
-    max-width: 70ch;
-    margin: 0 0 var(--sp-8);
-    font-size: var(--fs-xs);
-    line-height: 16px;
-    color: var(--tx-3);
+  .ih-status {
+    margin-bottom: var(--sp-8);
   }
 
-  /* passos: três cartões com o número em disco */
+  /* depois do clique em Baixar: a luz de latão pulsa enquanto a página espera o app */
+  .ast.is-wait .ast-sig {
+    background: var(--acc);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc) 18%, transparent);
+    animation: ast-wait 1.6s ease-in-out infinite;
+  }
+
+  /* abaixo de 960 px o trilho vira folha: o cartão que abre o índice e as notas */
+  .in-sheet {
+    display: none;
+  }
+
+  /* passos: três cartões com o numeral romano na plaquinha de latão (o mesmo das regras do modo) */
   #passos .isteps {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -476,18 +544,41 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
+    min-width: 34px;
+    width: auto;
     height: 24px;
-    border-radius: 50%;
-    background: var(--s3);
-    box-shadow: none;
-    font-size: var(--fs-15);
-    font-weight: 600;
-    color: var(--tx);
+    padding: 0 6px;
+    border-radius: 3px;
+    background: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 50%, transparent);
+    font: 600 var(--fs-xs) / 1 var(--f-ui);
+    letter-spacing: 0.14em;
+    color: var(--acc);
   }
 
   #passos .istep.is-done .istep-n {
     color: var(--live);
+    background: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--live) 45%, transparent);
+  }
+
+  #passos .istep-n .ico {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* o passo da vez, depois de baixar: contorno de latão e a etiqueta "agora" */
+  #passos .istep.is-now {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 55%, transparent);
+  }
+
+  #passos .istep-now {
+    margin-left: var(--sp-2);
+    font: 600 var(--fs-2xs) / 1 var(--f-ui);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    vertical-align: 1px;
+    color: var(--acc);
   }
 
   #passos .istep h3,
@@ -517,6 +608,137 @@ body {
   /* abas de antivírus: o fio de latão embaixo da ativa */
   .av-tabs .lb-tabs {
     gap: var(--sp-6);
+  }
+
+  /* o aviso do Windows: o texto em cima e as duas telas lado a lado embaixo, largas o bastante para
+     "Executar assim mesmo" caber numa linha */
+  .ss-wrap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .ss {
+    max-width: 640px;
+  }
+
+  .ss-app {
+    display: grid;
+    gap: var(--sp-1);
+  }
+
+  .ss-file {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+  }
+
+  .ss-file .num {
+    color: var(--tx);
+    overflow-wrap: anywhere;
+  }
+
+  .ss-file .ss-mark {
+    flex: none;
+  }
+
+  .ss-run {
+    white-space: nowrap;
+  }
+
+  /* antivírus: a lista e a conferência na largura da coluna; o parágrafo na medida de leitura */
+  .ins-text.is-wide {
+    max-width: none;
+  }
+
+  .ins-note {
+    margin: 0;
+    font-size: var(--fs-xs);
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .hck-wrap {
+    display: grid;
+    gap: var(--sp-3);
+    scroll-margin-top: 96px;
+  }
+
+  /* o comando numa linha só (rola de lado no celular): quebrado no "-", parecia dois comandos */
+  .copy-field.is-cmd code {
+    white-space: nowrap;
+    overflow-x: auto;
+    overflow-wrap: normal;
+    scrollbar-width: thin;
+  }
+
+  /* conferir o hash: cola a saída do PowerShell e a página diz se bate */
+  .hck {
+    display: grid;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+  }
+
+  .hck-in {
+    width: 100%;
+    height: 44px;
+    padding: 0 var(--sp-3);
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--bg);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+    font: var(--fs-xs) / 1 var(--f-code);
+    color: var(--tx);
+  }
+
+  .hck-in:focus-visible {
+    outline: 2px solid var(--acc);
+    outline-offset: 2px;
+  }
+
+  .hck.is-ok .hck-in {
+    box-shadow: inset 0 0 0 1.5px var(--live);
+  }
+
+  .hck.is-bad .hck-in,
+  .hck.is-invalid .hck-in {
+    box-shadow: inset 0 0 0 1.5px var(--warn);
+  }
+
+  .hck-msg {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0;
+    font-size: var(--fs-xs);
+    line-height: 16px;
+    color: var(--tx-3);
+  }
+
+  .hck.is-ok .hck-msg {
+    font-weight: 600;
+    color: var(--live);
+  }
+
+  .hck.is-bad .hck-msg {
+    font-weight: 600;
+    color: var(--warn);
+  }
+
+  .hck-msg .ico {
+    flex: none;
+    width: 14px;
+    height: 14px;
+  }
+
+  /* "Menu Iniciar" é um lugar, não um caminho: texto simples, sem o chip de código */
+  .files-place {
+    color: var(--tx-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ast.is-wait .ast-sig {
+      animation: none;
+    }
   }
 
   /* ───────── 404 ───────── */
@@ -610,8 +832,13 @@ body {
       padding: var(--sp-4) var(--sp-6) 0;
     }
 
-    .ih-sub {
+    .ih-sub,
+    .ih-phone {
       padding: 0 var(--sp-6);
+    }
+
+    .ih-no {
+      margin-inline: var(--sp-6);
     }
 
     .nh .dbar,
@@ -665,8 +892,67 @@ body {
       gap: var(--sp-3);
     }
 
-    .ih-sub {
+    .ih-sub,
+    .ih-phone {
       padding: 0 var(--sp-4);
+    }
+
+    .ih-no {
+      margin: var(--sp-5) var(--sp-4) 0;
+    }
+
+    .ih-top .ih-no + .ih-title {
+      padding-top: var(--sp-3);
+    }
+
+    .ih-sig {
+      top: var(--sp-5);
+      right: var(--sp-4);
+      height: 96px;
+    }
+
+    .ih-phone {
+      margin-top: 0;
+    }
+
+    .in-sheet {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      width: 100%;
+      margin: 0 0 var(--sp-8);
+      padding: var(--sp-3) var(--sp-4);
+      border: 0;
+      border-radius: var(--r-lg);
+      background: var(--s2);
+      color: var(--tx);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .in-sheet:hover {
+      background: var(--s3);
+    }
+
+    .ih-status + .in-sheet {
+      margin-top: calc(var(--sp-5) * -1);
+    }
+
+    .in-sheet .t {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .in-sheet .t b {
+      font-size: var(--fs-sm);
+      font-weight: 600;
+    }
+
+    .in-sheet .t span {
+      font-size: var(--fs-xs);
+      color: var(--tx-2);
     }
 
     .ih-band {
@@ -732,5 +1018,12 @@ body {
       font-size: 2.25rem;
       line-height: 42px;
     }
+  }
+}
+
+/* a luz do status depois do clique em Baixar (fora do `body { … }`: @keyframes não aninha) */
+@keyframes ast-wait {
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--acc) 6%, transparent);
   }
 }

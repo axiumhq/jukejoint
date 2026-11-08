@@ -672,15 +672,13 @@ export const ptBR = {
   install: {
     title: 'Instalar o app',
     titleWords: ['Instalar', 'o app'] as const,
-    platformMeta: 'Windows 10 e 11 · 64 bits',
+    platformMeta: 'Windows 10 e 11 · 64 bits · Deadlock pela Steam',
     lead: `Antes de baixar, veja exatamente o que entra no seu PC. O app é grátis e faz uma coisa: abrir o jogo com o modo escolhido.`,
     download: (file: string) => `Baixar ${file}`,
     downloadShort: 'Baixar',
     version: 'Versão',
     size: 'Tamanho',
     date: 'Publicado em',
-    requirements: 'Windows 10 ou 11 (64 bits) e Deadlock instalado pela Steam. Não precisa de permissão de administrador.',
-    mobileNote: 'No celular? O app é para Windows. Abra esta página no PC para baixar.',
     hashTitle: 'Impressão digital do instalador (SHA-256)',
     hashHelp: 'Compare com o hash do arquivo que você baixou. Se for diferente, não execute: o arquivo não é o que publicamos.',
     copy: 'Copiar',
@@ -726,7 +724,7 @@ export const ptBR = {
     downloadTitle: 'O instalador',
     stepsWords: ['Em três', 'passos'] as const,
     steps: [
-      { title: 'Baixe o instalador', body: 'Um arquivo só, com o motor e os modos dentro. Se quiser, confira o hash antes de abrir.' },
+      { title: 'Baixe o instalador', body: 'Um arquivo só, com o motor. Os modos chegam depois, quando você entra num lobby deles.' },
       { title: 'Execute', body: 'Não precisa de permissão de administrador. Se o Windows avisar, o motivo e o caminho estão logo abaixo.' },
       { title: 'Abra o app', body: 'Esta página detecta sozinha quando ele estiver rodando. Depois é só escolher um lobby e clicar em Entrar.' },
     ],
@@ -734,9 +732,10 @@ export const ptBR = {
     smartWords: ['O Windows', 'pode avisar'] as const,
     smartWhy:
       'Na primeira vez, o Windows pode abrir a tela "O Windows protegeu o computador". É o SmartScreen avisando que o programa ainda tem poucos downloads: um aviso de reputação, não um vírus encontrado. Para seguir:',
-    smartSteps: (file: string) => [
+    /** `file` nulo quando a release não carregou: aí a conferência é pelo padrão do nome. */
+    smartSteps: (file: string | null) => [
       'Clique em "Mais informações".',
-      `Confira se o aplicativo listado é ${file}. Se for outro nome, não execute e baixe de novo por esta página.`,
+      `${file ? `Confira se o aplicativo listado é ${file}.` : `Confira se o aplicativo listado começa com ${BRAND_NAME}-v e termina com -windows-x64-setup.exe.`} Se for outro nome, não execute e baixe de novo por esta página.`,
       'Clique em "Executar assim mesmo".',
     ],
     smartFigure: 'Ilustração das duas telas do aviso. No seu PC elas têm o visual do Windows.',
@@ -766,9 +765,12 @@ export const ptBR = {
         q: 'Funciona no celular ou no Mac?',
         a: 'O app é só para Windows 10 ou 11 (64 bits). No celular dá para ver lobbies e salas pelo site; para jogar, abra no PC.',
       },
-      { q: 'O app fica rodando depois que eu fecho o jogo?', a: 'Não. Ele não roda em segundo plano depois que você fecha o jogo.' },
       { q: 'Como atualizo?', a: 'O app procura atualizações ao abrir e baixa a nova versão em segundo plano. Quando o download termina, clique em “Reiniciar e atualizar”. Se você instalou uma versão antiga do app, desinstale-a e instale esta uma vez. Depois, o app atualiza sozinho.' },
-      { q: 'O antivírus disse que é vírus. E agora?', a: 'Confira o hash e siga o passo a passo do seu antivírus, na seção acima.' },
+      {
+        q: 'O antivírus disse que é vírus. E agora?',
+        a: 'Confira o hash e siga o passo a passo do seu antivírus.',
+        link: { href: '#antivirus', text: 'Ir para “Se o antivírus bloquear”' },
+      },
     ],
     toc: 'Nesta página',
     tocItems: {

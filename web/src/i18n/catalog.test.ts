@@ -4,6 +4,7 @@ import { cartao } from './cartao';
 import { desktop } from './desktop';
 import { getMessages } from './index';
 import { installTexts } from './install';
+import { instalarPagina } from './instalar-pagina';
 import { live } from './live';
 import { setLocale } from './locale';
 import { mesa } from './mesa';
@@ -66,6 +67,7 @@ describe('catálogo em inglês', () => {
     expect(englishLeaks('modosHome', () => ({ ...modosHome }))).toEqual([]);
     expect(englishLeaks('modosPagina', () => ({ ...modosPagina }))).toEqual([]);
     expect(englishLeaks('salaAtual', () => ({ ...salaAtual }))).toEqual([]);
+    expect(englishLeaks('instalarPagina', () => ({ ...instalarPagina }))).toEqual([]);
   });
 });
 
