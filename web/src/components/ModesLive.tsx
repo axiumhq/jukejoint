@@ -3,12 +3,10 @@ import { getModes } from '../data/modes';
 import { useLobbyFilters } from '../hooks/useFilters';
 import { useServerStatus } from '../hooks/useServerStatus';
 import { modosHome as M } from '../i18n/modos-home';
-import { pintura } from '../lib/pintura';
 import { useSession } from '../state/session';
-import { ModeCover, ModeIcon } from './ModeCover';
+import { ArcanoFace, arcanoClass } from './Arcano';
+import { ModeCover } from './ModeCover';
 import '../styles/modes-live.css';
-
-const ROMANOS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
 
 /**
  * Modos da home. Com lobbies: os "Arcanos", uma carta de tarô art déco por modo (numeral romano, o
@@ -47,7 +45,7 @@ export function ModesLive() {
       </h2>
       {empty && <p className="ml-sub">{M.sub}</p>}
       <ul className={empty ? 'ml-list is-cards' : 'ml-list is-arcanos'}>
-        {modes.map((m, i) => {
+        {modes.map((m) => {
           if (empty) {
             return (
               <li key={m.slug}>
@@ -63,47 +61,25 @@ export function ModesLive() {
             );
           }
           const c = byMode[m.slug];
-          const art = pintura(m.slug);
           return (
             <li key={m.slug}>
-              <button
-                type="button"
-                className={['arcano', art && 'has-art', !c && 'is-quiet'].filter(Boolean).join(' ')}
-                aria-pressed={f.mode === m.slug}
-                onClick={() => pick(m.slug)}
-              >
-                {art && (
-                  <picture className="arc-art" aria-hidden="true">
-                    <img src={art} alt="" loading="lazy" decoding="async" />
-                  </picture>
-                )}
-                <i aria-hidden="true" />
-                <i aria-hidden="true" />
-                <i aria-hidden="true" />
-                <i aria-hidden="true" />
-                <span className="arc-num" aria-hidden="true">
-                  {ROMANOS[i] ?? i + 1}
-                </span>
-                <span className="arc-sig" aria-hidden="true">
-                  <ModeIcon slug={m.slug} kind={art ? 'selo' : 'glyph'} />
-                </span>
-                <span className="arc-t">
-                  <b>{m.name}</b>
-                  <span className="arc-fmt">{m.format}</span>
-                </span>
-                <span className="arc-vivo">
-                  {c ? (
-                    <>
-                      <em>{M.lobbies(c.lobbies)}</em>
-                      <span className="arc-play"> · {M.playing(c.players)}</span>
-                    </>
-                  ) : (
-                    M.none
-                  )}
-                </span>
-                <span className="sr-only">
-                  {m.line} {M.filterHint}
-                </span>
+              <button type="button" className={arcanoClass(m.slug, { quiet: !c })} aria-pressed={f.mode === m.slug} onClick={() => pick(m.slug)}>
+                <ArcanoFace
+                  slug={m.slug}
+                  name={m.name}
+                  format={m.format}
+                  vivo={
+                    c ? (
+                      <>
+                        <em>{M.lobbies(c.lobbies)}</em>
+                        <span className="arc-play"> · {M.playing(c.players)}</span>
+                      </>
+                    ) : (
+                      M.none
+                    )
+                  }
+                  sr={`${m.line} ${M.filterHint}`}
+                />
               </button>
             </li>
           );

@@ -803,6 +803,33 @@ html.is-desktop .frame {
   display: none;
 }
 
+/* sem barra de rolagem, o pé do painel esmaece enquanto houver mais para baixo (some no fim);
+   se o painel cabe inteiro, a linha do tempo fica inativa e nada esmaece */
+@property --rail-fade {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+@keyframes rail-fade {
+  0%,
+  94% {
+    --rail-fade: 56px;
+  }
+
+  100% {
+    --rail-fade: 0px;
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .rail {
+    mask-image: linear-gradient(#000 calc(100% - var(--rail-fade)), transparent);
+    animation: rail-fade linear both;
+    animation-timeline: scroll(self);
+  }
+}
+
 .sheet-h {
   display: none;
 }

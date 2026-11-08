@@ -8,6 +8,8 @@ import { live } from './live';
 import { setLocale } from './locale';
 import { mesa } from './mesa';
 import { modosHome } from './modos-home';
+import { modosPagina } from './modos-pagina';
+import { salaAtual } from './sala-atual';
 
 /**
  * O catálogo em inglês não pode mostrar português: nem chave esquecida (que cai no pt-BR pelo
@@ -62,6 +64,8 @@ describe('catálogo em inglês', () => {
     expect(englishLeaks('mesa', () => ({ ...mesa }))).toEqual([]);
     expect(englishLeaks('cartao', () => ({ ...cartao }))).toEqual([]);
     expect(englishLeaks('modosHome', () => ({ ...modosHome }))).toEqual([]);
+    expect(englishLeaks('modosPagina', () => ({ ...modosPagina }))).toEqual([]);
+    expect(englishLeaks('salaAtual', () => ({ ...salaAtual }))).toEqual([]);
   });
 });
 

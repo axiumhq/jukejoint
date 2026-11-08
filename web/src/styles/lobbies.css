@@ -178,6 +178,7 @@
   inset: 0;
   z-index: 0;
   border-radius: inherit;
+  cursor: pointer;
 }
 
 .lc-act,
@@ -231,6 +232,48 @@
     color-mix(in srgb, var(--lc-bg) 35%, transparent) 55%,
     color-mix(in srgb, var(--lc-bg) 55%, transparent)
   );
+}
+
+/* na página do modo: sem capa, um fundo quieto de latão (quase preto, brilho quente, filete interno)
+   com o sigilo do modo gravado à direita; a faixa é mais baixa, já que não há pintura para mostrar */
+.lc.in-mode {
+  --lc-art: 150px;
+}
+
+.lc.in-mode .lc-sig {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  width: 96px;
+  height: 96px;
+  translate: 0 -50%;
+  color: var(--acc);
+  opacity: 0.22;
+  transition: opacity var(--t-fast);
+}
+
+.lc.in-mode:hover .lc-sig {
+  opacity: 0.4;
+}
+
+.lc.in-mode .lc-art {
+  background:
+    radial-gradient(ellipse 80% 90% at 22% 8%, color-mix(in srgb, var(--acc) 15%, transparent), transparent 70%),
+    var(--k0);
+}
+
+.lc.in-mode .lc-art::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 32%, transparent);
+  pointer-events: none;
+  transition: box-shadow var(--t-fast);
+}
+
+.lc.in-mode:hover .lc-art::before {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 60%, transparent);
 }
 
 /* a arte cresce 4% no hover do cartão (a transição é a da capa, base.css) */

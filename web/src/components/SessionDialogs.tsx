@@ -6,6 +6,7 @@ import { useCannotRunApp } from '../hooks';
 import { t } from '../i18n';
 import { desktop as D } from '../i18n/desktop';
 import { live as L } from '../i18n/live';
+import { salaAtual } from '../i18n/sala-atual';
 import type { EngineError } from '../lib/desktop';
 import { belowQuorum, REGIONS, roundText } from '../lib/lobbies';
 import { TOAST_MS, toastLeft } from '../lib/toast';
@@ -403,7 +404,8 @@ function Stepper({
 
 export function HostDialog() {
   const modes = getModes();
-  const { hostDialog, closeHost, createLobby, user } = useSession();
+  const { hostDialog, closeHost, createLobby, user, hereId, lobbies } = useSession();
+  const here = user && hereId ? lobbies.find((l) => l.id === hereId) : undefined;
   const [modeSlug, setModeSlug] = useState(modes[0]!.slug);
   const [name, setName] = useState('');
   const [region, setRegion] = useState<Region>('BR');
@@ -577,12 +579,18 @@ export function HostDialog() {
             </Switch>
           </div>
 
+          {here && (
+            <Note icon="exit" tone="warn">
+              {here.mine ? salaAtual.inMine(here.name) : salaAtual.inOther(here.name)}
+            </Note>
+          )}
+
           <div className="dlg-act">
             <button type="button" className="btn btn-s btn-lg" onClick={closeHost}>
               {t.host.cancel}
             </button>
             <button type="submit" className="btn btn-p btn-lg">
-              {t.host.submit}
+              {here ? salaAtual.submit : t.host.submit}
               <Icon name="arrow" />
             </button>
           </div>
