@@ -87,7 +87,7 @@ The desktop app is developed and packaged for Windows. It requires Node.js 24, R
 npm ci --prefix web
 npm ci --prefix desktop
 powershell -ExecutionPolicy Bypass -File scripts\install-modlock.ps1
-$env:MODLOCK_BIN = "$PWD\tools\modlock-v0.1.73\modlock.exe"
+$env:MODLOCK_BIN = "$PWD\tools\modlock-v0.1.85\modlock.exe"
 cd desktop
 npx tauri dev
 ```

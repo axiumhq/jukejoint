@@ -74,7 +74,7 @@ mod tests {
 
     #[test]
     fn host_is_play_by_join_code() {
-        // A v0.1.73 não tem mais `host`: chamar `modlock host` falha antes de hospedar.
+        // Desde a v0.1.73 não existe mais `host`: chamar `modlock host` falha antes de hospedar.
         assert_eq!(host(), ["--json", "play", "--host", "--ui-port", "0"]);
         assert!(!host().iter().any(|a| a == "host" || a == "--no-lobby"));
     }
