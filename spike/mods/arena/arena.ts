@@ -33,6 +33,7 @@ import {
   log,
   players,
   sequence,
+  toast,
 } from 'modlock'
 import * as cvar from 'modlock/console'
 
@@ -145,7 +146,7 @@ export const state = {
   liveAt: 0,
   endsAt: 0,
   now: 0,
-  /** O centro marcado com /arena; sem ele, o meio do caminho entre os dois lados. */
+  /** O centro marcado por quem abriu a sala; sem ele, o meio do caminho entre os dois lados. */
   marked: undefined as Vector | undefined,
   /** O centro achado sozinho na primeira rodada do mapa, que fica até o mapa mudar. */
   found: undefined as Vector | undefined,
@@ -164,10 +165,19 @@ export const state = {
   banner: undefined as { title: string; detail: string; until: number } | undefined,
   /** Os argumentos do servidor (variante=, tempo, pontos=, segundos=), acima do lobby. */
   args: {} as Record<string, string>,
-  /** O que quem abriu a sala mudou com /modo, acima da configuração dela. */
+  /** O que quem abriu a sala escolheu na tela, acima da configuração dela. */
   override: {} as Record<string, string>,
-  /** O herói que cada pessoa escolheu com /heroi, pela chave da vaga. */
+  /**
+   * Começa sozinha assim que houver duas pessoas: quando os argumentos do servidor fixam o jeito
+   * de jogar ou no autoteste. Sem isso, quem abriu a sala aperta Começar na tela de escolha.
+   */
+  auto: false,
+  /** O herói que cada pessoa escolheu na tela, pela chave da vaga. */
   chosen: new Map<string, string>(),
+  /** Quem abriu a lista de heróis durante a partida, pela chave da vaga. */
+  heroMenu: new Set<string>(),
+  /** Como acabou a última partida, para a tela de escolha. */
+  lastText: '',
   /** Segura o começo das partidas (o autoteste segura até todos os bots chegarem). */
   hold: false,
   timers: [] as Timer[],
@@ -292,6 +302,7 @@ export function configure(args: readonly string[]) {
     if (k === 'variante' || k === 'pontos' || k === 'segundos') state.args[k] = v ?? ''
     else if (k === 'tempo') state.args.tempo = v ?? 'true'
   }
+  state.auto = state.args.variante !== undefined || args.includes('probe')
 }
 
 function parseVariant(v: string | undefined): Variant | undefined {
@@ -307,7 +318,7 @@ export function hostSeat(): Seat | undefined {
   return state.queue.filter((s) => !s.bot).sort((a, b) => a.arrival - b.arrival)[0]
 }
 
-/** As regras da próxima partida: argumentos do servidor, depois /modo, depois o lobby. */
+/** As regras da próxima partida: argumentos do servidor, depois a tela de escolha, depois o lobby. */
 export function resolveRules(): Rules {
   const host = hostSeat()
   const read = (k: string) => state.args[k] ?? state.override[k] ?? host?.player.setting(k)
@@ -353,10 +364,13 @@ export function syncQueue() {
     if (known.has(connKey(c))) continue
     const s = seatOf(c)
     state.queue.push(s)
-    s.player.chat(`Arena: ${rulesLine(state.phase === 'waiting' ? resolveRules() : state.rules)} Digite /placar para ver a fila e /ajuda para os comandos.`)
+    s.player.chat(`Arena: ${rulesLine(state.phase === 'waiting' ? resolveRules() : state.rules)}`)
     if (state.queue.length > 2) tellAll(`${s.name} entrou na fila.`)
   }
-  for (const s of left) state.chosen.delete(key(s))
+  for (const s of left) {
+    state.chosen.delete(key(s))
+    state.heroMenu.delete(key(s))
+  }
 
   const gone = new Set(left.map(key))
   const lost = state.fighters.filter((f) => gone.has(key(f.seat)))
@@ -371,8 +385,7 @@ export function syncQueue() {
     }
   }
 
-  if (state.phase === 'waiting' && state.queue.length >= 2 && !state.hold) startMatch()
-  else if (state.phase === 'waiting') centerAll('Esperando mais uma pessoa para a Arena')
+  if (state.phase === 'waiting' && state.auto && state.queue.length >= 2 && !state.hold) startMatch()
   if (state.phase !== 'waiting') placeSpectators()
 }
 
@@ -402,8 +415,9 @@ export function resetToWaiting() {
   state.fighters = []
   state.score = [0, 0]
   state.round = 0
-  centerAll(state.queue.length < 2 ? 'Esperando mais uma pessoa para a Arena' : '')
-  if (state.queue.length >= 2) later(1, startMatch)
+  state.heroMenu.clear()
+  centerAll('')
+  if (state.auto && state.queue.length >= 2) later(1, startMatch)
 }
 
 /** O kit da partida (ou da rodada, no espelho): dois itens de cada aba, de nível 1 ou 2, sem ativos. */
@@ -584,7 +598,7 @@ function equipAndPlace() {
     state.phase = 'live'
     state.liveAt = state.now
     state.endsAt = state.now + (state.rules.timed ? state.rules.seconds : ROUND_LIMIT)
-    centerAll('Valendo!')
+    centerAll('Valendo')
     later(1.5, () => centerAll(''))
   })
 }
@@ -692,6 +706,8 @@ export function endMatch(side: number, text: string) {
   cancelTimers()
   state.phase = 'matchOver'
   state.lastWinner = side
+  state.lastText = text
+  state.heroMenu.clear()
   announceAll('Fim da partida', text)
   tellAll(text)
   bannerAll(side >= 0 ? `${sideName(side)} ${verb(side, 'vence', 'vencem')}` : 'Empate', text, BETWEEN_MATCHES_SECONDS)
@@ -705,11 +721,11 @@ export function endMatch(side: number, text: string) {
   const waiting = state.queue.filter((s) => !playing.has(key(s)))
   const stillHere = (list: Seat[]) => list.filter((s) => state.queue.some((q) => key(q) === key(s)))
   state.queue = [...stillHere(winners), ...waiting, ...stillHere(losers)]
+  // Depois do placar final, a tela de escolha volta; com auto, a próxima partida começa sozinha.
   later(BETWEEN_MATCHES_SECONDS, () => {
     state.phase = 'waiting'
     state.fighters = []
-    if (state.queue.length >= 2) startMatch()
-    else resetToWaiting()
+    resetToWaiting()
   })
 }
 
@@ -836,16 +852,99 @@ export function damaged(hit: DamagedEvent) {
   if (state.phase === 'live') fell(victim, hit.attacker)
 }
 
-/* ───────── comandos ───────── */
+/* ───────── a tela de escolha ───────── */
 
-export function placar(player: Player) {
-  player.chat(state.phase === 'waiting' ? 'Esperando mais uma pessoa para a Arena.' : `${scoreLine()} · ${rulesLine()}`)
-  player.chat(queueLine())
-  const me = state.fighters.find((f) => f.seat.player.slot === player.slot)
-  if (me) player.chat(`Você nesta partida: ${me.kills} abates.`)
+/** Quem abriu a sala: a pessoa que chegou primeiro, entre as que não são bots. */
+export function isHost(player: Player): boolean {
+  return hostSeat()?.player.slot === player.slot
 }
 
+export type Choice = 'variante' | 'tempo' | 'pontos'
+
+/** O item que os argumentos do servidor fixaram: ninguém muda na tela. */
+export function fixed(k: Choice): boolean {
+  return state.args[k] !== undefined
+}
+
+/** Só quem abriu a sala muda o jeito de jogar, e só o que o servidor não fixou. */
+export function canChoose(player: Player, k: Choice): boolean {
+  return isHost(player) && !fixed(k)
+}
+
+/** O jeito de jogar da próxima partida. Vale a escolha de quem abriu a sala; a das outras pessoas é ignorada. */
+export function chooseVariant(player: Player, variant: Variant): boolean {
+  if (!canChoose(player, 'variante') || !(variant in VARIANTS)) return false
+  state.override.variante = variant
+  return true
+}
+
+export function setTimed(player: Player, on: boolean): boolean {
+  if (!canChoose(player, 'tempo')) return false
+  state.override.tempo = String(on)
+  return true
+}
+
+export const MIN_POINTS = 1
+export const MAX_POINTS = 15
+
+/** Os pontos para vencer no duelo e na dupla, de 1 a 15. */
+export function setPoints(player: Player, points: number): boolean {
+  if (!canChoose(player, 'pontos')) return false
+  state.override.pontos = String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Math.round(points))))
+  return true
+}
+
+/** Um ponto a mais ou a menos, a partir do valor de agora (dois cliques no mesmo quadro somam os dois). */
+export function stepPoints(player: Player, delta: number): boolean {
+  return setPoints(player, resolveRules().target + delta)
+}
+
+/** Dá para começar: a tela está aberta e há duas pessoas (ou uma pessoa e um bot) na fila. */
+export function canBegin(): boolean {
+  return state.phase === 'waiting' && state.queue.length >= 2 && !state.hold
+}
+
+/** Começar, na tela de quem abriu a sala. */
+export function begin(player: Player): boolean {
+  if (!isHost(player) || !canBegin()) return false
+  startMatch()
+  return state.phase !== 'waiting'
+}
+
+function seatOfPlayer(player: Player): Seat | undefined {
+  return state.queue.find((s) => s.player.slot === player.slot)
+}
+
+/** O herói que a pessoa escolheu na tela, a partir da próxima rodada. */
+export function pickHero(player: Player, name: string): string | undefined {
+  const me = seatOfPlayer(player)
+  const hero = findHero(name)
+  if (!me || !hero) return undefined
+  state.chosen.set(key(me), hero.name)
+  if (state.heroMenu.delete(key(me))) toast(player, `${hero.title} a partir da próxima rodada.`, 4)
+  return hero.name
+}
+
+/** O herói escolhido por quem tem esta vaga, ou undefined para ficar com o que já tem. */
+export function chosenHero(player: Player): string | undefined {
+  const me = seatOfPlayer(player)
+  return me ? state.chosen.get(key(me)) : undefined
+}
+
+/** A lista de heróis durante a partida, aberta pelo botão Trocar herói. */
+export function openHeroMenu(player: Player) {
+  const me = seatOfPlayer(player)
+  if (me && state.phase !== 'waiting') state.heroMenu.add(key(me))
+}
+
+export function closeHeroMenu(player: Player) {
+  const me = seatOfPlayer(player)
+  if (me) state.heroMenu.delete(key(me))
+}
+
+/** Marca o centro do círculo onde está o herói de quem abriu a sala, a partir da próxima rodada. */
 export function markArena(player: Player) {
+  if (!isHost(player)) return void player.chat('Só quem abriu a sala marca o centro do círculo.')
   const p = player.pawn()
   if (!p) return void player.chat('Entre com um herói para marcar o centro do círculo.')
   state.marked = p.position
@@ -853,46 +952,28 @@ export function markArena(player: Player) {
   log('centro marcado', p.position.x, p.position.y, p.position.z)
 }
 
-export function chooseHero(player: Player, typed: string) {
-  const hero = typed ? findHero(typed) : undefined
-  const me = state.queue.find((s) => s.player.slot === player.slot)
-  if (!me) return
-  if (!hero) return void player.chat('Herói não encontrado. Exemplo: /heroi haze')
-  state.chosen.set(key(me), hero.name)
-  const now = info().mirror && state.phase !== 'waiting' ? ' No espelho o herói é sorteado; vale quando voltar a um jeito com herói livre.' : ' Vale a partir da próxima rodada.'
-  player.chat(`Seu herói: ${hero.title}.${now}`)
+/** Quantos bots de treino ainda cabem: só com menos de duas pessoas, até completar os lados (no máximo 4 lugares). */
+export function botRoom(): number {
+  const listed = players()
+  if (listed.filter((c) => !c.bot && c.ready).length >= 2) return 0
+  const rules = state.phase === 'waiting' ? resolveRules() : state.rules
+  return Math.max(0, Math.min(2 * VARIANTS[rules.variant].perSide, 4) - listed.length)
 }
 
-/** /modo: quem chegou primeiro muda o jeito de jogar para a próxima partida. */
-export function chooseMode(player: Player, args: string) {
-  const host = hostSeat()
-  const words = args.toLowerCase().split(/\s+/).filter(Boolean)
-  if (words.length === 0) {
-    player.chat(`Agora: ${rulesLine()} Próxima: ${rulesLine(resolveRules())}`)
-    return void player.chat('Jeitos: /modo duelo, dupla, times ou espelho; /modo tempo liga ou desliga o relógio.')
-  }
-  if (!host || host.player.slot !== player.slot) return void player.chat(`Só ${host?.name ?? 'quem abriu a sala'} muda o jeito de jogar.`)
-  for (const w of words) {
-    if (parseVariant(w)) state.override.variante = w
-    else if (w === 'tempo') state.override.tempo = String(!resolveRules().timed)
-    else if (/^\d+$/.test(w)) state.override.pontos = w
-  }
-  tellAll(`Próxima partida: ${rulesLine(resolveRules())}`)
+export function botCount(): number {
+  return players().filter((c) => c.bot).length
 }
 
-/** /bot: um bot de treino, só com menos de duas pessoas, até completar os lados. */
+/** Um bot de treino, só com menos de duas pessoas, até completar os lados. */
 export function trainingBot(player: Player) {
   const listed = players()
   if (listed.filter((c) => !c.bot && c.ready).length >= 2) return void player.chat('Bots de treino só entram com menos de duas pessoas no servidor.')
+  if (botRoom() === 0) return void player.chat('Os lados já estão completos.')
   const rules = state.phase === 'waiting' ? resolveRules() : state.rules
-  const seats = Math.min(2 * VARIANTS[rules.variant].perSide, 4)
-  if (listed.length >= seats) return void player.chat('Os lados já estão completos.')
   // Sem herói o bot não entra (o host recusa o herói 0). No espelho, todos os bots com o mesmo.
   const botHero = listed.map((c) => (c.bot ? c.player.pawn()?.hero : undefined)).find((h) => h)
   const hero = VARIANTS[rules.variant].mirror && botHero ? botHero : pick(heroes).name
-  const bots = listed.filter((c) => c.bot).length
-  addBot({ name: `Treino ${bots + 1}`, team: TEAM_OF_SIDE[(listed.length) % 2], hero })
-  player.chat('Um bot entrou na fila para você treinar.')
+  addBot({ name: `Treino ${botCount() + 1}`, team: TEAM_OF_SIDE[listed.length % 2], hero })
 }
 
 export function removeBots(player: Player) {
@@ -901,7 +982,43 @@ export function removeBots(player: Player) {
   player.chat(bots.length === 0 ? 'Não há bots.' : 'Os bots saíram.')
 }
 
+/* ───────── comandos: reserva escondida, a tela faz tudo isto ───────── */
+
+export function placar(player: Player) {
+  player.chat(state.phase === 'waiting' ? 'Esperando mais uma pessoa para a Arena.' : `${scoreLine()} · ${rulesLine()}`)
+  player.chat(queueLine())
+  const me = state.fighters.find((f) => f.seat.player.slot === player.slot)
+  if (me) player.chat(`Você nesta partida: ${me.kills} abates.`)
+}
+
+export function chooseHero(player: Player, typed: string) {
+  const hero = typed ? findHero(typed) : undefined
+  if (!seatOfPlayer(player)) return
+  if (!hero) return void player.chat('Herói não encontrado.')
+  pickHero(player, hero.name)
+  const now = info().mirror && state.phase !== 'waiting' ? ' No espelho o herói é sorteado; vale quando voltar a um jeito com herói livre.' : ' Vale a partir da próxima rodada.'
+  player.chat(`Seu herói: ${hero.title}.${now}`)
+}
+
+/** O jeito de jogar por texto, para quem abriu a sala: as mesmas regras da tela. */
+export function chooseMode(player: Player, args: string) {
+  const host = hostSeat()
+  const words = args.toLowerCase().split(/\s+/).filter(Boolean)
+  if (words.length === 0) {
+    player.chat(`Agora: ${rulesLine()} Próxima: ${rulesLine(resolveRules())}`)
+    return void player.chat('O jeito de jogar se escolhe na tela da Arena, antes de cada partida.')
+  }
+  if (!host || host.player.slot !== player.slot) return void player.chat(`Só ${host?.name ?? 'quem abriu a sala'} muda o jeito de jogar.`)
+  for (const w of words) {
+    const v = parseVariant(w)
+    if (v) chooseVariant(player, v)
+    else if (w === 'tempo') setTimed(player, !resolveRules().timed)
+    else if (/^\d+$/.test(w)) setPoints(player, Number(w))
+  }
+  tellAll(`Próxima partida: ${rulesLine(resolveRules())}`)
+}
+
 export function help(player: Player) {
-  player.chat('/placar: placar e fila · /heroi nome: seu herói · /arena: centro do círculo onde você está')
-  player.chat('/modo: jeito de jogar (quem abriu a sala muda) · /bot e /tirarbots: bots de treino')
+  player.chat('Antes de cada partida, a tela da Arena mostra o jeito de jogar, o seu herói e os bots de treino. Quem abriu a sala escolhe o jeito e aperta Começar.')
+  player.chat('Durante a partida, segure Tab para trocar de herói (vale na rodada seguinte). Quem abriu a sala também marca ali o centro do círculo.')
 }

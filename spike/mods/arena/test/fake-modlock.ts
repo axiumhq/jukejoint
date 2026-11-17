@@ -27,6 +27,13 @@ export class FakePlayer {
   ui: unknown
   bot = false
   removed = false
+  /** The buttons the mod withholds from this player's hero (blockInput). */
+  blocked = 0n
+  /** Whether the mod freed the cursor, and every freeCursor call in order. */
+  cursor = false
+  cursorCalls: boolean[] = []
+  /** Tab held: the game shows the cursor on its own. */
+  tab = false
   private pendingHero: { hero: string; team: number } | undefined
   constructor(readonly slot: number) {}
 
@@ -65,6 +72,7 @@ export class FakePlayer {
   unwatch() { this.watching = undefined; return true }
   kill() { if (this.pawnState) this.pawnState.health = 0; return true }
   removeBot() { this.removed = true; fake.leave(this); return true }
+  blockInput(buttons: bigint) { this.blocked = buttons; return true }
   /** A KIND_MAX metric (the streak) keeps the largest value; the rest add up. */
   addMetric(name: string, value: number) { this.metrics[name] = name.endsWith('.sequencia') ? Math.max(this.metrics[name] ?? 0, value) : (this.metrics[name] ?? 0) + value; return true }
   said(part: string) { return this.log.some((l) => l.includes(part)) }
@@ -172,6 +180,59 @@ export const fake = {
   liveTexts() {
     return world.texts.filter((t) => !t.removed)
   },
+  /** Every button and input on the player's screen now, with its text (and tooltip). */
+  controls(player: FakePlayer): Control[] {
+    const out: Control[] = []
+    collect(player.ui, out)
+    return out
+  },
+  /** The first control whose text holds text, or undefined. */
+  control(player: FakePlayer, text: string) {
+    return fake.controls(player).find((c) => c.text.includes(text))
+  },
+  /**
+   * The player clicks the control whose text holds text. A disabled control takes no press, as in
+   * the game; force calls its handler anyway, to test the mod's own guard.
+   */
+  press(player: FakePlayer, text: string, opts: { force?: boolean } = {}) {
+    const c = fake.control(player, text)
+    if (!c || (c.disabled && !opts.force)) return false
+    const fn = (c.props.onPress ?? c.props.onChange) as (p: FakePlayer, v?: unknown) => void
+    fn(player, true)
+    return true
+  },
+  /** The player changes an input (a toggle) to value. */
+  change(player: FakePlayer, text: string, value: unknown, opts: { force?: boolean } = {}) {
+    const c = fake.control(player, text)
+    if (!c || !c.props.onChange || (c.disabled && !opts.force)) return false
+    ;(c.props.onChange as (p: FakePlayer, v: unknown) => void)(player, value)
+    return true
+  },
+  /** All the text on the player's screen, joined. */
+  screen(player: FakePlayer) {
+    return textOf(player.ui)
+  },
+}
+
+export interface Control { text: string; disabled: boolean; props: Record<string, unknown> }
+
+type UiNode = { type?: unknown; name?: string; props?: Record<string, unknown> }
+
+function textOf(c: unknown): string {
+  if (c === null || c === undefined || typeof c === 'boolean') return ''
+  if (typeof c === 'string' || typeof c === 'number') return String(c)
+  if (Array.isArray(c)) return c.map(textOf).filter(Boolean).join(' ')
+  const n = c as UiNode
+  const own = ['tooltip', 'heading', 'line', 'title', 'detail'].map((k) => n.props?.[k]).filter((v) => typeof v === 'string')
+  return [...own, textOf(n.props?.children)].filter(Boolean).join(' ')
+}
+
+function collect(c: unknown, out: Control[]) {
+  if (c === null || c === undefined || typeof c !== 'object') return
+  if (Array.isArray(c)) return void c.forEach((x) => collect(x, out))
+  const n = c as UiNode
+  if (n.props?.onPress || n.props?.onChange) out.push({ text: textOf(n), disabled: !!n.props.disabled, props: n.props })
+  collect(n.props?.children, out)
 }
 
 function timer(at: number, fn: () => number | void, repeat: boolean) {
@@ -246,6 +307,17 @@ export const TopStrip = marker('TopStrip')
 export const Score = marker('Score')
 export const Pips = marker('Pips')
 export const Banner = marker('Banner')
+export const Action = marker('Action')
+export const Text = marker('Text')
+export const Tag = marker('Tag')
+export const toast = (p: FakePlayer, t: string) => { p.log.push(`toast:${t}`); return true }
+export const freeCursor = (p: FakePlayer, free: boolean) => { p.cursor = free; p.cursorCalls.push(free); return true }
+/** Undefined without a hero, as on the host. */
+export const cursorFree = (p: FakePlayer) => (p.pawnState ? p.cursor || p.tab : undefined)
+export const Buttons = { attack: 1n, altFire: 2n, melee: 4n, ability1: 8n, ability2: 16n, ability3: 32n, ultimate: 64n, jump: 128n, crouch: 256n, dash: 512n, use: 1024n, reload: 2048n, parry: 4096n }
+/** Colors, sizes and sounds: any token reads as a plain value. */
+const token = new Proxy({}, { get: (_, k) => (typeof k === 'string' ? `#${k}` : undefined) })
+export const theme = { tones: token, shades: token, sizes: { radius: 4, panelRadius: 8, control: 32, rowControl: 28, row: 32 }, sounds: { hover: 'hover', press: 'press' } }
 export class ProbeRun { tick() {} }
 
 // modlock/jsx-runtime

@@ -14,9 +14,16 @@ async function load(args: string[] = []) {
 
 type Loaded = Awaited<ReturnType<typeof load>>
 
-/** Runs frames until the match reaches phase (a round valendo, by default). */
+/**
+ * Runs frames until the match reaches phase (a round valendo, by default). With the pick screen
+ * up, the person who opened the room presses Começar as soon as it takes the press.
+ */
 function until({ w, a }: Loaded, phase: string = 'live', max = 30) {
-  for (let i = 0; i < max * 10 && a.state.phase !== phase; i++) w.tick(0.1)
+  for (let i = 0; i < max * 10 && a.state.phase !== phase; i++) {
+    const host = a.hostSeat()
+    if (a.state.phase === 'waiting' && phase !== 'waiting' && host) w.press(host.player as unknown as FakePlayer, 'Começar')
+    w.tick(0.1)
+  }
   expect(a.state.phase).toBe(phase)
 }
 
@@ -43,7 +50,8 @@ describe('Arena: espera e começo', () => {
     const l = await load()
     const a = l.w.join('Ana')
     l.w.tick(3)
-    expect(a.said('Esperando mais uma pessoa')).toBe(true)
+    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
+    expect(l.w.control(a, 'Começar')?.disabled).toBe(true)
     expect(l.a.state.phase).toBe('waiting')
   })
 
@@ -175,7 +183,8 @@ describe('Arena: duelo no círculo', () => {
     l.w.disconnect(b)
     expect(a.said('Bia saiu. Ana leva a partida.')).toBe(true)
     l.w.tick(8)
-    expect(a.said('Esperando mais uma pessoa')).toBe(true)
+    expect(l.a.state.phase).toBe('waiting')
+    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
   })
 
   it('a rodada sem queda acaba no tempo: vence quem tem mais vida; vida igual repete', async () => {

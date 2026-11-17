@@ -1,9 +1,10 @@
 // Arena: duelo no círculo, dupla, times e espelho, com ou sem tempo, num círculo marcado no
-// chão com gás do lado de fora. As regras ficam em arena.ts, o círculo e o gás em circulo.ts, o
-// placar na tela em hud.tsx e o autoteste com bots em probe.ts.
+// chão com gás do lado de fora. As regras ficam em arena.ts, o círculo e o gás em circulo.ts, a
+// tela de escolha em escolha.tsx, o placar na tela em hud.tsx e o autoteste com bots em probe.ts.
 //
-// O jeito de jogar vem da configuração do lobby de quem abriu a sala (variante, tempo, pontos)
-// ou dos argumentos do servidor (`--arg variante=times --arg tempo`), que valem acima dela.
+// O jeito de jogar vem dos argumentos do servidor (`--arg variante=times --arg tempo`), depois do
+// que quem abriu a sala escolheu na tela, depois da configuração do lobby dessa pessoa. Tudo se
+// escolhe na tela; os comandos abaixo ficam só como reserva e nenhum texto manda ninguém para eles.
 import { command, onDamage, onDamaged, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld, Strays } from 'modlock'
 
 import {
