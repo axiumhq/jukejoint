@@ -103,18 +103,18 @@ node ..\..\..\web\node_modules\vitest\vitest.mjs run --config test\vitest.config
 Para conferir que o modo compila e os tipos da SDK batem:
 
 ```powershell
-..\..\..\tools\modlock-v0.1.73\modlock.exe build
+..\..\..\tools\modlock-v0.1.85\modlock.exe build
 node ..\..\..\web\node_modules\typescript\bin\tsc -p tsconfig.json
 ```
 
 **Autoteste no servidor do jogo, sem pessoas** (`probe.ts`). Com o Deadlock fechado e um servidor de cada vez, rode nesta pasta:
 
 ```powershell
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe --arg variante=duelo --arg pontos=3
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe --arg variante=times
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe --arg variante=duelo --arg tempo --arg segundos=40
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe --arg variante=dupla --arg pontos=2
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe --arg variante=espelho
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe --arg variante=duelo --arg pontos=3
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe --arg variante=times
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe --arg variante=duelo --arg tempo --arg segundos=40
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe --arg variante=dupla --arg pontos=2
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe --arg variante=espelho
 ```
 
 Com o jeito nos argumentos (ou com `probe`), a partida começa sozinha assim que os bots chegam, como antes da tela de escolha; por isso o autoteste não precisou mudar.
