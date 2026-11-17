@@ -372,17 +372,18 @@ function Highlights() {
       {state.callouts
         .filter((c) => state.now < c.until)
         .map((c) => (
-          <Highlight key={`${c.title}-${c.until}`} callout={c} />
+          <Highlight key={`${c.title}-${c.until}`} callout={c} small={Boolean(state.banner && state.now < state.banner.until)} />
         ))}
     </panel>
   )
 }
 
-function Highlight(props: { callout: Callout }) {
+/** Um destaque. Sob a faixa de vitória ele fica menor, para não disputar com o resultado. */
+function Highlight(props: { callout: Callout; small?: boolean }) {
   const c = props.callout
   return (
-    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [12, 0, 0, 0], transition: { seconds: 0.25, easing: 'out' } }} enter={{ opacity: 0, scale: 1.2 }} exit={{ opacity: 0 }}>
-      <L size={44} block color={P.brass} shadow style={{ horizontalAlign: 'center' }}>
+    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [props.small ? 22 : 12, 0, 0, 0], transition: { seconds: 0.25, easing: 'out' } }} enter={{ opacity: 0, scale: 1.2 }} exit={{ opacity: 0 }}>
+      <L size={props.small ? 28 : 44} block color={P.brass} shadow style={{ horizontalAlign: 'center' }}>
         {c.title}
       </L>
       {c.detail ? (
@@ -396,11 +397,16 @@ function Highlight(props: { callout: Callout }) {
 
 /* ───────── abaixo da mira ───────── */
 
+/** Só para a vitrine da prévia, que não tem herói de verdade: o aviso de fora do círculo a mostrar. */
+export const previewOutside: { value?: { meters: number; turn: number } } = {}
+
 /** Se a pessoa está de pé fora do círculo agora, quantos metros faltam e para onde virar. */
+
 export function outside(seat: Seat): { meters: number; turn: number } | undefined {
   if (state.phase !== 'live' || !state.ring.center) return undefined
   const f = state.fighters.find((x) => key(x.seat) === key(seat))
   const p = seat.player.pawn()
+  if (f && f.alive && !p && previewOutside.value) return previewOutside.value
   if (!f || !f.alive || !p || p.health <= 0) return undefined
   const center = state.ring.center
   const radius = currentRadius()

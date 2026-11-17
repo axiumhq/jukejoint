@@ -8,6 +8,7 @@
 import { type Connection, heroes, type Player, players, type Vector } from 'modlock'
 
 import { type Fighter, key, type Rules, type Seat, state, TIMED_SECONDS, VARIANTS } from './arena'
+import { previewOutside } from './hud'
 
 export const VITRINES = ['votacao', 'contagem', 'partida', 'times', 'fora', 'caiu', 'rodada', 'vitoria', 'heroi'] as const
 export type Vitrine = (typeof VITRINES)[number]
@@ -181,6 +182,8 @@ export function showcase(name: Vitrine, now: number): void {
       const yaw = (((pawn?.cameraAngles?.yaw ?? 0) - 90) * Math.PI) / 180
       const d = VARIANTS.duelo.radius + 320
       if (!state.ring.center) ring(near(Math.cos(yaw) * d, Math.sin(yaw) * d), VARIANTS.duelo.radius)
+      // A prévia sem jogo não tem herói de verdade para medir: mostra o aviso com números de exemplo.
+      if (!pawn) previewOutside.value = { meters: 12, turn: 70 }
       break
     }
     case 'caiu': {
