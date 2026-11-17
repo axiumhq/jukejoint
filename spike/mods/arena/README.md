@@ -37,16 +37,15 @@ Argumentos do servidor valem acima de tudo, para quem roda o servidor e para o a
 
 ## A escolha, por votação
 
-Antes de cada partida (quando a sala abre e depois de cada fim de partida), um quadro compacto aparece logo abaixo do placar, no topo (`escolha.tsx`), como num modo do próprio jogo. Todo mundo continua andando pelo mapa e segura o Tab para clicar. Quem está sem herói (quem assistia a partida anterior) fica com o cursor solto e os ataques presos, porque sem herói o jogo não tem o Tab.
+Antes de cada partida (quando a sala abre e depois de cada fim de partida), um painel aparece à esquerda (`escolha.tsx`), no desenho "Lista com votos" (`.design/arena-hud/opcoes.html`, opção A), e o meio da tela e a mira ficam livres. Todo mundo continua andando pelo mapa e segura o Tab para clicar. Quem está sem herói (quem assistia a partida anterior) fica com o cursor solto e os ataques presos, porque sem herói o jogo não tem o Tab. No topo, duas linhas: o que vale pela votação ("Duelo no círculo · até 5 rodadas") e quando começa ("Começa quando as 3 pessoas estiverem prontas", ou "Começando em 3"). Cada informação aparece uma vez só.
 
-- **Votos**: cada pessoa na fila vota em cada grupo de botões, separado: o jeito (Duelo no círculo, Dupla, Times, Espelho), Por rodadas ou Com tempo, e os pontos (Até 3, 5, 7 ou 10, só no duelo e na dupla por rodadas). Cada botão mostra quantos votos tem; o voto da própria pessoa fica com a borda clara; o valor que vale agora fica cheio. Clicar em outro botão muda o voto; clicar de novo no mesmo tira. Bots não votam.
-- **Quem vence a votação**: o mais votado. No empate, fica o que valeu na última partida; sem nenhum voto (ou no empate antes da primeira partida), a configuração do lobby de quem chegou primeiro. A linha debaixo dos botões diz a regra do que vale agora ("Times, até 6 contra 6 · Vence quem levar 3 rodadas.").
-- **Precisa caber**: o jeito votado precisa de gente bastante (a dupla, de 4; bots contam). Se falta, o botão diz "faltam N" e a partida não começa.
-- **Seu herói**: o botão Escolher herói abre a lista por cima: a grade com o nome de cada herói e, ao lado, o retrato grande do escolhido (vale da primeira rodada em diante). No espelho, o botão dá lugar ao aviso de que o herói é sorteado a cada rodada.
-- **Na sala**: cada pessoa com o retrato e o nome do herói dela, "pronto" quando apertou Pronto, e os bots como "bot de treino".
-- **Bots de treino**: sozinha na sala, a pessoa vê **Treinar com um bot** (depois **Mais um bot**, até completar os lados, no máximo 4 lugares) e **Tirar os bots** quando há bots.
-- **Pronto**: cada pessoa aperta o seu (de novo, tira). A linha grande diz "1 de 2 prontos", ou "Falta mais uma pessoa". Com todo mundo pronto e o jeito cabendo, aparece "Começando em 3"; se alguém tira o pronto, sai ou o jeito deixa de caber, a contagem para. Sozinha com um bot de treino, basta o Pronto da pessoa. Depois de uma partida, o botão diz **Jogar de novo**, e o resultado da última partida aparece embaixo.
-- A partida **não começa sozinha** sem o Pronto de todo mundo. A exceção é quando os argumentos do servidor fixam o jeito (`--arg variante=…`) ou no autoteste (`--arg probe`): aí ela começa assim que houver duas pessoas, como antes, e o quadro não tem Pronto.
+- **Modo**: uma linha por modo, com o nome, a regra curta e os votos à direita; uma barra de latão por trás mostra a parte dos votos. O modo que vale tem a borda de latão; o voto da própria pessoa ganha a etiqueta "seu voto". Um modo que não cabe na sala fica apagado e diz "Precisa de 4 pessoas · falta 1" (só a dupla precisa de 4; bots contam).
+- **Partida e Vence com**: dois controles lado a lado, Rodadas | Tempo e 3 | 5 | 7 | 10, cada um com os votos embaixo; o que vale fica em latão e o voto da pessoa sublinhado. Com tempo, no lugar dos pontos aparece "3 minutos, o círculo fecha"; nos times e no espelho, "3 rodadas".
+- **Votos**: cada pessoa na fila vota em cada grupo. Clicar em outro valor muda o voto; clicar de novo no mesmo tira. Bots não votam. Vale o mais votado; no empate, o que valeu na última partida; sem nenhum voto (ou no empate antes da primeira partida), a configuração do lobby de quem chegou primeiro.
+- **Herói**: o retrato do herói, o nome e "Seu herói", com o botão **Trocar**, que abre a lista de heróis por cima (a grade com o nome de cada um e o retrato grande do escolhido; vale da primeira rodada). Sem herói, uma silhueta e "Escolha um herói". No espelho, o aviso de que o herói é sorteado a cada rodada.
+- **Pronto**: o botão de latão **Estou pronto**; apertado, vira "Pronto · clique para cancelar", em verde; depois de uma partida, **Jogar de novo**. Embaixo, quem está na sala (retrato ou inicial e o nome; verde quando está pronto; bots com "bot"), e a linha "2 de 3 prontos · falta Mina" (ou "falta você"), com a tecla Tab desenhada e "segure para clicar". Com todo mundo pronto e o modo cabendo, a contagem de 3 corre; se alguém cancela, sai ou o modo deixa de caber, ela para. Sozinha com um bot de treino, basta o pronto da pessoa.
+- **Bots de treino** (só quando servem: sozinha na sala, ou com bots): **Treinar com um bot**, **Mais um bot** (até completar os lados, no máximo 4 lugares) e **Tirar os bots**. Quem chegou primeiro também vê **Marcar o centro aqui**.
+- A partida **não começa sozinha** sem o pronto de todo mundo. A exceção é quando os argumentos do servidor fixam o jeito (`--arg variante=…`) ou no autoteste (`--arg probe`): aí ela começa assim que houver duas pessoas, como antes, sem botão de pronto, e a lista de modos diz "definido pelo servidor".
 
 **Durante a partida**, segurando o Tab (o jogo mostra o cursor), aparece um quadro pequeno à esquerda: **Trocar herói** abre a lista de heróis (o novo herói entra na próxima rodada; não aparece no espelho) e, só para quem chegou primeiro à sala, **Marcar o centro aqui** muda o centro do círculo para onde o herói está, a partir da próxima rodada. Sem centro marcado, o centro é o meio do caminho entre os dois lados, no chão. Quem assiste da fila, sem herói, vê o quadro o tempo todo. Enquanto o Tab está segurado, o nosso placar sai da frente do placar do jogo.
 
@@ -54,20 +53,40 @@ Os comandos antigos (`/placar`, `/heroi`, `/modo`, `/arena`, `/bot`, `/tirarbots
 
 ## Na tela e nos números
 
+Tudo no mesmo desenho do painel (`paleta.tsx`): painéis escuros translúcidos com uma linha fina, marfim para o texto, latão para o que vale, âmbar e safira para os lados, verde para pronto e um tom de alerta para o gás e para o que falta. As faces de letra são as do próprio jogo. Sem enfeite.
+
 - **O HUD do jogo**: a Arena esconde a barra do topo, a marca do canto, as almas, os números da esquerda, os avisos de nível e o minimapa (`hideHud`, pedido só quando muda, nunca para bots). Vida, munição e habilidades ficam. Com a lista de heróis aberta, somem também munição e habilidades.
-- **O placar**, no lugar da barra do topo: cada lado com o retrato (nos times, até 6, apagados de quem caiu), o nome no tom do time (âmbar e safira, os do jogo) e o herói ou quantos estão de pé; os pontos grandes de cada lado; no meio, a rodada com o relógio dela, ou o relógio da partida com tempo; marcadores de pontos até 7. Quem olha fica sempre à esquerda. Antes da partida, o placar mostra quem vai lutar contra quem. Embaixo, "O círculo fecha" com uma barra do raio que falta.
+- **O placar**, compacto, no lugar da barra do topo: cada lado com o retrato (nos times, até 6, apagados de quem caiu), o nome em âmbar ou safira e o herói ou quantos estão de pé; os pontos grandes de cada lado; no meio, a rodada com o relógio dela, ou o relógio da partida com tempo; marcadores de pontos até 7. Quem olha fica sempre à esquerda. Embaixo, "O círculo fecha" com uma barra do raio que falta. Com o Tab segurado, o placar sai da frente.
 - **No meio da tela**: "Rodada N" enquanto os heróis aparecem; a contagem 3, 2, 1 grande e o "Valendo"; a faixa de quem levou a rodada ou a partida ("Você levou a rodada", "Você venceu"), com o retrato de quem venceu e o placar; e os destaques "Primeira queda" e "Sem tomar dano" (quando o lado que levou a rodada não perdeu vida nenhuma, nem no gás).
-- **Abaixo da mira**: fora do círculo, "Fora do círculo", quanto o gás tira, quantos metros faltam até o círculo e uma seta para o centro, com a borda da tela vermelha pulsando; quem caiu vê "Você volta em 3" (com tempo) ou "Você caiu" (por rodadas); quem assiste vê a posição na fila.
-- **À esquerda**: as últimas quedas, com quem derrubou quem, ou o gás.
-- **O anel no chão**: uma corrente de 40 lasers rentes ao chão, o efeito de mira do Assassinato (`particles/abilities/assassinate_laser_targetting.vpcf`, um dos efeitos que o host v0.1.73 traz liberados), no tom coral do destaque. A ponta de cada trecho segue o começo do trecho seguinte, então o anel fecha junto com o círculo. Se o host recusar o efeito, o anel volta a ser de 40 traços de texto (`createText`), maiores que os `◆` de antes.
+- **Abaixo da mira**: fora do círculo, "Fora do círculo", quanto o gás tira, quantos metros faltam até o círculo e uma seta para o centro, com a borda da tela pulsando; quem caiu vê "Você volta em 3" (com tempo) ou "Você caiu" (por rodadas); quem assiste vê a posição na fila.
+- **À esquerda**: as últimas quedas, com quem derrubou quem, ou o gás; com o Tab, o quadro de Trocar herói e Marcar o centro.
+- **O anel no chão**: uma corrente de 40 lasers rentes ao chão, o efeito de mira do Assassinato (`particles/abilities/assassinate_laser_targetting.vpcf`, um dos efeitos que o host v0.1.73 traz liberados), no latão puxado para o âmbar (diferente do anel vermelho do Hyperline). A ponta de cada trecho segue o começo do trecho seguinte, então o anel fecha junto com o círculo. Se o host recusar o efeito, o anel volta a ser de 40 traços de texto (`createText`).
 - Métricas (`mod.json`): `arena.abates` (soma), `arena.vitorias` (soma) e `arena.sequencia` (a maior sequência de abates sem cair).
+
+## A vitrine, para a prévia
+
+A prévia do Modlock (`modlock dev --sandbox`) tem uma pessoa de mentira no lugar de quem joga e nenhum bot, então sem ajuda só dá para ver a escolha. Com `--arg vitrine=<estado>`, a Arena não joga: a cada quadro, monta aquele momento com pessoas e números de mentira em volta da pessoa da prévia e põe o anel no chão, para a tela mostrar o momento parado (`vitrine.ts`). Sem o argumento, ou com um estado que não existe, nada disso roda.
+
+| `--arg vitrine=…` | O que aparece |
+|---|---|
+| `votacao` | a escolha com 3 pessoas e os votos do desenho (duelo 2, espelho 1; rodadas 2, tempo 1; 5 com 2 votos), 2 de 3 prontos |
+| `heroi` | a mesma escolha com a lista de heróis aberta |
+| `contagem` | a contagem da rodada 2, no 2 |
+| `partida` | duelo com tempo, 2 a 1, relógio em 1:47 |
+| `times` | 4 contra 4, um caído de cada lado |
+| `fora` | fora do círculo, com a distância e a seta (o centro fica à direita de onde a câmera olhava) |
+| `caiu` | dupla, a pessoa da prévia caída esperando a próxima rodada |
+| `rodada` | a faixa de quem levou a rodada |
+| `vitoria` | o resultado da partida com o destaque "Sem tomar dano" |
 
 ## Arquivos
 
 - `arena.ts`: jeitos de jogar, votação, Pronto, fila, fases, placar, quedas e o que cada botão da tela faz.
-- `escolha.tsx`: o quadro da escolha, a lista de heróis e o quadro do Tab.
+- `escolha.tsx`: o painel da escolha, as duas linhas do topo antes da partida, a lista de heróis e o quadro do Tab.
 - `circulo.ts`: o anel de lasers (ou de texto), o raio que fecha, a distância até a borda, a direção do centro e a conta do gás.
 - `hud.tsx`: o que cada pessoa vê a cada quadro (placar, contagem, faixas, avisos, quedas), o HUD do jogo escondido, o cursor e os botões presos.
+- `paleta.tsx`: as cores, o texto, o painel e o botão de contorno que todas as telas usam.
+- `vitrine.ts`: os momentos de mentira para a prévia (`--arg vitrine=…`).
 - `probe.ts`: o autoteste no servidor do jogo.
 - `test/`: os testes com a SDK falsa.
 
@@ -121,9 +140,9 @@ O autoteste mostrou duas coisas do host da v0.1.73:
 ## O que ainda não foi provado no jogo
 
 Os testes cobrem as regras, e o autoteste roda só com bots, sem o jogo aberto. Na primeira partida com gente (17/11/2026), o placar antigo ficava por cima da barra do topo do jogo e o anel de `◆` não aparecia; o HUD, a escolha e o anel foram refeitos depois disso. Falta ver no jogo:
-- se o laser do anel aparece rente ao chão, inteiro, e se fecha junto com o círculo: o ponto de controle da ponta (1), a âncora que segue o trecho seguinte, o tom coral por cima do vermelho do efeito e o precache só foram provados nos testes; se o host recusar o efeito, o anel volta a ser de texto (a linha `círculo` do log do servidor termina em `lasers` ou `texto`);
+- se o laser do anel aparece rente ao chão, inteiro, e se fecha junto com o círculo: o ponto de controle da ponta (1), a âncora que segue o trecho seguinte, o latão por cima do vermelho do efeito e o precache só foram provados nos testes; se o host recusar o efeito, o anel volta a ser de texto (a linha `círculo` do log do servidor termina em `lasers` ou `texto`);
 - se esconder a barra do topo (`topBar`) esconde também os cartões do placar do Tab; se não, o nosso placar some enquanto o Tab está segurado, mas o quadro da escolha (que precisa do Tab) pode ficar debaixo deles;
-- tamanhos e leitura do placar, do quadro da escolha, da contagem e dos avisos sobre o mapa, em 1920×1080 e em 1366×768; a borda vermelha do gás e se ela pulsa;
+- tamanhos e leitura do placar, do painel da escolha (se ele termina acima da vida e dos itens do jogo), da contagem e dos avisos sobre o mapa, em 1920×1080 e em 1366×768; se os fundos translúcidos ficam tão leves quanto no desenho (o Panorama costuma pesar a transparência); a borda do gás e se ela pulsa;
 - se a seta para o centro gira para o lado certo (o yaw da câmera) e se os metros batem com o que o jogo mostra (a conta usa 1 unidade = 1 polegada);
 - a troca de time e de herói de pessoas de verdade: os bots do autoteste já chegam no time e no herói certos (o host não troca o herói de um bot), então `changeTeam`, o `selectHero` do espelho e a troca de herói pela tela só foram provados nos testes;
 - no espelho com bots, o herói é sempre o dos bots; o sorteio por rodada só foi provado nos testes;

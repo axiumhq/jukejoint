@@ -23,7 +23,7 @@ function until({ w, a }: Loaded, phase: string, max = 30) {
     if (a.state.phase === 'waiting' && phase !== 'waiting') {
       for (const s of a.voters()) {
         const p = s.player as unknown as FakePlayer
-        if (!a.isReady(p as never)) w.press(p, 'Pronto') || w.press(p, 'Jogar de novo')
+        if (!a.isReady(p as never)) w.press(p, 'Estou pronto') || w.press(p, 'Jogar de novo')
       }
     }
     w.tick(0.1)
@@ -60,10 +60,12 @@ describe('Arena: a escolha', () => {
     const l = await room()
     expect(l.a.state.phase).toBe('waiting')
     const text = l.w.screen(l.ana)
-    for (const t of ['Duelo no círculo', 'Dupla', 'Times', 'Espelho', '1 contra 1', '2 contra 2', 'até 6 contra 6', 'Com tempo', 'Por rodadas', 'Na sala']) {
+    for (const t of ['Duelo no círculo', 'Dupla', 'Times', 'Espelho', '1 contra 1, com fila', 'Precisa de 4 pessoas · faltam 2', 'Até 6 contra 6', 'Todos com o mesmo herói', 'Rodadas', 'Tempo', 'Estou pronto']) {
       expect(text).toContain(t)
     }
-    expect(text).toContain('Segure Tab e clique para votar')
+    // No topo, duas linhas: o que vale pela votação e quando começa.
+    expect(text).toContain('Duelo no círculo · até 5 rodadas Começa quando as 2 pessoas estiverem prontas')
+    expect(text).toContain('0 de 2 prontos · faltam você e Bia')
     // Sem herói (quem assistia), o jogo não tem Tab: o cursor fica solto e os ataques presos, uma vez só.
     expect(l.ana.cursor).toBe(true)
     expect(l.ana.blocked & l.Buttons.attack).toBe(l.Buttons.attack)
@@ -74,6 +76,7 @@ describe('Arena: a escolha', () => {
     l.w.tick(0.1)
     expect(l.ana.cursor).toBe(false)
     expect(l.ana.blocked).toBe(0n)
+    expect(l.w.screen(l.ana)).toContain('Tab segure para clicar')
     // Ninguém manda em ninguém: não há texto de quem abriu a sala.
     expect(screens(l, l.ana, l.bia)).not.toContain('abriu a sala')
   })
@@ -92,9 +95,9 @@ describe('Arena: a escolha', () => {
     expect(l.a.resolveRules().variant).toBe('times')
     l.w.tick(0.1)
     // O botão mostra a contagem, para todo mundo; o voto da própria pessoa fica marcado.
-    expect(l.w.control(l.bia, 'Times')?.text).toMatch(/Times 1$/)
-    expect(l.w.control(l.ana, 'Times')?.text).toContain('Seu voto.')
-    expect(l.w.control(l.bia, 'Times')?.text).not.toContain('Seu voto.')
+    expect(l.w.control(l.bia, 'Times')?.text).toMatch(/Até 6 contra 6 1$/)
+    expect(l.w.control(l.ana, 'Times')?.text).toContain('seu voto')
+    expect(l.w.control(l.bia, 'Times')?.text).not.toContain('seu voto')
     // A Bia vota em outro: empate, e sem partida anterior vale o lobby (aqui, o padrão: duelo).
     l.w.press(l.bia, 'Espelho')
     expect(l.a.resolveRules().variant).toBe('duelo')
@@ -104,7 +107,7 @@ describe('Arena: a escolha', () => {
     expect(l.a.voteCounts('variante').get('times')).toBe(2)
     expect(l.a.voteCounts('variante').get('espelho')).toBeUndefined()
     l.w.tick(0.1)
-    expect(l.w.screen(l.bia)).toContain('Vence quem levar 3 rodadas.')
+    expect(l.w.screen(l.bia)).toContain('Times · até 3 rodadas')
     // Clicar de novo no mesmo tira o voto.
     l.w.press(l.ana, 'Times')
     expect(l.a.voteCounts('variante').get('times')).toBe(1)
@@ -143,7 +146,7 @@ describe('Arena: a escolha', () => {
     expect(l.a.voteCounts('variante').size).toBe(0)
     expect(l.a.voters().map((s) => s.name)).toEqual(['Ana'])
     expect(l.w.screen(ana)).toContain('0 de 1 pronto')
-    l.w.press(ana, 'Pronto')
+    l.w.press(ana, 'Estou pronto')
     l.w.tick(0.2)
     expect(l.w.screen(ana)).toContain('Começando em 3')
     l.w.tick(3)
@@ -153,12 +156,14 @@ describe('Arena: a escolha', () => {
 
   it('com todo mundo pronto, "Começando" conta 3 e para se alguém tira o pronto', async () => {
     const l = await room()
-    l.w.press(l.ana, 'Pronto')
+    l.w.press(l.ana, 'Estou pronto')
     l.w.tick(0.1)
-    expect(l.w.screen(l.bia)).toContain('1 de 2 prontos')
+    expect(l.w.screen(l.bia)).toContain('1 de 2 prontos · falta você')
+    expect(l.w.screen(l.ana)).toContain('1 de 2 prontos · falta Bia')
+    expect(l.w.screen(l.ana)).toContain('Pronto · clique para cancelar')
     expect(l.w.screen(l.bia)).toContain('Ana')
     expect(l.w.screen(l.bia)).toContain('pronto')
-    l.w.press(l.bia, 'Pronto')
+    l.w.press(l.bia, 'Estou pronto')
     l.w.tick(1.5)
     expect(l.w.screen(l.ana)).toContain('Começando em')
     // A Bia tira o pronto: a contagem para.
@@ -168,7 +173,7 @@ describe('Arena: a escolha', () => {
     expect(l.a.state.beginAt).toBeUndefined()
     expect(l.w.screen(l.ana)).toContain('1 de 2 prontos')
     // De novo, sem ninguém desistir: começa depois dos 3 segundos.
-    l.w.press(l.bia, 'Pronto')
+    l.w.press(l.bia, 'Estou pronto')
     l.w.tick(2.5)
     expect(l.a.state.phase).toBe('waiting')
     l.w.tick(1)
@@ -182,9 +187,9 @@ describe('Arena: a escolha', () => {
     l.w.press(l.bia, 'Dupla')
     l.w.tick(0.1)
     expect(l.w.control(l.ana, 'Dupla')?.text).toContain('faltam 2')
-    expect(l.w.screen(l.ana)).toContain('Faltam 2 pessoas')
-    l.w.press(l.ana, 'Pronto')
-    l.w.press(l.bia, 'Pronto')
+    expect(l.w.screen(l.ana)).toContain('O modo mais votado ainda não cabe na sala')
+    l.w.press(l.ana, 'Estou pronto')
+    l.w.press(l.bia, 'Estou pronto')
     l.w.tick(6)
     expect(l.a.state.phase).toBe('waiting')
     // Com mais duas pessoas, a dupla cabe e a contagem corre (as novas também precisam do Pronto).
@@ -192,8 +197,8 @@ describe('Arena: a escolha', () => {
     const davi = l.w.join('Davi')
     l.w.tick(1.2)
     expect(l.w.control(l.ana, 'Dupla')?.text).not.toContain('faltam')
-    l.w.press(caio, 'Pronto')
-    l.w.press(davi, 'Pronto')
+    l.w.press(caio, 'Estou pronto')
+    l.w.press(davi, 'Estou pronto')
     l.w.tick(3.5)
     expect(l.a.state.phase).toBe('starting')
     expect(l.a.state.rules.variant).toBe('dupla')
@@ -210,7 +215,8 @@ describe('Arena: a escolha', () => {
     expect(l.a.resolveRules().timed).toBe(true)
     l.w.tick(0.1)
     expect(l.w.control(l.ana, 'Até 7')).toBeUndefined()
-    expect(l.w.screen(l.ana)).toContain('Vence quem fizer mais pontos em 3 minutos.')
+    expect(l.w.screen(l.ana)).toContain('3 minutos, o círculo fecha')
+    expect(l.w.screen(l.ana)).toContain('Duelo no círculo · 3 minutos, com tempo')
     l.w.press(l.ana, 'Por rodadas')
     l.w.press(l.bia, 'Por rodadas')
     l.w.press(l.ana, 'Times')
@@ -228,8 +234,8 @@ describe('Arena: a escolha', () => {
     expect(s.a.voteCounts('variante').size).toBe(0)
     expect(s.a.resolveRules().variant).toBe('times')
     expect(s.w.screen(solo)).toContain('definido pelo servidor')
-    expect(s.w.screen(solo)).toContain('O servidor definiu o jeito de jogar')
-    expect(s.w.control(solo, 'Pronto')).toBeUndefined()
+    expect(s.w.screen(solo)).toContain('Começa sozinha quando houver duas pessoas')
+    expect(s.w.control(solo, 'Estou pronto')).toBeUndefined()
     s.w.join('Bia')
     s.w.tick(1.2)
     expect(s.a.state.phase).not.toBe('waiting')
@@ -240,22 +246,22 @@ describe('Arena: a escolha', () => {
 
   it('cada pessoa escolhe o próprio herói na lista, que entra na primeira rodada', async () => {
     const l = await room()
-    l.w.press(l.ana, 'Escolher herói')
+    // Sem herói ainda: a silhueta e o convite, nunca um quadrado vazio.
+    expect(l.w.screen(l.ana)).toContain('Escolha um herói')
+    l.w.press(l.ana, 'Trocar')
     l.w.tick(0.1)
-    expect(l.w.screen(l.ana)).toContain('Seu herói')
-    expect(l.w.screen(l.ana)).not.toContain('Na sala')
+    expect(l.w.screen(l.ana)).toContain('Vale a partir da primeira rodada.')
+    expect(l.w.screen(l.ana)).not.toContain('Estou pronto')
     expect(l.ana.hiddenHud).toEqual([...l.h.PANEL_HIDE])
     expect(l.w.press(l.ana, 'Herói Três')).toBe(true)
-    l.w.press(l.bia, 'Escolher herói')
+    l.w.press(l.bia, 'Trocar')
     l.w.tick(0.1)
     expect(l.w.press(l.bia, 'Herói Dois')).toBe(true)
     expect(l.a.chosenHero(l.ana as never)).toBe('hero_tres')
     expect(l.a.chosenHero(l.bia as never)).toBe('hero_dois')
     l.w.tick(0.1)
     expect(l.ana.hiddenHud).toEqual([...l.h.MATCH_HIDE])
-    expect(l.w.screen(l.ana)).toContain('Herói Três, a partir da primeira rodada')
-    // Na sala, cada pessoa aparece com o herói dela.
-    expect(l.w.screen(l.bia)).toContain('Herói Três')
+    expect(l.w.screen(l.ana)).toContain('Herói Três Seu herói')
     until(l, 'live')
     expect(l.ana.pawnState?.hero).toBe('hero_tres')
     expect(l.bia.pawnState?.hero).toBe('hero_dois')
@@ -265,7 +271,7 @@ describe('Arena: a escolha', () => {
     const l = await room()
     l.w.press(l.ana, 'Espelho')
     l.w.tick(0.1)
-    expect(l.w.control(l.ana, 'Escolher herói')).toBeUndefined()
+    expect(l.w.control(l.ana, 'Trocar')).toBeUndefined()
     expect(l.w.screen(l.bia)).toContain('No espelho, o herói é sorteado a cada rodada')
   })
 
@@ -273,7 +279,7 @@ describe('Arena: a escolha', () => {
     const l = await load()
     const ana = l.w.join('Ana', { variante: 'dupla' })
     l.w.tick(1.2)
-    expect(l.w.screen(ana)).toContain('Faltam 3 pessoas')
+    expect(l.w.control(ana, 'Dupla')?.text).toContain('Precisa de 4 pessoas · faltam 3')
     l.w.press(ana, 'Treinar com um bot')
     l.w.tick(0.1)
     l.w.press(ana, 'Mais um bot')
@@ -292,7 +298,7 @@ describe('Arena: a escolha', () => {
     for (const p of [l.ana, l.bia]) {
       expect(p.cursor).toBe(false)
       expect(p.blocked).toBe(0n)
-      expect(l.w.screen(p)).not.toContain('Na sala')
+      expect(l.w.screen(p)).not.toContain('Estou pronto')
     }
     l.bia.pawnState!.health = 0
     l.w.tick(0.2)
@@ -302,7 +308,8 @@ describe('Arena: a escolha', () => {
     until(l, 'waiting', 10)
     l.w.tick(0.1)
     expect(l.w.control(l.ana, 'Jogar de novo')).toBeDefined()
-    expect(l.w.screen(l.ana)).toContain('Última partida Ana vence a Arena, 1 a 0.')
+    expect(l.w.screen(l.ana)).toContain('Última partida: Ana vence a Arena, 1 a 0.')
+    expect(l.w.screen(l.ana)).toContain('Duelo no círculo · até 1 rodada')
     l.w.tick(10)
     expect(l.a.state.phase).toBe('waiting')
   })
@@ -410,7 +417,7 @@ describe('Arena: o HUD da partida', () => {
   it('com tempo, quem cai vê quando volta; o círculo fecha com a barra', async () => {
     const l = await live(['tempo', 'segundos=60'])
     expect(l.w.screen(l.ana)).toContain('O círculo fecha')
-    expect(JSON.stringify(l.ana.ui)).toContain('"name":"Meter"')
+    expect(JSON.stringify(l.ana.ui)).toContain('"background":"#c8a46a"')
     l.bia.pawnState!.health = 0
     l.w.tick(0.2)
     expect(l.w.screen(l.bia)).toContain(`Você volta em ${l.a.RESPAWN_SECONDS}`)
@@ -581,7 +588,7 @@ describe('Arena: textos', () => {
     expect(lines.length).toBeGreaterThan(0)
     for (const x of lines) expect(x).not.toMatch(/\/\w|!/)
     const seen: string[] = [screens(l, l.ana, l.bia)]
-    l.w.press(l.ana, 'Escolher herói')
+    l.w.press(l.ana, 'Trocar')
     l.w.tick(0.1)
     seen.push(l.w.screen(l.ana))
     l.w.press(l.ana, 'Fechar')
@@ -599,5 +606,45 @@ describe('Arena: textos', () => {
     seen.push(screens(l, l.ana, l.bia))
     for (const t of seen) expect(t).not.toMatch(/\/\w|!/)
     expect(seen.join(' ')).not.toContain('Sobe, que tem vaga')
+  })
+})
+
+describe('Arena: vitrine para a prévia', () => {
+  const keys: Record<string, string[]> = {
+    votacao: ['Estou pronto', '2 de 3 prontos · falta você', 'seu voto', 'Duelo no círculo · até 5 rodadas'],
+    heroi: ['Seu herói', 'Vale a partir da primeira rodada.'],
+    contagem: ['Rodada 2', 'Duelo no círculo · até 5'],
+    partida: ['1:47', 'Duelo no círculo · com tempo'],
+    times: ['Âmbar', 'Safira', '3 de pé'],
+    fora: ['Fora do círculo', '9 m até o círculo'],
+    caiu: ['Você caiu', 'Espere a próxima rodada.'],
+    rodada: ['Você levou a rodada'],
+    vitoria: ['Você venceu', 'Sem tomar dano'],
+  }
+
+  it('cada estado monta a tela da pessoa da prévia, parado, com o texto dele', async () => {
+    for (const [name, texts] of Object.entries(keys)) {
+      const l = await load([`vitrine=${name}`])
+      const ana = l.w.join('Ana')
+      seat(ana)
+      expect(() => l.w.tick(0.3)).not.toThrow()
+      const text = l.w.screen(ana)
+      for (const t of texts) expect(text, `${name}: ${t}`).toContain(t)
+      expect(text).not.toMatch(/\/\w|!/)
+      // Parado: o tempo passa e o estado continua o mesmo, sem a partida andar.
+      const phase = l.a.state.phase
+      l.w.tick(10)
+      expect(l.a.state.phase).toBe(phase)
+      for (const t of texts) expect(l.w.screen(ana), `${name} depois de 10 s: ${t}`).toContain(t)
+      // As pessoas de mentira não recebem tela.
+      expect(l.a.state.queue.filter((s) => s.fake).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('sem o argumento (ou com um estado que não existe), a Arena joga normalmente', async () => {
+    const l = await room(['vitrine=nada'])
+    expect(l.a.state.queue.some((s) => s.fake)).toBe(false)
+    until(l, 'live')
+    expect(l.a.state.fighters.map((f) => f.seat.name)).toEqual(['Ana', 'Bia'])
   })
 })

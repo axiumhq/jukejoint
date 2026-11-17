@@ -105,6 +105,8 @@ export interface Seat {
   readonly bot: boolean
   /** A ordem de chegada na sala: quem chegou primeiro escolhe o jeito de jogar. */
   readonly arrival: number
+  /** Uma pessoa de mentira da vitrine (vitrine.ts): aparece na tela dos outros, mas não tem tela. */
+  readonly fake?: boolean
 }
 
 /** Quem luta na partida atual. */

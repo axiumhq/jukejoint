@@ -23,7 +23,7 @@ function until({ w, a }: Loaded, phase: string = 'live', max = 30) {
     if (a.state.phase === 'waiting' && phase !== 'waiting') {
       for (const s of a.voters()) {
         const p = s.player as unknown as FakePlayer
-        if (!a.isReady(p as never)) w.press(p, 'Pronto') || w.press(p, 'Jogar de novo')
+        if (!a.isReady(p as never)) w.press(p, 'Estou pronto') || w.press(p, 'Jogar de novo')
       }
     }
     w.tick(0.1)
@@ -54,9 +54,9 @@ describe('Arena: espera e começo', () => {
     const l = await load()
     const a = l.w.join('Ana')
     l.w.tick(3)
-    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
-    // Sozinha, a pessoa pode apertar Pronto, mas a partida não começa.
-    expect(l.w.press(a, 'Pronto')).toBe(true)
+    expect(l.w.screen(a)).toContain('Começa quando houver mais uma pessoa, ou um bot de treino')
+    // Sozinha, a pessoa pode apertar Estou pronto, mas a partida não começa.
+    expect(l.w.press(a, 'Estou pronto')).toBe(true)
     l.w.tick(5)
     expect(l.a.state.phase).toBe('waiting')
   })
@@ -190,7 +190,7 @@ describe('Arena: duelo no círculo', () => {
     expect(a.said('Bia saiu. Ana leva a partida.')).toBe(true)
     l.w.tick(8)
     expect(l.a.state.phase).toBe('waiting')
-    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
+    expect(l.w.screen(a)).toContain('Começa quando houver mais uma pessoa')
   })
 
   it('a rodada sem queda acaba no tempo: vence quem tem mais vida; vida igual repete', async () => {
@@ -250,12 +250,12 @@ describe('Arena: dupla', () => {
     l.w.join('Bia')
     l.w.join('Caio')
     l.w.tick(1.2)
-    for (const s of l.a.voters()) l.w.press(s.player as unknown as FakePlayer, 'Pronto')
+    for (const s of l.a.voters()) l.w.press(s.player as unknown as FakePlayer, 'Estou pronto')
     l.w.tick(6)
     expect(l.a.state.phase).toBe('waiting')
     expect(l.a.canBegin()).toBe(false)
-    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
-    expect(l.w.control(a, 'Dupla')?.text).toContain('faltam 1')
+    expect(l.w.screen(a)).toContain('O modo mais votado ainda não cabe na sala')
+    expect(l.w.control(a, 'Dupla')?.text).toContain('Precisa de 4 pessoas · falta 1')
   })
 
   it('com o jeito nos argumentos, a dupla com três pessoas vira um contra um e a terceira espera', async () => {
@@ -540,7 +540,8 @@ describe('Arena: configuração e comandos', () => {
     l.w.tick(0.2)
     const ui = JSON.stringify(a.ui)
     expect(l.w.screen(a)).toContain('Duelo no círculo · até 3')
-    expect(ui).toContain('"filled":1,"total":3')
+    // Um marcador aceso na cor do lado da Ana, de 3.
+    expect(ui.split('"background":"#e3a45a"').length - 1).toBe(1)
     expect(l.w.screen(a)).toContain('Você levou a rodada')
     expect(l.w.screen(b)).toContain('Ana leva a rodada')
     until(l)

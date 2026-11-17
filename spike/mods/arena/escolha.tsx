@@ -1,15 +1,17 @@
-// A escolha da Arena e os botões durante a partida. Ninguém precisa digitar nada no chat:
-// - antes de cada partida, um quadro compacto logo abaixo do placar, como num modo do próprio jogo:
-//   os jeitos de jogar, o tempo e os pontos em botões curtos, cada um com quantos votos tem; a
-//   regra do mais votado em uma linha; quem está na sala com o herói de cada um; os bots de treino
-//   e o Pronto. Todo mundo anda pelo mapa enquanto isso e segura o Tab para clicar. Cada pessoa
-//   vota em cada grupo; a partida começa quando todo mundo aperta Pronto;
-// - a lista de heróis abre por cima, pelo botão do herói (ou por Trocar herói na partida), com o
-//   retrato grande do herói escolhido ao lado da grade;
+// A escolha da Arena e os botões durante a partida, no desenho "Lista com votos"
+// (.design/arena-hud/opcoes.html, opção A). Ninguém precisa digitar nada no chat:
+// - antes de cada partida, um painel à esquerda, com o meio da tela e a mira livres: o modo numa
+//   lista, cada linha com a regra, os votos e uma barra da parte dos votos; a partida (rodadas ou
+//   tempo) e os pontos em dois controles lado a lado; o herói; o botão de pronto, quem está na
+//   sala e quantos estão prontos. No topo, duas linhas: o que vale pela votação e quando começa.
+//   Todo mundo anda pelo mapa enquanto isso e segura o Tab para clicar;
+// - a lista de heróis abre por cima, pelo Trocar (ou por Trocar herói na partida), com o retrato
+//   grande do herói escolhido ao lado da grade;
 // - durante a partida, com o Tab, um quadro pequeno à esquerda troca o herói da próxima rodada e,
 //   para quem chegou primeiro à sala, marca o centro do círculo.
-// As regras e o estado ficam em arena.ts; aqui só o desenho e os botões que chamam as regras.
-import { Action, type Hero, findHero, heroes, type Player, Text, theme } from 'modlock'
+// Cada informação aparece uma vez só. As regras e o estado ficam em arena.ts; aqui só o desenho e
+// os botões que chamam as regras.
+import { findHero, type Hero, heroes, type Player, theme } from 'modlock'
 
 import {
   BEGIN_SECONDS,
@@ -25,10 +27,10 @@ import {
   isReady,
   key,
   markArena,
+  MIN_PEOPLE,
   missingFor,
   myVote,
   openHeroMenu,
-  perSideFor,
   pickHero,
   POINT_CHOICES,
   readyCount,
@@ -46,22 +48,23 @@ import {
   voteCounts,
   voters,
 } from './arena'
+import { Heading, L, Outline, P, pct, Rule, surface } from './paleta'
 
-const { tones, shades, sizes, sounds } = theme
+const { sounds } = theme
 
-/** A largura do quadro da escolha, num HUD de 1080 de altura (cabe também em 1366×768). */
-export const OVERLAY_WIDTH = 800
-/** O fundo dos quadros sobre o mapa: escuro o bastante para ler sobre um céu claro. */
-const FILL = '#0b0d09d9'
-/** O fundo de um botão curto parado. */
-const CHIP_FILL = '#000000a6'
+/** Onde fica o painel da escolha, num HUD de 1080 de altura: à esquerda, abaixo do topo. */
+export const PANEL_X = 34
+export const PANEL_Y = 135
+export const PANEL_WIDTH = 446
+/** O respiro de cada seção do painel. */
+const PAD = [14, 19]
 
-/** Cada jeito: quantas pessoas de cada lado e a regra em uma linha. */
+/** Cada modo: a regra curta da linha. */
 export const CARDS: Record<Variant, { sides: string; rule: string }> = {
-  duelo: { sides: '1 contra 1', rule: 'Quem fizer os pontos primeiro vence.' },
+  duelo: { sides: '1 contra 1, com fila', rule: 'Quem fizer os pontos primeiro vence.' },
   dupla: { sides: '2 contra 2', rule: 'A rodada acaba quando a dupla inteira cai.' },
-  times: { sides: 'até 6 contra 6', rule: 'Os times se misturam; 3 rodadas vencem.' },
-  espelho: { sides: 'até 6 contra 6', rule: 'Todo mundo com o mesmo herói, sorteado a cada rodada.' },
+  times: { sides: 'Até 6 contra 6', rule: 'Os times se misturam; 3 rodadas vencem.' },
+  espelho: { sides: 'Todos com o mesmo herói', rule: 'Um herói sorteado a cada rodada, o mesmo para todo mundo.' },
 }
 
 const ORDER: readonly Variant[] = ['duelo', 'dupla', 'times', 'espelho']
@@ -87,357 +90,397 @@ export function heroTitle(id: number): string | undefined {
   return id ? heroes.find((h) => h.id === id)?.title : undefined
 }
 
+/** "1 voto", "2 votos". */
+function votes(n: number): string {
+  return n === 1 ? '1 voto' : `${n} votos`
+}
+
+/* ───────── o que a escolha diz ───────── */
+
+/** O que vale agora pela votação, em uma linha: "Duelo no círculo · até 5 rodadas". */
+export function resultLine(r: Rules): string {
+  const title = VARIANTS[r.variant].title
+  return r.timed ? `${title} · ${minutes(r)}, com tempo` : `${title} · até ${r.target} ${r.target === 1 ? 'rodada' : 'rodadas'}`
+}
+
+/** Quando começa, a segunda linha do topo. */
+export function startLine(): string {
+  if (state.beginAt !== undefined) return `Começando em ${Math.max(1, Math.ceil(state.beginAt - state.now))}`
+  if (state.auto) return 'Começa sozinha quando houver duas pessoas'
+  if (state.queue.length < 2) return 'Começa quando houver mais uma pessoa, ou um bot de treino'
+  if (missingFor(resolveRules().variant) > 0) return 'O modo mais votado ainda não cabe na sala'
+  const n = voters().length
+  return n === 1 ? 'Começa quando você estiver pronto' : `Começa quando as ${n} pessoas estiverem prontas`
+}
+
+/** Quantos estão prontos e quem falta: "2 de 3 prontos · falta você". */
+export function readyLine(viewer: Seat): string {
+  const people = voters()
+  const missing = people.filter((s) => !state.ready.has(key(s)))
+  const head = `${readyCount()} de ${people.length} ${people.length === 1 ? 'pronto' : 'prontos'}`
+  if (missing.length === 0) return head
+  const names = missing.map((s) => (key(s) === key(viewer) ? 'você' : s.name))
+  if (names.length === 1) return `${head} · falta ${names[0]}`
+  if (names.length === 2) return `${head} · faltam ${names[0]} e ${names[1]}`
+  return `${head} · faltam ${names.length}`
+}
+
+/** A regra do modo que vale agora, para quem passa o mouse por cima da linha. */
+export function ruleLine(r: Rules): string {
+  const win = r.timed ? `Vence quem fizer mais pontos em ${minutes(r)}.` : `Vence quem levar ${r.target} rodadas.`
+  return `${CARDS[r.variant].rule} ${win}`
+}
+
 /* ───────── peças ───────── */
 
-/**
- * Um botão de voto em capitulares: o valor que a votação dá fica cheio no tom de destaque, o voto
- * da própria pessoa ganha a borda clara, e ao lado do nome vai quantos votos ele tem.
- */
-function VoteChip(props: {
-  label: string
-  /** O valor que vale agora pela votação (ou pelo lobby, ou pelo servidor). */
-  leading: boolean
-  /** O voto da própria pessoa. */
-  mine: boolean
-  count: number
-  disabled: boolean
-  tooltip?: string
-  /** Quantas pessoas faltam para este jeito começar. */
-  missing?: number
-  onPress: (player: Player) => void
-}) {
-  const { leading, mine, count, disabled } = props
-  const ink = leading ? tones.onAccent : tones.text
-  return (
-    <button
-      disabled={disabled}
-      tooltip={mine ? `${props.tooltip ? `${props.tooltip} ` : ''}Seu voto.` : props.tooltip}
-      onPress={props.onPress}
-      sound={disabled ? undefined : sounds.press}
-      hoverSound={disabled ? undefined : sounds.hover}
-      style={{
-        flow: 'right',
-        height: 30,
-        padding: [0, 12],
-        margin: [0, 3],
-        borderRadius: sizes.radius,
-        background: leading ? tones.accent : CHIP_FILL,
-        borderWidth: mine ? 2 : 1,
-        borderColor: mine ? tones.text : leading ? tones.accent : shades.faint,
-        opacity: disabled && !leading ? 0.5 : 1,
-        transition: 0.15,
-      }}
-      hover={disabled ? undefined : { background: leading ? tones.accent : shades.lit, borderColor: tones.text }}
-    >
-      <label style={{ face: 'block', fontSize: 15, uppercase: true, letterSpacing: 1, color: ink, verticalAlign: 'center', noWrap: true }}>
-        {props.label}
-      </label>
-      {count > 0 ? (
-        <label
-          style={{
-            face: 'block',
-            fontSize: 12,
-            color: ink,
-            background: leading ? '#00000026' : shades.lit,
-            borderRadius: 3,
-            padding: [1, 5],
-            margin: [0, 0, 0, 8],
-            verticalAlign: 'center',
-          }}
-        >
-          {count}
-        </label>
-      ) : null}
-      {props.missing ? (
-        <label style={{ face: 'body', fontSize: 12, color: leading ? tones.onAccent : tones.muted, margin: [0, 0, 0, 8], verticalAlign: 'center', noWrap: true }}>
-          {`faltam ${props.missing}`}
-        </label>
-      ) : null}
-    </button>
-  )
-}
-
-/** Um grupo de votos: cada valor vira um botão com a contagem dele. */
-function Votes<T>(props: {
-  seat: Seat
-  choice: Choice
-  values: readonly T[]
-  current: T
-  label: (value: T) => string
-  tooltip?: (value: T) => string
-  missing?: (value: T) => number
-  onPress: (player: Player, value: T) => void
-}) {
-  const me = props.seat.player
-  const counts = voteCounts(props.choice)
-  const mine = myVote(me, props.choice)
-  const disabled = !canChoose(me, props.choice)
-  return (
-    <panel style={{ flow: 'right', verticalAlign: 'center' }}>
-      {props.values.map((value) => (
-    <VoteChip
-      key={String(value)}
-      label={props.label(value)}
-      tooltip={props.tooltip?.(value)}
-      leading={value === props.current}
-      mine={mine === String(value)}
-      count={counts.get(String(value)) ?? 0}
-      disabled={disabled}
-      missing={props.missing?.(value)}
-      onPress={(p) => props.onPress(p, value)}
-    />
-      ))}
-    </panel>
-  )
-}
-
-/** Pronto: liga e desliga. Depois de uma partida, o mesmo botão diz "Jogar de novo". */
-function ReadyButton(props: { on: boolean }) {
-  const { on } = props
-  return (
-    <button
-      tooltip={on ? 'Clique de novo para tirar o pronto.' : undefined}
-      onPress={(p) => toggleReady(p)}
-      sound={sounds.press}
-      hoverSound={sounds.hover}
-      style={{
-        width: 200,
-        height: 40,
-        borderRadius: sizes.radius,
-        background: on ? tones.accent : tones.text,
-        borderWidth: 1,
-        borderColor: on ? tones.accent : tones.text,
-        transition: 0.15,
-      }}
-      hover={{ background: on ? tones.accent : shades.white, brightness: on ? 1.1 : 1 }}
-    >
-      <label style={{ face: 'block', fontSize: 17, uppercase: true, letterSpacing: 1, color: tones.onAccent, horizontalAlign: 'center', verticalAlign: 'center', noWrap: true }}>
-        {on ? 'Pronto' : state.lastText ? 'Jogar de novo' : 'Pronto'}
-      </label>
-    </button>
-  )
-}
-
-/** Um retrato pequeno e quadrado, ou um quadrado vazio sem herói. */
-export function Portrait(props: { hero: number; size: number; edge?: string; dim?: boolean }) {
-  const { hero, size, edge, dim } = props
+/** Um retrato pequeno e quadrado, ou um quadrado com a inicial quando não há herói. */
+export function Portrait(props: { hero: number; size: number; edge?: string; dim?: boolean; name?: string; round?: boolean }) {
+  const { hero, size, edge, dim, round } = props
   const style = {
     width: size,
     height: size,
-    borderRadius: sizes.radius,
+    borderRadius: round ? size / 2 : 4,
     borderWidth: edge ? 2 : 1,
-    borderColor: edge ?? shades.hairline,
-    background: shades.raised,
+    borderColor: edge ?? P.line,
+    background: P.avatar,
     saturation: dim ? 0 : 1,
     opacity: dim ? 0.35 : 1,
     transition: 0.25,
   }
-  return hero ? <hero hero={hero} look="small" scaling="cover" style={style} /> : <panel style={style} />
+  if (hero) return <hero hero={hero} look="small" scaling="cover" style={style} />
+  return (
+    <panel style={style}>
+      <L size={Math.round(size * 0.45)} weight="semiBold" color={P.ink} style={{ horizontalAlign: 'center', verticalAlign: 'center' }}>
+        {(props.name ?? '').slice(0, 1).toUpperCase()}
+      </L>
+    </panel>
+  )
 }
 
-/** Uma pessoa na sala: o retrato do herói, o nome, o herói e se está pronta. */
-function RoomEntry(props: { seat: Seat; me: boolean }) {
-  const { seat, me } = props
-  const hero = heroOf(seat)
-  const ready = state.ready.has(key(seat))
-  const tag = seat.bot ? 'bot de treino' : `${heroTitle(hero) ?? 'sem herói'}${ready ? ' · pronto' : ''}`
+/** A silhueta neutra de quem ainda não tem herói, no lugar do retrato. */
+function Silhouette() {
   return (
-    <panel style={{ flow: 'right', verticalAlign: 'center', margin: [0, 14, 6, 0] }}>
-      <Portrait hero={hero} size={30} edge={ready ? tones.success : me ? tones.text : undefined} />
-      <panel style={{ flow: 'down', margin: [0, 0, 0, 8], verticalAlign: 'center' }}>
-        <Text role="body" plated style={{ horizontalAlign: 'left', textAlign: 'left', fontSize: 15 }}>
-          {seat.name}
-        </Text>
-        <Text role="caption" tone={ready ? 'success' : 'muted'} plated style={{ horizontalAlign: 'left', textAlign: 'left', fontSize: 12 }}>
-          {tag}
-        </Text>
+    <panel style={{ width: 53, height: 67, borderRadius: 4, gradient: { shape: 'down', colors: ['#5b3b62', '#261823'] } }}>
+      <panel style={{ x: 17, y: 14, width: 19, height: 19, borderRadius: 10, background: '#e7dccb38' }} />
+      <panel style={{ x: 9, y: 38, width: 35, height: 22, borderRadius: 11, background: '#e7dccb38' }} />
+    </panel>
+  )
+}
+
+/** Uma linha do modo: o nome, a regra curta, os votos e a barra da parte dos votos. */
+function ModeRow(props: { seat: Seat; variant: Variant; total: number; counts: Map<string, number>; current: Variant }) {
+  const { seat, variant, total, counts, current } = props
+  const me = seat.player
+  const n = counts.get(variant) ?? 0
+  const win = variant === current
+  const mine = myVote(me, 'variante') === variant
+  const missing = missingFor(variant)
+  const disabled = !canChoose(me, 'variante')
+  const sub = missing > 0 ? `Precisa de ${MIN_PEOPLE[variant]} pessoas · ${missing === 1 ? 'falta 1' : `faltam ${missing}`}` : CARDS[variant].sides
+  return (
+    <button
+      disabled={disabled}
+      tooltip={CARDS[variant].rule}
+      onPress={(p) => chooseVariant(p, variant)}
+      sound={disabled ? undefined : sounds.press}
+      hoverSound={disabled ? undefined : sounds.hover}
+      style={{
+        width: '100%',
+        height: 58,
+        margin: [0, 0, 7, 0],
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: win ? P.brass : P.line,
+        opacity: missing > 0 || (disabled && !win) ? 0.55 : 1,
+        overflow: 'clip',
+        transition: 0.15,
+      }}
+      hover={disabled ? undefined : { borderColor: win ? P.brass : P.line2 }}
+    >
+      <panel style={{ x: 0, y: 0, width: pct(total > 0 ? (100 * n) / total : 0), height: '100%', background: P.brassSoft, transition: 0.25 }} />
+      <panel style={{ width: '100%', height: '100%', flow: 'right', padding: [0, 14], verticalAlign: 'center' }}>
+        <panel style={{ flow: 'down', width: 'fill', verticalAlign: 'center' }}>
+          <panel style={{ flow: 'right', verticalAlign: 'center' }}>
+            <L size={20} weight="semiBold">
+              {VARIANTS[variant].title}
+            </L>
+            {mine ? (
+              <L size={14} weight="semiBold" color={P.brassInk} style={{ background: P.brass, borderRadius: 3, padding: [1, 7], margin: [0, 0, 0, 10], verticalAlign: 'center' }}>
+                seu voto
+              </L>
+            ) : null}
+          </panel>
+          <L size={16} color={missing > 0 ? P.warn : P.ink3}>
+            {sub}
+          </L>
+        </panel>
+        <L size={24} weight="bold" block color={win ? P.brass : P.ink2} style={{ verticalAlign: 'center' }}>
+          {n}
+        </L>
+      </panel>
+    </button>
+  )
+}
+
+/** Um controle de segmentos: cada valor com a contagem embaixo; o que vale fica latão, o voto da pessoa sublinhado. */
+function Segments<T>(props: {
+  seat: Seat
+  choice: Choice
+  items: readonly { value: T; label: string; count: string; tooltip: string }[]
+  current: T
+  onPress: (player: Player, value: T) => void
+}) {
+  const me = props.seat.player
+  const mine = myVote(me, props.choice)
+  const disabled = !canChoose(me, props.choice)
+  return (
+    <panel style={{ flow: 'right', width: '100%', borderWidth: 1, borderColor: P.line2, borderRadius: 6, overflow: 'clip' }}>
+      {props.items.map((it, i) => {
+        const win = it.value === props.current
+        return [
+          i > 0 ? <panel key={`s${i}`} style={{ width: 1, height: 58, background: P.line2 }} /> : null,
+          <button
+            key={String(it.value)}
+            disabled={disabled}
+            tooltip={it.tooltip}
+            onPress={(p) => props.onPress(p, it.value)}
+            sound={disabled ? undefined : sounds.press}
+            hoverSound={disabled ? undefined : sounds.hover}
+            style={{ width: 'fill', height: 58, background: win ? P.brassSoft : P.clear, transition: 0.15 }}
+            hover={disabled ? undefined : { background: win ? P.brassSoft : P.chip }}
+          >
+            <panel style={{ flow: 'down', horizontalAlign: 'center', verticalAlign: 'center' }}>
+              <L size={18} weight={win ? 'semiBold' : 'normal'} color={win ? P.ink : P.ink2} style={{ horizontalAlign: 'center' }}>
+                {it.label}
+              </L>
+              <L size={14} color={P.ink3} style={{ horizontalAlign: 'center' }}>
+                {it.count}
+              </L>
+            </panel>
+            {mine === String(it.value) ? <panel style={{ width: '100%', height: 3, background: P.brass, verticalAlign: 'bottom' }} /> : null}
+          </button>,
+        ]
+      })}
+    </panel>
+  )
+}
+
+/** Uma pessoa na sala: retrato (ou inicial) e nome; verde quando está pronta. */
+function Person(props: { seat: Seat }) {
+  const { seat } = props
+  const ready = state.ready.has(key(seat))
+  return (
+    <panel style={{ flow: 'right', verticalAlign: 'center', padding: [5, 10, 5, 5], margin: [0, 10, 10, 0], borderRadius: 20, background: P.chip }}>
+      <Portrait hero={heroOf(seat)} size={29} round edge={ready ? P.ok : undefined} name={seat.name} />
+      <L size={17} color={ready ? P.ok : P.ink2} style={{ margin: [0, 0, 0, 7], verticalAlign: 'center' }}>
+        {seat.bot ? `${seat.name} · bot` : seat.name}
+      </L>
+    </panel>
+  )
+}
+
+/** A tecla desenhada como tecla: "Tab". */
+function Key(props: { children: string }) {
+  return (
+    <panel style={{ padding: [2, 10], borderRadius: 4, borderWidth: 1, borderColor: P.line2, background: P.chip, margin: [0, 8, 0, 0], verticalAlign: 'center' }}>
+      <L size={16} weight="semiBold" style={{ verticalAlign: 'center' }}>
+        {props.children}
+      </L>
+    </panel>
+  )
+}
+
+/* ───────── a escolha ───────── */
+
+/** As duas linhas do topo antes da partida: o que vale pela votação e quando começa. */
+export function PickHeader() {
+  const r = resolveRules()
+  const starting = state.beginAt !== undefined
+  return (
+    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [22, 0, 0, 0] }}>
+      <L size={26} weight="semiBold" shadow style={{ horizontalAlign: 'center' }}>
+        {resultLine(r)}
+      </L>
+      <L size={18} color={starting ? P.brass : P.ink2} shadow style={{ horizontalAlign: 'center', margin: [3, 0, 0, 0] }}>
+        {startLine()}
+      </L>
+    </panel>
+  )
+}
+
+/** O painel da escolha, à esquerda. */
+export function PickPanel(props: { seat: Seat; cursor: boolean }) {
+  const { seat } = props
+  const me = seat.player
+  const rules = resolveRules()
+  const v = VARIANTS[rules.variant]
+  const counts = voteCounts('variante')
+  const total = [...counts.values()].reduce((a, b) => a + b, 0)
+  const timeCounts = voteCounts('tempo')
+  const pointCounts = voteCounts('pontos')
+  const points = [...new Set<number>([...POINT_CHOICES, rules.target])].sort((a, b) => a - b)
+  const myHero = heroOf(seat)
+  const title = heroTitle(myHero)
+  const ready = isReady(me)
+  const room = botRoom()
+  const bots = botCount()
+  const locked = fixed('variante')
+  return (
+    <panel style={{ x: PANEL_X, y: PANEL_Y, width: PANEL_WIDTH, flow: 'down', ...surface }} enter={{ opacity: 0, translate: [-12, 0] }}>
+      <panel style={{ flow: 'down', width: '100%', padding: PAD }}>
+        <panel style={{ flow: 'right', width: '100%' }}>
+          <Heading style={{ width: 'fill' }}>Modo</Heading>
+          {locked ? (
+            <L size={14} color={P.ink3}>
+              definido pelo servidor
+            </L>
+          ) : null}
+        </panel>
+        {ORDER.map((variant) => (
+          <ModeRow key={variant} seat={seat} variant={variant} total={total} counts={counts} current={rules.variant} />
+        ))}
+      </panel>
+      <Rule />
+
+      <panel style={{ flow: 'right', width: '100%', padding: PAD }}>
+        <panel style={{ flow: 'down', width: 160, margin: [0, 12, 0, 0] }}>
+          <Heading>Partida</Heading>
+          <Segments
+            seat={seat}
+            choice="tempo"
+            current={rules.timed}
+            items={[
+              { value: false, label: 'Rodadas', count: votes(timeCounts.get('false') ?? 0), tooltip: 'Por rodadas: quem cai espera a próxima rodada.' },
+              { value: true, label: 'Tempo', count: votes(timeCounts.get('true') ?? 0), tooltip: `Com tempo: ${minutes(rules)}, o círculo fecha e quem cai volta em instantes.` },
+            ]}
+            onPress={(p, on) => setTimed(p, on)}
+          />
+        </panel>
+        <panel style={{ flow: 'down', width: 'fill' }}>
+          {rules.timed ? (
+            <>
+              <Heading>Duração</Heading>
+              <L size={17} color={P.ink2}>{`${minutes(rules)}, o círculo fecha`}</L>
+            </>
+          ) : v.perSide > 2 ? (
+            <>
+              <Heading>Vence com</Heading>
+              <L size={17} color={P.ink2}>{`${rules.target} rodadas`}</L>
+            </>
+          ) : (
+            <>
+              <Heading>Vence com</Heading>
+              <Segments
+                seat={seat}
+                choice="pontos"
+                current={rules.target}
+                items={points.map((n) => ({ value: n, label: String(n), count: String(pointCounts.get(String(n)) ?? 0), tooltip: `Até ${n} pontos` }))}
+                onPress={(p, n) => setPoints(p, n)}
+              />
+            </>
+          )}
+        </panel>
+      </panel>
+      <Rule />
+
+      <panel style={{ flow: 'right', width: '100%', padding: PAD, verticalAlign: 'center' }}>
+        {v.mirror ? (
+          <L size={17} color={P.ink2} style={{ width: 'fill' }}>
+            No espelho, o herói é sorteado a cada rodada, o mesmo para todo mundo.
+          </L>
+        ) : (
+          <>
+            {myHero ? <hero hero={myHero} look="vertical" scaling="cover" style={{ width: 53, height: 67, borderRadius: 4 }} /> : <Silhouette />}
+            <panel style={{ flow: 'down', width: 'fill', margin: [0, 0, 0, 14], verticalAlign: 'center' }}>
+              <L size={20} weight="semiBold" color={title ? P.ink : P.ink2}>
+                {title ?? 'Escolha um herói'}
+              </L>
+              <L size={16} color={P.ink3}>
+                {title ? 'Seu herói' : 'Sem escolha, fica o herói que você tem'}
+              </L>
+            </panel>
+            <Outline onPress={(p) => openHeroMenu(p)} tooltip="Abre a lista de heróis; vale a partir da primeira rodada.">
+              Trocar
+            </Outline>
+          </>
+        )}
+      </panel>
+      <Rule />
+
+      <panel style={{ flow: 'down', width: '100%', padding: PAD }}>
+        {state.auto ? null : <ReadyButton on={ready} />}
+        <panel style={{ flow: 'rightWrap', width: '100%', margin: [12, 0, 0, 0] }}>
+          {state.queue.slice(0, 8).map((s) => (
+            <Person key={key(s)} seat={s} />
+          ))}
+          {state.queue.length > 8 ? <L size={16} color={P.ink3} style={{ verticalAlign: 'center' }}>{`e mais ${state.queue.length - 8}`}</L> : null}
+        </panel>
+        <panel style={{ flow: 'right', width: '100%', verticalAlign: 'center' }}>
+          <L size={17} color={P.ink2} style={{ width: 'fill', verticalAlign: 'center' }}>
+            {state.auto ? 'Começa sozinha, sem pronto' : readyLine(seat)}
+          </L>
+          {props.cursor ? null : (
+            <panel style={{ flow: 'right', verticalAlign: 'center' }}>
+              <Key>Tab</Key>
+              <L size={16} color={P.ink2} style={{ verticalAlign: 'center' }}>
+                segure para clicar
+              </L>
+            </panel>
+          )}
+        </panel>
+        {room > 0 || bots > 0 || (isHost(me) && me.pawn()) ? (
+          <panel style={{ flow: 'rightWrap', width: '100%', margin: [12, 0, 0, 0] }}>
+            {room > 0 ? (
+              <Outline onPress={(p) => trainingBot(p)} style={{ margin: [0, 8, 8, 0] }}>
+                {bots === 0 ? 'Treinar com um bot' : 'Mais um bot'}
+              </Outline>
+            ) : null}
+            {bots > 0 ? (
+              <Outline onPress={(p) => removeBots(p)} style={{ margin: [0, 8, 8, 0] }}>
+                Tirar os bots
+              </Outline>
+            ) : null}
+            {isHost(me) && me.pawn() ? (
+              <Outline onPress={(p) => markArena(p)} tooltip="O círculo passa a ter o centro onde você está, a partir da próxima rodada." style={{ margin: [0, 8, 8, 0] }}>
+                Marcar o centro aqui
+              </Outline>
+            ) : null}
+          </panel>
+        ) : null}
+        {state.lastText ? (
+          <L size={15} color={P.ink3} style={{ margin: [8, 0, 0, 0] }}>{`Última partida: ${state.lastText}`}</L>
+        ) : null}
+        {state.beginAt !== undefined ? (
+          <L size={15} color={P.ink3} style={{ margin: [8, 0, 0, 0] }}>{`Se alguém cancelar o pronto, a contagem de ${BEGIN_SECONDS} para.`}</L>
+        ) : null}
       </panel>
     </panel>
   )
 }
 
-/** A linha de quem vai lutar: quantos de cada lado e quantas pessoas esperam. */
-export function lineup(r: Rules): string {
-  const queued = state.queue.length
-  if (queued < 2) return 'Falta mais uma pessoa (ou um bot) para começar.'
-  const missing = missingFor(r.variant)
-  if (missing > 0) return `${queued} na sala: ${VARIANTS[r.variant].title} precisa de mais ${missing}.`
-  const n = perSideFor(r.variant, queued)
-  const waiting = queued - 2 * n
-  const rest = waiting === 0 ? '' : waiting === 1 ? ', e 1 pessoa espera na fila' : `, e ${waiting} pessoas esperam na fila`
-  return `${queued} na sala: vai ser ${n} contra ${n}${rest}.`
-}
-
-/** A regra da próxima partida em uma linha. */
-export function ruleLine(r: Rules): string {
-  const card = CARDS[r.variant]
-  const win = r.timed ? `Vence quem fizer mais pontos em ${minutes(r)}.` : `Vence quem levar ${r.target} rodadas.`
-  const mirror = VARIANTS[r.variant].mirror ? ' No espelho, o herói é sorteado a cada rodada, o mesmo para todo mundo.' : ''
-  return `${VARIANTS[r.variant].title}, ${card.sides} · ${win}${mirror}`
-}
-
-/** A linha grande do quadro: falta gente, quantos estão prontos, ou a contagem "Começando". */
-export function readyLine(): string {
-  if (state.auto) return 'A partida começa sozinha'
-  if (state.beginAt !== undefined) return `Começando em ${Math.max(1, Math.ceil(state.beginAt - state.now))}`
-  const missing = Math.max(2 - state.queue.length, missingFor(resolveRules().variant))
-  if (missing > 0) return missing === 1 ? 'Falta mais uma pessoa' : `Faltam ${missing} pessoas`
-  return `${readyCount()} de ${voters().length} ${voters().length === 1 ? 'pronto' : 'prontos'}`
-}
-
-/* ───────── a escolha, debaixo do placar ───────── */
-
-export function PickOverlay(props: { seat: Seat; cursor: boolean }) {
-  const me = props.seat.player
-  const rules = resolveRules()
-  const v = VARIANTS[rules.variant]
-  const locked = fixed('variante') || fixed('tempo')
-  const room = botRoom()
-  const bots = botCount()
-  const myHero = chosenHero(me)
-  const myHeroTitle = myHero ? findHero(myHero)?.title : undefined
-  const shown = state.queue.slice(0, 8)
-  const points = [...new Set<number>([...POINT_CHOICES, rules.target])].sort((a, b) => a - b)
-  const starting = state.beginAt !== undefined
-
+/** O botão de pronto: latão cheio; pronto, contorno verde; depois de uma partida, "Jogar de novo". */
+function ReadyButton(props: { on: boolean }) {
+  const { on } = props
   return (
-    <panel
+    <button
+      onPress={(p) => toggleReady(p)}
+      sound={sounds.press}
+      hoverSound={sounds.hover}
       style={{
-        flow: 'down',
-        width: OVERLAY_WIDTH,
-        horizontalAlign: 'center',
-        margin: [10, 0, 0, 0],
-        padding: [12, 16],
-        background: FILL,
-        borderRadius: sizes.panelRadius,
+        width: '100%',
+        height: 52,
+        borderRadius: 6,
+        background: on ? P.clear : P.brass,
         borderWidth: 1,
-        borderColor: shades.hairline,
+        borderColor: on ? P.ok : P.brass,
+        transition: 0.15,
       }}
-      enter={{ opacity: 0, translate: [0, -8] }}
+      hover={on ? { background: '#9cc98a1a' } : { brightness: 1.08 }}
     >
-      <panel style={{ flow: 'right', horizontalAlign: 'center' }}>
-        <Votes
-          seat={props.seat}
-          choice="variante"
-          values={ORDER}
-          current={rules.variant}
-          label={(x) => VARIANTS[x].title}
-          tooltip={(x) => `${CARDS[x].sides} · ${CARDS[x].rule}`}
-          missing={(x) => missingFor(x)}
-          onPress={(p, x) => chooseVariant(p, x)}
-        />
-      </panel>
-      <panel style={{ flow: 'right', horizontalAlign: 'center', verticalAlign: 'center', margin: [8, 0, 0, 0] }}>
-        <Votes
-          seat={props.seat}
-          choice="tempo"
-          values={[false, true]}
-          current={rules.timed}
-          label={(on) => (on ? `Com tempo ${clock(rules.seconds)}` : 'Por rodadas')}
-          tooltip={(on) => (on ? 'O círculo fecha durante a partida inteira; quem cai volta em instantes.' : 'Quem cai espera a próxima rodada.')}
-          onPress={(p, on) => setTimed(p, on)}
-        />
-        {v.perSide <= 2 && !rules.timed ? (
-          <panel style={{ flow: 'right', verticalAlign: 'center', margin: [0, 0, 0, 12] }}>
-            <Votes
-              seat={props.seat}
-              choice="pontos"
-              values={points}
-              current={rules.target}
-              label={(n) => `Até ${n}`}
-              tooltip={(n) => `Vence quem fizer ${n} pontos primeiro.`}
-              onPress={(p, n) => setPoints(p, n)}
-            />
-          </panel>
-        ) : null}
-        {v.mirror ? null : (
-          <panel style={{ flow: 'right', margin: [0, 0, 0, 12] }}>
-            <VoteChip
-              label={myHeroTitle ? `Herói · ${myHeroTitle}` : 'Escolher herói'}
-              tooltip={myHeroTitle ? `${myHeroTitle}, a partir da primeira rodada` : 'Sem escolha, fica o herói que você já tem'}
-              leading={false}
-              mine={false}
-              count={0}
-              disabled={false}
-              onPress={(p) => openHeroMenu(p)}
-            />
-          </panel>
-        )}
-      </panel>
-
-      <Text role="caption" plated style={{ margin: [8, 0, 0, 0] }}>
-        {locked ? `${ruleLine(rules)} Jeito definido pelo servidor.` : ruleLine(rules)}
-      </Text>
-      <Text role="caption" tone="muted" plated>
-        {locked ? 'O servidor definiu o jeito de jogar.' : props.cursor ? 'Clique para votar; clique de novo para tirar o voto.' : 'Segure Tab e clique para votar'}
-      </Text>
-
-      <panel style={{ width: '100%', height: 1, background: shades.hairline, margin: [10, 0, 8, 0] }} />
-
-      <panel style={{ flow: 'right', width: '100%', verticalAlign: 'center' }}>
-        <Text role="label" plated style={{ horizontalAlign: 'left', margin: [0, 12, 0, 0], verticalAlign: 'center' }}>
-          Na sala
-        </Text>
-        <panel style={{ flow: 'rightWrap', width: 'fill' }}>
-          {shown.map((s) => (
-            <RoomEntry key={key(s)} seat={s} me={key(s) === key(props.seat)} />
-          ))}
-          {state.queue.length > shown.length ? (
-            <Text role="caption" tone="muted" plated style={{ verticalAlign: 'center' }}>
-              {`e mais ${state.queue.length - shown.length}`}
-            </Text>
-          ) : null}
-        </panel>
-      </panel>
-      <Text role="caption" tone="muted" plated style={{ horizontalAlign: 'left', textAlign: 'left' }}>
-        {lineup(rules)}
-      </Text>
-
-      <panel style={{ flow: 'right', width: '100%', verticalAlign: 'center', margin: [10, 0, 0, 0] }}>
-        <panel style={{ flow: 'down', width: 'fill', verticalAlign: 'center' }}>
-          <Text
-            role="title"
-            tone={starting ? 'accent' : 'text'}
-            plated
-            style={{ horizontalAlign: 'left', textAlign: 'left', noWrap: true, textOverflow: 'shrink', width: '100%' }}
-          >
-            {readyLine()}
-          </Text>
-          {starting ? (
-            <Text role="caption" tone="muted" plated style={{ horizontalAlign: 'left', textAlign: 'left' }}>
-              {`Se alguém tirar o pronto, a contagem de ${BEGIN_SECONDS} para.`}
-            </Text>
-          ) : null}
-        </panel>
-        {room > 0 ? (
-          <Action kind="secondary" onPress={(p) => trainingBot(p)} style={{ margin: [0, 8, 0, 0] }}>
-            {bots === 0 ? 'Treinar com um bot' : 'Mais um bot'}
-          </Action>
-        ) : null}
-        {bots > 0 ? (
-          <Action kind="quiet" onPress={(p) => removeBots(p)} style={{ margin: [0, 8, 0, 0] }}>
-            Tirar os bots
-          </Action>
-        ) : null}
-        {isHost(me) && me.pawn() ? (
-          <Action kind="quiet" onPress={(p) => markArena(p)} style={{ margin: [0, 8, 0, 0] }}>
-            Marcar o centro aqui
-          </Action>
-        ) : null}
-        {state.auto || props.seat.bot ? null : <ReadyButton on={isReady(me)} />}
-      </panel>
-
-      {state.lastText ? (
-        <panel style={{ flow: 'right', horizontalAlign: 'center', margin: [8, 0, 0, 0] }}>
-          <Text role="caption" tone="muted" plated style={{ margin: [0, 6, 0, 0] }}>
-            Última partida
-          </Text>
-          <Text role="caption" plated>
-            {state.lastText}
-          </Text>
-        </panel>
-      ) : null}
-    </panel>
+      <L size={22} weight="bold" color={on ? P.ok : P.brassInk} style={{ horizontalAlign: 'center', verticalAlign: 'center' }}>
+        {on ? 'Pronto · clique para cancelar' : state.lastText ? 'Jogar de novo' : 'Estou pronto'}
+      </L>
+    </button>
   )
 }
 
@@ -456,30 +499,18 @@ function HeroCell(props: { hero: Hero; mine: boolean; onPick: (player: Player) =
         width: 68,
         margin: [0, 6, 8, 0],
         padding: 3,
-        borderRadius: sizes.radius,
-        background: mine ? shades.lit : shades.raised,
-        borderWidth: 2,
-        borderColor: mine ? tones.accent : shades.clear,
+        borderRadius: 4,
+        background: mine ? P.brassSoft : P.chip,
+        borderWidth: 1,
+        borderColor: mine ? P.brass : P.clear,
         transition: 0.15,
       }}
-      hover={mine ? undefined : { background: shades.lit, borderColor: shades.faint }}
+      hover={mine ? undefined : { borderColor: P.line2 }}
     >
-      <hero hero={hero.id} look="vertical" scaling="cover" style={{ width: '100%', height: 78, borderRadius: 3, brightness: mine ? 1.05 : 0.9 }} />
-      <label
-        style={{
-          face: 'body',
-          fontSize: 12,
-          color: mine ? tones.accent : tones.text,
-          width: '100%',
-          horizontalAlign: 'center',
-          textAlign: 'center',
-          noWrap: true,
-          textOverflow: 'shrink',
-          margin: [3, 0, 0, 0],
-        }}
-      >
+      <hero hero={hero.id} look="vertical" scaling="cover" style={{ width: '100%', height: 78, borderRadius: 3 }} />
+      <L size={13} color={mine ? P.brass : P.ink2} style={{ width: '100%', horizontalAlign: 'center', textAlign: 'center', noWrap: true, textOverflow: 'shrink', margin: [3, 0, 0, 0] }}>
         {hero.title}
-      </label>
+      </L>
     </button>
   )
 }
@@ -494,45 +525,32 @@ export function HeroMenu(props: { seat: Seat }) {
   const mine = chosenHero(me)
   const id = heroOf(props.seat)
   const title = heroTitle(id)
-  const gridWidth = 700
   return (
-    <panel style={{ x: 0, y: 0, width: '100%', height: '100%', background: '#0b0d0980' }}>
-      <panel
-        style={{
-          flow: 'down',
-          horizontalAlign: 'center',
-          verticalAlign: 'center',
-          padding: [22, 26],
-          background: shades.veil,
-          borderRadius: sizes.panelRadius,
-          borderWidth: 1,
-          borderColor: shades.hairline,
-        }}
-        enter={{ opacity: 0, scale: 0.97 }}
-      >
+    <panel style={{ x: 0, y: 0, width: '100%', height: '100%', background: '#0d0b0a80' }}>
+      <panel style={{ flow: 'down', horizontalAlign: 'center', verticalAlign: 'center', padding: [22, 26], ...surface }} enter={{ opacity: 0, scale: 0.97 }}>
         <panel style={{ flow: 'right', width: '100%', verticalAlign: 'bottom' }}>
-          <Text role="title" plated style={{ horizontalAlign: 'left' }}>
+          <L size={26} weight="semiBold">
             {picking ? 'Seu herói' : 'Trocar herói'}
-          </Text>
-          <Text role="caption" tone="muted" plated style={{ margin: [0, 0, 3, 14] }}>
+          </L>
+          <L size={16} color={P.ink3} style={{ margin: [0, 0, 3, 14], verticalAlign: 'bottom' }}>
             {picking ? 'Vale a partir da primeira rodada.' : 'O novo herói entra na próxima rodada.'}
-          </Text>
+          </L>
         </panel>
-        <panel style={{ flow: 'right', margin: [14, 0, 0, 0] }}>
+        <panel style={{ flow: 'right', margin: [16, 0, 0, 0] }}>
           <panel style={{ flow: 'down', width: 230, margin: [0, 22, 0, 0] }}>
             {id ? (
-              <hero hero={id} look="card" scaling="cover" style={{ width: 230, height: 320, borderRadius: sizes.panelRadius, borderWidth: 1, borderColor: shades.hairline }} />
+              <hero hero={id} look="card" scaling="cover" style={{ width: 230, height: 320, borderRadius: 6, borderWidth: 1, borderColor: P.line }} />
             ) : (
-              <panel style={{ width: 230, height: 320, borderRadius: sizes.panelRadius, background: shades.plate, borderWidth: 1, borderColor: shades.hairline }} />
+              <panel style={{ width: 230, height: 320, borderRadius: 6, background: P.chip, borderWidth: 1, borderColor: P.line }} />
             )}
-            <Text role="title" tone={mine ? 'accent' : 'text'} plated style={{ margin: [10, 0, 0, 0] }}>
+            <L size={22} weight="semiBold" color={mine ? P.brass : P.ink} style={{ margin: [10, 0, 0, 0] }}>
               {title ?? 'Sem herói'}
-            </Text>
-            <Text role="caption" tone="muted" plated>
+            </L>
+            <L size={15} color={P.ink3}>
               {mine ? 'Escolhido' : 'O herói que você tem agora'}
-            </Text>
+            </L>
           </panel>
-          <panel style={{ flow: 'rightWrap', width: gridWidth, maxHeight: 620, overflowY: 'scroll' }}>
+          <panel style={{ flow: 'rightWrap', width: 700, maxHeight: 620, overflowY: 'scroll' }}>
             {heroes.map((h) => (
               <HeroCell key={h.name} hero={h} mine={mine === h.name} onPick={(p) => pickHero(p, h.name)} />
             ))}
@@ -540,9 +558,7 @@ export function HeroMenu(props: { seat: Seat }) {
         </panel>
         <panel style={{ flow: 'right', width: '100%', margin: [12, 0, 0, 0] }}>
           <panel style={{ width: 'fill' }} />
-          <Action kind="secondary" onPress={(p) => closeHeroMenu(p)}>
-            Fechar
-          </Action>
+          <Outline onPress={(p) => closeHeroMenu(p)}>Fechar</Outline>
         </panel>
       </panel>
     </panel>
@@ -551,7 +567,7 @@ export function HeroMenu(props: { seat: Seat }) {
 
 /* ───────── durante a partida ───────── */
 
-/** Onde fica o quadro do Tab: à esquerda, abaixo do quadro de quedas e acima dos números do jogo. */
+/** Onde fica o quadro do Tab: à esquerda, abaixo do quadro de quedas. */
 export const CONTROLS_TOP = 330
 
 /**
@@ -564,36 +580,23 @@ export function MatchControls(props: { seat: Seat; cursor: boolean }) {
   const marks = isHost(me) && me.pawn() !== undefined
   if (!props.cursor || (!heroFree && !marks)) return null
   return (
-    <panel
-      style={{
-        x: 24,
-        y: CONTROLS_TOP,
-        flow: 'down',
-        width: 290,
-        padding: [12, 14],
-        background: FILL,
-        borderRadius: sizes.panelRadius,
-        borderWidth: 1,
-        borderColor: shades.hairline,
-      }}
-      enter={{ opacity: 0, translate: [-12, 0] }}
-    >
-      <Text role="label" plated style={{ horizontalAlign: 'left', letterSpacing: 1 }}>
+    <panel style={{ x: PANEL_X, y: CONTROLS_TOP, flow: 'down', width: 300, padding: PAD, ...surface }} enter={{ opacity: 0, translate: [-12, 0] }}>
+      <L size={15} block upper spacing={1} color={P.ink3} style={{ margin: [0, 0, 10, 0] }}>
         Arena
-      </Text>
+      </L>
       {heroFree ? (
-        <Action kind="secondary" onPress={(p) => openHeroMenu(p)} style={{ width: '100%', margin: [8, 0, 0, 0] }}>
+        <Outline onPress={(p) => openHeroMenu(p)} style={{ width: '100%', margin: [0, 0, 8, 0] }}>
           Trocar herói
-        </Action>
+        </Outline>
       ) : null}
       {marks ? (
-        <Action kind="secondary" onPress={(p) => markArena(p)} style={{ width: '100%', margin: [6, 0, 0, 0] }}>
+        <Outline onPress={(p) => markArena(p)} style={{ width: '100%', margin: [0, 0, 8, 0] }}>
           Marcar o centro aqui
-        </Action>
+        </Outline>
       ) : null}
-      <Text role="caption" tone="muted" plated style={{ horizontalAlign: 'left', textAlign: 'left', margin: [8, 0, 0, 0] }}>
+      <L size={15} color={P.ink3}>
         Vale a partir da próxima rodada.
-      </Text>
+      </L>
     </panel>
   )
 }

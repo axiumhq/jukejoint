@@ -22,13 +22,13 @@ const REDRAW_STEP = 24
 export const RING_EFFECT = 'particles/abilities/assassinate_laser_targetting.vpcf'
 /** O ponto de controle da ponta do laser. */
 const FAR_END = 1
-/** O tom do anel (0xRRGGBBAA): o destaque do tema, o mesmo coral do placar. */
-const RING_TINT = 0xfd736dff
+/** O tom do anel (0xRRGGBBAA): o latão do painel, puxado para o âmbar. */
+const RING_TINT = 0xd9a95cff
 /** Quanto o laser fica acima do chão, para não sumir em degraus e calçadas. */
 const RING_LIFT = 10
 /** Os marcadores de reserva: um traço vertical, que a fonte do jogo (Reaver) tem. */
 const MARKER_TEXT = '|'
-const MARKER_COLOR = 0xfd736dff
+const MARKER_COLOR = 0xd9a95cff
 const MARKER_SIZE = 120
 const MARKER_SCALE = 2
 /** Os efeitos que o anel usa, para o precache no começo do servidor. */

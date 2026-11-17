@@ -372,7 +372,7 @@ export const cursorFree = (p: FakePlayer) => (p.pawnState ? p.cursor || p.tab : 
 export const Buttons = { attack: 1n, altFire: 2n, melee: 4n, ability1: 8n, ability2: 16n, ability3: 32n, ultimate: 64n, jump: 128n, crouch: 256n, dash: 512n, use: 1024n, reload: 2048n, parry: 4096n }
 /** Colors, sizes and sounds: any token reads as a plain value. */
 const token = new Proxy({}, { get: (_, k) => (typeof k === 'string' ? `#${k}` : undefined) })
-export const theme = { tones: token, shades: token, sizes: { radius: 4, panelRadius: 8, control: 32, rowControl: 28, row: 32 }, sounds: { hover: 'hover', press: 'press' }, motion: { hover: 0.15, meter: 0.25 } }
+export const theme = { tones: token, shades: token, sizes: { radius: 4, panelRadius: 8, control: 32, rowControl: 28, row: 32 }, sounds: { hover: 'hover', press: 'press' }, motion: { hover: 0.15, meter: 0.25 }, types: { display: { face: 'block', size: 46, uppercase: true }, title: { face: 'block', size: 26, uppercase: true }, body: { face: 'body', size: 17, uppercase: false }, label: { face: 'block', size: 15, uppercase: true }, caption: { face: 'body', size: 14, uppercase: false } } }
 export class ProbeRun { tick() {} }
 
 // modlock/jsx-runtime

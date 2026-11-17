@@ -1,17 +1,19 @@
-// O que cada pessoa vê, redesenhado a cada quadro (show só manda o que mudou):
-// - no topo, no lugar da barra do jogo (escondida com hideHud), o placar da Arena: cada lado com
-//   retrato, nome e pontos no tom do time, e no meio a rodada ou o relógio; antes da partida, quem
-//   vai lutar contra quem, com a escolha (escolha.tsx) logo abaixo;
+// O que cada pessoa vê, redesenhado a cada quadro (show só manda o que mudou), no mesmo desenho do
+// painel de votação (paleta.tsx): sem enfeite, hierarquia clara, âmbar e safira para os lados.
+// - antes da partida, duas linhas no topo (o que vale pela votação e quando começa) e o painel da
+//   escolha à esquerda (escolha.tsx);
+// - na partida, no topo, no lugar da barra do jogo (escondida com hideHud), o placar compacto:
+//   cada lado com retrato, nome e pontos na cor do time, e no meio a rodada ou o relógio;
 // - no meio da tela, a contagem 3, 2, 1 e o "Valendo", a faixa de quem levou a rodada ou a partida
 //   e os destaques ("Primeira queda", "Sem tomar dano");
-// - abaixo da mira, o aviso de quem está fora do círculo (com a borda vermelha, a distância e a
-//   direção do centro), a volta de quem caiu e a posição na fila de quem assiste;
+// - abaixo da mira, o aviso de quem está fora do círculo (com a borda, a distância e a direção do
+//   centro), a volta de quem caiu e a posição na fila de quem assiste;
 // - à esquerda, as últimas quedas e, com o Tab, o quadro de Trocar herói e Marcar o centro.
 //
 // A parte do HUD do jogo que não serve à Arena some (barra do topo, marca do canto, almas, números,
 // avisos de nível e minimapa) e só é pedida de novo quando muda. Com a lista de heróis aberta, o
 // cursor fica solto sem o Tab e os botões do mouse ficam presos, para um clique não virar tiro.
-import { Buttons, cursorFree, freeCursor, hideHud, type HudPart, Meter, Pill, Pips, show, Text, theme, type Tone } from 'modlock'
+import { Buttons, cursorFree, freeCursor, hideHud, type HudPart, show } from 'modlock'
 
 import {
   type Callout,
@@ -22,28 +24,21 @@ import {
   type Fighter,
   info,
   key,
-  perSideFor,
-  resolveRules,
   RESPAWN_SECONDS,
   type Seat,
   SHRINK_FROM,
   sideName,
-  sideOf,
   state,
   TEAM_NAMES,
-  VARIANTS,
 } from './arena'
 import { GAS_SHARE, inside, metersOutside, MIN_FRACTION, turnToCenter } from './circulo'
-import { clock, HeroMenu, heroOf, heroTitle, MatchControls, PickOverlay, Portrait } from './escolha'
-
-const { tones } = theme
+import { clock, HeroMenu, heroOf, heroTitle, MatchControls, PickHeader, PickPanel, Portrait } from './escolha'
+import { L, P, pct, SIDE_COLORS, surface } from './paleta'
 
 /** Os pontos só viram marcadores até este alvo; acima disso, só o número. */
 const MAX_PIPS = 7
 /** Nos times, quantos retratos de cada lado o placar mostra. */
 const MAX_PORTRAITS = 6
-/** O tom de cada lado: o lado 0 joga no time 2 (âmbar), o lado 1 no time 3 (safira). */
-export const SIDE_TONES: readonly Tone[] = ['amber', 'sapphire']
 /** Quanto tempo o "Valendo" fica na tela. */
 const GO_SECONDS = 1.2
 /** Quantas quedas o quadro da esquerda mostra de uma vez. */
@@ -104,99 +99,97 @@ export interface SideView {
   label: string
   /** O herói de quem está sozinho no lado, ou quantos estão de pé nos times. */
   sub: string | undefined
-  tone: Tone
+  color: string
   people: Person[]
   score: number
-}
-
-/** Quem está em cada lado: na partida, quem luta; antes dela, quem vai lutar com esta fila. */
-function members(): { seat: Seat; side: number; down: boolean }[] {
-  if (state.phase !== 'waiting') return state.fighters.map((f) => ({ seat: f.seat, side: f.side, down: !f.alive && isLive() }))
-  const rules = resolveRules()
-  const n = perSideFor(rules.variant, state.queue.length)
-  if (n === 0) return state.queue.slice(0, 1).map((seat) => ({ seat, side: 0, down: false }))
-  return state.queue.slice(0, 2 * n).map((seat, i) => ({ seat, side: sideOf(i, n, rules.variant), down: false }))
 }
 
 function isLive(): boolean {
   return state.phase === 'live' || state.phase === 'roundOver'
 }
 
-function mixed(): boolean {
-  return VARIANTS[state.phase === 'waiting' ? resolveRules().variant : state.rules.variant].mixed
-}
-
 /** Os dois lados como o placar mostra a quem olha: o lado da pessoa (ou o lado 0) à esquerda. */
 export function sideViews(viewer: Seat): [SideView, SideView] {
-  const all = members()
-  const mine = all.find((m) => key(m.seat) === key(viewer))
+  const all = state.fighters
+  const mine = all.find((f) => key(f.seat) === key(viewer))
   const near = mine?.side ?? 0
   const view = (side: number): SideView => {
-    const list = all.filter((m) => m.side === side)
-    const people = list.map((m) => ({ name: m.seat.name, hero: heroOf(m.seat), down: m.down, self: key(m.seat) === key(viewer) }))
+    const list = all.filter((f) => f.side === side)
+    const people = list.map((f) => ({ name: f.seat.name, hero: heroOf(f.seat), down: !f.alive && isLive(), self: key(f.seat) === key(viewer) }))
     let label: string
     let sub: string | undefined
-    if (list.length === 0) label = 'Falta alguém'
-    else if (mixed()) {
+    if (list.length === 0) label = 'Ninguém'
+    else if (info().mixed) {
       label = TEAM_NAMES[side]
       const up = people.filter((p) => !p.down).length
       sub = isLive() ? `${up} de pé` : `${people.length} ${people.length === 1 ? 'pessoa' : 'pessoas'}`
     } else {
-      label = state.phase === 'waiting' ? people.map((p) => p.name).join(' e ') : sideName(side)
+      label = sideName(side)
       sub = people.length === 1 ? heroTitle(people[0].hero) : undefined
     }
-    return { side, label, sub, tone: SIDE_TONES[side], people, score: state.phase === 'waiting' ? 0 : state.score[side] }
+    return { side, label, sub, color: SIDE_COLORS[side], people, score: state.score[side] }
   }
   return [view(near), view(1 - near)]
 }
 
-/** A linha sobre o placar: o jeito de jogar, como se vence e o herói do espelho. */
+/** A linha sobre o placar: o modo, como se vence e o herói do espelho. */
 export function heading(): string {
-  if (state.phase === 'waiting') return 'Arena · próxima partida'
   const parts: string[] = [info().title, state.rules.timed ? 'com tempo' : `até ${state.rules.target}`]
   if (info().mirror && state.heroTitle) parts.push(state.heroTitle)
   return parts.join(' · ')
 }
 
-/** O meio do placar: o relógio com tempo, a rodada sem tempo, "contra" antes da partida. */
+/** O meio do placar: o relógio com tempo, a rodada sem tempo (com o relógio dela embaixo). */
 export function middle(): { main: string; sub: string | undefined } {
-  if (state.phase === 'waiting') return { main: 'contra', sub: undefined }
   const live = state.phase === 'live'
   if (state.rules.timed) return { main: clock(live ? state.endsAt - state.now : state.rules.seconds), sub: undefined }
   return { main: `Rodada ${state.round || 1}`, sub: live ? clock(state.endsAt - state.now) : undefined }
 }
 
+/** Os pontos como marcadores: cheios na cor do lado, vazios só com o contorno. */
+function Dots(props: { filled: number; total: number; color: string; mirror?: boolean }) {
+  const { filled, total, color, mirror } = props
+  return (
+    <panel style={{ flow: 'right', verticalAlign: 'center' }}>
+      {Array.from({ length: total }, (_, i) => {
+        const lit = mirror ? i >= total - filled : i < filled
+        return (
+          <panel
+            key={`p${i}`}
+            style={{ width: 12, height: 12, borderRadius: 6, margin: [0, 3], background: lit ? color : P.clear, borderWidth: 1, borderColor: lit ? color : P.line2 }}
+          />
+        )
+      })}
+    </panel>
+  )
+}
+
 function SideBlock(props: { view: SideView; align: 'left' | 'right' }) {
   const { view, align } = props
-  const many = view.people.length > 2
-  const size = many ? 34 : 46
+  const size = view.people.length > 2 ? 34 : 44
   const portraits = (
     <panel style={{ flow: 'right', verticalAlign: 'center' }}>
       {view.people.slice(0, MAX_PORTRAITS).map((p, i) => (
         <panel key={`${p.name}-${i}`} style={{ margin: [0, 2] }}>
-          <Portrait hero={p.hero} size={size} edge={p.self ? tones.text : tones[view.tone]} dim={p.down} />
+          <Portrait hero={p.hero} size={size} name={p.name} edge={p.self ? P.ink : view.color} dim={p.down} />
         </panel>
       ))}
     </panel>
   )
   const names = (
     <panel style={{ flow: 'down', verticalAlign: 'center', margin: align === 'right' ? [0, 10, 0, 0] : [0, 0, 0, 10], maxWidth: 220 }}>
-      <Text
-        role="label"
-        tone={view.tone}
-        style={{ horizontalAlign: align, textAlign: align, fontSize: 18, letterSpacing: 1, noWrap: true, textOverflow: 'ellipsis' }}
-      >
+      <L size={20} weight="semiBold" color={view.color} shadow style={{ horizontalAlign: align, textAlign: align, noWrap: true, textOverflow: 'ellipsis' }}>
         {view.label}
-      </Text>
+      </L>
       {view.sub ? (
-        <Text role="caption" tone="muted" style={{ horizontalAlign: align, textAlign: align }}>
+        <L size={15} color={P.ink2} shadow style={{ horizontalAlign: align, textAlign: align }}>
           {view.sub}
-        </Text>
+        </L>
       ) : null}
     </panel>
   )
   return (
-    <panel style={{ flow: 'right', width: 330, verticalAlign: 'center' }}>
+    <panel style={{ flow: 'right', width: 320, verticalAlign: 'center' }}>
       {align === 'right' ? <panel style={{ width: 'fill' }} /> : null}
       {align === 'right' ? names : portraits}
       {align === 'right' ? portraits : names}
@@ -204,52 +197,43 @@ function SideBlock(props: { view: SideView; align: 'left' | 'right' }) {
   )
 }
 
-function ScoreNumber(props: { view: SideView; show: boolean }) {
-  return (
-    <panel style={{ width: 70, verticalAlign: 'center' }}>
-      {props.show ? (
-        <Text role="display" tone={props.view.tone} style={{ fontSize: 44 }}>
-          {props.view.score}
-        </Text>
-      ) : null}
-    </panel>
-  )
-}
-
 export function Scoreboard(props: { seat: Seat; fade: boolean }) {
   const [near, far] = sideViews(props.seat)
   const mid = middle()
-  const waiting = state.phase === 'waiting'
-  const pips = !waiting && !state.rules.timed && state.rules.target <= MAX_PIPS
+  const dots = !state.rules.timed && state.rules.target <= MAX_PIPS
+  const score = (v: SideView) => (
+    <L size={42} block color={v.color} shadow style={{ width: 64, horizontalAlign: 'center', textAlign: 'center', verticalAlign: 'center' }}>
+      {v.score}
+    </L>
+  )
   return (
-    <panel
-      style={{ flow: 'down', horizontalAlign: 'center', margin: [12, 0, 0, 0], opacity: props.fade ? 0 : 1, transition: 0.2 }}
-    >
-      <Text role="label" style={{ letterSpacing: 2 }}>
+    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [14, 0, 0, 0], opacity: props.fade ? 0 : 1, transition: 0.2 }}>
+      <L size={15} block upper spacing={2} color={P.ink2} shadow style={{ horizontalAlign: 'center' }}>
         {heading()}
-      </Text>
+      </L>
       <panel style={{ flow: 'right', verticalAlign: 'center', margin: [6, 0, 0, 0] }}>
         <SideBlock view={near} align="right" />
-        <ScoreNumber view={near} show={!waiting} />
-        <panel style={{ flow: 'down', width: 140, horizontalAlign: 'center', verticalAlign: 'center' }}>
-          <Pill style={{ minWidth: 112 }}>
-            <Text role={state.rules.timed && !waiting ? 'title' : 'label'} plated style={{ margin: [2, 8] }}>
+        {score(near)}
+        <panel style={{ flow: 'down', width: 132, horizontalAlign: 'center', verticalAlign: 'center' }}>
+          <panel style={{ padding: [4, 14], borderRadius: 18, background: P.panel, borderWidth: 1, borderColor: P.line, horizontalAlign: 'center' }}>
+            <L size={state.rules.timed ? 24 : 18} block color={P.ink} style={{ horizontalAlign: 'center' }}>
               {mid.main}
-            </Text>
-          </Pill>
+            </L>
+          </panel>
           {mid.sub ? (
-            <Text role="caption" tone="muted" style={{ margin: [3, 0, 0, 0] }}>
+            <L size={15} color={P.ink3} shadow style={{ horizontalAlign: 'center', margin: [3, 0, 0, 0] }}>
               {mid.sub}
-            </Text>
+            </L>
           ) : null}
         </panel>
-        <ScoreNumber view={far} show={!waiting} />
+        {score(far)}
         <SideBlock view={far} align="left" />
       </panel>
-      {pips ? (
-        <panel style={{ flow: 'right', horizontalAlign: 'center', margin: [4, 0, 0, 0] }}>
-          <Pips filled={near.score} total={state.rules.target} tone={near.tone} mirror style={{ margin: [0, 34, 0, 0] }} />
-          <Pips filled={far.score} total={state.rules.target} tone={far.tone} style={{ margin: [0, 0, 0, 34] }} />
+      {dots ? (
+        <panel style={{ flow: 'right', horizontalAlign: 'center', margin: [6, 0, 0, 0] }}>
+          <Dots filled={near.score} total={state.rules.target} color={near.color} mirror />
+          <panel style={{ width: 60 }} />
+          <Dots filled={far.score} total={state.rules.target} color={far.color} />
         </panel>
       ) : null}
     </panel>
@@ -274,11 +258,15 @@ function CircleLine() {
   const c = circleLine()
   if (!c) return null
   return (
-    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [8, 0, 0, 0] }}>
-      <Text role="label" tone="accent" style={{ letterSpacing: 1 }}>
+    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [10, 0, 0, 0] }}>
+      <L size={15} block upper spacing={1} color={P.brass} shadow style={{ horizontalAlign: 'center' }}>
         {c.text}
-      </Text>
-      {c.value !== undefined ? <Meter value={c.value} tone="accent" width={200} height={6} style={{ margin: [4, 0, 0, 0] }} /> : null}
+      </L>
+      {c.value !== undefined ? (
+        <panel style={{ width: 200, height: 5, borderRadius: 3, background: P.line2, margin: [5, 0, 0, 0], horizontalAlign: 'center', overflow: 'clip' }}>
+          <panel style={{ width: pct(100 * c.value), height: '100%', background: P.brass, transition: 0.25 }} />
+        </panel>
+      ) : null}
     </panel>
   )
 }
@@ -309,25 +297,21 @@ export function moment(): { title: string; detail?: string; big: boolean; key: s
 function Moment() {
   const m = moment()
   if (!m) return null
+  const go = m.title === 'Valendo'
   return (
-    <panel
-      key={m.key}
-      style={{ flow: 'down', horizontalAlign: 'center', transition: { seconds: 0.3, easing: 'out' } }}
-      enter={{ opacity: 0, scale: m.big ? 1.7 : 1.25 }}
-      exit={{ opacity: 0 }}
-    >
+    <panel key={m.key} style={{ flow: 'down', horizontalAlign: 'center', transition: { seconds: 0.3, easing: 'out' } }} enter={{ opacity: 0, scale: m.big ? 1.6 : 1.2 }} exit={{ opacity: 0 }}>
       {m.big && m.detail ? (
-        <Text role="label" style={{ letterSpacing: 2 }}>
+        <L size={16} block upper spacing={2} color={P.ink2} shadow style={{ horizontalAlign: 'center' }}>
           {m.detail}
-        </Text>
+        </L>
       ) : null}
-      <Text role="display" tone={m.title === 'Valendo' ? 'gold' : 'text'} style={{ fontSize: m.big ? 128 : 64, lineHeight: m.big ? 132 : 70 }}>
+      <L size={m.big ? 120 : 60} block color={go ? P.brass : P.ink} shadow style={{ horizontalAlign: 'center' }}>
         {m.title}
-      </Text>
+      </L>
       {!m.big && m.detail ? (
-        <Text role="body" tone="muted">
+        <L size={18} color={P.ink2} shadow style={{ horizontalAlign: 'center' }}>
           {m.detail}
-        </Text>
+        </L>
       ) : null}
     </panel>
   )
@@ -353,34 +337,30 @@ export function bannerFor(seat: Seat): { title: string; detail: string; side: nu
 function Result(props: { seat: Seat }) {
   const b = bannerFor(props.seat)
   if (!b) return null
-  const tone: Tone = b.side >= 0 ? SIDE_TONES[b.side] : 'text'
+  const color = b.side >= 0 ? SIDE_COLORS[b.side] : P.ink
   const winners = b.side >= 0 ? state.fighters.filter((f: Fighter) => f.side === b.side).slice(0, MAX_PORTRAITS) : []
   return (
     <panel
       key={`faixa-${b.title}-${state.round}`}
-      style={{
-        flow: 'down',
-        horizontalAlign: 'center',
-        padding: [16, 70],
-        gradient: { shape: 'radial', colors: [`${tones[tone]}38`, '#00000000'] },
-        transition: { seconds: 0.3, easing: 'out' },
-      }}
-      enter={{ opacity: 0, scale: 0.92 }}
+      style={{ flow: 'down', horizontalAlign: 'center', transition: { seconds: 0.3, easing: 'out' } }}
+      enter={{ opacity: 0, scale: 0.94 }}
       exit={{ opacity: 0 }}
     >
       {winners.length > 0 ? (
         <panel style={{ flow: 'right', horizontalAlign: 'center', margin: [0, 0, 8, 0] }}>
           {winners.map((f) => (
             <panel key={key(f.seat)} style={{ margin: [0, 3] }}>
-              <Portrait hero={heroOf(f.seat)} size={b.final ? 64 : 52} edge={tones[tone]} />
+              <Portrait hero={heroOf(f.seat)} size={b.final ? 60 : 48} name={f.seat.name} edge={color} />
             </panel>
           ))}
         </panel>
       ) : null}
-      <Text role="display" tone={tone} style={{ fontSize: b.final ? 56 : 42 }}>
+      <L size={b.final ? 52 : 40} block color={color} shadow style={{ horizontalAlign: 'center' }}>
         {b.title}
-      </Text>
-      <Text role="body">{b.detail}</Text>
+      </L>
+      <L size={20} color={P.ink} shadow style={{ horizontalAlign: 'center' }}>
+        {b.detail}
+      </L>
     </panel>
   )
 }
@@ -401,16 +381,15 @@ function Highlights() {
 function Highlight(props: { callout: Callout }) {
   const c = props.callout
   return (
-    <panel
-      key={`destaque-${c.title}-${c.until}`}
-      style={{ flow: 'down', horizontalAlign: 'center', margin: [10, 0, 0, 0], transition: { seconds: 0.25, easing: 'out' } }}
-      enter={{ opacity: 0, scale: 1.3 }}
-      exit={{ opacity: 0 }}
-    >
-      <Text role="display" tone="gold" style={{ fontSize: 54 }}>
+    <panel style={{ flow: 'down', horizontalAlign: 'center', margin: [12, 0, 0, 0], transition: { seconds: 0.25, easing: 'out' } }} enter={{ opacity: 0, scale: 1.2 }} exit={{ opacity: 0 }}>
+      <L size={44} block color={P.brass} shadow style={{ horizontalAlign: 'center' }}>
         {c.title}
-      </Text>
-      {c.detail ? <Text role="body">{c.detail}</Text> : null}
+      </L>
+      {c.detail ? (
+        <L size={18} color={P.ink} shadow style={{ horizontalAlign: 'center' }}>
+          {c.detail}
+        </L>
+      ) : null}
     </panel>
   )
 }
@@ -449,9 +428,7 @@ export function personalLine(seat: Seat): { title: string; detail?: string } | u
 
 /** A seta que aponta o centro do círculo, feita de dois traços. */
 function Arrow(props: { turn: number }) {
-  const bar = (x: number, angle: number) => (
-    <panel style={{ x, y: 16, width: 24, height: 5, borderRadius: 2, background: tones.text, rotate: angle }} />
-  )
+  const bar = (x: number, angle: number) => <panel style={{ x, y: 16, width: 24, height: 4, borderRadius: 2, background: P.ink, rotate: angle }} />
   return (
     <panel style={{ width: 44, height: 40, horizontalAlign: 'center', rotate: props.turn, transition: 0.1 }}>
       {bar(3, -45)}
@@ -466,10 +443,12 @@ function Below(props: { seat: Seat }) {
     return (
       <panel style={{ flow: 'down', horizontalAlign: 'center' }} enter={{ opacity: 0, translate: [0, 10] }}>
         <Arrow turn={out.turn} />
-        <Text role="title" tone="danger" style={{ margin: [2, 0, 0, 0] }}>
+        <L size={30} block color={P.warn} shadow style={{ horizontalAlign: 'center', margin: [2, 0, 0, 0] }}>
           Fora do círculo
-        </Text>
-        <Text role="body">{`O gás tira ${Math.round(GAS_SHARE * 100)}% da vida por segundo · ${out.meters} m até o círculo`}</Text>
+        </L>
+        <L size={18} color={P.ink} shadow style={{ horizontalAlign: 'center' }}>
+          {`O gás tira ${Math.round(GAS_SHARE * 100)}% da vida por segundo · ${out.meters} m até o círculo`}
+        </L>
       </panel>
     )
   }
@@ -477,27 +456,23 @@ function Below(props: { seat: Seat }) {
   if (!line) return null
   return (
     <panel key={line.title.startsWith('Você volta') ? 'volta' : line.title} style={{ flow: 'down', horizontalAlign: 'center' }} enter={{ opacity: 0 }}>
-      <Text role="title">{line.title}</Text>
+      <L size={30} block color={P.ink} shadow style={{ horizontalAlign: 'center' }}>
+        {line.title}
+      </L>
       {line.detail ? (
-        <Text role="body" tone="muted">
+        <L size={18} color={P.ink2} shadow style={{ horizontalAlign: 'center' }}>
           {line.detail}
-        </Text>
+        </L>
       ) : null}
     </panel>
   )
 }
 
-/** A borda vermelha de quem está no gás, pulsando. */
+/** A borda de quem está no gás, pulsando. */
 function Vignette() {
   return (
     <panel
-      style={{
-        x: 0,
-        y: 0,
-        width: '100%',
-        height: '100%',
-        boxShadow: { inset: true, blur: 200, spread: 24, color: `${tones.danger}8c` },
-      }}
+      style={{ x: 0, y: 0, width: '100%', height: '100%', boxShadow: { inset: true, blur: 200, spread: 24, color: `${P.warn}8c` } }}
       enter={{ opacity: 0 }}
       exit={{ opacity: 0 }}
       cycle={{ style: { opacity: 0.45 }, seconds: 0.7 }}
@@ -511,29 +486,19 @@ function FeedRow(props: { entry: FeedEntry }) {
   const { by, victim, gas } = props.entry
   return (
     <panel
-      key={`${props.entry.at}-${victim.name}`}
-      style={{
-        flow: 'right',
-        verticalAlign: 'center',
-        height: 36,
-        margin: [0, 0, 4, 0],
-        padding: [4, 12, 4, 4],
-        background: '#000000b8',
-        borderRadius: 4,
-        transition: 0.25,
-      }}
-      enter={{ opacity: 0, translate: [-30, 0] }}
+      style={{ flow: 'right', verticalAlign: 'center', height: 38, margin: [0, 0, 5, 0], padding: [4, 12, 4, 5], ...surface, boxShadow: undefined, transition: 0.25 }}
+      enter={{ opacity: 0, translate: [-24, 0] }}
       exit={{ opacity: 0 }}
     >
-      {by ? <Portrait hero={by.hero} size={28} edge={tones[SIDE_TONES[by.side]]} /> : null}
-      <Text role="label" tone={by ? SIDE_TONES[by.side] : gas ? 'danger' : 'muted'} plated style={{ margin: [0, 8], verticalAlign: 'center' }}>
+      {by ? <Portrait hero={by.hero} size={28} name={by.name} edge={SIDE_COLORS[by.side]} /> : null}
+      <L size={16} weight="semiBold" color={by ? SIDE_COLORS[by.side] : gas ? P.warn : P.ink3} style={{ margin: [0, 8], verticalAlign: 'center' }}>
         {by ? by.name : gas ? 'Gás' : 'Caiu'}
-      </Text>
-      <panel style={{ width: 12, height: 2, background: tones.muted, verticalAlign: 'center', margin: [0, 8, 0, 0] }} />
-      <Text role="label" tone="muted" plated style={{ margin: [0, 8, 0, 0], verticalAlign: 'center' }}>
+      </L>
+      <panel style={{ width: 12, height: 2, background: P.ink3, verticalAlign: 'center', margin: [0, 8, 0, 0] }} />
+      <L size={16} color={P.ink3} style={{ margin: [0, 8, 0, 0], verticalAlign: 'center' }}>
         {victim.name}
-      </Text>
-      <Portrait hero={victim.hero} size={28} dim />
+      </L>
+      <Portrait hero={victim.hero} size={28} name={victim.name} dim />
     </panel>
   )
 }
@@ -543,7 +508,7 @@ function Feed() {
   const rows = state.feed.filter((e) => state.now - e.at < FEED_SECONDS).slice(-FEED_SHOWN)
   if (rows.length === 0) return null
   return (
-    <panel style={{ x: 0, y: FEED_TOP, flow: 'down' }}>
+    <panel style={{ x: 34, y: FEED_TOP, flow: 'down' }}>
       {rows.map((e) => (
         <FeedRow key={`${e.at}-${e.victim.name}`} entry={e} />
       ))}
@@ -553,6 +518,37 @@ function Feed() {
 
 /* ───────── tudo junto ───────── */
 
+/** A tela de uma pessoa agora. */
+export function Screen(props: { seat: Seat; menu: boolean; up: boolean | undefined }) {
+  const { seat, menu, up } = props
+  const picking = state.phase === 'waiting'
+  // Com o Tab segurado na partida, o placar do jogo abre no topo: o nosso sai da frente.
+  const fade = !picking && !menu && up === true
+  const out = outside(seat)
+  return (
+    <panel style={{ width: '100%', height: '100%' }}>
+      {out ? <Vignette /> : null}
+      <panel style={{ x: 0, y: 0, width: '100%', height: 150, gradient: { shape: 'down', colors: ['#0c0a09cc', '#0c0a0900'] }, opacity: fade ? 0 : 1, transition: 0.2 }} />
+      <panel style={{ x: 0, y: 0, width: '100%', flow: 'down' }}>
+        {picking ? <PickHeader /> : <Scoreboard seat={seat} fade={fade} />}
+        {picking || fade ? null : <CircleLine />}
+      </panel>
+      <panel style={{ x: 0, y: '21%', width: '100%', flow: 'down' }}>
+        <Moment />
+        <Result seat={seat} />
+        <Highlights />
+      </panel>
+      <panel style={{ x: 0, y: '59%', width: '100%', flow: 'down' }}>
+        <Below seat={seat} />
+      </panel>
+      <Feed />
+      {picking && !menu ? <PickPanel seat={seat} cursor={up === true} /> : null}
+      {picking ? null : <MatchControls seat={seat} cursor={!menu && up !== false} />}
+      {menu ? <HeroMenu seat={seat} /> : null}
+    </panel>
+  )
+}
+
 export function drawHud(): void {
   const here = new Set(state.queue.map(key))
   for (const k of [...held.keys()]) if (!here.has(k)) held.delete(k)
@@ -560,50 +556,14 @@ export function drawHud(): void {
 
   const picking = state.phase === 'waiting'
   for (const seat of state.queue) {
-    if (seat.bot) continue
+    // Bots e as pessoas de mentira da vitrine não têm tela.
+    if (seat.bot || seat.fake) continue
     const k = key(seat)
     const menu = state.heroMenu.has(k)
     const pawn = seat.player.pawn()
     // Sem herói (quem assistia), a pessoa não tem o Tab: o cursor fica solto para a escolha.
     holdCursor(seat, menu ? MENU_BLOCK : picking && !pawn ? PICK_BLOCK : 0n)
     hideStock(seat, menu ? PANEL_HIDE : MATCH_HIDE)
-
-    const up = cursorFree(seat.player)
-    // Com o Tab segurado na partida, o placar do jogo abre no topo: o nosso sai da frente.
-    const fade = !picking && !menu && up === true
-    const out = outside(seat)
-    show(
-      seat.player,
-      <panel style={{ width: '100%', height: '100%' }}>
-        {out ? <Vignette /> : null}
-        <panel
-          style={{
-            x: 0,
-            y: 0,
-            width: '100%',
-            height: 170,
-            gradient: { shape: 'down', colors: ['#000000a6', '#00000000'] },
-            opacity: fade ? 0 : 1,
-            transition: 0.2,
-          }}
-        />
-        <panel style={{ x: 0, y: 0, width: '100%', flow: 'down' }}>
-          <Scoreboard seat={seat} fade={fade} />
-          {picking && !menu ? <PickOverlay seat={seat} cursor={up === true} /> : null}
-          {picking || fade ? null : <CircleLine />}
-        </panel>
-        <panel style={{ x: 0, y: '21%', width: '100%', flow: 'down' }}>
-          <Moment />
-          <Result seat={seat} />
-          <Highlights />
-        </panel>
-        <panel style={{ x: 0, y: '59%', width: '100%', flow: 'down' }}>
-          <Below seat={seat} />
-        </panel>
-        <Feed />
-        {picking ? null : <MatchControls seat={seat} cursor={!menu && up !== false} />}
-        {menu ? <HeroMenu seat={seat} /> : null}
-      </panel>,
-    )
+    show(seat.player, <Screen seat={seat} menu={menu} up={cursorFree(seat.player)} />)
   }
 }

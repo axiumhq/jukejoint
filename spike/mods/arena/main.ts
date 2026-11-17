@@ -5,6 +5,9 @@
 // O jeito de jogar vem dos argumentos do servidor (`--arg variante=times --arg tempo`), depois da
 // votação na tela, depois da configuração do lobby de quem chegou primeiro. Tudo se escolhe na
 // tela; os comandos abaixo ficam só como reserva e nenhum texto manda ninguém para eles.
+//
+// Com `--arg vitrine=<estado>` (só para a prévia do Modlock, vitrine.ts), o modo não joga: monta
+// aquele momento com dados de mentira a cada quadro, para a tela da prévia mostrar.
 import { command, log, onDamage, onDamaged, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld, precache, Strays } from 'modlock'
 
 import {
@@ -26,8 +29,10 @@ import {
 import { RING_RESOURCES } from './circulo'
 import { drawHud } from './hud'
 import { Probe } from './probe'
+import { parseVitrine, showcase, type Vitrine } from './vitrine'
 
 let probe: Probe | undefined
+let vitrine: Vitrine | undefined
 /** Tira do mapa os corpos de herói que ficam sem dono quando o herói troca (no espelho). */
 const strays = new Strays()
 
@@ -35,15 +40,18 @@ onStart((args) => {
   // O laser do anel: o host já traz esse efeito, mas o precache garante que ele carregue com o mapa.
   if (!precache({ resources: RING_RESOURCES })) log('precache do anel recusado')
   configure(args)
-  if (args.includes('probe')) probe = new Probe()
+  vitrine = parseVitrine(args)
+  if (vitrine) log('vitrine', vitrine)
+  else if (args.includes('probe')) probe = new Probe()
 })
 onWorld((map) => world(map))
-onDamage((hit) => damage(hit))
-onDamaged((hit) => damaged(hit))
-onPlayerJoin(() => playerJoined())
-onPlayerLeave((left) => playerLeft(left.connection))
+onDamage((hit) => (vitrine ? undefined : damage(hit)))
+onDamaged((hit) => (vitrine ? undefined : damaged(hit)))
+onPlayerJoin(() => (vitrine ? undefined : playerJoined()))
+onPlayerLeave((left) => (vitrine ? undefined : playerLeft(left.connection)))
 onFrame((f) => {
-  frame(f.timeSeconds)
+  if (vitrine) showcase(vitrine, f.timeSeconds)
+  else frame(f.timeSeconds)
   strays.sweep(f.timeSeconds)
   drawHud()
   probe?.tick(f.timeSeconds)
