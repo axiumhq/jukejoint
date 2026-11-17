@@ -25,7 +25,7 @@ Lutas num círculo marcado no chão, com gás do lado de fora. Um modo só, com 
 
 ## Configurações do lobby e argumentos
 
-O `mod.json` declara três configurações. No Modlock v0.1.73 a configuração é de cada pessoa (`player.setting`); a Arena lê a de **quem chegou primeiro à sala** entre as pessoas (bots não contam), e ela só vale enquanto ninguém votou naquele grupo. A leitura acontece no começo de cada partida.
+O `mod.json` declara três configurações. No Modlock (v0.1.73 e v0.1.85) a configuração é de cada pessoa (`player.setting`); a Arena lê a de **quem chegou primeiro à sala** entre as pessoas (bots não contam), e ela só vale enquanto ninguém votou naquele grupo. A leitura acontece no começo de cada partida.
 
 | Chave | Tipo | Padrão |
 |---|---|---|
@@ -60,7 +60,7 @@ Tudo no mesmo desenho do painel (`paleta.tsx`): painéis escuros translúcidos c
 - **No meio da tela**: "Rodada N" enquanto os heróis aparecem; a contagem 3, 2, 1 grande e o "Valendo"; a faixa de quem levou a rodada ou a partida ("Você levou a rodada", "Você venceu"), com o retrato de quem venceu e o placar; e os destaques "Primeira queda" e "Sem tomar dano" (quando o lado que levou a rodada não perdeu vida nenhuma, nem no gás).
 - **Abaixo da mira**: fora do círculo, "Fora do círculo", quanto o gás tira, quantos metros faltam até o círculo e uma seta para o centro, com a borda da tela pulsando; quem caiu vê "Você volta em 3" (com tempo) ou "Você caiu" (por rodadas); quem assiste vê a posição na fila.
 - **À esquerda**: as últimas quedas, com quem derrubou quem, ou o gás; com o Tab, o quadro de Trocar herói e Marcar o centro.
-- **O anel no chão**: uma corrente de 40 lasers rentes ao chão, o efeito de mira do Assassinato (`particles/abilities/assassinate_laser_targetting.vpcf`, um dos efeitos que o host v0.1.73 traz liberados), no latão puxado para o âmbar (diferente do anel vermelho do Hyperline). A ponta de cada trecho segue o começo do trecho seguinte, então o anel fecha junto com o círculo. Se o host recusar o efeito, o anel volta a ser de 40 traços de texto (`createText`).
+- **O anel no chão**: uma corrente de 40 lasers rentes ao chão, o efeito de mira do Assassinato (`particles/abilities/assassinate_laser_targetting.vpcf`, um dos efeitos que o host do Modlock traz liberados), no latão puxado para o âmbar (diferente do anel vermelho do Hyperline). A ponta de cada trecho segue o começo do trecho seguinte, então o anel fecha junto com o círculo. Se o host recusar o efeito, o anel volta a ser de 40 traços de texto (`createText`).
 - Métricas (`mod.json`): `arena.abates` (soma), `arena.vitorias` (soma) e `arena.sequencia` (a maior sequência de abates sem cair).
 
 ## A vitrine, para a prévia
@@ -130,6 +130,8 @@ Rodou de novo em 17/11/2026, já com a tela de escolha, no servidor do Modlock v
 | `variante=duelo tempo segundos=40` | **PASS**: ponto da queda, volta protegida a 538 do centro, círculo em 977 de 1100, fim 1×1 (empate) |
 | `variante=dupla pontos=2` | **PASS**: 2×0, a dupla que venceu continua junta (fila `Bot 1,Bot 2,Bot 3,Bot 4`) |
 | `variante=espelho` (2 contra 2) | **PASS**: 3×0, os quatro com o mesmo herói, fila `Bot 1,Bot 3,Bot 2,Bot 4` |
+
+Rodou de novo em 17/11/2026 no Modlock **v0.1.85**, com o painel de votação: **PASS** nos cinco. O anel agora sai como `peças 40 lasers`. Na v0.1.73 ele caía no texto, porque o jogo atualizou e o host não achava mais o `SetAbsOrigin` (o log repetia `signature 'entity.set-abs-origin' does not reach a relative call`), e nenhum modelo ou efeito podia ser posto no mapa.
 
 Em todos, o gás pegou no primeiro segundo fora do círculo: cerca de 8% da vida máxima por golpe (96 de 1195, por exemplo).
 

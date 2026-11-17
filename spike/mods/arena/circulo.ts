@@ -1,7 +1,7 @@
 // O círculo da Arena: o anel no chão, o raio que fecha com o tempo e o gás de quem fica fora.
 //
 // O anel é uma corrente de lasers rentes ao chão: cada trecho é o efeito de mira do Assassinato
-// (`assassinate_laser_targetting`, um dos efeitos que o host do Modlock v0.1.73 traz liberados),
+// (`assassinate_laser_targetting`, um dos efeitos que o host do Modlock traz liberados),
 // do ponto i até o ponto i+1 do anel. A ponta de cada trecho segue o começo do trecho seguinte
 // (âncoras de efeito), então fechar o círculo é só mover os trechos. Se o host recusar o efeito,
 // o anel volta a ser de marcadores de texto flutuando sobre o chão, como no exemplo hill do
