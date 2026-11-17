@@ -2,7 +2,7 @@
 //! Não abre o jogo nem roda `host`/`join`. Fica fora do `cargo test` normal; para rodar:
 //!
 //! ```powershell
-//! $env:MODLOCK_BIN = '...\tools\modlock-v0.1.73\modlock.exe'
+//! $env:MODLOCK_BIN = '...\tools\modlock-v0.1.85\modlock.exe'
 //! $env:ENGINE_ORIGIN = 'http://127.0.0.1:9'          # porta fechada: o daemon só tenta sinalizar
 //! $env:ENGINE_STATE_DIR = "$env:USERPROFILE\.mlD"    # pasta curta e separada da padrão
 //! cargo test --test real_cli -- --ignored --nocapture
@@ -60,7 +60,7 @@ fn pinned_cli_accepts_the_commands_the_app_runs() {
             .output()
             .expect("rodar o modlock");
         let text = String::from_utf8_lossy(&out.stdout).to_string() + &String::from_utf8_lossy(&out.stderr);
-        // Um comando que não existe responde "No help topic" e sai com erro (a v0.1.73 com `host`).
+        // Um comando que não existe responde "No help topic" e sai com erro (da v0.1.73 em diante, com `host`).
         assert!(out.status.success() && !text.contains("No help topic"), "o modlock fixado não tem o comando {cmd}:
 {text}");
         text

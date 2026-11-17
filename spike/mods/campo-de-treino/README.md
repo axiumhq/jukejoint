@@ -48,14 +48,14 @@ node ..\..\..\web\node_modules\vitest\vitest.mjs run --config test\vitest.config
 Para conferir que o modo compila e os tipos da SDK batem:
 
 ```powershell
-..\..\..\tools\modlock-v0.1.73\modlock.exe build
+..\..\..\tools\modlock-v0.1.85\modlock.exe build
 node ..\..\..\web\node_modules\typescript\bin\tsc -p tsconfig.json
 ```
 
 **Autoteste no servidor do jogo, sem pessoas** (`probe.ts`). Com o Deadlock fechado, rode nesta pasta:
 
 ```powershell
-..\..\..\tools\modlock-v0.1.73\modlock.exe dev --no-game --arg probe
+..\..\..\tools\modlock-v0.1.85\modlock.exe dev --no-game --arg probe
 ```
 
 O modo põe um bot no lugar de uma pessoa, leva esse bot para o meio do mapa (entre as duas bases, longe da defesa) e roda os comandos em nome dele: `/ajuda`; `/bot` com um herói e confere herói, time e distância; `/almas 5000` e confere as almas; `/item`; `/semRecarga` (escreve uma recarga de 30 segundos e confere que ela zera, e que fica quando desligado); `/vida` com um golpe fatal (a pessoa volta no mesmo lugar) e um pequeno (a vida volta inteira); `/dificuldade ativo` e `parado` sem recusa do servidor; `/alvos 30` e confere os três alvos no arco, que nenhum tiro de outro pontua nem fere um alvo, que **a arma de verdade do bot de teste** acerta um alvo e pontua pelo `onDamage` do jogo, sem ferir o alvo, e que o alvo atingido pula; depois a conta da cabeça (+2), do corpo (+1) e do tiro do bot de treino (0), entregando golpes ao `onDamage` do modo com os alvos de verdade; o fim do relógio, o recorde e a saída dos alvos; `/parar`; `/semBots`; `/heroi`; `/reset`. No fim, o servidor fecha com PASS ou FAIL.
@@ -65,6 +65,8 @@ Rodou em 05/11/2026 no servidor do Modlock v0.1.73, mapa `dl_midtown`: **PASS** 
 - a defesa da base atira nos alvos e nos bots do outro time quando eles estão perto da base: os tiros chegam ao `onDamage` com atacante e grupo de acerto, e o modo barra sem pontuar;
 - um herói recém-chegado diz herói 0 nos primeiros quadros;
 - o host recusa o `/heroi` num bot ("a bot keeps the hero AddBot gave it"), como no duelo.
+
+Rodou de novo em 17/11/2026 no servidor do Modlock v0.1.85, mapa `dl_midtown`: **PASS** em cerca de 40 segundos. O host ainda recusa o `/heroi` num bot, e o aviso da assinatura `entity.set-abs-origin` da v0.1.73 sumiu do log do servidor.
 
 No jogo, com o Deadlock fechado: `modlock dev --watch` nesta pasta abre o jogo num servidor local. O sandbox do Modlock (`modlock dev --sandbox`) roda os comandos de chat, mas lá o `addBot` não cria jogador, então `/bot` e `/alvos` não aparecem.
 

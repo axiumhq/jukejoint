@@ -21,10 +21,10 @@ pub use system::DaemonState;
 pub use validate::{JoinCode, LobbyId};
 
 /// Versão do Modlock fixada nesta release do app.
-pub const MODLOCK_VERSION: &str = "v0.1.73";
-/// SHA-256 publicado pelo GitHub para `modlock-windows-amd64.exe` v0.1.73 (igual a
+pub const MODLOCK_VERSION: &str = "v0.1.85";
+/// SHA-256 publicado pelo GitHub para `modlock-windows-amd64.exe` v0.1.85 (igual a
 /// `scripts/install-modlock.ps1`).
-pub const MODLOCK_SHA256: &str = "b958895b3a410b7446490318547b6aa9b654983cd7ed710a8a4d49402ad13fa7";
+pub const MODLOCK_SHA256: &str = "663245f1390a48c35bd6b41d2ce6a3a790ea475b4088631156172eebdcdec666";
 /// Host que o arquivo hosts deve bloquear para provar que nada passa pelo hyperline.gg.
 pub const BLOCKED_HOST: &str = "hyperline.gg";
 /// Executável do jogo. Com ele aberto, o `gameinfo.gi` fica travado e o conteúdo não monta.

@@ -263,8 +263,8 @@ function startMatch() {
 /**
  * O kit da rodada, igual para os dois: os primeiros itens da build recomendada do herói, na
  * ordem de compra. Sem build, dois itens de cada aba, de nível 1 ou 2, sem ativos. No servidor
- * do Modlock v0.1.73 o heroBuild volta vazio (o autoteste mostrou 0 itens), então hoje vale o
- * sorteio; o log diz qual dos dois saiu.
+ * do Modlock (v0.1.73 e v0.1.85) o heroBuild volta vazio (o autoteste mostrou 0 itens), então
+ * hoje vale o sorteio; o log diz qual dos dois saiu.
  */
 export function loadout(hero: string): string[] {
   const fromBuild: string[] = []
