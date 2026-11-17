@@ -15,13 +15,17 @@ async function load(args: string[] = []) {
 type Loaded = Awaited<ReturnType<typeof load>>
 
 /**
- * Runs frames until the match reaches phase (a round valendo, by default). With the pick screen
- * up, the person who opened the room presses Começar as soon as it takes the press.
+ * Runs frames until the match reaches phase (a round valendo, by default). With the choice up,
+ * every person who is not ready yet presses Pronto (or Jogar de novo) as soon as it shows.
  */
 function until({ w, a }: Loaded, phase: string = 'live', max = 30) {
   for (let i = 0; i < max * 10 && a.state.phase !== phase; i++) {
-    const host = a.hostSeat()
-    if (a.state.phase === 'waiting' && phase !== 'waiting' && host) w.press(host.player as unknown as FakePlayer, 'Começar')
+    if (a.state.phase === 'waiting' && phase !== 'waiting') {
+      for (const s of a.voters()) {
+        const p = s.player as unknown as FakePlayer
+        if (!a.isReady(p as never)) w.press(p, 'Pronto') || w.press(p, 'Jogar de novo')
+      }
+    }
     w.tick(0.1)
   }
   expect(a.state.phase).toBe(phase)
@@ -51,7 +55,9 @@ describe('Arena: espera e começo', () => {
     const a = l.w.join('Ana')
     l.w.tick(3)
     expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
-    expect(l.w.control(a, 'Começar')?.disabled).toBe(true)
+    // Sozinha, a pessoa pode apertar Pronto, mas a partida não começa.
+    expect(l.w.press(a, 'Pronto')).toBe(true)
+    l.w.tick(5)
     expect(l.a.state.phase).toBe('waiting')
   })
 
@@ -238,9 +244,23 @@ describe('Arena: dupla', () => {
     expect(sides(l)).toEqual([['Caio', 'Davi'], ['Eva', 'Fábio']])
   })
 
-  it('com três pessoas, a dupla vira um contra um e a terceira espera', async () => {
+  it('pela votação, a dupla com três pessoas não começa: falta uma', async () => {
     const l = await load()
-    l.w.join('Ana', { variante: 'dupla' })
+    const a = l.w.join('Ana', { variante: 'dupla' })
+    l.w.join('Bia')
+    l.w.join('Caio')
+    l.w.tick(1.2)
+    for (const s of l.a.voters()) l.w.press(s.player as unknown as FakePlayer, 'Pronto')
+    l.w.tick(6)
+    expect(l.a.state.phase).toBe('waiting')
+    expect(l.a.canBegin()).toBe(false)
+    expect(l.w.screen(a)).toContain('Falta mais uma pessoa')
+    expect(l.w.control(a, 'Dupla')?.text).toContain('faltam 1')
+  })
+
+  it('com o jeito nos argumentos, a dupla com três pessoas vira um contra um e a terceira espera', async () => {
+    const l = await load(['variante=dupla'])
+    l.w.join('Ana')
     l.w.join('Bia')
     l.w.join('Caio')
     until(l)
@@ -344,7 +364,7 @@ describe('Arena: o círculo e o gás', () => {
     const c = l.a.state.ring.center!
     b.pawnState!.position = { x: c.x + l.a.VARIANTS.duelo.radius + 200, y: c.y, z: c.z }
     l.w.tick(1.1)
-    expect(b.said('Fora do círculo')).toBe(true)
+    expect(l.w.screen(b)).toContain('Fora do círculo')
     expect(b.pawnState!.health).toBe(600 - l.c.gasDamage(600))
     expect(a.pawnState!.health).toBe(600)
     expect(l.a.state.gasHits).toBeGreaterThanOrEqual(1)
@@ -469,19 +489,18 @@ describe('Arena: configuração e comandos', () => {
     expect(l.a.state.rules).toMatchObject({ variant: 'times', timed: true, seconds: 60, target: 3 })
   })
 
-  it('quem abriu a sala muda o jeito com /modo; outra pessoa não', async () => {
+  it('/modo vota como a tela, para qualquer pessoa na fila', async () => {
     const l = await load()
     const a = l.w.join('Ana', { pontos: '1' })
     const b = l.w.join('Bia')
     until(l)
     l.w.type(b, '/modo times')
-    expect(b.said('Só Ana muda o jeito de jogar.')).toBe(true)
-    l.w.type(a, '/modo dupla tempo')
-    expect(a.said('Próxima partida: Dupla, com tempo')).toBe(true)
+    l.w.type(a, '/modo times tempo')
+    expect(a.said('Voto contado. Pela votação de agora, a próxima partida é: Times, com tempo')).toBe(true)
     down(b)
     l.w.tick(0.2)
-    until(l, 'starting', 10)
-    expect(l.a.state.rules).toMatchObject({ variant: 'dupla', timed: true })
+    until(l, 'starting', 20)
+    expect(l.a.state.rules).toMatchObject({ variant: 'times', timed: true })
   })
 
   it('/heroi troca o herói a partir da próxima rodada', async () => {
@@ -512,7 +531,7 @@ describe('Arena: configuração e comandos', () => {
     expect(names(l)).toEqual(['Ana'])
   })
 
-  it('o placar na tela mostra os lados, os pontos, os marcadores e o relógio', async () => {
+  it('o placar na tela mostra os lados, os pontos, os marcadores e a rodada com o relógio', async () => {
     const l = await load()
     const a = l.w.join('Ana', { pontos: '3' })
     const b = l.w.join('Bia')
@@ -520,12 +539,13 @@ describe('Arena: configuração e comandos', () => {
     down(b)
     l.w.tick(0.2)
     const ui = JSON.stringify(a.ui)
-    expect(ui).toContain('Ana 1 × 0 Bia · Duelo no círculo · rodada 1')
-    expect(ui).toContain('"points":[1,0]')
-    expect(ui).toContain('"total":3')
-    expect(ui).toContain('Ana leva a rodada')
+    expect(l.w.screen(a)).toContain('Duelo no círculo · até 3')
+    expect(ui).toContain('"filled":1,"total":3')
+    expect(l.w.screen(a)).toContain('Você levou a rodada')
+    expect(l.w.screen(b)).toContain('Ana leva a rodada')
     until(l)
-    expect(JSON.stringify(a.ui)).toContain('"line":"2:00"')
+    expect(l.w.screen(a)).toContain('Rodada 2')
+    expect(l.w.screen(a)).toContain('2:00')
   })
 
   it('/placar responde para quem pediu', async () => {

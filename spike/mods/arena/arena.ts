@@ -7,6 +7,8 @@
 // - Com tempo, a partida dura 3 minutos: quem cai volta em instantes, cada queda vale um ponto
 //   para o outro lado, o círculo fecha aos poucos e vence quem fez mais pontos.
 // - Fora do círculo, o gás tira vida a cada segundo.
+// - Antes de cada partida, cada pessoa vota no jeito, no tempo e nos pontos e aperta Pronto; com
+//   todo mundo pronto e o jeito cabendo em quem está na sala, a partida começa em 3 segundos.
 // - Quem não joga espera na fila e assiste. No fim da partida, quem venceu fica na frente,
 //   quem esperava entra e quem perdeu vai para o fim.
 //
@@ -83,12 +85,12 @@ export const SHRINK_TO = 105
 export const COUNTDOWN_SECONDS = 3
 export const RESPAWN_SECONDS = 3
 export const PROTECTION_SECONDS = 2
-const BETWEEN_ROUNDS_SECONDS = 4
+export const BETWEEN_ROUNDS_SECONDS = 4
 const BETWEEN_MATCHES_SECONDS = 6
 /** Quantos itens cada pessoa recebe: o mesmo kit para todo mundo. */
 const KIT_SIZE = 6
 /** Os nomes dos lados nos times. O lado 0 joga no time 2 (Âmbar), o lado 1 no time 3 (Safira). */
-const TEAM_NAMES = ['Âmbar', 'Safira'] as const
+export const TEAM_NAMES = ['Âmbar', 'Safira'] as const
 export const TEAM_OF_SIDE = [2, 3] as const
 
 /* ───────── estado ───────── */
@@ -126,6 +128,33 @@ export interface Fighter {
   /** Assistindo a alguém do time depois de cair (sem tempo). */
   benched: boolean
   inGas: boolean
+  /** A vida que perdeu na rodada (ou na partida, com tempo), para o "Sem tomar dano". */
+  hurt: number
+}
+
+/** Uma pessoa como o quadro de quedas e as faixas mostram: nome, herói e lado. */
+export interface Who {
+  readonly name: string
+  /** O herói como Pawn.hero, ou 0 sem herói. */
+  readonly hero: number
+  readonly side: number
+}
+
+/** Uma queda no quadro de quedas: quem derrubou (ninguém no gás ou sem autor) e quem caiu. */
+export interface FeedEntry {
+  readonly by?: Who
+  readonly victim: Who
+  readonly gas: boolean
+  readonly at: number
+}
+
+/** Um destaque grande no meio da tela, como "Primeira queda". */
+export interface Callout {
+  readonly title: string
+  detail: string
+  readonly until: number
+  /** De quem foi a queda, para completar o texto quando o autor chega depois. */
+  readonly victim?: string
 }
 
 export type Phase = 'waiting' | 'starting' | 'preparing' | 'countdown' | 'live' | 'roundOver' | 'matchOver'
@@ -146,7 +175,7 @@ export const state = {
   liveAt: 0,
   endsAt: 0,
   now: 0,
-  /** O centro marcado por quem abriu a sala; sem ele, o meio do caminho entre os dois lados. */
+  /** O centro marcado por quem chegou primeiro à sala; sem ele, o meio do caminho entre os dois lados. */
   marked: undefined as Vector | undefined,
   /** O centro achado sozinho na primeira rodada do mapa, que fica até o mapa mudar. */
   found: undefined as Vector | undefined,
@@ -162,14 +191,32 @@ export const state = {
   lastHit: undefined as { attacker: number; lost: number; victim: number } | undefined,
   /** O lado que levou a última partida, -1 para empate, undefined antes da primeira. */
   lastWinner: undefined as number | undefined,
-  banner: undefined as { title: string; detail: string; until: number } | undefined,
+  /** A faixa de quem levou a rodada ou a partida: o lado (-1 no empate) e até quando aparece. */
+  banner: undefined as { title: string; detail: string; until: number; side: number; final: boolean } | undefined,
+  /** Quando a contagem antes da rodada começou. */
+  countdownAt: 0,
+  /** Os destaques grandes do momento ("Primeira queda", "Sem tomar dano"), no máximo dois. */
+  callouts: [] as Callout[],
+  /** As últimas quedas, para o quadro de quedas à esquerda. */
+  feed: [] as FeedEntry[],
+  /** Quantas quedas a partida já teve. */
+  falls: 0,
   /** Os argumentos do servidor (variante=, tempo, pontos=, segundos=), acima do lobby. */
   args: {} as Record<string, string>,
-  /** O que quem abriu a sala escolheu na tela, acima da configuração dela. */
-  override: {} as Record<string, string>,
+  /** O voto de cada pessoa na escolha, pela chave da vaga: o valor de cada grupo de botões. */
+  votes: new Map<string, Partial<Record<Choice, string>>>(),
+  /**
+   * O que valeu na última partida, para o empate na votação: com votos empatados, fica o que já
+   * estava. Sem nenhum voto, vale a configuração do lobby.
+   */
+  decided: {} as Partial<Record<Choice, string>>,
+  /** Quem apertou Pronto, pela chave da vaga. */
+  ready: new Set<string>(),
+  /** Com todo mundo pronto, quando a partida começa (a contagem "Começando"); undefined parada. */
+  beginAt: undefined as number | undefined,
   /**
    * Começa sozinha assim que houver duas pessoas: quando os argumentos do servidor fixam o jeito
-   * de jogar ou no autoteste. Sem isso, quem abriu a sala aperta Começar na tela de escolha.
+   * de jogar ou no autoteste. Sem isso, a partida começa quando todo mundo aperta Pronto.
    */
   auto: false,
   /** O herói que cada pessoa escolheu na tela, pela chave da vaga. */
@@ -211,16 +258,31 @@ function tellAll(text: string) {
   for (const s of state.queue) s.player.chat(text)
 }
 
-function announceAll(title: string, text: string) {
-  for (const s of state.queue) s.player.announce(title, text)
-}
-
 function centerAll(text: string) {
   for (const s of state.queue) s.player.centerText(text)
 }
 
-function bannerAll(title: string, detail: string, seconds = 3) {
-  state.banner = { title, detail, until: state.now + seconds }
+function bannerAll(title: string, detail: string, side: number, seconds = 3, final = false) {
+  state.banner = { title, detail, until: state.now + seconds, side, final }
+}
+
+/** Quanto tempo um destaque e uma linha do quadro de quedas ficam na tela. */
+export const CALLOUT_SECONDS = 2.5
+export const FEED_SECONDS = 6
+const FEED_ROWS = 4
+
+function callout(title: string, detail: string, victim?: string) {
+  const fresh = state.callouts.filter((c) => state.now < c.until)
+  state.callouts = [...fresh, { title, detail, until: state.now + CALLOUT_SECONDS, victim }].slice(-2)
+}
+
+/** Quem é a pessoa no lutador, para o quadro de quedas e as faixas. */
+export function who(f: Fighter): Who {
+  return { name: f.seat.name, hero: f.seat.player.pawn()?.hero ?? 0, side: f.side }
+}
+
+function feed(victim: Fighter, by: Fighter | undefined, gas: boolean) {
+  state.feed = [...state.feed, { by: by && who(by), victim: who(victim), gas, at: state.now }].slice(-FEED_ROWS)
 }
 
 function later(seconds: number, fn: () => void) {
@@ -313,15 +375,46 @@ function parseBool(v: string | undefined): boolean {
   return v === 'true' || v === '1' || v === 'sim' || v === 'on'
 }
 
-/** Quem chegou primeiro entre as pessoas (não bots): é quem escolhe o jeito de jogar. */
+/**
+ * Quem chegou primeiro entre as pessoas (não bots): a configuração do lobby dela vale quando
+ * ninguém votou, e só ela marca o centro do círculo.
+ */
 export function hostSeat(): Seat | undefined {
   return state.queue.filter((s) => !s.bot).sort((a, b) => a.arrival - b.arrival)[0]
 }
 
-/** As regras da próxima partida: argumentos do servidor, depois a tela de escolha, depois o lobby. */
+/** Quem vota e quem aperta Pronto: as pessoas da fila, sem os bots. */
+export function voters(): Seat[] {
+  return state.queue.filter((s) => !s.bot)
+}
+
+/** Quantos votos cada valor de um grupo tem agora, só de quem está na fila. */
+export function voteCounts(k: Choice): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const s of voters()) {
+    const v = state.votes.get(key(s))?.[k]
+    if (v !== undefined) counts.set(v, (counts.get(v) ?? 0) + 1)
+  }
+  return counts
+}
+
+/**
+ * O valor que a votação dá a um grupo: o mais votado; no empate, o que valeu na última partida;
+ * sem votos (ou no empate antes da primeira partida), a configuração do lobby.
+ */
+function voted(k: Choice): string | undefined {
+  const lobby = () => hostSeat()?.player.setting(k)
+  const counts = voteCounts(k)
+  if (counts.size === 0) return lobby()
+  const most = Math.max(...counts.values())
+  const top = [...counts].filter(([, n]) => n === most).map(([v]) => v)
+  if (top.length === 1) return top[0]
+  return state.decided[k] ?? lobby()
+}
+
+/** As regras da próxima partida: argumentos do servidor, depois a votação, depois o lobby. */
 export function resolveRules(): Rules {
-  const host = hostSeat()
-  const read = (k: string) => state.args[k] ?? state.override[k] ?? host?.player.setting(k)
+  const read = (k: Choice) => state.args[k] ?? voted(k)
   const variant = parseVariant(read('variante')) ?? 'duelo'
   const points = Math.round(Number(read('pontos')))
   const seconds = Math.round(Number(state.args.segundos))
@@ -370,6 +463,8 @@ export function syncQueue() {
   for (const s of left) {
     state.chosen.delete(key(s))
     state.heroMenu.delete(key(s))
+    state.votes.delete(key(s))
+    state.ready.delete(key(s))
   }
 
   const gone = new Set(left.map(key))
@@ -416,6 +511,8 @@ export function resetToWaiting() {
   state.score = [0, 0]
   state.round = 0
   state.heroMenu.clear()
+  state.callouts = []
+  state.feed = []
   centerAll('')
   if (state.auto && state.queue.length >= 2) later(1, startMatch)
 }
@@ -436,6 +533,9 @@ export function startMatch() {
   cancelTimers()
   if (state.queue.length < 2) return resetToWaiting()
   state.rules = resolveRules()
+  state.decided = { variante: state.rules.variant, tempo: String(state.rules.timed), pontos: String(state.rules.target) }
+  state.ready.clear()
+  state.beginAt = undefined
   const { variant } = state.rules
   const n = perSideFor(variant, state.queue.length)
   state.fighters = state.queue.slice(0, 2 * n).map((seat, i) => ({
@@ -451,14 +551,17 @@ export function startMatch() {
     protectedUntil: 0,
     benched: false,
     inGas: false,
+    hurt: 0,
   }))
   state.phase = 'starting'
   state.score = [0, 0]
   state.round = 0
+  state.falls = 0
+  state.feed = []
+  state.callouts = []
   state.fullRadius = info().radius
   state.kit = drawKit()
   state.ring.clear()
-  announceAll(`Arena · ${info().title}`, `${sideName(0)} contra ${sideName(1)}. ${rulesLine()}`)
   tellAll(`${scoreLine()} · ${rulesLine()}`)
   log('partida', variant, state.rules.timed ? 'com tempo' : 'por rodadas', state.fighters.map((f) => `${f.seat.name}:${f.side}`).join(','))
   later(2, startRound)
@@ -493,8 +596,6 @@ function startRound() {
   state.phase = 'preparing'
   state.round += 1
   seatHeroes()
-  if (info().mirror) centerAll(`Rodada ${state.round}: ${state.heroTitle}`)
-  else centerAll(state.rules.timed ? 'Preparando a partida' : `Rodada ${state.round}`)
 
   // O herói aparece num quadro seguinte: espera todo mundo existir, vivo, com o herói certo.
   const deadline = state.now + 10
@@ -571,14 +672,14 @@ function equipAndPlace() {
   const c = state.ring.center
   if (!c || flat(c, center) > 1 || Math.abs(c.z - center.z) > 1 || state.ring.count === 0) {
     state.ring.place(center, state.fullRadius)
-    log('círculo', Math.round(center.x), Math.round(center.y), Math.round(center.z), 'raio', state.fullRadius, 'marcadores', state.ring.count)
+    log('círculo', Math.round(center.x), Math.round(center.y), Math.round(center.z), 'raio', state.fullRadius, 'peças', state.ring.count, state.ring.lasers ? 'lasers' : 'texto')
   } else {
     state.ring.resize(state.fullRadius)
   }
 
   for (const f of state.fighters) {
     if (f.benched) f.seat.player.unwatch()
-    Object.assign(f, { alive: true, told: true, gassed: false, benched: false, inGas: false, protectedUntil: 0 })
+    Object.assign(f, { alive: true, told: true, gassed: false, benched: false, inGas: false, protectedUntil: 0, hurt: 0 })
     equip(f)
     const at = spotFor(f)
     f.seat.player.teleport(at, yawTo(at, center))
@@ -588,18 +689,14 @@ function equipAndPlace() {
   later(0.5, () => state.fighters.forEach((f) => f.seat.player.heal(100000)))
 
   placeSpectators()
+  // A contagem e o "Valendo" ficam na tela de cada pessoa (hud.tsx), a partir de countdownAt.
   state.phase = 'countdown'
-  const head = info().mirror ? `${state.heroTitle} · ` : ''
-  for (let n = COUNTDOWN_SECONDS; n >= 1; n--) {
-    later(COUNTDOWN_SECONDS - n, () => centerAll(`${head}${scoreLine()}\n${n}`))
-  }
+  state.countdownAt = state.now
   later(COUNTDOWN_SECONDS, () => {
     state.fighters.forEach((f) => f.seat.player.freeze(false))
     state.phase = 'live'
     state.liveAt = state.now
     state.endsAt = state.now + (state.rules.timed ? state.rules.seconds : ROUND_LIMIT)
-    centerAll('Valendo')
-    later(1.5, () => centerAll(''))
   })
 }
 
@@ -611,6 +708,8 @@ function fell(f: Fighter, attacker = 0) {
   f.told = false
   f.gassed = f.inGas
   f.streak = 0
+  state.falls += 1
+  if (state.falls === 1) callout('Primeira queda', f.gassed ? `${f.seat.name} caiu no gás` : `${f.seat.name} caiu`, key(f.seat))
   if (state.rules.timed) {
     state.score[1 - f.side] += 1
     later(RESPAWN_SECONDS, () => bringBack(f))
@@ -628,6 +727,9 @@ function credit(victim: Fighter, attacker: number) {
   by.streak += 1
   by.seat.player.addMetric('arena.abates', 1)
   by.seat.player.addMetric('arena.sequencia', by.streak)
+  feed(victim, by, false)
+  const told = state.callouts.find((c) => c.victim === key(victim.seat))
+  if (told) told.detail = `${by.seat.name} derrubou ${victim.seat.name}`
   const streak = by.streak >= 3 ? `, ${by.streak} seguidos` : ''
   tellAll(`${by.seat.name} derrubou ${victim.seat.name}${streak}.`)
 }
@@ -660,12 +762,15 @@ function roundWon(side: number, how: string) {
   cancelTimers()
   state.score[side] += 1
   tellAll(`Rodada ${state.round}: ${sideName(side)} ${verb(side, how, how.replace('leva', 'levam'))}. ${scoreLine()}`)
+  // Quem levou a rodada sem perder vida nenhuma (nem no gás) ganha o destaque.
+  if (state.fighters.filter((f) => f.side === side).every((f) => f.hurt === 0)) {
+    callout('Sem tomar dano', `${sideName(side)} ${verb(side, 'levou', 'levaram')} a rodada sem perder vida`)
+  }
   if (state.score[side] >= state.rules.target) {
     return endMatch(side, `${sideName(side)} ${verb(side, 'vence', 'vencem')} a Arena, ${state.score[side]} a ${state.score[1 - side]}.`)
   }
   const took = `${sideName(side)} ${verb(side, 'leva', 'levam')} a rodada`
-  bannerAll(took, scoreLine())
-  centerAll(`${took}\n${scoreLine()}`)
+  bannerAll(took, scoreLine(), side)
   state.fighters.forEach((f) => f.seat.player.freeze(true))
   later(BETWEEN_ROUNDS_SECONDS, startRound)
 }
@@ -676,8 +781,7 @@ function roundDraw(why: string) {
   cancelTimers()
   state.round -= 1
   tellAll(`${why} A rodada vai de novo.`)
-  bannerAll('Empate', 'A rodada vai de novo')
-  centerAll('Empate: a rodada vai de novo')
+  bannerAll('Empate', 'A rodada vai de novo', -1)
   state.fighters.forEach((f) => f.seat.player.freeze(true))
   later(BETWEEN_ROUNDS_SECONDS, startRound)
 }
@@ -708,9 +812,8 @@ export function endMatch(side: number, text: string) {
   state.lastWinner = side
   state.lastText = text
   state.heroMenu.clear()
-  announceAll('Fim da partida', text)
   tellAll(text)
-  bannerAll(side >= 0 ? `${sideName(side)} ${verb(side, 'vence', 'vencem')}` : 'Empate', text, BETWEEN_MATCHES_SECONDS)
+  bannerAll(side >= 0 ? `${sideName(side)} ${verb(side, 'vence', 'vencem')}` : 'Empate', text, side, BETWEEN_MATCHES_SECONDS, true)
   for (const f of state.fighters) {
     release(f)
     if (f.side === side) f.seat.player.addMetric('arena.vitorias', 1)
@@ -752,6 +855,7 @@ export function frame(seconds: number) {
     lastSync = state.now
     syncQueue()
   }
+  checkReady()
   tellFalls()
   if (state.phase !== 'live') return
 
@@ -805,6 +909,7 @@ function tellFalls() {
   for (const f of state.fighters) {
     if (f.told || state.now - f.fellAt < 0.6) continue
     f.told = true
+    feed(f, undefined, f.gassed)
     tellAll(f.gassed ? `${f.seat.name} caiu no gás.` : `${f.seat.name} caiu.`)
   }
 }
@@ -816,8 +921,8 @@ function gas(radius: number) {
   for (const f of state.fighters) {
     const p = f.seat.player.pawn()
     if (!f.alive || !p || p.health <= 0) continue
+    // O aviso de quem está fora fica na tela da pessoa (hud.tsx), a cada quadro.
     const out = !inside(center, radius, p.position)
-    if (out !== f.inGas) f.seat.player.centerText(out ? 'Fora do círculo: o gás está tirando a sua vida' : '')
     f.inGas = out
     if (!out || state.now < f.protectedUntil) continue
     state.gasCalls += 1
@@ -840,6 +945,7 @@ export function damaged(hit: DamagedEvent) {
   const victim = fighterAt(hit.victim)
   if (!victim) return
   state.lastHit = { attacker: hit.attacker, lost: hit.healthLost, victim: hit.victim }
+  if (state.phase === 'live' && hit.healthLost > 0) victim.hurt += hit.healthLost
   // Um golpe sem atacante (o gás) chega com atacante zero pela documentação, mas o host da
   // v0.1.73 manda a própria vítima como atacante (visto no autoteste). Os dois contam.
   if ((hit.attacker === 0 || hit.attacker === hit.victim) && hit.healthLost > 0) state.gasHits += 1
@@ -854,61 +960,117 @@ export function damaged(hit: DamagedEvent) {
 
 /* ───────── a tela de escolha ───────── */
 
-/** Quem abriu a sala: a pessoa que chegou primeiro, entre as que não são bots. */
+/** Quem chegou primeiro à sala, entre as pessoas (não bots): só ela marca o centro do círculo. */
 export function isHost(player: Player): boolean {
   return hostSeat()?.player.slot === player.slot
 }
 
 export type Choice = 'variante' | 'tempo' | 'pontos'
 
-/** O item que os argumentos do servidor fixaram: ninguém muda na tela. */
+/** O item que os argumentos do servidor fixaram: ninguém vota nele. */
 export function fixed(k: Choice): boolean {
   return state.args[k] !== undefined
 }
 
-/** Só quem abriu a sala muda o jeito de jogar, e só o que o servidor não fixou. */
+/** Toda pessoa na fila vota (bots não), em tudo que o servidor não fixou. */
 export function canChoose(player: Player, k: Choice): boolean {
-  return isHost(player) && !fixed(k)
+  const me = seatOfPlayer(player)
+  return !!me && !me.bot && !fixed(k)
 }
 
-/** O jeito de jogar da próxima partida. Vale a escolha de quem abriu a sala; a das outras pessoas é ignorada. */
-export function chooseVariant(player: Player, variant: Variant): boolean {
-  if (!canChoose(player, 'variante') || !(variant in VARIANTS)) return false
-  state.override.variante = variant
+/** O voto da pessoa num grupo, ou undefined sem voto. */
+export function myVote(player: Player, k: Choice): string | undefined {
+  const me = seatOfPlayer(player)
+  return me ? state.votes.get(key(me))?.[k] : undefined
+}
+
+/**
+ * Vota num valor de um grupo. Votar em outro valor muda o voto; votar de novo no mesmo tira o
+ * voto. Devolve se o voto valeu.
+ */
+export function vote(player: Player, k: Choice, value: string): boolean {
+  return castVote(player, k, myVote(player, k) === value ? undefined : value)
+}
+
+/** Põe (ou tira, com undefined) o voto da pessoa num grupo. */
+function castVote(player: Player, k: Choice, value: string | undefined): boolean {
+  const me = seatOfPlayer(player)
+  if (!me || !canChoose(player, k)) return false
+  const mine = { ...state.votes.get(key(me)) }
+  if (value === undefined) delete mine[k]
+  else mine[k] = value
+  state.votes.set(key(me), mine)
   return true
+}
+
+export function chooseVariant(player: Player, variant: Variant): boolean {
+  return variant in VARIANTS && vote(player, 'variante', variant)
 }
 
 export function setTimed(player: Player, on: boolean): boolean {
-  if (!canChoose(player, 'tempo')) return false
-  state.override.tempo = String(on)
-  return true
+  return vote(player, 'tempo', String(on))
 }
 
 export const MIN_POINTS = 1
 export const MAX_POINTS = 15
+/** Os pontos que a escolha oferece no duelo e na dupla. */
+export const POINT_CHOICES = [3, 5, 7, 10] as const
 
 /** Os pontos para vencer no duelo e na dupla, de 1 a 15. */
 export function setPoints(player: Player, points: number): boolean {
-  if (!canChoose(player, 'pontos')) return false
-  state.override.pontos = String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Math.round(points))))
-  return true
+  return vote(player, 'pontos', String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Math.round(points)))))
 }
 
-/** Um ponto a mais ou a menos, a partir do valor de agora (dois cliques no mesmo quadro somam os dois). */
-export function stepPoints(player: Player, delta: number): boolean {
-  return setPoints(player, resolveRules().target + delta)
+/**
+ * Quantas pessoas cada jeito precisa para começar pela votação (bots contam): a dupla só faz
+ * sentido com 2 contra 2; os times e o espelho começam do 1 contra 1 e crescem até 6 contra 6.
+ */
+export const MIN_PEOPLE: Record<Variant, number> = { duelo: 2, dupla: 4, times: 2, espelho: 2 }
+
+/** Quantas pessoas faltam na fila para este jeito começar. */
+export function missingFor(variant: Variant): number {
+  return Math.max(0, MIN_PEOPLE[variant] - state.queue.length)
 }
 
-/** Dá para começar: a tela está aberta e há duas pessoas (ou uma pessoa e um bot) na fila. */
+/** Dá para começar: a escolha está aberta e o jeito votado cabe em quem está na fila. */
 export function canBegin(): boolean {
-  return state.phase === 'waiting' && state.queue.length >= 2 && !state.hold
+  return state.phase === 'waiting' && !state.hold && state.queue.length >= 2 && missingFor(resolveRules().variant) === 0
 }
 
-/** Começar, na tela de quem abriu a sala. */
-export function begin(player: Player): boolean {
-  if (!isHost(player) || !canBegin()) return false
-  startMatch()
-  return state.phase !== 'waiting'
+/** Quantas pessoas apertaram Pronto, entre as que estão na fila. */
+export function readyCount(): number {
+  return voters().filter((s) => state.ready.has(key(s))).length
+}
+
+/** Se a pessoa apertou Pronto. */
+export function isReady(player: Player): boolean {
+  const me = seatOfPlayer(player)
+  return !!me && state.ready.has(key(me))
+}
+
+/** Pronto, ou tira o pronto. Devolve se a pessoa ficou pronta. */
+export function toggleReady(player: Player): boolean {
+  const me = seatOfPlayer(player)
+  if (!me || me.bot || state.phase !== 'waiting') return false
+  if (state.ready.has(key(me))) state.ready.delete(key(me))
+  else state.ready.add(key(me))
+  return state.ready.has(key(me))
+}
+
+/** Quanto dura a contagem "Começando" com todo mundo pronto. */
+export const BEGIN_SECONDS = 3
+
+/**
+ * Com todo mundo pronto e o jeito cabendo, a contagem "Começando" corre; se alguém tira o pronto,
+ * sai, ou o jeito votado deixa de caber, ela para. Os argumentos do servidor e o autoteste
+ * começam sozinhos, sem Pronto.
+ */
+function checkReady() {
+  if (state.phase !== 'waiting' || state.auto) return void (state.beginAt = undefined)
+  const all = voters().length > 0 && readyCount() === voters().length && canBegin()
+  if (!all) return void (state.beginAt = undefined)
+  if (state.beginAt === undefined) state.beginAt = state.now + BEGIN_SECONDS
+  else if (state.now >= state.beginAt) startMatch()
 }
 
 function seatOfPlayer(player: Player): Seat | undefined {
@@ -921,7 +1083,8 @@ export function pickHero(player: Player, name: string): string | undefined {
   const hero = findHero(name)
   if (!me || !hero) return undefined
   state.chosen.set(key(me), hero.name)
-  if (state.heroMenu.delete(key(me))) toast(player, `${hero.title} a partir da próxima rodada.`, 4)
+  const when = state.phase === 'waiting' ? 'a partir da primeira rodada' : 'a partir da próxima rodada'
+  if (state.heroMenu.delete(key(me))) toast(player, `${hero.title} ${when}.`, 4)
   return hero.name
 }
 
@@ -931,10 +1094,10 @@ export function chosenHero(player: Player): string | undefined {
   return me ? state.chosen.get(key(me)) : undefined
 }
 
-/** A lista de heróis durante a partida, aberta pelo botão Trocar herói. */
+/** A lista de heróis, aberta pelo botão do herói na escolha ou por Trocar herói na partida. */
 export function openHeroMenu(player: Player) {
   const me = seatOfPlayer(player)
-  if (me && state.phase !== 'waiting') state.heroMenu.add(key(me))
+  if (me) state.heroMenu.add(key(me))
 }
 
 export function closeHeroMenu(player: Player) {
@@ -942,9 +1105,9 @@ export function closeHeroMenu(player: Player) {
   if (me) state.heroMenu.delete(key(me))
 }
 
-/** Marca o centro do círculo onde está o herói de quem abriu a sala, a partir da próxima rodada. */
+/** Marca o centro do círculo onde está o herói de quem chegou primeiro, a partir da próxima rodada. */
 export function markArena(player: Player) {
-  if (!isHost(player)) return void player.chat('Só quem abriu a sala marca o centro do círculo.')
+  if (!isHost(player)) return void player.chat('Só quem chegou primeiro à sala marca o centro do círculo.')
   const p = player.pawn()
   if (!p) return void player.chat('Entre com um herói para marcar o centro do círculo.')
   state.marked = p.position
@@ -1000,25 +1163,26 @@ export function chooseHero(player: Player, typed: string) {
   player.chat(`Seu herói: ${hero.title}.${now}`)
 }
 
-/** O jeito de jogar por texto, para quem abriu a sala: as mesmas regras da tela. */
+/** O voto por texto, de qualquer pessoa na fila: as mesmas regras da tela. */
 export function chooseMode(player: Player, args: string) {
-  const host = hostSeat()
   const words = args.toLowerCase().split(/\s+/).filter(Boolean)
   if (words.length === 0) {
     player.chat(`Agora: ${rulesLine()} Próxima: ${rulesLine(resolveRules())}`)
-    return void player.chat('O jeito de jogar se escolhe na tela da Arena, antes de cada partida.')
+    return void player.chat('O jeito de jogar se vota na tela da Arena, antes de cada partida.')
   }
-  if (!host || host.player.slot !== player.slot) return void player.chat(`Só ${host?.name ?? 'quem abriu a sala'} muda o jeito de jogar.`)
+  const me = seatOfPlayer(player)
+  if (!me || me.bot) return
   for (const w of words) {
     const v = parseVariant(w)
-    if (v) chooseVariant(player, v)
-    else if (w === 'tempo') setTimed(player, !resolveRules().timed)
-    else if (/^\d+$/.test(w)) setPoints(player, Number(w))
+    if (v) castVote(player, 'variante', v)
+    else if (w === 'tempo') castVote(player, 'tempo', 'true')
+    else if (w === 'rodadas') castVote(player, 'tempo', 'false')
+    else if (/^\d+$/.test(w)) castVote(player, 'pontos', String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Number(w)))))
   }
-  tellAll(`Próxima partida: ${rulesLine(resolveRules())}`)
+  player.chat(`Voto contado. Pela votação de agora, a próxima partida é: ${rulesLine(resolveRules())}`)
 }
 
 export function help(player: Player) {
-  player.chat('Antes de cada partida, a tela da Arena mostra o jeito de jogar, o seu herói e os bots de treino. Quem abriu a sala escolhe o jeito e aperta Começar.')
-  player.chat('Durante a partida, segure Tab para trocar de herói (vale na rodada seguinte). Quem abriu a sala também marca ali o centro do círculo.')
+  player.chat('Antes de cada partida, o quadro da Arena no topo mostra o jeito de jogar, o seu herói e os bots de treino. Segure Tab, vote e aperte Pronto: a partida começa quando todo mundo estiver pronto.')
+  player.chat('Durante a partida, segure Tab para trocar de herói (vale na rodada seguinte). Quem chegou primeiro à sala também marca ali o centro do círculo.')
 }

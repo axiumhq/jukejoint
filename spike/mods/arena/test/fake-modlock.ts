@@ -34,13 +34,18 @@ export class FakePlayer {
   cursorCalls: boolean[] = []
   /** Tab held: the game shows the cursor on its own. */
   tab = false
+  /** Where the camera looks (yaw in degrees), for the arrow to the circle's centre. */
+  yaw = 0
+  /** The stock HUD parts the mod hides now, and every hideHud call in order. */
+  hiddenHud: string[] = []
+  hudCalls: string[][] = []
   private pendingHero: { hero: string; team: number } | undefined
   constructor(readonly slot: number) {}
 
   pawn() {
     if (!this.pawnState) return undefined
     const id = heroes.find((h) => h.name === this.pawnState!.hero)?.id ?? 0
-    return { ...this.pawnState, hero: id, effectiveMaxHealth: this.pawnState.maxHealth }
+    return { ...this.pawnState, hero: id, effectiveMaxHealth: this.pawnState.maxHealth, cameraAngles: { pitch: 0, yaw: this.yaw, roll: 0 } }
   }
   setting(key: string) { return this.settings[key] }
   chat(t: string) { this.log.push(`chat:${t}`); return true }
@@ -80,6 +85,20 @@ export class FakePlayer {
 
 interface Conn { player: FakePlayer; steamId: bigint; name: string; bot: boolean; ready: boolean; generation: number; roles: string[] }
 
+export interface FakeEffect {
+  id: number
+  resource: string
+  position: Vec
+  color?: number
+  point?: { index: number; position: Vec }
+  anchors?: { index: number; entity: number }[]
+  inactive: boolean
+  removed: boolean
+  entity(): number
+  move(p: Vec): boolean
+  remove(): boolean
+}
+
 export interface FakeText { id: number; text: string; position: Vec; removed: boolean; move(p: Vec): boolean; remove(): boolean; setText(t: string): boolean }
 
 type DamagedHit = { victim: number; attacker: number; healthBefore: number; healthLost: number }
@@ -99,6 +118,12 @@ const world = {
   damagedFns: [] as ((hit: DamagedHit) => void)[],
   /** Every world text the mod placed, removed ones included. */
   texts: [] as FakeText[],
+  /** Whether the host starts particle effects; off, as a host that refuses them, the ring falls back to text. */
+  particles: false,
+  /** Every particle effect the mod started, removed ones included. */
+  effects: [] as FakeEffect[],
+  /** What the mod asked the next world to load. */
+  precached: [] as string[],
   /** The hits the mod dealt with damage(). */
   modHits: [] as { victim: number; amount: number; attacker?: number }[],
   /** Bots the mod asked for with addBot. */
@@ -179,6 +204,9 @@ export const fake = {
   },
   liveTexts() {
     return world.texts.filter((t) => !t.removed)
+  },
+  liveEffects() {
+    return world.effects.filter((e) => !e.removed)
   },
   /** Every button and input on the player's screen now, with its text (and tooltip). */
   controls(player: FakePlayer): Control[] {
@@ -300,6 +328,29 @@ export const createText = (o: { text: string; position: Vec }) => {
   return t
 }
 
+let effectIds = 0
+/** A particle effect, when the fake host allows them; its entity is a handle anchors can follow. */
+export const createParticle = (o: { resource: string; position: Vec; color?: number; point?: { index: number; position: Vec }; anchors?: readonly { index: number; entity: number }[]; inactive?: boolean }) => {
+  if (!world.particles) return undefined
+  const id = ++effectIds
+  const e: FakeEffect = {
+    id,
+    resource: o.resource,
+    position: { ...o.position },
+    color: o.color,
+    point: o.point,
+    anchors: o.anchors ? [...o.anchors] : undefined,
+    inactive: !!o.inactive,
+    removed: false,
+    entity: () => 5000 + id,
+    move(p) { e.position = { ...p }; return true },
+    remove() { e.removed = true; return true },
+  }
+  world.effects.push(e)
+  return e
+}
+export const precache = (o: { resources?: readonly string[] }) => { world.precached.push(...(o.resources ?? [])); return true }
+
 // HUD: show records the last tree per player; components are plain markers.
 export const show = (p: FakePlayer, root: unknown) => { p.ui = root }
 const marker = (name: string) => (props: object) => ({ name, props })
@@ -310,6 +361,10 @@ export const Banner = marker('Banner')
 export const Action = marker('Action')
 export const Text = marker('Text')
 export const Tag = marker('Tag')
+export const Pill = marker('Pill')
+export const Plate = marker('Plate')
+export const Meter = marker('Meter')
+export const hideHud = (p: FakePlayer, parts: readonly string[]) => { p.hiddenHud = [...parts]; p.hudCalls.push([...parts]); return true }
 export const toast = (p: FakePlayer, t: string) => { p.log.push(`toast:${t}`); return true }
 export const freeCursor = (p: FakePlayer, free: boolean) => { p.cursor = free; p.cursorCalls.push(free); return true }
 /** Undefined without a hero, as on the host. */
@@ -317,7 +372,7 @@ export const cursorFree = (p: FakePlayer) => (p.pawnState ? p.cursor || p.tab : 
 export const Buttons = { attack: 1n, altFire: 2n, melee: 4n, ability1: 8n, ability2: 16n, ability3: 32n, ultimate: 64n, jump: 128n, crouch: 256n, dash: 512n, use: 1024n, reload: 2048n, parry: 4096n }
 /** Colors, sizes and sounds: any token reads as a plain value. */
 const token = new Proxy({}, { get: (_, k) => (typeof k === 'string' ? `#${k}` : undefined) })
-export const theme = { tones: token, shades: token, sizes: { radius: 4, panelRadius: 8, control: 32, rowControl: 28, row: 32 }, sounds: { hover: 'hover', press: 'press' } }
+export const theme = { tones: token, shades: token, sizes: { radius: 4, panelRadius: 8, control: 32, rowControl: 28, row: 32 }, sounds: { hover: 'hover', press: 'press' }, motion: { hover: 0.15, meter: 0.25 } }
 export class ProbeRun { tick() {} }
 
 // modlock/jsx-runtime

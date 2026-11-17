@@ -2,10 +2,10 @@
 // chão com gás do lado de fora. As regras ficam em arena.ts, o círculo e o gás em circulo.ts, a
 // tela de escolha em escolha.tsx, o placar na tela em hud.tsx e o autoteste com bots em probe.ts.
 //
-// O jeito de jogar vem dos argumentos do servidor (`--arg variante=times --arg tempo`), depois do
-// que quem abriu a sala escolheu na tela, depois da configuração do lobby dessa pessoa. Tudo se
-// escolhe na tela; os comandos abaixo ficam só como reserva e nenhum texto manda ninguém para eles.
-import { command, onDamage, onDamaged, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld, Strays } from 'modlock'
+// O jeito de jogar vem dos argumentos do servidor (`--arg variante=times --arg tempo`), depois da
+// votação na tela, depois da configuração do lobby de quem chegou primeiro. Tudo se escolhe na
+// tela; os comandos abaixo ficam só como reserva e nenhum texto manda ninguém para eles.
+import { command, log, onDamage, onDamaged, onFrame, onPlayerJoin, onPlayerLeave, onStart, onWorld, precache, Strays } from 'modlock'
 
 import {
   chooseHero,
@@ -23,6 +23,7 @@ import {
   trainingBot,
   world,
 } from './arena'
+import { RING_RESOURCES } from './circulo'
 import { drawHud } from './hud'
 import { Probe } from './probe'
 
@@ -31,6 +32,8 @@ let probe: Probe | undefined
 const strays = new Strays()
 
 onStart((args) => {
+  // O laser do anel: o host já traz esse efeito, mas o precache garante que ele carregue com o mapa.
+  if (!precache({ resources: RING_RESOURCES })) log('precache do anel recusado')
   configure(args)
   if (args.includes('probe')) probe = new Probe()
 })
