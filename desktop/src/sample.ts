@@ -4,7 +4,7 @@
  */
 import type { AppInfo, CheckReport } from './api';
 
-export const SAMPLE_APP: AppInfo = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.73', apiUrl: null, dev: true };
+export const SAMPLE_APP: AppInfo = { name: 'Jukejoint', scheme: 'jukejoint', version: '0.1.0', modlockVersion: 'v0.1.85', apiUrl: null, dev: true };
 
 export const SAMPLE_CHECK: CheckReport = {
   binary: {
@@ -13,12 +13,12 @@ export const SAMPLE_CHECK: CheckReport = {
     folder: 'C:\\Users\\voce\\AppData\\Local\\Jukejoint',
     exists: true,
     vanished: false,
-    sizeBytes: 86_122_496,
-    sha256: 'b958895b3a410b7446490318547b6aa9b654983cd7ed710a8a4d49402ad13fa7',
-    expectedSha256: 'b958895b3a410b7446490318547b6aa9b654983cd7ed710a8a4d49402ad13fa7',
+    sizeBytes: 88_477_184,
+    sha256: '663245f1390a48c35bd6b41d2ce6a3a790ea475b4088631156172eebdcdec666',
+    expectedSha256: '663245f1390a48c35bd6b41d2ce6a3a790ea475b4088631156172eebdcdec666',
     hashOk: true,
-    version: 'v0.1.73',
-    expectedVersion: 'v0.1.73',
+    version: 'v0.1.85',
+    expectedVersion: 'v0.1.85',
     versionOk: true,
   },
   daemon: {
@@ -28,7 +28,7 @@ export const SAMPLE_CHECK: CheckReport = {
     socketPathTooLong: false,
     status: {
       pid: 72128,
-      release: 'v0.1.73',
+      release: 'v0.1.85',
       since: '2026-11-03 13:09:53',
       clients: 1,
       peer: '12D3KooWJgFBUDpUMHnrLnuYhT3VMBagjQzmKdA7seKk61BfYgrS',
