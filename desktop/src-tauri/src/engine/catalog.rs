@@ -19,7 +19,7 @@ pub const BESIDE_APP_DIR: &str = "modos";
 /// O projeto de teste (o `hello` do spike).
 pub const TEST_PROJECT: &str = "hello";
 /// Os projetos dos modos de verdade, que o app empacotado leva em `modos` (ver `build-live.mjs`).
-pub const REAL_PROJECTS: &[&str] = &["duelo-meia-noite", "campo-de-treino"];
+pub const REAL_PROJECTS: &[&str] = &["duelo-meia-noite", "campo-de-treino", "arena"];
 
 /// Um modo que o app sabe hospedar.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,7 +32,7 @@ pub struct ModeEntry {
 }
 
 /// Os modos do site (`web/src/data/modes.ts`, os mesmos de `server/internal/lobby/lobby.go`).
-/// O Duelo à Meia-Noite e o Campo de Treino têm projeto próprio; os outros abrem o projeto de teste.
+/// O Duelo à Meia-Noite, o Campo de Treino e a Arena têm projeto próprio; os outros abrem o projeto de teste.
 pub const MODES: &[ModeEntry] = &[
     ModeEntry { slug: "circulo-profano", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "ultimo-bonde", project: TEST_PROJECT, test: true },
@@ -40,6 +40,7 @@ pub const MODES: &[ModeEntry] = &[
     ModeEntry { slug: "duelo-meia-noite", project: "duelo-meia-noite", test: false },
     ModeEntry { slug: "cerco-ao-cofre", project: TEST_PROJECT, test: true },
     ModeEntry { slug: "campo-de-treino", project: "campo-de-treino", test: false },
+    ModeEntry { slug: "arena", project: "arena", test: false },
 ];
 
 /// Slug de modo como o site manda: `[a-z0-9]` e hífens simples, de 1 a 64, começando e
@@ -247,7 +248,7 @@ mod tests {
                 assert!(r.dir.ends_with(m.slug), "{}", m.slug);
             }
         }
-        for real in ["duelo-meia-noite", "campo-de-treino"] {
+        for real in ["duelo-meia-noite", "campo-de-treino", "arena"] {
             assert!(MODES.iter().any(|m| m.slug == real && !m.test), "{real} deveria ser de verdade");
         }
         let c = cat.check();

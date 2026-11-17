@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { getModes } from '../data/modes';
 import { useLobbyFilters } from '../hooks/useFilters';
 import { useServerStatus } from '../hooks/useServerStatus';
@@ -44,7 +44,7 @@ export function ModesLive() {
         {!empty && <small>{M.rituals}</small>}
       </h2>
       {empty && <p className="ml-sub">{M.sub}</p>}
-      <ul className={empty ? 'ml-list is-cards' : 'ml-list is-arcanos'}>
+      <ul className={empty ? 'ml-list is-cards' : 'ml-list is-arcanos'} style={{ '--arcanos': modes.length } as CSSProperties}>
         {modes.map((m) => {
           if (empty) {
             return (
