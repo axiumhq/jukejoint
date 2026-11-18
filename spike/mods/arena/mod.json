@@ -1,0 +1,27 @@
+{
+  "slug": "arena",
+  "name": "Arena",
+  "version": "0.1.0",
+  "language": "LANGUAGE_TYPESCRIPT",
+  "settings": [
+    {
+      "key": "variante",
+      "label": "Jeito de jogar",
+      "kind": "KIND_CHOICE",
+      "default": "duelo",
+      "choices": [
+        { "value": "duelo", "label": "Duelo no círculo (1 contra 1)" },
+        { "value": "dupla", "label": "Dupla (2 contra 2)" },
+        { "value": "times", "label": "Times (até 6 contra 6)" },
+        { "value": "espelho", "label": "Espelho (times com o mesmo herói)" }
+      ]
+    },
+    { "key": "tempo", "label": "Com tempo (3 minutos, o círculo fecha)", "kind": "KIND_SWITCH", "default": "false" },
+    { "key": "pontos", "label": "Pontos para vencer (duelo e dupla)", "kind": "KIND_NUMBER", "default": "5", "min": 1, "max": 15 }
+  ],
+  "metrics": [
+    { "name": "arena.abates", "kind": "KIND_COUNT" },
+    { "name": "arena.vitorias", "kind": "KIND_COUNT" },
+    { "name": "arena.sequencia", "kind": "KIND_MAX" }
+  ]
+}

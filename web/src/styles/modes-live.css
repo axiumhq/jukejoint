@@ -52,8 +52,9 @@
 
 /* ───────── Arcanos: uma carta de tarô art déco por modo ───────── */
 
+/* uma coluna por modo: --arcanos vem do número de modos (ModesLive) */
 .ml-list.is-arcanos {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--arcanos, 6), minmax(0, 1fr));
   gap: var(--sp-4);
 }
 

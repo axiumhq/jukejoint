@@ -1,7 +1,7 @@
 export const enModosHome = {
   title: 'Modes',
   sub: 'Pick one and open the first lobby of the night.',
-  rituals: 'the six rituals of the house',
+  rituals: 'the rituals of the house',
   filterHint: 'Filter the lobbies by this mode.',
   none: 'No lobbies right now',
   lobbies: (n: number) => (n === 1 ? '1 lobby' : `${n} lobbies`),

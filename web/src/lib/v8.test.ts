@@ -67,9 +67,12 @@ describe('avatar gerado', () => {
   });
 });
 
+/** Modos que ainda usam a cena e o ícone do fallback (o Círculo Profano) até ganharem arte própria. */
+const SEM_ARTE_PROPRIA = ['arena'];
+
 describe('capas dos modos', () => {
   it('tem cena e ícones para cada modo, sem cair no fallback', () => {
-    for (const m of modes) {
+    for (const m of modes.filter((x) => !SEM_ARTE_PROPRIA.includes(x.slug))) {
       expect(SCENE_SLUGS).toContain(m.slug);
       expect(sceneSlug(m.slug)).toBe(m.slug);
       expect(sceneId(m.slug)).toBe(`jjsc-${m.slug}`);
