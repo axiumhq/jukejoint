@@ -72,6 +72,7 @@ var Modes = map[string]Mode{
 	"duelo-meia-noite": {2, 8},
 	"cerco-ao-cofre":   {6, 10},
 	"campo-de-treino":  {1, 6},
+	"arena":            {2, 12},
 }
 
 // Regions a lobby can be in.

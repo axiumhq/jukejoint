@@ -204,6 +204,31 @@ export const modes: Mode[] = [
     motif: 'grid',
     leaderboard: [],
   },
+  {
+    slug: 'arena',
+    line: 'Duelos e lutas de time dentro de um círculo; fora dele, o gás não perdoa.',
+    name: 'Arena',
+    tagline: 'Um contra um, dupla ou times de até seis, dentro de um círculo de gás.',
+    description: [
+      'Um modo, quatro jeitos de jogar: duelo, dupla, times de até seis por lado e espelho, com todo mundo no mesmo herói. Quem não está lutando espera na fila e assiste.',
+      'Fora do círculo o gás tira vida a cada segundo. Na versão com tempo, são três minutos, o círculo fecha devagar e vence quem fizer mais pontos.',
+    ],
+    rules: [
+      'Cada rodada começa com 3 segundos de contagem, todo mundo parado.',
+      'Todo mundo recebe as mesmas habilidades e o mesmo kit sorteado de seis itens.',
+      'Fora do círculo, o gás tira 8% da vida por segundo.',
+      'No duelo e na dupla, vence quem ganhar as rodadas combinadas; em times, quem ganhar 3 rodadas.',
+      'Ao fim da partida, quem venceu fica e quem esperava na fila entra.',
+    ],
+    format: 'Duelo, dupla ou times',
+    minPlayers: 2,
+    maxPlayers: 12,
+    durationMin: 8,
+    author: `equipe ${BRAND_NAME}`,
+    updatedAt: '2026-11-17',
+    motif: 'rings',
+    leaderboard: [],
+  },
 ];
 
 const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'rules' | 'format'>> = {
@@ -296,6 +321,22 @@ const enCopy: Record<string, Pick<Mode, 'line' | 'tagline' | 'description' | 'ru
       'Chat commands adjust bots, cooldowns, and health.',
     ],
     format: 'Practice with bots',
+  },
+  arena: {
+    line: 'Duels and team fights inside a circle; outside it, the gas shows no mercy.',
+    tagline: 'One against one, pairs or teams of up to six, inside a gas circle.',
+    description: [
+      'One mode, four ways to play: duel, pairs, teams of up to six a side, and mirror, with everyone on the same hero. Players who are not fighting wait in the queue and watch.',
+      'Outside the circle the gas takes health every second. In the timed version, matches last three minutes, the circle slowly closes, and the most points wins.',
+    ],
+    rules: [
+      'Every round starts with a 3-second countdown, with everyone frozen.',
+      'Everyone gets the same abilities and the same randomly drawn six-item kit.',
+      'Outside the circle, the gas takes 8% of your health per second.',
+      'In duels and pairs, win the agreed number of rounds; in teams, win 3 rounds.',
+      'When a match ends, the winners stay and players from the queue come in.',
+    ],
+    format: 'Duel, pairs or teams',
   },
 };
 
