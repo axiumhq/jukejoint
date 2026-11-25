@@ -54,6 +54,8 @@ export class Probe {
   private loggedAt = 0
   private center: { x: number; y: number; z: number } | undefined
   private victim: Fighter | undefined
+  private scoreBase = 0
+  private expectedHeroes = new Map<number, number>()
 
   tick(now: number): void {
     this.run ??= new ProbeRun('Arena', 300)
@@ -103,10 +105,13 @@ export class Probe {
     const n = perSideFor(rules.variant, this.bots)
     const pool = shuffle(heroes)
     const slots: (number | undefined)[] = []
+    this.expectedHeroes.clear()
     for (let i = 0; i < this.bots; i++) {
-      const hero = VARIANTS[rules.variant].mirror ? pool[0].name : pool[i % pool.length].name
+      const chosen = VARIANTS[rules.variant].mirror ? pool[0] : pool[i % pool.length]
       const team = TEAM_OF_SIDE[sideOf(i, n, rules.variant)]
-      slots.push(addBot({ name: `Bot ${i + 1}`, team, hero })?.slot)
+      const slot = addBot({ name: `Bot ${i + 1}`, team, hero: chosen.name })?.slot
+      slots.push(slot)
+      if (slot !== undefined) this.expectedHeroes.set(slot, chosen.id)
     }
     log('autoteste', rules.variant, rules.timed ? `com tempo (${rules.seconds} s)` : `por rodadas (até ${rules.target})`, 'bots', slots.join(','))
     if (slots.some((s) => s === undefined)) return 'o host recusou um bot'
@@ -132,10 +137,13 @@ export class Probe {
       if (p.team !== TEAM_OF_SIDE[f.side]) return `${f.seat.name} no time ${p.team}, esperava ${TEAM_OF_SIDE[f.side]}`
       const d = flat(center, p.position)
       if (d > state.fullRadius) return `${f.seat.name} começou fora do círculo, a ${Math.round(d)} do centro`
+      if (!VARIANTS[rules.variant].mirror) {
+        const expected = this.expectedHeroes.get(f.seat.slot)
+        if (expected !== undefined && p.hero !== expected) return `${f.seat.name} com herói ${p.hero}, esperava ${expected}`
+      }
       heroIds.add(p.hero)
     }
     if (VARIANTS[rules.variant].mirror && heroIds.size !== 1) return `espelho com ${heroIds.size} heróis diferentes`
-    if (!VARIANTS[rules.variant].mirror && heroIds.size < 2) return 'cada bot devia manter o próprio herói'
     log('rodada', state.round, 'lados', state.fighters.map((f) => `${f.seat.name}:${f.side}`).join(','), 'heróis', [...heroIds].join(','), 'raio', state.fullRadius)
     this.since = now
     this.step = this.gasDone ? 'fall' : 'gas'
@@ -184,6 +192,7 @@ export class Probe {
     if (side1.length === 0) return false
     if (this.rules!.timed) {
       this.victim = side1[0]
+      this.scoreBase = state.score[0]
       if (!this.victim.seat.player.kill()) return false
     } else {
       for (const f of side1) f.seat.player.kill()
@@ -196,7 +205,7 @@ export class Probe {
 
   private scored(): boolean | string {
     if (this.rules!.timed) {
-      if (state.score[0] < 1) return state.phase === 'live' ? false : 'a partida acabou sem o ponto da queda'
+      if (state.score[0] <= this.scoreBase) return state.phase === 'live' ? false : 'a partida acabou sem o ponto da queda'
       log('ponto com tempo', state.score.join('×'))
       this.step = 'return'
       return false

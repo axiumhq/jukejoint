@@ -21,6 +21,7 @@ import {
   type Choice,
   chooseVariant,
   chosenHero,
+  clock,
   closeHeroMenu,
   fixed,
   isHost,
@@ -69,15 +70,7 @@ export const CARDS: Record<Variant, { sides: string; rule: string }> = {
 
 const ORDER: readonly Variant[] = ['duelo', 'dupla', 'times', 'espelho']
 
-export function clock(seconds: number): string {
-  const s = Math.max(0, Math.ceil(seconds))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-
-function minutes(r: Rules): string {
-  const m = Math.round(r.seconds / 60)
-  return m === 1 ? '1 minuto' : `${m} minutos`
-}
+export { clock }
 
 /** O herói que a pessoa vai usar: o escolhido na tela ou o que ela já tem (0 sem nenhum). */
 export function heroOf(seat: Seat): number {
@@ -100,7 +93,7 @@ function votes(n: number): string {
 /** O que vale agora pela votação, em uma linha: "Duelo no círculo · até 5 rodadas". */
 export function resultLine(r: Rules): string {
   const title = VARIANTS[r.variant].title
-  return r.timed ? `${title} · ${minutes(r)}, com tempo` : `${title} · até ${r.target} ${r.target === 1 ? 'rodada' : 'rodadas'}`
+  return r.timed ? `${title} · ${clock(r.seconds)}, com tempo` : `${title} · até ${r.target} ${r.target === 1 ? 'rodada' : 'rodadas'}`
 }
 
 /** Quando começa, a segunda linha do topo. */
@@ -127,7 +120,7 @@ export function readyLine(viewer: Seat): string {
 
 /** A regra do modo que vale agora, para quem passa o mouse por cima da linha. */
 export function ruleLine(r: Rules): string {
-  const win = r.timed ? `Vence quem fizer mais pontos em ${minutes(r)}.` : `Vence quem levar ${r.target} rodadas.`
+  const win = r.timed ? `Vence quem fizer mais pontos em ${clock(r.seconds)}.` : `Vence quem levar ${r.target} rodadas.`
   return `${CARDS[r.variant].rule} ${win}`
 }
 
@@ -318,7 +311,8 @@ export function PickPanel(props: { seat: Seat; cursor: boolean }) {
   const total = [...counts.values()].reduce((a, b) => a + b, 0)
   const timeCounts = voteCounts('tempo')
   const pointCounts = voteCounts('pontos')
-  const points = [...new Set<number>([...POINT_CHOICES, rules.target])].sort((a, b) => a - b)
+  const votedPoints = [...pointCounts.keys()].map(Number).filter((n) => Number.isFinite(n))
+  const points = [...new Set<number>([...POINT_CHOICES, rules.target, ...votedPoints])].sort((a, b) => a - b)
   const myHero = heroOf(seat)
   const title = heroTitle(myHero)
   const ready = isReady(me)
@@ -351,7 +345,7 @@ export function PickPanel(props: { seat: Seat; cursor: boolean }) {
             current={rules.timed}
             items={[
               { value: false, label: 'Rodadas', count: votes(timeCounts.get('false') ?? 0), tooltip: 'Por rodadas: quem cai espera a próxima rodada.' },
-              { value: true, label: 'Tempo', count: votes(timeCounts.get('true') ?? 0), tooltip: `Com tempo: ${minutes(rules)}, o círculo fecha e quem cai volta em instantes.` },
+              { value: true, label: 'Tempo', count: votes(timeCounts.get('true') ?? 0), tooltip: `Com tempo: ${clock(rules.seconds)}, o círculo fecha e quem cai volta em instantes.` },
             ]}
             onPress={(p, on) => setTimed(p, on)}
           />
@@ -360,7 +354,7 @@ export function PickPanel(props: { seat: Seat; cursor: boolean }) {
           {rules.timed ? (
             <>
               <Heading>Duração</Heading>
-              <L size={17} color={P.ink2}>{`${minutes(rules)}, o círculo fecha`}</L>
+              <L size={17} color={P.ink2}>{`${clock(rules.seconds)}, o círculo fecha`}</L>
             </>
           ) : v.perSide > 2 ? (
             <>
@@ -533,7 +527,7 @@ export function HeroMenu(props: { seat: Seat }) {
             {picking ? 'Seu herói' : 'Trocar herói'}
           </L>
           <L size={16} color={P.ink3} style={{ margin: [0, 0, 3, 14], verticalAlign: 'bottom' }}>
-            {picking ? 'Vale a partir da primeira rodada.' : 'O novo herói entra na próxima rodada.'}
+            {picking ? 'Vale a partir da primeira rodada.' : state.rules.timed ? 'O novo herói entra na próxima partida.' : 'O novo herói entra na próxima rodada.'}
           </L>
         </panel>
         <panel style={{ flow: 'right', margin: [16, 0, 0, 0] }}>
@@ -595,7 +589,7 @@ export function MatchControls(props: { seat: Seat; cursor: boolean }) {
         </Outline>
       ) : null}
       <L size={15} color={P.ink3}>
-        Vale a partir da próxima rodada.
+        {state.rules.timed ? 'Vale a partir da próxima partida.' : 'Vale a partir da próxima rodada.'}
       </L>
     </panel>
   )

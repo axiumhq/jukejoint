@@ -98,7 +98,7 @@ export class Ring {
   private closer: WorldObject | undefined
   /** Os trechos sem âncora, que só se redesenham do zero quando o raio muda. */
   private loose = false
-  private marks: WorldObject[] = []
+  private marks: { index: number; obj: WorldObject }[] = []
 
   /** Quantas peças desenham o anel agora (trechos de laser ou marcadores). */
   get count(): number {
@@ -162,7 +162,7 @@ export class Ring {
         faceCamera: true,
         align: 'center',
       })
-      if (mark) this.marks.push(mark)
+      if (mark) this.marks.push({ index: i, obj: mark })
     }
   }
 
@@ -186,14 +186,14 @@ export class Ring {
       this.beams.forEach((b, i) => b.move(onRing(c, radius, i, RING_LIFT)))
       return
     }
-    this.marks.forEach((m, i) => m.move(onRing(c, radius, i, 8)))
+    for (const m of this.marks) m.obj.move(onRing(c, radius, m.index, 8))
   }
 
   /** Tira o anel do mundo. */
   clear(): void {
     for (const b of this.beams) b.remove()
     this.closer?.remove()
-    for (const m of this.marks) m.remove()
+    for (const m of this.marks) m.obj.remove()
     this.forget()
   }
 

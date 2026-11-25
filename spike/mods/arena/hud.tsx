@@ -31,7 +31,7 @@ import {
   state,
   TEAM_NAMES,
 } from './arena'
-import { GAS_SHARE, inside, metersOutside, MIN_FRACTION, turnToCenter } from './circulo'
+import { GAS_MIN, GAS_SHARE, inside, metersOutside, MIN_FRACTION, turnToCenter } from './circulo'
 import { clock, HeroMenu, heroOf, heroTitle, MatchControls, PickHeader, PickPanel, Portrait } from './escolha'
 import { L, P, pct, SIDE_COLORS, surface } from './paleta'
 
@@ -142,7 +142,10 @@ export function heading(): string {
 /** O meio do placar: o relógio com tempo, a rodada sem tempo (com o relógio dela embaixo). */
 export function middle(): { main: string; sub: string | undefined } {
   const live = state.phase === 'live'
-  if (state.rules.timed) return { main: clock(live ? state.endsAt - state.now : state.rules.seconds), sub: undefined }
+  if (state.rules.timed) {
+    const left = live ? state.endsAt - state.now : state.phase === 'matchOver' ? 0 : state.rules.seconds
+    return { main: clock(left), sub: undefined }
+  }
   return { main: `Rodada ${state.round || 1}`, sub: live ? clock(state.endsAt - state.now) : undefined }
 }
 
@@ -422,7 +425,7 @@ export function personalLine(seat: Seat): { title: string; detail?: string } | u
     if (state.phase === 'matchOver') return undefined
     const playing = new Set(state.fighters.map((x) => key(x.seat)))
     const pos = state.queue.filter((s) => !playing.has(key(s))).findIndex((s) => key(s) === key(seat)) + 1
-    return pos > 0 ? { title: `Você está na fila · ${pos}ª posição`, detail: 'Você entra quando esta partida acabar.' } : undefined
+    return pos > 0 ? { title: `Você está na fila · ${pos}ª posição`, detail: 'Você entra quando abrir vaga na próxima partida.' } : undefined
   }
   if (state.phase !== 'live' || f.alive) return undefined
   if (state.rules.timed) {
@@ -453,7 +456,7 @@ function Below(props: { seat: Seat }) {
           Fora do círculo
         </L>
         <L size={18} color={P.ink} shadow style={{ horizontalAlign: 'center' }}>
-          {`O gás tira ${Math.round(GAS_SHARE * 100)}% da vida por segundo · ${out.meters} m até o círculo`}
+          {`O gás tira ${Math.round(GAS_SHARE * 100)}% da vida por segundo (mín. ${GAS_MIN}) · ${out.meters} m até o círculo`}
         </L>
       </panel>
     )

@@ -7,7 +7,7 @@
 // Os estados: votacao, contagem, partida, times, fora, caiu, rodada, vitoria e heroi.
 import { type Connection, heroes, type Player, players, type Vector } from 'modlock'
 
-import { type Fighter, key, type Rules, type Seat, state, TIMED_SECONDS, VARIANTS } from './arena'
+import { currentRadius, type Fighter, key, type Rules, type Seat, state, TIMED_SECONDS, VARIANTS } from './arena'
 import { previewOutside } from './hud'
 
 export const VITRINES = ['votacao', 'contagem', 'partida', 'times', 'fora', 'caiu', 'rodada', 'vitoria', 'heroi'] as const
@@ -80,9 +80,9 @@ function rules(variant: Rules['variant'], timed: boolean, target: number): Rules
 }
 
 /** Põe o anel no mundo uma vez, para a prévia mostrar o laser; o mapa novo o tira. */
-function ring(center: Vector, radius: number) {
-  state.fullRadius = radius
-  if (!state.ring.center) state.ring.place(center, radius)
+function ring(center: Vector, full: number, drawn = full) {
+  state.fullRadius = full
+  if (!state.ring.center) state.ring.place(center, drawn)
 }
 
 /** A partida valendo há `elapsed` segundos, com `left` segundos no relógio. */
@@ -96,7 +96,10 @@ function live(elapsed: number, left: number) {
 export function showcase(name: Vitrine, now: number): void {
   state.now = now
   const me = people()[0]
-  if (!me) return
+  if (!me) {
+    state.queue = []
+    return
+  }
   const pawn = me.player.pawn()
   const here = pawn?.position ?? { x: 0, y: 0, z: 0 }
   const near = (dx: number, dy: number): Vector => ({ x: here.x + dx, y: here.y + dy, z: here.z })
@@ -150,7 +153,8 @@ export function showcase(name: Vitrine, now: number): void {
       state.score = [2, 1]
       live(73, 107)
       state.feed = [{ by: who(me, 0), victim: who(enzo, 1), gas: false, at: now - 2 }]
-      ring(here, VARIANTS.duelo.radius)
+      state.fullRadius = VARIANTS.duelo.radius
+      ring(here, VARIANTS.duelo.radius, currentRadius())
       break
     }
     case 'times': {

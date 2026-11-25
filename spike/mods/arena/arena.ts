@@ -329,9 +329,14 @@ export function scoreLine(): string {
   return `${sideName(0)} ${state.score[0]} × ${state.score[1]} ${sideName(1)}`
 }
 
+export function clock(seconds: number): string {
+  const s = Math.max(0, Math.ceil(seconds))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
 export function rulesLine(r: Rules = state.rules): string {
   const v = VARIANTS[r.variant]
-  if (r.timed) return `${v.title}, com tempo: ${Math.round(r.seconds / 60)} minutos, o círculo fecha, vence quem fizer mais pontos.`
+  if (r.timed) return `${v.title}, com tempo: ${clock(r.seconds)}, o círculo fecha, vence quem fizer mais pontos.`
   return `${v.title}: vence quem levar ${r.target} rodadas primeiro.`
 }
 
@@ -424,7 +429,7 @@ export function resolveRules(): Rules {
     variant,
     timed: parseBool(read('tempo')),
     target: VARIANTS[variant].perSide <= 2 ? (points >= 1 && points <= 15 ? points : DEFAULT_POINTS) : TEAM_ROUNDS,
-    seconds: seconds >= 10 ? seconds : TIMED_SECONDS,
+    seconds: Number.isFinite(seconds) && seconds >= 10 ? seconds : TIMED_SECONDS,
   }
 }
 
@@ -462,6 +467,7 @@ export function syncQueue() {
     s.player.chat(`Arena: ${rulesLine(state.phase === 'waiting' ? resolveRules() : state.rules)}`)
     if (state.queue.length > 2) tellAll(`${s.name} entrou na fila.`)
   }
+  if (left.length > 0) state.beginAt = undefined
   for (const s of left) {
     state.chosen.delete(key(s))
     state.heroMenu.delete(key(s))
@@ -472,7 +478,10 @@ export function syncQueue() {
   const gone = new Set(left.map(key))
   const lost = state.fighters.filter((f) => gone.has(key(f.seat)))
   if (lost.length > 0 && state.phase !== 'waiting' && state.phase !== 'matchOver') {
-    for (const f of lost) tellAll(`${f.seat.name} saiu do servidor.`)
+    for (const f of lost) {
+      release(f)
+      tellAll(`${f.seat.name} saiu do servidor.`)
+    }
     state.fighters = state.fighters.filter((f) => !gone.has(key(f.seat)))
     const sides = [0, 1].map((side) => state.fighters.some((f) => f.side === side))
     if (!sides[0] && !sides[1]) return resetToWaiting()
@@ -681,6 +690,7 @@ function equipAndPlace() {
 
   for (const f of state.fighters) {
     if (f.benched) f.seat.player.unwatch()
+    lastGasHit.delete(f)
     Object.assign(f, { alive: true, told: true, gassed: false, benched: false, inGas: false, protectedUntil: 0, hurt: 0 })
     equip(f)
     const at = spotFor(f)
@@ -703,12 +713,12 @@ function equipAndPlace() {
 }
 
 /** Uma queda: conta o ponto (com tempo), tira da rodada (sem tempo) e agenda a volta. */
-function fell(f: Fighter, attacker = 0) {
+function fell(f: Fighter, attacker = 0, fromGas = false) {
   if (!f.alive) return
   f.alive = false
   f.fellAt = state.now
   f.told = false
-  f.gassed = f.inGas
+  f.gassed = fromGas
   f.streak = 0
   state.falls += 1
   if (state.falls === 1) callout('Primeira queda', f.gassed ? `${f.seat.name} caiu no gás` : `${f.seat.name} caiu`, key(f.seat))
@@ -753,6 +763,7 @@ function bringBack(f: Fighter) {
       f.seat.player.heal(100000)
       f.alive = true
       f.inGas = false
+      lastGasHit.delete(f)
       f.protectedUntil = state.now + PROTECTION_SECONDS
     }),
   )
@@ -916,6 +927,9 @@ function tellFalls() {
   }
 }
 
+let gassing = false
+const lastGasHit = new WeakMap<Fighter, number>()
+
 /** Uma vez por segundo, o gás pega quem está de pé fora do círculo. */
 function gas(radius: number) {
   const center = state.ring.center
@@ -928,7 +942,11 @@ function gas(radius: number) {
     f.inGas = out
     if (!out || state.now < f.protectedUntil) continue
     state.gasCalls += 1
-    if (!hurt({ victim: p.entity, amount: gasDamage(p.effectiveMaxHealth ?? p.maxHealth) })) state.gasRefused += 1
+    gassing = true
+    const ok = hurt({ victim: p.entity, amount: gasDamage(p.effectiveMaxHealth ?? p.maxHealth) })
+    gassing = false
+    if (ok) lastGasHit.set(f, state.now)
+    else state.gasRefused += 1
   }
 }
 
@@ -950,14 +968,24 @@ export function damaged(hit: DamagedEvent) {
   if (state.phase === 'live' && hit.healthLost > 0) victim.hurt += hit.healthLost
   // Um golpe sem atacante (o gás) chega com atacante zero pela documentação, mas o host da
   // v0.1.73 manda a própria vítima como atacante (visto no autoteste). Os dois contam.
-  if ((hit.attacker === 0 || hit.attacker === hit.victim) && hit.healthLost > 0) state.gasHits += 1
+  const unattributed = (hit.attacker === 0 || hit.attacker === hit.victim) && hit.healthLost > 0
+  if (unattributed) state.gasHits += 1
+  const fromGas = unattributed && (gassing || (victim.inGas && state.now - (lastGasHit.get(victim) ?? -Infinity) <= 1))
   if (hit.healthBefore <= 0 || hit.healthLost < hit.healthBefore) return
   // O aviso do golpe chega um quadro depois: a queda pode já ter sido vista (e a rodada fechada).
   if (!victim.alive) {
-    if (state.now - victim.fellAt < 1) credit(victim, hit.attacker)
+    if (state.now - victim.fellAt < 1) {
+      if (fromGas) {
+        victim.gassed = true
+        const told = state.callouts.find((c) => c.victim === key(victim.seat))
+        if (told) told.detail = `${victim.seat.name} caiu no gás`
+      } else {
+        credit(victim, hit.attacker)
+      }
+    }
     return
   }
-  if (state.phase === 'live') fell(victim, hit.attacker)
+  if (state.phase === 'live') fell(victim, hit.attacker, fromGas)
 }
 
 /* ───────── a tela de escolha ───────── */
@@ -1085,7 +1113,7 @@ export function pickHero(player: Player, name: string): string | undefined {
   const hero = findHero(name)
   if (!me || !hero) return undefined
   state.chosen.set(key(me), hero.name)
-  const when = state.phase === 'waiting' ? 'a partir da primeira rodada' : 'a partir da próxima rodada'
+  const when = state.phase === 'waiting' ? 'a partir da primeira rodada' : state.rules.timed ? 'a partir da próxima partida' : 'a partir da próxima rodada'
   if (state.heroMenu.delete(key(me))) toast(player, `${hero.title} ${when}.`, 4)
   return hero.name
 }
@@ -1161,7 +1189,8 @@ export function chooseHero(player: Player, typed: string) {
   if (!seatOfPlayer(player)) return
   if (!hero) return void player.chat('Herói não encontrado.')
   pickHero(player, hero.name)
-  const now = info().mirror && state.phase !== 'waiting' ? ' No espelho o herói é sorteado; vale quando voltar a um jeito com herói livre.' : ' Vale a partir da próxima rodada.'
+  const next = state.phase !== 'waiting' && state.rules.timed ? 'próxima partida' : 'próxima rodada'
+  const now = info().mirror && state.phase !== 'waiting' ? ' No espelho o herói é sorteado; vale quando voltar a um jeito com herói livre.' : ` Vale a partir da ${next}.`
   player.chat(`Seu herói: ${hero.title}.${now}`)
 }
 
@@ -1174,13 +1203,15 @@ export function chooseMode(player: Player, args: string) {
   }
   const me = seatOfPlayer(player)
   if (!me || me.bot) return
+  let accepted = false
   for (const w of words) {
     const v = parseVariant(w)
-    if (v) castVote(player, 'variante', v)
-    else if (w === 'tempo') castVote(player, 'tempo', 'true')
-    else if (w === 'rodadas') castVote(player, 'tempo', 'false')
-    else if (/^\d+$/.test(w)) castVote(player, 'pontos', String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Number(w)))))
+    if (v) accepted = castVote(player, 'variante', v) || accepted
+    else if (w === 'tempo') accepted = castVote(player, 'tempo', 'true') || accepted
+    else if (w === 'rodadas') accepted = castVote(player, 'tempo', 'false') || accepted
+    else if (/^\d+$/.test(w)) accepted = castVote(player, 'pontos', String(Math.min(MAX_POINTS, Math.max(MIN_POINTS, Number(w))))) || accepted
   }
+  if (!accepted) return void player.chat('Nenhum voto contado: valor inválido ou definido pelo servidor.')
   player.chat(`Voto contado. Pela votação de agora, a próxima partida é: ${rulesLine(resolveRules())}`)
 }
 

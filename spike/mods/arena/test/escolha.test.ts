@@ -215,8 +215,8 @@ describe('Arena: a escolha', () => {
     expect(l.a.resolveRules().timed).toBe(true)
     l.w.tick(0.1)
     expect(l.w.control(l.ana, 'Até 7')).toBeUndefined()
-    expect(l.w.screen(l.ana)).toContain('3 minutos, o círculo fecha')
-    expect(l.w.screen(l.ana)).toContain('Duelo no círculo · 3 minutos, com tempo')
+    expect(l.w.screen(l.ana)).toContain('3:00, o círculo fecha')
+    expect(l.w.screen(l.ana)).toContain('Duelo no círculo · 3:00, com tempo')
     l.w.press(l.ana, 'Por rodadas')
     l.w.press(l.bia, 'Por rodadas')
     l.w.press(l.ana, 'Times')
@@ -395,7 +395,7 @@ describe('Arena: o HUD da partida', () => {
     l.w.tick(0.1)
     const text = l.w.screen(l.bia)
     expect(text).toContain('Fora do círculo')
-    expect(text).toContain('O gás tira 8% da vida por segundo · 6 m até o círculo')
+    expect(text).toContain('O gás tira 8% da vida por segundo (mín. 25) · 6 m até o círculo')
     expect(JSON.stringify(l.bia.ui)).toContain('"inset":true')
     expect(l.w.screen(l.ana)).not.toContain('Fora do círculo')
     l.bia.pawnState!.position = { ...c }
@@ -646,5 +646,65 @@ describe('Arena: vitrine para a prévia', () => {
     expect(l.a.state.queue.some((s) => s.fake)).toBe(false)
     until(l, 'live')
     expect(l.a.state.fighters.map((f) => f.seat.name)).toEqual(['Ana', 'Bia'])
+  })
+
+  it('vitrine: partida desenha o anel no raio atual, /bot é ignorado e saída limpa a fila', async () => {
+    const l = await load(['vitrine=partida'])
+    const ana = l.w.join('Ana')
+    seat(ana)
+    l.w.tick(0.2)
+    expect(l.a.state.fullRadius).toBe(l.a.VARIANTS.duelo.radius)
+    expect(l.a.state.ring.radius).toBeCloseTo(l.a.currentRadius(), 0)
+    expect(l.a.state.ring.radius).toBeLessThan(l.a.VARIANTS.duelo.radius)
+    l.w.type(ana, '/bot')
+    expect(l.w.world.botRequests).toEqual([])
+    l.w.leave(ana)
+    l.w.tick(0.2)
+    expect(l.a.state.queue).toEqual([])
+  })
+})
+
+describe('Arena: regressões de HUD e escolha', () => {
+  it('voto fora dos presets de pontos continua visível quando outro valor vence', async () => {
+    const l = await room()
+    l.w.type(l.ana, '/modo 6')
+    l.w.press(l.bia, 'Até 5')
+    const caio = l.w.join('Caio')
+    l.w.tick(1.2)
+    l.w.press(caio, 'Até 5')
+    l.w.tick(0.1)
+    expect(l.a.resolveRules().target).toBe(5)
+    expect(l.w.control(l.ana, 'Até 6')).toBeDefined()
+  })
+
+  it('com tempo, troca de herói fala em próxima partida e fim do relógio mostra 0:00', async () => {
+    const l = await live(['tempo', 'segundos=20'])
+    l.ana.tab = true
+    l.w.tick(0.1)
+    expect(l.w.screen(l.ana)).toContain('Vale a partir da próxima partida.')
+    l.w.press(l.ana, 'Trocar herói')
+    l.w.tick(0.1)
+    expect(l.w.screen(l.ana)).toContain('O novo herói entra na próxima partida.')
+    l.w.press(l.ana, 'Herói Três')
+    expect(l.ana.said('toast:Herói Três a partir da próxima partida.')).toBe(true)
+    for (let t = 0; t < 21; t += 1) {
+      for (const f of l.a.state.fighters) (f.seat.player as unknown as FakePlayer).pawnState!.position = { ...l.a.state.ring.center! }
+      l.w.tick(1)
+    }
+    expect(l.a.state.phase).toBe('matchOver')
+    expect(l.h.middle().main).toBe('0:00')
+  })
+
+  it('fila avisa que a entrada depende de vaga', async () => {
+    const l = await load()
+    l.w.join('Ana')
+    l.w.join('Bia')
+    const caio = l.w.join('Caio')
+    until(l, 'live')
+    expect(l.h.personalLine(l.a.state.queue[2])).toEqual({
+      title: 'Você está na fila · 1ª posição',
+      detail: 'Você entra quando abrir vaga na próxima partida.',
+    })
+    expect(l.w.screen(caio)).toContain('Você entra quando abrir vaga na próxima partida.')
   })
 })

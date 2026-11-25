@@ -556,4 +556,72 @@ describe('Arena: configuração e comandos', () => {
     l.w.type(a, '/placar')
     expect(a.said('Esperando mais uma pessoa para a Arena.')).toBe(true)
   })
+
+  it('segundos=Infinity volta para o padrão; duração curta usa o formato do relógio', async () => {
+    const inf = await load(['tempo', 'segundos=Infinity'])
+    expect(inf.a.resolveRules().seconds).toBe(inf.a.TIMED_SECONDS)
+
+    const short = await load(['tempo', 'segundos=30'])
+    expect(short.a.resolveRules().seconds).toBe(30)
+    expect(short.a.rulesLine(short.a.resolveRules())).toContain('0:30')
+  })
+
+  it('/modo só confirma quando algum voto é aceito', async () => {
+    const l = await load(['variante=times'])
+    const a = l.w.join('Ana')
+    l.w.tick(1.2)
+    l.w.type(a, '/modo duelo')
+    expect(a.said('Nenhum voto contado')).toBe(true)
+    expect(a.said('Voto contado.')).toBe(false)
+    l.w.type(a, '/modo invalido')
+    expect(a.said('Voto contado.')).toBe(false)
+    l.w.type(a, '/modo tempo')
+    expect(a.said('Voto contado.')).toBe(true)
+  })
+
+  it('sair durante a contagem de Pronto reinicia a contagem', async () => {
+    const l = await load()
+    const a = l.w.join('Ana')
+    const b = l.w.join('Bia')
+    const c = l.w.join('Caio')
+    l.w.tick(1.2)
+    for (const p of [a, b, c]) l.w.press(p, 'Estou pronto')
+    l.w.tick(2.5)
+    expect(l.a.state.beginAt).toBeDefined()
+    l.w.disconnect(c)
+    expect(l.a.state.beginAt).toBeUndefined()
+    // Os dois restantes continuam prontos, então uma nova contagem de 3s começa.
+    l.w.tick(1)
+    expect(l.a.state.phase).toBe('waiting')
+    expect(l.a.state.beginAt).toBeDefined()
+    l.w.tick(2.5)
+    expect(l.a.state.phase).toBe('starting')
+  })
+
+  it('queda sem autor depois de sair do gás não é atribuída ao gás', async () => {
+    const l = await load()
+    const a = l.w.join('Ana')
+    const b = l.w.join('Bia')
+    until(l)
+    const c = l.a.state.ring.center!
+    b.pawnState!.position = { x: c.x + 5000, y: c.y, z: c.z }
+    l.w.tick(1.1)
+    expect(l.a.state.fighters[1].inGas).toBe(true)
+    // Volta para dentro e cai sem golpe de gás antes do próximo tick do gás.
+    b.pawnState!.position = { ...c }
+    down(b)
+    l.w.tick(0.8)
+    expect(a.said('Bia caiu no gás.')).toBe(false)
+    expect(a.said('Bia caiu.')).toBe(true)
+  })
+
+  it('lutador desconectado é liberado antes de sair da partida', async () => {
+    const l = await load()
+    const a = l.w.join('Ana')
+    const b = l.w.join('Bia')
+    until(l, 'countdown')
+    expect(b.frozen).toBe(true)
+    l.w.disconnect(b)
+    expect(b.frozen).toBe(false)
+  })
 })
